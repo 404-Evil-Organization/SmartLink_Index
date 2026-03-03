@@ -1,0 +1,8 @@
+# IDE配置
+.idea/
+.vscode/
+
+# 环境变量文件（忽略所有 .env 文件，除了 .env.example）
+.env
+.env.local
+.env.*.local
