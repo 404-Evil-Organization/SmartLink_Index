@@ -140,7 +140,7 @@
 #### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/your-org/zhilian-index.git
+git clone https://github.com/404-Evil-Organization/SmartLink_Index.git
 cd SmartLink_Index
 ```
 
@@ -224,8 +224,8 @@ npm run dev
 
 ## 📚 项目文档
 
-- [项目构建方案](https://docs/project-build-plan.md)
-- [数据库设计文档](https://docs/database-design.md)
+- [项目构建方案](docs/project-build-plan.md)
+- [数据库设计文档](docs/database-design.md)
 - ~~[接口文档（Swagger）](http://your-server/swagger-ui.html)~~（部署后）
 - ~~[部署手册](https://docs/deployment.md)~~
 - ~~[用户操作手册](https://docs/user-manual.md)~~
