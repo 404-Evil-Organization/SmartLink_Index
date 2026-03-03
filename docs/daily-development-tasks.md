@@ -10,8 +10,8 @@
 
 | 角色     | 任务                  | 详细说明                                                     | 产出                 |
 | :------- | :-------------------- | :----------------------------------------------------------- | :------------------- |
-| **后端** | 创建 Spring Boot 项目 | 使用 Spring Initializr 创建项目，选择依赖：Web、MySQL、MyBatis Plus、Security、JWT、Lombok | 基础项目结构，可运行 |
-|          | 配置 Maven 依赖       | 在 `pom.xml` 中添加 springdoc-openapi、jjwt、阿里云 OSS SDK 等依赖 | 完整依赖清单         |
+| **后端** | 创建 Spring Boot 项目 | 使用 Spring Initializr 创建项目，选择依赖：Web、MySQL、Security、JWT、Lombok | 基础项目结构，可运行 |
+|          | 配置 Maven 依赖       | 在 `pom.xml` 中添加 mybatis-plus、springdoc-openapi、jwt、阿里云 OSS SDK、Hutool 依赖 | 完整依赖清单         |
 |          | 编写基础配置文件      | 创建 `application.yml`，配置数据源、端口、日志等（敏感信息使用占位符） | 配置文件             |
 |          | 创建包结构            | 按规范建立 `controller`、`service`、`mapper`、`entity`、`dto`、`config`、`utils`、`common` 等包 | 清晰的包结构         |
 | **前端** | 创建 Vue 3 项目       | 使用 Vite 创建项目：`npm create vite@latest zhilian-frontend -- --template vue` | 基础项目             |

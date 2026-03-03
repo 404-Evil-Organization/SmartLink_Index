@@ -116,7 +116,7 @@
 
 ```text
 zhilian-backend/
-├── src/main/java/com/zhilian/
+├── src/main/java/com/zhilian/zhilianbackend/
 │   ├── controller/          # 控制器层
 │   ├── service/             # 业务逻辑层
 │   │   ├── impl/            # 服务实现
