@@ -92,25 +92,25 @@
 
 ### 3.1 技术栈
 
-| 技术/组件    | 版本/选型                | 说明                           |
-| :----------- | :----------------------- | :----------------------------- |
-| 核心框架     | Spring Boot              | 3.5.x                          |
-| JDK          | OpenJDK 17               | LTS 版本                       |
-| 数据库       | MySQL                    | 8.0+                           |
-| 连接池       | HikariCP                 | Spring Boot 默认               |
-| ORM 框架     | MyBatis Plus             | 3.5.x                          |
-| 代码生成器   | MyBatis Plus Generator   | 快速生成 Entity/Mapper/Service |
-| 安全框架     | Spring Security          | 6.x                            |
-| JWT 支持     | jjwt                     | 0.12.6                         |
-| API 文档     | springdoc-openapi        | 2.6.0                          |
-| JSON 处理    | Jackson                  | Spring Boot 默认               |
-| 文件上传     | Spring MultipartFile     | 支持单文件/多文件上传          |
-| 对象存储 SDK | 阿里云 OSS SDK           | 3.17.4                         |
-| 定时任务     | Spring Scheduling        | @Scheduled                     |
-| 工具库       | Lombok                   | 1.18.24                        |
-| 工具库       | HuTools / Apache Commons | 可选，用于字符串、集合等操作   |
-| 测试框架     | JUnit 5 + Mockito        | 单元测试与模拟测试             |
-| 构建工具     | Maven                    | 3.8+                           |
+| 技术/组件    | 版本/选型              | 说明                           |
+| :----------- | :--------------------- | :----------------------------- |
+| 核心框架     | Spring Boot            | 3.5.x                          |
+| JDK          | OpenJDK 17             | LTS 版本                       |
+| 数据库       | MySQL                  | 8.0+                           |
+| 连接池       | HikariCP               | Spring Boot 默认               |
+| ORM 框架     | MyBatis Plus           | 3.5.x                          |
+| 代码生成器   | MyBatis Plus Generator | 快速生成 Entity/Mapper/Service |
+| 安全框架     | Spring Security        | 6.x                            |
+| JWT 支持     | jjwt                   | 0.12.6                         |
+| API 文档     | springdoc-openapi      | 2.6.0                          |
+| JSON 处理    | Jackson                | Spring Boot 默认               |
+| 文件上传     | Spring MultipartFile   | 支持单文件/多文件上传          |
+| 对象存储 SDK | 阿里云 OSS SDK         | 3.17.4                         |
+| 定时任务     | Spring Scheduling      | @Scheduled                     |
+| 工具库       | Lombok                 | 1.18.24                        |
+| 工具库       | HuTools                | 用于字符串、集合等操作         |
+| 测试框架     | JUnit 5 + Mockito      | 单元测试与模拟测试             |
+| 构建工具     | Maven                  | 3.8+                           |
 
 ### 3.2 项目结构
 
