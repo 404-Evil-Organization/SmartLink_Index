@@ -478,6 +478,9 @@ aliyun:
 - **main**：主分支，仅存放稳定版本，不可直接提交代码。
 - **dev**：开发分支，日常开发基于此分支。
 - **feature/xxx**：功能分支，从 dev 检出，完成后合并回 dev。
+  - 若是前端，则为**feature/frontend-xxx**
+  - 若是后端，则为**feature/backend-xxx**
+
 - ~~**hotfix/xxx**：紧急修复分支，从 master 检出，修复后同时合并到 master 和 dev。~~
 
 ### 9.2 Commit 规范
@@ -492,7 +495,7 @@ aliyun:
 - `test`: 测试相关
 - `chore`: 构建/工具链变动
 
-示例：`feat: 新增数字化诊断问卷提交接口`
+示例：`feat: backend-新增数字化诊断问卷提交接口`
 
 ### 9.3 Code Review
 
