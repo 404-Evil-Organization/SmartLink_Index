@@ -1,5 +1,5 @@
 <template>
-  <div style="max-width:400px; margin:100px auto;">
+  <div style="max-width: 400px; margin: 100px auto">
     <h2>注册</h2>
     <el-form :model="form" label-width="80px">
       <el-form-item label="用户名">
@@ -22,6 +22,8 @@
 <script setup>
 import { reactive } from 'vue'
 import { ElMessage } from 'element-plus'
+import { register } from '@/api/auth'
+import router from '@/router'
 
 const form = reactive({
   username: '',
@@ -29,16 +31,32 @@ const form = reactive({
   confirmPassword: ''
 })
 
-const handleRegister = () => {
-  if (!form.username || !form.password || !form.confirmPassword) {
-    ElMessage.warning('请填写完整信息')
-    return
+const handleRegister = async () => {
+  try {
+    // 表单校验
+    if (!form.username || !form.password || !form.confirmPassword) {
+      ElMessage.warning('请填写完整信息')
+      return
+    }
+
+    if (form.password !== form.confirmPassword) {
+      ElMessage.warning('两次输入的密码不一致')
+      return
+    }
+
+    // 调用注册接口
+    await register({
+      username: form.username,
+      password: form.password
+    })
+
+    ElMessage.success('注册成功')
+
+    // 跳转登录页
+    router.push('/login')
+
+  } catch (err) {
+    ElMessage.error(err.response?.data?.message || '注册失败')
   }
-  if (form.password !== form.confirmPassword) {
-    ElMessage.warning('两次输入的密码不一致')
-    return
-  }
-  ElMessage.success('注册成功（演示版）')
-  // 实际开发中，这里会调用注册接口
 }
 </script>

@@ -1,36 +1,38 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from "vue-router";
+import { useUserStore } from "@/stores/user";
 
 const routes = [
   {
-    path: '/login',
-    name: 'Login',
-    component: () => import('@/views/auth/Login.vue')
+    path: "/login",
+    name: "Login",
+    component: () => import("@/views/auth/Login.vue"),
   },
   {
-    path: '/register',
-    name: 'Register',
-    component: () => import('@/views/auth/Register.vue')
+    path: "/register",
+    name: "Register",
+    component: () => import("@/views/auth/Register.vue"),
   },
   {
-    path: '/',
-    component: () => import('@/layouts/BasicLayout.vue'),
-    children: []
-  }
-]
+    path: "/",
+    component: () => import("@/layouts/BasicLayout.vue"),
+    children: [],
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
 // 简单路由守卫：未登录且不是去登录/注册页，则跳转登录
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  if (to.path !== '/login' && to.path !== '/register' && !token) {
-    next('/login')
+  const userStore = useUserStore();
+  const token = userStore.token;
+  if (to.path !== "/login" && to.path !== "/register" && !token) {
+    next("/login");
   } else {
-    next()
+    next();
   }
-})
+});
 
-export default router
+export default router;
