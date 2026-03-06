@@ -1,0 +1,158 @@
+# 应用配置
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  # 优雅关机
+  shutdown: graceful
+
+# Spring配置
+spring:
+  application:
+    name: zhilian-backend
+
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/smartlink_index?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: smartlink_index
+    password: smartlink_index_2026
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # HikariCP连接池配置
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      pool-name: ZhilianHikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 100MB
+      file-size-threshold: 2KB
+
+  # 生命周期管理（优雅关机等待时间）
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+# MyBatis Plus配置
+mybatis-plus:
+  # XML映射文件路径
+  mapper-locations: classpath:mapper/*.xml
+  # 实体类包路径
+  type-aliases-package: com.zhilian.entity
+  # 全局配置
+  global-config:
+    db-config:
+      # 主键类型
+      id-type: auto
+      # 逻辑删除字段
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+    # 是否打印banner
+    banner: false
+  # 原生配置
+  configuration:
+    # 驼峰命名转换
+    map-underscore-to-camel-case: true
+    # 查询结果为空时返回null，不返回空集合
+    call-setters-on-nulls: true
+    # 打印SQL日志（开发环境开启）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 缓存配置
+    cache-enabled: false
+
+# SpringDoc OpenAPI配置
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+  # 包扫描路径
+  packages-to-scan: com.zhilian.controller
+  # 需要处理的请求路径
+  paths-to-match: /**
+
+# JWT配置
+jwt:
+  # 密钥（生产环境请使用复杂密钥，建议从环境变量读取）
+  secret: ZhilianSecretKey2024WithMoreThan32BytesLengthSecure!
+  # Token过期时间（毫秒）- 默认24小时
+  expiration: 86400000
+  # Token请求头
+  header: Authorization
+  # Token前缀
+  token-prefix: Bearer
+
+# 阿里云OSS配置
+oss:
+  # 阿里云OSS端点（根据实际区域修改）
+  endpoint: oss-cn-hangzhou.aliyuncs.com
+  # AccessKey ID（建议从环境变量读取）
+  access-key-id: your-access-key-id
+  # AccessKey Secret（建议从环境变量读取）
+  access-key-secret: your-access-key-secret
+  # 存储空间名称
+  bucket-name: zhilian-bucket
+  # 访问域名（可选）
+  domain: https://zhilian-bucket.oss-cn-hangzhou.aliyuncs.com
+
+# 日志配置
+logging:
+  level:
+    # 根日志级别
+    root: info
+    # 应用日志级别
+    com.zhilian: debug
+    # MyBatis SQL日志
+    com.zhilian.mapper: debug
+    # Spring Security日志
+    org.springframework.security: info
+    # 数据库连接池日志
+    com.zaxxer.hikari: info
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
+    file: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
+  file:
+    name: logs/zhilian-backend.log
+    max-size: 10MB
+    max-history: 7
+
+# 自定义应用配置
+app:
+  # 文件上传路径
+  upload:
+    path: /uploads
+    # 允许的文件类型
+    allow-types:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - application/pdf
+      - application/msword
+  # 跨域配置
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:8080
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+    allow-credentials: true
+    max-age: 3600

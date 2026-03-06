@@ -1,0 +1,61 @@
+2026-03-06 22:21:24.845 [main] INFO  c.zhilian.zhilianbackend.ZhilianBackendApplication - Starting ZhilianBackendApplication using Java 17.0.15 with PID 13288 (D:\Homework\zhilian-backend\target\classes started by 周冠杰 in D:\Homework\zhilian-backend)
+2026-03-06 22:21:24.847 [main] DEBUG c.zhilian.zhilianbackend.ZhilianBackendApplication - Running with Spring Boot v3.5.11, Spring v6.2.16
+2026-03-06 22:21:24.847 [main] INFO  c.zhilian.zhilianbackend.ZhilianBackendApplication - No active profile set, falling back to 1 default profile: "default"
+2026-03-06 22:21:26.032 [main] WARN  org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.zhilian.zhilianbackend]' package. Please check your configuration.
+2026-03-06 22:21:26.328 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-03-06 22:21:26.344 [main] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2026-03-06 22:21:26.344 [main] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.52]
+2026-03-06 22:21:26.421 [main] INFO  o.a.c.c.ContainerBase.[Tomcat].[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2026-03-06 22:21:26.421 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1526 ms
+2026-03-06 22:21:27.480 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 556bd807-8141-4d1f-8378-0d5890d6326c
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-03-06 22:21:27.488 [main] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-03-06 22:21:27.663 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api'
+2026-03-06 22:21:27.675 [main] INFO  c.zhilian.zhilianbackend.ZhilianBackendApplication - Started ZhilianBackendApplication in 3.36 seconds (process running for 4.119)
+2026-03-06 22:22:11.937 [SpringApplicationShutdownHook] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-03-06 22:22:12.336 [tomcat-shutdown] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-03-06 22:23:35.631 [main] INFO  c.zhilian.zhilianbackend.ZhilianBackendApplication - Starting ZhilianBackendApplication using Java 17.0.15 with PID 35996 (D:\Homework\zhilian-backend\target\classes started by 周冠杰 in D:\Homework\zhilian-backend)
+2026-03-06 22:23:35.633 [main] DEBUG c.zhilian.zhilianbackend.ZhilianBackendApplication - Running with Spring Boot v3.5.11, Spring v6.2.16
+2026-03-06 22:23:35.634 [main] INFO  c.zhilian.zhilianbackend.ZhilianBackendApplication - No active profile set, falling back to 1 default profile: "default"
+2026-03-06 22:23:36.409 [main] WARN  org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.zhilian.zhilianbackend]' package. Please check your configuration.
+2026-03-06 22:23:36.664 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-03-06 22:23:36.674 [main] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2026-03-06 22:23:36.674 [main] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.52]
+2026-03-06 22:23:36.732 [main] INFO  o.a.c.c.ContainerBase.[Tomcat].[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2026-03-06 22:23:36.732 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1055 ms
+2026-03-06 22:23:37.504 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: b7e65c00-2fbe-41b4-9dc5-6c7cf3c21f71
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-03-06 22:23:37.512 [main] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-03-06 22:23:37.643 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api'
+2026-03-06 22:23:37.651 [main] INFO  c.zhilian.zhilianbackend.ZhilianBackendApplication - Started ZhilianBackendApplication in 2.612 seconds (process running for 3.426)
+2026-03-06 22:23:37.653 [SpringApplicationShutdownHook] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-03-06 22:23:37.938 [tomcat-shutdown] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
+2026-03-06 22:23:57.011 [main] INFO  c.zhilian.zhilianbackend.ZhilianBackendApplication - Starting ZhilianBackendApplication using Java 17.0.15 with PID 19516 (D:\Homework\zhilian-backend\target\classes started by 周冠杰 in D:\Homework\zhilian-backend)
+2026-03-06 22:23:57.012 [main] DEBUG c.zhilian.zhilianbackend.ZhilianBackendApplication - Running with Spring Boot v3.5.11, Spring v6.2.16
+2026-03-06 22:23:57.013 [main] INFO  c.zhilian.zhilianbackend.ZhilianBackendApplication - No active profile set, falling back to 1 default profile: "default"
+2026-03-06 22:23:57.630 [main] WARN  org.mybatis.spring.mapper.ClassPathMapperScanner - No MyBatis mapper was found in '[com.zhilian.zhilianbackend]' package. Please check your configuration.
+2026-03-06 22:23:57.955 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-03-06 22:23:57.971 [main] INFO  org.apache.catalina.core.StandardService - Starting service [Tomcat]
+2026-03-06 22:23:57.971 [main] INFO  org.apache.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.52]
+2026-03-06 22:23:58.077 [main] INFO  o.a.c.c.ContainerBase.[Tomcat].[localhost].[/api] - Initializing Spring embedded WebApplicationContext
+2026-03-06 22:23:58.077 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1031 ms
+2026-03-06 22:23:58.255 [main] INFO  o.s.v.beanvalidation.OptionalValidatorFactoryBean - Failed to set up a Bean Validation provider: jakarta.validation.NoProviderFoundException: Unable to create a Configuration, because no Jakarta Bean Validation provider could be found. Add a provider like Hibernate Validator (RI) to your classpath.
+2026-03-06 22:23:58.931 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 9293f5e3-0d62-4e12-a8df-7a55a4ce45ad
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-03-06 22:23:58.936 [main] INFO  o.s.s.c.a.a.c.InitializeUserDetailsBeanManagerConfigurer$InitializeUserDetailsManagerConfigurer - Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-03-06 22:23:59.067 [main] INFO  o.s.boot.web.embedded.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/api'
+2026-03-06 22:23:59.076 [main] INFO  c.zhilian.zhilianbackend.ZhilianBackendApplication - Started ZhilianBackendApplication in 2.467 seconds (process running for 3.043)
+2026-03-06 22:24:12.275 [SpringApplicationShutdownHook] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2026-03-06 22:24:12.818 [tomcat-shutdown] INFO  o.s.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete
