@@ -163,6 +163,7 @@ const handleRegister = async () => {
     // 跳转登录页
     router.push("/login");
   } catch (err) {
+    ElMessage.error("注册失败，请稍后重试");
     console.error("注册失败", err);
   } finally {
     registerLoading.value = false;

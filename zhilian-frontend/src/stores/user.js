@@ -32,11 +32,6 @@ export const useUserStore = defineStore("user", {
         this.setUserInfo(res);
         return res;
       } catch (error) {
-        // 如果请求失败（如 token 过期），清除登录状态
-        if (error.response && error.response.status === 401) {
-          this.clearToken();
-        }
-        // 可在这里抛出错误，让调用方处理
         throw error;
       }
     },

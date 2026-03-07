@@ -15,6 +15,7 @@ const routes = [
   {
     path: "/",
     component: () => import("@/layouts/BasicLayout.vue"),
+    meta: { requiresAuth: true },
     children: [],
   },
 ];
