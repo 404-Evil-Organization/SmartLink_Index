@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import request from "@/utils/request";
 
 export const useUserStore = defineStore("user", {
   state: () => ({
@@ -20,6 +21,24 @@ export const useUserStore = defineStore("user", {
     // 设置用户信息
     setUserInfo(info) {
       this.userInfo = info;
+    },
+    // 获取当前用户信息
+    async fetchUserInfo() {
+      // 如果没有 token，直接返回，不进行请求
+      if (!this.token) return;
+
+      try {
+        const res = await request.get("/auth/me");
+        this.setUserInfo(res);
+        return res;
+      } catch (error) {
+        // 如果请求失败（如 token 过期），清除登录状态
+        if (error.response && error.response.status === 401) {
+          this.clearToken();
+        }
+        // 可在这里抛出错误，让调用方处理
+        throw error;
+      }
     },
   },
 });

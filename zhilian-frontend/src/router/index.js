@@ -24,14 +24,34 @@ const router = createRouter({
   routes,
 });
 
-// 简单路由守卫：未登录且不是去登录/注册页，则跳转登录
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
   const token = userStore.token;
+
   if (to.path !== "/login" && to.path !== "/register" && !token) {
     next("/login");
+  }
+
+  if (token) {
+    // 如果已登录但用户信息为空（刷新页面导致），尝试获取
+    if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
+      try {
+        await userStore.fetchUserInfo();
+        next();
+      } catch {
+        // 获取失败（如 token 过期），跳转登录页
+        userStore.clearToken();
+        next("/login");
+      }
+    } else {
+      next();
+    }
   } else {
-    next();
+    if (to.meta.requiresAuth) {
+      next("/login");
+    } else {
+      next();
+    }
   }
 });
 
