@@ -23,7 +23,9 @@
 import { reactive } from "vue";
 import { ElMessage } from "element-plus";
 import { register } from "@/api/auth";
-import router from "@/router";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 const form = reactive({
   username: "",
@@ -55,7 +57,7 @@ const handleRegister = async () => {
     // 跳转登录页
     router.push("/login");
   } catch (err) {
-    console.error("注册失败", error);
+    console.error("注册失败", err);
   }
 };
 </script>
