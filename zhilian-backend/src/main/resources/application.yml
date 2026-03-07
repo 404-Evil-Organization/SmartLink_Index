@@ -99,9 +99,9 @@ oss:
   # 阿里云OSS端点（根据实际区域修改）
   endpoint: oss-cn-hangzhou.aliyuncs.com
   # AccessKey ID（必须从环境变量读取:OSS_ACCESS_KEY_ID)）
-  access-key-id: ${OSS ACCESS KEY_ID:}
+  access-key-id: ${OSS_ACCESS_KEY_ID:}
   # AccessKey Secret（必须从环境变量读取:OSS_ACCESS_KEY_SECRET）
-  access-key-secret: ${OSS ACCESS_KEY_SECRET:}
+  access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
   # 存储空间名称
   bucket-name: zhilian-bucket
   # 访问域名（可选）
