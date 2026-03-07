@@ -28,25 +28,27 @@ router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
   const token = userStore.token;
 
-  if (to.path !== "/login" && to.path !== "/register" && !token) {
-    return next("/login");
-  }
-
   if (token) {
-    // 如果已登录但用户信息为空（刷新页面导致），尝试获取
-    if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
-      try {
-        await userStore.fetchUserInfo();
-        next();
-      } catch {
-        // 获取失败（如 token 过期），跳转登录页
-        userStore.clearToken();
-        next("/login");
-      }
+    // 已登录用户访问登录页，重定向到首页
+    if (to.path === "/login") {
+      next("/");
     } else {
-      next();
+      // 如果已登录但用户信息为空（刷新页面导致），尝试获取
+      if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
+        try {
+          await userStore.fetchUserInfo();
+          next();
+        } catch {
+          // 获取失败（如 token 过期），跳转登录页
+          userStore.clearToken();
+          next("/login");
+        }
+      } else {
+        next();
+      }
     }
   } else {
+    // 未登录用户：需认证页面跳登录，否则放行
     if (to.meta.requiresAuth) {
       next("/login");
     } else {

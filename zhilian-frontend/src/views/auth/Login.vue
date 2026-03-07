@@ -50,9 +50,6 @@ const handleLogin = async () => {
     userStore.setToken(token);
     await userStore.fetchUserInfo();
 
-    console.log("token:", token);
-    console.log("userInfo:", userStore.userInfo);
-
     ElMessage.success("登录成功");
     router.push("/"); // 跳转到首页
   } catch (error) {
