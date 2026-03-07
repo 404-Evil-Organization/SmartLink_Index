@@ -62,8 +62,8 @@ mybatis-plus:
     map-underscore-to-camel-case: true
     # 查询结果为空时返回null，不返回空集合
     call-setters-on-nulls: true
-    # 打印SQL日志（开发环境开启）
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 打印SQL日志（默认通过日志框架输出，开发环境如需更详细可在 dev profile 中覆盖为 StdOutImpl）
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
     # 缓存配置
     cache-enabled: false
 
@@ -79,7 +79,7 @@ springdoc:
     operations-sorter: alpha
     display-request-duration: true
   # 包扫描路径
-  packages-to-scan: com.zhilian.controller
+  packages-to-scan: com.zhilian.zhilianbackend.controller
   # 需要处理的请求路径
   paths-to-match: /**
 
