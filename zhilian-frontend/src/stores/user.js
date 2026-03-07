@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import request from "@/utils/request";
+import { ElMessage } from "element-plus";
 
 export const useUserStore = defineStore("user", {
   state: () => ({
@@ -26,10 +27,13 @@ export const useUserStore = defineStore("user", {
     async fetchUserInfo() {
       // 如果没有 token，直接返回，不进行请求
       if (!this.token) return;
-
-      const res = await request.get("/auth/me");
-      this.setUserInfo(res);
-      return res;
+      try {
+        const res = await request.get("/auth/me");
+        this.setUserInfo(res);
+        return res;
+      } catch (error) {
+        throw error;
+      }
     },
   },
 });

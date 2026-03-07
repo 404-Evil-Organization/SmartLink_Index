@@ -40,9 +40,14 @@ router.beforeEach(async (to, from, next) => {
           await userStore.fetchUserInfo();
           next();
         } catch {
-          // 获取失败（如 token 过期），跳转登录页
-          userStore.clearToken();
-          next("/login");
+          // 根据错误状态码决定行为
+          if (error.response?.status === 401) {
+            next("/login");
+          } else {
+            // 非 401 错误（网络、500等）：仍可放行，但提示用户
+            ElMessage.error("部分用户信息加载失败，请刷新重试");
+            next();
+          }
         }
       } else {
         next();
