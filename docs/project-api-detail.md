@@ -49,9 +49,6 @@
   "message": "success",
   "data": {
     "token": "eyJhbGciOiJIUzI1NiIs...",
-    "userId": 1001,
-    "username": "tech_company",
-    "role": "manufacture"
   }
 }
 ```
