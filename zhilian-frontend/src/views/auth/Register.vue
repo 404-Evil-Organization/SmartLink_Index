@@ -20,43 +20,42 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
-import { ElMessage } from 'element-plus'
-import { register } from '@/api/auth'
-import router from '@/router'
+import { reactive } from "vue";
+import { ElMessage } from "element-plus";
+import { register } from "@/api/auth";
+import router from "@/router";
 
 const form = reactive({
-  username: '',
-  password: '',
-  confirmPassword: ''
-})
+  username: "",
+  password: "",
+  confirmPassword: "",
+});
 
 const handleRegister = async () => {
   try {
     // 表单校验
     if (!form.username || !form.password || !form.confirmPassword) {
-      ElMessage.warning('请填写完整信息')
-      return
+      ElMessage.warning("请填写完整信息");
+      return;
     }
 
     if (form.password !== form.confirmPassword) {
-      ElMessage.warning('两次输入的密码不一致')
-      return
+      ElMessage.warning("两次输入的密码不一致");
+      return;
     }
 
     // 调用注册接口
     await register({
       username: form.username,
-      password: form.password
-    })
+      password: form.password,
+    });
 
-    ElMessage.success('注册成功')
+    ElMessage.success("注册成功");
 
     // 跳转登录页
-    router.push('/login')
-
+    router.push("/login");
   } catch (err) {
-    ElMessage.error(err.response?.data?.message || '注册失败')
+    console.error("注册失败", error);
   }
-}
+};
 </script>

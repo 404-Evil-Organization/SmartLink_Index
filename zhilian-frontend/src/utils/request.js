@@ -9,10 +9,12 @@ const request = axios.create({
   timeout: 10000 // 请求超时时间
 })
 
+
 // 请求拦截器：在发送请求之前自动加上token
 request.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('token')
+    const userStore = useUserStore()
+    const token = userStore.token
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -35,12 +37,12 @@ request.interceptors.response.use(
     return res.data // 直接返回业务数据，使用时更方便
   },
   error => {
+    const userStore = useUserStore()
     // 处理HTTP错误状态码
     if (error.response) {
       switch (error.response.status) {
         case 401:
           // token过期或未认证，清除token并跳转到登录页
-          const userStore = useUserStore()
           userStore.clearToken()
           router.push('/login')
           ElMessage.error('登录已过期，请重新登录')
