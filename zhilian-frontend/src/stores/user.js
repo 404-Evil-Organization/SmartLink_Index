@@ -27,13 +27,9 @@ export const useUserStore = defineStore("user", {
       // 如果没有 token，直接返回，不进行请求
       if (!this.token) return;
 
-      try {
-        const res = await request.get("/auth/me");
-        this.setUserInfo(res);
-        return res;
-      } catch (error) {
-        throw error;
-      }
+      const res = await request.get("/auth/me");
+      this.setUserInfo(res);
+      return res;
     },
   },
 });
