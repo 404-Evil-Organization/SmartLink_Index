@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import request from "@/utils/request";
-import { ElMessage } from "element-plus";
 
 export const useUserStore = defineStore("user", {
   state: () => ({

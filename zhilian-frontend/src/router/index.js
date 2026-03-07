@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
+import { ElMessage } from "element-plus";
 
 const routes = [
   {
@@ -39,7 +40,7 @@ router.beforeEach(async (to, from, next) => {
         try {
           await userStore.fetchUserInfo();
           next();
-        } catch {
+        } catch (error) {
           // 根据错误状态码决定行为
           if (error.response?.status === 401) {
             next("/login");
