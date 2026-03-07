@@ -114,8 +114,8 @@ logging:
     root: info
     # 应用日志级别
     com.zhilian: debug
-    # MyBatis SQL日志
-    com.zhilian.mapper: debug
+    # MyBatis SQL日志（匹配当前项目实际 mapper 包名）
+    com.zhilian.zhilianbackend.mapper: debug
     # Spring Security日志
     org.springframework.security: info
     # 数据库连接池日志
