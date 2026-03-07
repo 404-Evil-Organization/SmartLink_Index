@@ -8,7 +8,7 @@ export default defineConfig({
     vue(),
     viteMockServe({
       mockPath: "mock",
-      localEnabled: process.env.VITE_USE_MOCK === "true", // 开发环境启用
+      localEnabled: process.env.VITE_MOCK_ENABLED, // 开发环境启用
     }),
   ],
   server: {
