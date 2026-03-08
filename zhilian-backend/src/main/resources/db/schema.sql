@@ -108,26 +108,22 @@ CREATE TABLE `tag` (
 CREATE TABLE `demand_tag` (
     `demand_id` BIGINT COMMENT '关联demand.id',
     `tag_id` BIGINT COMMENT '关联tag.id',
-    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     PRIMARY KEY (`demand_id`, `tag_id`),
     FOREIGN KEY (`demand_id`) REFERENCES `demand`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE,
-    INDEX idx_deleted (`deleted`)
+    FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='需求标签关系表';
 
 -- 7. 服务商能力标签表
 CREATE TABLE `service_tag` (
     `service_id` BIGINT COMMENT '关联service_provider.id',
     `tag_id` BIGINT COMMENT '关联tag.id',
-    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     PRIMARY KEY (`service_id`, `tag_id`),
     FOREIGN KEY (`service_id`) REFERENCES `service_provider`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE,
-    INDEX idx_deleted (`deleted`)
+    FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务商能力标签表';
 
 -- 8. 合作记录表
@@ -197,12 +193,13 @@ CREATE TABLE `diagnosis` (
     CHECK (`total_score` BETWEEN 0 AND 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='诊断记录表';
 
--- 11. 区域指数表
+-- 11. 区域指数表（区分统计周期）
 CREATE TABLE `region_index` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录唯一标识',
     `region` VARCHAR(50) NOT NULL COMMENT '区域名称（深圳/东莞/惠州/广州等）',
     `year` SMALLINT NOT NULL COMMENT '年份',
-    `quarter` TINYINT NOT NULL COMMENT '季度（1-4）或月份（1-12），根据统计粒度',
+    `period_type` ENUM('quarter', 'month') NOT NULL COMMENT '统计周期类型：quarter季度、month月度',
+    `period_value` TINYINT NOT NULL COMMENT '周期值：季度1-4，月份1-12',
     `coop_density` DECIMAL(5,4) COMMENT '合作密度（合作次数/企业总数）',
     `service_rate` DECIMAL(5,4) COMMENT '服务渗透率（使用服务企业数/制造企业总数）',
     `cross_rate` DECIMAL(5,4) COMMENT '跨域协同度（跨区域合作次数/总合作次数）',
@@ -212,9 +209,13 @@ CREATE TABLE `region_index` (
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     INDEX idx_region (`region`),
-    INDEX idx_year_quarter (`year`, `quarter`),
-    UNIQUE INDEX uk_region_year_quarter (`region`, `year`, `quarter`),
-    INDEX idx_deleted (`deleted`)
+    INDEX idx_period (`year`, `period_type`, `period_value`),
+    UNIQUE INDEX uk_region_year_period (`region`, `year`, `period_type`, `period_value`),
+    INDEX idx_deleted (`deleted`),
+    CHECK (
+        (`period_type` = 'quarter' AND `period_value` BETWEEN 1 AND 4) OR
+        (`period_type` = 'month' AND `period_value` BETWEEN 1 AND 12)
+    )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='区域指数表';
 
 -- 12. 资质证书表
