@@ -162,7 +162,7 @@ CREATE TABLE `evaluation` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '评价唯一标识',
     `coop_id` BIGINT NOT NULL COMMENT '关联cooperation.id，一次合作可多条评价（按角色区分）',
     `evaluator_id` BIGINT NOT NULL COMMENT '评价人 user.id',
-    `evaluator_role` ENUM('MANUFACTURE','SERVICE_PROVIDER') NOT NULL COMMENT '评价人角色（制造企业/服务商）',
+    `evaluator_role` ENUM('manufacture','service') NOT NULL COMMENT '评价人角色（制造企业/服务商）',
     `score` TINYINT NOT NULL COMMENT '评分（1-5星）',
     `content` VARCHAR(500) COMMENT '评价内容',
     `is_anonymous` TINYINT DEFAULT 0 COMMENT '是否匿名（0否 1是）',
