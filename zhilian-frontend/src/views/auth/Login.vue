@@ -23,21 +23,21 @@
         @keyup.enter="handleLogin"
       >
         <el-form-item label="用户名" prop="username">
-          <!-- 优化：添加 prefix-icon 图标，提升可识别性 -->
+          <!-- 优化：添加 prefix-icon 图标，提升可识别性；改为 :prefix-icon 绑定图标组件（原字符串形式需全局注册，现按需引入） -->
           <el-input
             v-model="form.username"
             placeholder="请输入用户名"
-            prefix-icon="User"
+            :prefix-icon="User"
           />
         </el-form-item>
 
         <el-form-item label="密码" prop="password">
-          <!-- 优化：添加 show-password 密码可见切换，提升用户体验 -->
+          <!-- 优化：添加 show-password 密码可见切换，提升用户体验；图标绑定同上 -->
           <el-input
             v-model="form.password"
             type="password"
             placeholder="请输入密码"
-            prefix-icon="Lock"
+            :prefix-icon="Lock"
             show-password
           />
         </el-form-item>
@@ -45,7 +45,8 @@
         <!-- 新增“记住密码”和“忘记密码”选项，功能预留，界面更完整 -->
         <div class="login-options">
           <el-checkbox v-model="remember">记住密码</el-checkbox>
-          <el-link type="primary" :underline="false">忘记密码？</el-link>
+          <!-- 优化：为“忘记密码”添加点击事件，避免无反馈链接（功能暂未实现，预留提示） -->
+          <el-link type="primary" :underline="false" @click="handleForgotPassword">忘记密码？</el-link>
         </div>
 
         <el-form-item>
@@ -78,12 +79,12 @@ import { ElMessage } from "element-plus";
 import { login } from "@/api/auth";
 import { useUserStore } from "@/stores/user";
 // 新增：显式引入图标，保证按需加载
-import { Connection } from "@element-plus/icons-vue";
+import { Connection, User, Lock } from "@element-plus/icons-vue";
 
 const router = useRouter();
 const userStore = useUserStore();
 const formRef = ref(null);
-//创建loading状态放置用户重复请求登录
+// 创建loading状态防止用户重复请求登录（原始注释保留）
 const loginLoading = ref(false);
 // 新增：记住密码状态（功能暂未实现，UI预留）
 const remember = ref(false);
@@ -96,6 +97,11 @@ const form = reactive({
 const rules = {
   username: [{ required: true, message: "请输入用户名", trigger: "blur" }],
   password: [{ required: true, message: "请输入密码", trigger: "blur" }],
+};
+
+// 新增：忘记密码点击处理（功能预留）
+const handleForgotPassword = () => {
+  ElMessage.info('忘记密码功能开发中，敬请期待');
 };
 
 const handleLogin = async () => {
@@ -116,7 +122,8 @@ const handleLogin = async () => {
     await userStore.fetchUserInfo();
 
     ElMessage.success("登录成功");
-    router.push("/"); // 跳转到首页
+    // 跳转到首页（原始注释保留）
+    router.push("/");
   } catch (error) {
     console.error("登录失败", error);
   } finally {

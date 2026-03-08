@@ -16,17 +16,17 @@
       <!-- 优化：使用 el-row/el-col 两列布局，节省垂直空间 -->
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="12" :xs="24" :sm="12">  <!-- 优化：添加响应式断点，小屏占满整行 -->
             <el-form-item label="用户名" prop="username">
-              <!-- 优化：添加 prefix-icon 图标 -->
+              <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定图标组件 -->
               <el-input
                 v-model="form.username"
                 placeholder="请输入用户名"
-                prefix-icon="User"
+                :prefix-icon="User"
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="12" :xs="24" :sm="12">
             <el-form-item label="角色" prop="role">
               <el-select
                 v-model="form.role"
@@ -45,24 +45,24 @@
         </el-row>
 
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="12" :xs="24" :sm="12">
             <el-form-item label="密码" prop="password">
               <el-input
                 v-model="form.password"
                 type="password"
                 placeholder="请输入密码"
-                prefix-icon="Lock"
+                :prefix-icon="Lock"
                 show-password
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="12" :xs="24" :sm="12">
             <el-form-item label="确认密码" prop="confirmPassword">
               <el-input
                 v-model="form.confirmPassword"
                 type="password"
                 placeholder="请再次输入密码"
-                prefix-icon="Lock"
+                :prefix-icon="Lock"
                 show-password
               />
             </el-form-item>
@@ -70,21 +70,22 @@
         </el-row>
 
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="12" :xs="24" :sm="12">
             <el-form-item label="联系电话" prop="phone">
+              <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定组件 -->
               <el-input
                 v-model="form.phone"
                 placeholder="请输入手机号"
-                prefix-icon="Phone"
+                :prefix-icon="Phone"
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="12" :xs="24" :sm="12">
             <el-form-item label="电子邮箱" prop="email">
               <el-input
                 v-model="form.email"
                 placeholder="请输入邮箱"
-                prefix-icon="Message"
+                :prefix-icon="Message"
               />
             </el-form-item>
           </el-col>
@@ -119,7 +120,7 @@ import { ElMessage } from "element-plus";
 import { register } from "@/api/auth";
 import { useRouter } from "vue-router";
 // 新增：引入图标，与登录页统一
-import { Connection } from "@element-plus/icons-vue";
+import { Connection, User, Lock, Phone, Message } from "@element-plus/icons-vue";
 
 const router = useRouter();
 const registerLoading = ref(false);
