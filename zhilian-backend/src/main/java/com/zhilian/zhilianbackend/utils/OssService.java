@@ -18,6 +18,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -29,6 +32,9 @@ import java.util.UUID;
  * 2. 增强异常处理，统一包装为业务异常
  * 3. 优化URL解析，使用URI进行可靠的文件路径提取
  * 4. 添加配置完整性校验
+ * 5. 添加文件类型白名单校验
+ * 6. 增强URL解析的安全校验，防止越权操作
+ * 7. 添加文件前缀目录限制
  */
 @Slf4j
 @Component
@@ -50,6 +56,18 @@ public class OssService {
     @Value("${oss.domain:}")
     private String domain;
 
+    @Value("${app.upload.allow-types:image/jpeg,image/png,image/gif,image/webp,application/pdf}")
+    private String[] allowTypes;
+
+    @Value("${app.upload.allow-extensions:.jpg,.jpeg,.png,.gif,.webp,.pdf}")
+    private String[] allowExtensions;
+
+    @Value("${app.upload.max-size:10485760}") // 默认10MB
+    private long maxSize;
+
+    @Value("${app.upload.allowed-prefix:uploads}") // 允许的文件前缀目录
+    private String allowedPrefix;
+
     private OSS ossClient;
 
     // 标志位，表示是否使用真实OSS
@@ -58,8 +76,17 @@ public class OssService {
     // 配置完整性标志
     private boolean configComplete = false;
 
+    // 允许的文件类型集合
+    private Set<String> allowedMimeTypes;
+
+    // 允许的文件扩展名集合
+    private Set<String> allowedFileExtensions;
+
     @PostConstruct
     public void init() {
+        // 初始化允许的文件类型
+        initializeAllowedTypes();
+
         // 检查所有必要配置是否完整
         configComplete = checkConfiguration();
 
@@ -98,6 +125,24 @@ public class OssService {
     }
 
     /**
+     * 初始化允许的文件类型和扩展名
+     */
+    private void initializeAllowedTypes() {
+        allowedMimeTypes = new HashSet<>();
+        if (allowTypes != null) {
+            allowedMimeTypes.addAll(Arrays.asList(allowTypes));
+        }
+
+        allowedFileExtensions = new HashSet<>();
+        if (allowExtensions != null) {
+            allowedFileExtensions.addAll(Arrays.asList(allowExtensions));
+        }
+
+        log.info("文件类型白名单初始化完成，允许的MIME类型：{}，允许的扩展名：{}",
+                allowedMimeTypes, allowedFileExtensions);
+    }
+
+    /**
      * 检查配置完整性
      */
     private boolean checkConfiguration() {
@@ -126,15 +171,54 @@ public class OssService {
      * 上传文件 - 自动选择真实OSS或Stub模式
      */
     public String uploadFile(MultipartFile file, String directory) {
+        // 1. 基础校验
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("上传文件不能为空");
         }
 
+        // 2. 文件大小校验
+        if (file.getSize() > maxSize) {
+            throw new IllegalArgumentException(String.format(
+                    "文件大小超过限制：最大允许 %d 字节，当前文件 %d 字节", maxSize, file.getSize()));
+        }
+
+        // 3. 文件类型白名单校验
+        validateFileType(file);
+
+        // 4. 执行上传
         if (useRealOss) {
             return realUploadFile(file, directory);
         } else {
             return stubUploadFile(file, directory);
         }
+    }
+
+    /**
+     * 文件类型白名单校验
+     */
+    private void validateFileType(MultipartFile file) {
+        String contentType = file.getContentType();
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = getFileExtension(originalFilename).toLowerCase();
+
+        // MIME类型校验
+        if (contentType != null && !allowedMimeTypes.isEmpty()) {
+            if (!allowedMimeTypes.contains(contentType)) {
+                log.warn("文件类型不被允许：MIME类型={}，文件名={}", contentType, originalFilename);
+                throw new IllegalArgumentException("不支持的文件类型：" + contentType);
+            }
+        }
+
+        // 文件扩展名校验
+        if (!fileExtension.isEmpty() && !allowedFileExtensions.isEmpty()) {
+            if (!allowedFileExtensions.contains(fileExtension)) {
+                log.warn("文件扩展名不被允许：扩展名={}，文件名={}", fileExtension, originalFilename);
+                throw new IllegalArgumentException("不支持的文件扩展名：" + fileExtension);
+            }
+        }
+
+        // TODO: 可选：添加文件头魔数校验，提高安全性
+        // 对于关键文件类型，可以进一步验证文件头魔数
     }
 
     /**
@@ -182,10 +266,17 @@ public class OssService {
      */
     private String buildFileUrl(String fileName) {
         if (hasText(domain)) {
-            return domain + "/" + fileName;
+            // 确保domain不以斜杠结尾
+            String cleanDomain = domain.endsWith("/") ?
+                    domain.substring(0, domain.length() - 1) : domain;
+            return cleanDomain + "/" + fileName;
         } else {
             // 如果没有配置domain，使用endpoint构建
-            return "https://" + bucketName + "." + endpoint + "/" + fileName;
+            String cleanEndpoint = endpoint.startsWith("http") ? endpoint : "https://" + endpoint;
+            if (cleanEndpoint.endsWith("/")) {
+                cleanEndpoint = cleanEndpoint.substring(0, cleanEndpoint.length() - 1);
+            }
+            return "https://" + bucketName + "." + cleanEndpoint.replace("https://", "") + "/" + fileName;
         }
     }
 
@@ -205,27 +296,28 @@ public class OssService {
     }
 
     /**
-     * 删除文件
+     * 删除文件 - 接收内部objectKey（推荐方式）
      */
-    public boolean deleteFile(String fileUrl) {
-        if (!hasText(fileUrl)) {
-            log.warn("删除文件失败：文件URL为空");
+    public boolean deleteFileByKey(String objectKey) {
+        if (!hasText(objectKey)) {
+            log.warn("删除文件失败：objectKey为空");
+            return false;
+        }
+
+        // 校验objectKey是否在允许的前缀目录下
+        if (!isAllowedObjectKey(objectKey)) {
+            log.warn("删除文件失败：objectKey不在允许的目录下 - {}", objectKey);
             return false;
         }
 
         if (!useRealOss) {
-            return stubDeleteFile(fileUrl);
+            log.info("[STUB] 模拟文件删除 - objectKey：{}", objectKey);
+            return true;
         }
 
         try {
-            String filePath = extractFilePathFromUrl(fileUrl);
-            if (filePath == null) {
-                log.warn("删除文件失败：无法从URL提取文件路径 - {}", fileUrl);
-                return false;
-            }
-
-            ossClient.deleteObject(bucketName, filePath);
-            log.info("文件删除成功：{}", filePath);
+            ossClient.deleteObject(bucketName, objectKey);
+            log.info("文件删除成功：{}", objectKey);
             return true;
 
         } catch (OSSException | ClientException e) {
@@ -238,18 +330,40 @@ public class OssService {
     }
 
     /**
-     * Stub模式删除
+     * 删除文件 - 通过URL（带安全校验）
      */
-    public boolean stubDeleteFile(String fileUrl) {
-        log.info("[STUB] 模拟文件删除 - URL：{}", fileUrl);
-        return true;
+    public boolean deleteFile(String fileUrl) {
+        if (!hasText(fileUrl)) {
+            log.warn("删除文件失败：文件URL为空");
+            return false;
+        }
+
+        try {
+            String objectKey = extractAndValidateObjectKey(fileUrl);
+            if (objectKey == null) {
+                log.warn("删除文件失败：无法从URL提取或校验失败 - {}", fileUrl);
+                return false;
+            }
+
+            return deleteFileByKey(objectKey);
+
+        } catch (Exception e) {
+            log.error("删除文件失败 - 处理URL时发生异常：{}", e.getMessage(), e);
+            return false;
+        }
     }
 
     /**
-     * 检查文件是否存在
+     * 检查文件是否存在 - 通过内部objectKey
      */
-    public boolean doesFileExist(String fileUrl) {
-        if (!hasText(fileUrl)) {
+    public boolean doesFileExistByKey(String objectKey) {
+        if (!hasText(objectKey)) {
+            return false;
+        }
+
+        // 校验objectKey是否在允许的前缀目录下
+        if (!isAllowedObjectKey(objectKey)) {
+            log.debug("objectKey不在允许的目录下：{}", objectKey);
             return false;
         }
 
@@ -258,12 +372,7 @@ public class OssService {
         }
 
         try {
-            String filePath = extractFilePathFromUrl(fileUrl);
-            if (filePath == null) {
-                return false;
-            }
-
-            return ossClient.doesObjectExist(bucketName, filePath);
+            return ossClient.doesObjectExist(bucketName, objectKey);
 
         } catch (OSSException | ClientException e) {
             log.error("检查文件是否存在失败 - OSS异常：{}", e.getMessage(), e);
@@ -272,6 +381,157 @@ public class OssService {
             log.error("检查文件是否存在失败 - 未知异常：{}", e.getMessage(), e);
             return false;
         }
+    }
+
+    /**
+     * 检查文件是否存在 - 通过URL
+     */
+    public boolean doesFileExist(String fileUrl) {
+        if (!hasText(fileUrl)) {
+            return false;
+        }
+
+        try {
+            String objectKey = extractAndValidateObjectKey(fileUrl);
+            if (objectKey == null) {
+                return false;
+            }
+
+            return doesFileExistByKey(objectKey);
+
+        } catch (Exception e) {
+            log.error("检查文件是否存在失败 - 处理URL时发生异常：{}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 从URL提取并校验objectKey
+     * @return 校验通过的objectKey，校验失败返回null
+     */
+    private String extractAndValidateObjectKey(String fileUrl) {
+        try {
+            URI uri = new URI(fileUrl);
+            String path = uri.getPath();
+
+            if (path == null || path.isEmpty()) {
+                log.warn("URL路径为空：{}", fileUrl);
+                return null;
+            }
+
+            // 移除开头的斜杠
+            if (path.startsWith("/")) {
+                path = path.substring(1);
+            }
+
+            // 校验域名是否匹配
+            if (!validateUrlHost(uri)) {
+                return null;
+            }
+
+            // 校验objectKey是否在允许的目录下
+            if (!isAllowedObjectKey(path)) {
+                log.warn("objectKey不在允许的目录下：{}", path);
+                return null;
+            }
+
+            return path;
+
+        } catch (URISyntaxException e) {
+            log.error("URL格式错误：{} - {}", fileUrl, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 校验URL的host是否合法
+     */
+    private boolean validateUrlHost(URI uri) {
+        String actualHost = uri.getHost();
+        if (actualHost == null) {
+            log.warn("URL缺少有效host");
+            return false;
+        }
+
+        // 如果配置了自定义domain
+        if (hasText(domain)) {
+            try {
+                URI domainUri = new URI(domain);
+                String expectedHost = domainUri.getHost();
+                if (expectedHost != null && !expectedHost.equals(actualHost)) {
+                    log.warn("URL域名不匹配：期望 {}，实际 {}，URL：{}", expectedHost, actualHost, uri);
+                    return false;
+                }
+            } catch (URISyntaxException e) {
+                log.warn("domain配置格式错误：{}", domain);
+                return false;
+            }
+        }
+        // 如果没有自定义domain，校验是否为合法的OSS域名
+        else if (hasText(bucketName) && hasText(endpoint)) {
+            String endpointHost = extractHostFromEndpoint();
+            if (endpointHost != null) {
+                String expectedHost = bucketName + "." + endpointHost;
+                if (!expectedHost.equals(actualHost)) {
+                    log.warn("URL域名不匹配：期望 {}，实际 {}，URL：{}", expectedHost, actualHost, uri);
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 从endpoint配置中提取host
+     */
+    private String extractHostFromEndpoint() {
+        if (!hasText(endpoint)) {
+            return null;
+        }
+
+        try {
+            if (endpoint.startsWith("http")) {
+                URI endpointUri = new URI(endpoint);
+                return endpointUri.getHost();
+            } else {
+                return endpoint;
+            }
+        } catch (URISyntaxException e) {
+            return endpoint;
+        }
+    }
+
+    /**
+     * 校验objectKey是否在允许的目录下
+     */
+    private boolean isAllowedObjectKey(String objectKey) {
+        if (!hasText(objectKey)) {
+            return false;
+        }
+
+        // 如果配置了允许的前缀，检查objectKey是否以该前缀开头
+        if (hasText(allowedPrefix)) {
+            // 规范化前缀，确保不以斜杠开头
+            String normalizedPrefix = allowedPrefix;
+            if (normalizedPrefix.startsWith("/")) {
+                normalizedPrefix = normalizedPrefix.substring(1);
+            }
+
+            // 检查是否以允许的前缀开头
+            if (!objectKey.startsWith(normalizedPrefix + "/") && !objectKey.equals(normalizedPrefix)) {
+                log.debug("objectKey不在允许的目录下：{} (允许的前缀：{})", objectKey, normalizedPrefix);
+                return false;
+            }
+        }
+
+        // 防止路径穿越攻击
+        if (objectKey.contains("../") || objectKey.contains("..\\")) {
+            log.warn("objectKey包含路径穿越字符：{}", objectKey);
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -338,55 +598,6 @@ public class OssService {
             return "";
         }
         return filename.substring(filename.lastIndexOf("."));
-    }
-
-    /**
-     * 从URL中提取文件路径
-     * 使用URI解析，更可靠安全
-     */
-    private String extractFilePathFromUrl(String fileUrl) {
-        if (!hasText(fileUrl)) {
-            return null;
-        }
-
-        try {
-            URI uri = new URI(fileUrl);
-            String path = uri.getPath();
-
-            if (path == null || path.isEmpty()) {
-                log.warn("URL路径为空：{}", fileUrl);
-                return null;
-            }
-
-            // 移除开头的斜杠
-            if (path.startsWith("/")) {
-                path = path.substring(1);
-            }
-
-            // 验证域名是否匹配（如果配置了domain）
-            if (hasText(domain)) {
-                URI domainUri = new URI(domain);
-                String expectedHost = domainUri.getHost();
-                String actualHost = uri.getHost();
-
-                if (expectedHost != null && !expectedHost.equals(actualHost)) {
-                    log.warn("URL域名不匹配：期望 {}，实际 {}，URL：{}", expectedHost, actualHost, fileUrl);
-                    return null;
-                }
-            }
-
-            // 验证bucket名称（可选，根据实际需求）
-            if (hasText(bucketName) && !path.startsWith(bucketName + "/")) {
-                // 有些URL结构可能不包含bucket名称，这里可以根据实际需求调整
-                log.debug("路径可能不包含bucket名称：{}", path);
-            }
-
-            return path;
-
-        } catch (URISyntaxException e) {
-            log.error("URL格式错误：{} - {}", fileUrl, e.getMessage());
-            return null;
-        }
     }
 
     /**

@@ -16,17 +16,20 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
  * JWT工具类
  * 用于生成和解析JWT令牌
- *
+
  * 优化点：
- * 1. 启动时校验密钥长度，实现fail-fast
+ * 1. 启动时校验密钥长度和过期时间配置，实现fail-fast
  * 2. 增强空值校验，避免NPE
- * 3. 优化token验证逻辑，更健壮
+ * 3. 优化token验证逻辑，更健壮地处理非法token
  * 4. 统一异常处理，提供清晰错误信息
+ * 5. 使用Objects.equals避免NPE
+ * 6. 添加过期时间上限校验（默认1年）
  */
 @Component
 public class JwtUtil implements InitializingBean {
@@ -35,6 +38,9 @@ public class JwtUtil implements InitializingBean {
 
     // HS256要求密钥至少32字节（256位）
     private static final int MIN_SECRET_LENGTH = 32;
+
+    // 默认最大过期时间：365天（毫秒）
+    private static final long MAX_EXPIRATION_MS = 365L * 24 * 60 * 60 * 1000;
 
     @Value("${jwt.secret}")
     private String secret;
@@ -49,14 +55,15 @@ public class JwtUtil implements InitializingBean {
 
     /**
      * 初始化方法，在依赖注入完成后自动执行
-     * 校验密钥配置，实现fail-fast
+     * 校验密钥和过期时间配置，实现fail-fast
      */
     @Override
     public void afterPropertiesSet() {
         validateSecret();
+        validateExpiration();
         this.signingKey = generateSigningKey();
-        logger.info("JwtUtil initialized successfully with key length: {} bytes",
-                secret.getBytes(StandardCharsets.UTF_8).length);
+        logger.info("JwtUtil initialized successfully with key length: {} bytes, expiration: {} ms",
+                secret.getBytes(StandardCharsets.UTF_8).length, expiration);
     }
 
     /**
@@ -75,6 +82,28 @@ public class JwtUtil implements InitializingBean {
                     String.format("JWT secret length is insufficient. Current: %d bytes, Minimum required: %d bytes (HS256). " +
                             "Please use a longer secret key for security.", keyBytes.length, MIN_SECRET_LENGTH)
             );
+        }
+    }
+
+    /**
+     * 校验过期时间配置
+     */
+    private void validateExpiration() {
+        if (expiration == null) {
+            throw new IllegalStateException(
+                    "JWT expiration cannot be null. Please configure 'jwt.expiration' in application properties."
+            );
+        }
+
+        if (expiration <= 0) {
+            throw new IllegalStateException(
+                    String.format("JWT expiration must be positive. Current value: %d ms", expiration)
+            );
+        }
+
+        if (expiration > MAX_EXPIRATION_MS) {
+            logger.warn("JWT expiration is unusually large: {} ms (max recommended: {} ms). " +
+                    "This might be a configuration error.", expiration, MAX_EXPIRATION_MS);
         }
     }
 
@@ -163,7 +192,12 @@ public class JwtUtil implements InitializingBean {
      */
     private Boolean isTokenExpired(String token) {
         Date expiration = getExpirationDateFromToken(token);
-        return expiration != null && expiration.before(new Date());
+        // 安全要求：当无法解析到 exp claim 时，将 token 视为过期/无效，避免“永不过期 token”风险
+        if (expiration == null) {
+            logger.debug("JWT token missing expiration (exp) claim, treating as expired/invalid");
+            return true;
+        }
+        return expiration.before(new Date());
     }
 
     /**
@@ -207,7 +241,7 @@ public class JwtUtil implements InitializingBean {
 
     /**
      * 验证token是否有效
-     * 优化：内部捕获异常，返回明确的boolean结果
+     * 优化：内部捕获异常，使用Objects.equals避免NPE，返回明确的boolean结果
      */
     public Boolean validateToken(String token, String username) {
         // 参数校验
@@ -224,7 +258,7 @@ public class JwtUtil implements InitializingBean {
             }
 
             boolean isNotExpired = !isTokenExpired(token);
-            boolean usernameMatches = tokenUsername.equals(username);
+            boolean usernameMatches = Objects.equals(tokenUsername, username);
 
             return usernameMatches && isNotExpired;
         } catch (Exception e) {
@@ -235,6 +269,7 @@ public class JwtUtil implements InitializingBean {
 
     /**
      * 验证token是否有效（无需用户名）
+     * 优化：直接从claims解析，避免isTokenExpired内部的重复解析
      */
     public Boolean validateToken(String token) {
         if (!StringUtils.hasText(token)) {
@@ -242,7 +277,20 @@ public class JwtUtil implements InitializingBean {
         }
 
         try {
-            return !isTokenExpired(token);
+            // 直接解析claims，避免多次解析
+            Claims claims = getAllClaimsFromToken(token);
+            if (claims == null) {
+                logger.debug("Failed to parse claims from token");
+                return false;
+            }
+
+            Date expiration = claims.getExpiration();
+            if (expiration == null) {
+                logger.debug("Token missing expiration claim");
+                return false;
+            }
+
+            return !expiration.before(new Date());
         } catch (Exception e) {
             logger.debug("Token validation failed: {}", e.getMessage());
             return false;
