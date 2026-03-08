@@ -159,6 +159,7 @@ CREATE TABLE `evaluation` (
     `score` TINYINT NOT NULL COMMENT '评分（1-5星）',
     `content` VARCHAR(500) COMMENT '评价内容',
     `is_anonymous` TINYINT DEFAULT 0 COMMENT '是否匿名（0否 1是）',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '评价时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`coop_id`) REFERENCES `cooperation`(`id`) ON DELETE CASCADE,
