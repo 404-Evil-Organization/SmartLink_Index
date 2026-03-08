@@ -120,15 +120,15 @@ CREATE TABLE `demand_tag` (
 -- 7. 服务商能力标签表
 CREATE TABLE `service_tag` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    `service_id` BIGINT COMMENT '关联service_provider.id',
-    `tag_id` BIGINT COMMENT '关联tag.id',
+    `service_id` BIGINT NOT NULL COMMENT '关联service_provider.id',
+    `tag_id` BIGINT NOT NULL COMMENT '关联tag.id',
     `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`service_id`) REFERENCES `service_provider`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE,
     INDEX idx_deleted (`deleted`),
-    UNIQUE INDEX uk_service_tag_std (`service_id`, `tag_id`, `deleted`)
+    UNIQUE INDEX uk_service_tag_std (`service_id`, `tag_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务商能力标签表';
 
 -- 8. 合作记录表
