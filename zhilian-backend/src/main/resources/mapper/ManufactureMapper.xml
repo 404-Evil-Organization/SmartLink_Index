@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhilian.zhilianbackend.mapper.ManufactureMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.zhilian.zhilianbackend.entity.Manufacture">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="company_name" property="companyName" />
+        <result column="region" property="region" />
+        <result column="address" property="address" />
+        <result column="contact_person" property="contactPerson" />
+        <result column="contact_phone" property="contactPhone" />
+        <result column="scale" property="scale" />
+        <result column="employee_count" property="employeeCount" />
+        <result column="annual_revenue" property="annualRevenue" />
+        <result column="product_type" property="productType" />
+        <result column="description" property="description" />
+        <result column="logo" property="logo" />
+        <result column="established_date" property="establishedDate" />
+        <result column="deleted" property="deleted" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, user_id, company_name, region, address, contact_person, contact_phone, scale, employee_count, annual_revenue, product_type, description, logo, established_date, deleted, create_time, update_time
+    </sql>
+
+</mapper>
