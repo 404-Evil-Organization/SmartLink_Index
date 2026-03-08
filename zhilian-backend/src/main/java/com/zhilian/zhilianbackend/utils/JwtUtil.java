@@ -3,8 +3,6 @@ package com.zhilian.zhilianbackend.utils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.SignatureAlgorithm;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +17,6 @@ import java.util.function.Function;
  * JWT工具类
  * 用于生成和解析JWT令牌
  */
-@Slf4j
 @Component
 public class JwtUtil {
 

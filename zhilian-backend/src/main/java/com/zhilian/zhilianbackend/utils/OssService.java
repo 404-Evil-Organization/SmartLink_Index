@@ -57,7 +57,7 @@ public class OssService {
             useRealOss = true;
             log.info("OSS客户端初始化成功，Bucket：{}，Endpoint：{}", bucketName, endpoint);
         } catch (Exception e) {
-            log.error("OSS客户端初始化失败，将使用Stub模式：{}", e.getMessage());
+            log.error("OSS客户端初始化失败，将使用Stub模式", e);
             useRealOss = false;
         }
     }
@@ -85,7 +85,8 @@ public class OssService {
      * 真实OSS上传
      */
     private String realUploadFile(MultipartFile file, String directory) {
-        try {
+        // 使用try-with-resources确保InputStream自动关闭
+        try (InputStream inputStream = file.getInputStream()) {
             String originalFilename = file.getOriginalFilename();
             String fileExtension = getFileExtension(originalFilename);
             String fileName = generateFileName(directory, fileExtension);
@@ -93,13 +94,13 @@ public class OssService {
             PutObjectRequest putObjectRequest = new PutObjectRequest(
                     bucketName,
                     fileName,
-                    file.getInputStream()
+                    inputStream
             );
 
-            PutObjectResult result = ossClient.putObject(putObjectRequest);
+            // 执行上传（不接收未使用的返回值）
+            ossClient.putObject(putObjectRequest);
 
             log.info("文件上传成功 - 原始文件名：{}，OSS文件名：{}", originalFilename, fileName);
-
             return domain + "/" + fileName;
 
         } catch (IOException e) {

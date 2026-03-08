@@ -98,9 +98,9 @@ jwt:
 oss:
   # 阿里云OSS端点（广州区域）
   endpoint: oss-cn-guangzhou.aliyuncs.com
-  # 直接填入真实的AccessKey（测试用）
-  access-key-id: ${ALIYUN_ACCESS_KEY_ID}
-  access-key-secret: ${ALIYUN_ACCESS_KEY_SECRET}
+  # AccessKey 从环境变量读取，未配置时默认为空字符串，由 OssService 内部决定是否启用真实 OSS 或降级为 Stub
+  access-key-id: ${ALIYUN_ACCESS_KEY_ID:}
+  access-key-secret: ${ALIYUN_ACCESS_KEY_SECRET:}
   # 存储空间名称
   bucket-name: smartlink-index
   # 访问域名
