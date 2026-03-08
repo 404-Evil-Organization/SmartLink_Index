@@ -79,7 +79,7 @@ CREATE TABLE `demand` (
     `description` TEXT COMMENT '详细描述',
     `expected_budget` DECIMAL(12,2) COMMENT '预算金额（万元）',
     `deadline` DATE COMMENT '期望完成日期',
-    `status` ENUM('draft','published','matched','closed') DEFAULT 'published' COMMENT '状态：草稿、已发布、已匹配、已关闭',
+    `status` ENUM('draft','published','matched','closed') DEFAULT 'draft' COMMENT '状态：草稿、已发布、已匹配、已关闭',
     `views` INT DEFAULT 0 COMMENT '浏览次数',
     `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
