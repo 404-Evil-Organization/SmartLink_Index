@@ -26,7 +26,7 @@ CREATE TABLE `user` (
 -- 2. 制造企业表
 CREATE TABLE `manufacture` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '企业唯一标识',
-    `user_id` BIGINT UNIQUE COMMENT '关联user.id',
+    `user_id` BIGINT NOT NULL COMMENT '关联user.id，不可为空，确保企业有归属',
     `company_name` VARCHAR(100) NOT NULL COMMENT '企业全称',
     `region` VARCHAR(50) COMMENT '所在区域（深圳/东莞/惠州/广州等）',
     `address` VARCHAR(200) COMMENT '详细地址',
@@ -42,7 +42,8 @@ CREATE TABLE `manufacture` (
     `deleted` DATETIME DEFAULT NULL COMMENT '逻辑删除标记，NULL代表未删除，非NULL代表删除时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE RESTRICT COMMENT '禁止删除已被关联的用户',
+    UNIQUE INDEX uk_user_id_deleted (`user_id`, `deleted`),
     INDEX idx_region (`region`),
     INDEX idx_scale (`scale`),
     INDEX idx_deleted (`deleted`)
@@ -51,7 +52,7 @@ CREATE TABLE `manufacture` (
 -- 3. 服务商表
 CREATE TABLE `service_provider` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '服务商唯一标识',
-    `user_id` BIGINT UNIQUE COMMENT '关联user.id',
+    `user_id` BIGINT NOT NULL COMMENT '关联user.id，不可为空，确保服务商有归属',
     `company_name` VARCHAR(100) NOT NULL COMMENT '企业全称',
     `region` VARCHAR(50) COMMENT '所在区域',
     `address` VARCHAR(200) COMMENT '详细地址',
@@ -67,7 +68,8 @@ CREATE TABLE `service_provider` (
     `deleted` DATETIME DEFAULT NULL COMMENT '逻辑删除标记，NULL代表未删除，非NULL代表删除时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE RESTRICT COMMENT '禁止删除已被关联的用户',
+    UNIQUE INDEX uk_user_id_deleted (`user_id`, `deleted`),
     INDEX idx_region (`region`),
     INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务商表';
@@ -122,8 +124,8 @@ CREATE TABLE `demand_tag` (
 -- 7. 服务商能力标签表
 CREATE TABLE `service_tag` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    `service_id` BIGINT COMMENT '关联service_provider.id',
-    `tag_id` BIGINT COMMENT '关联tag.id',
+    `service_id` BIGINT NOT NULL COMMENT '关联service_provider.id',
+    `tag_id` BIGINT NOT NULL COMMENT '关联tag.id',
     `deleted` DATETIME DEFAULT NULL COMMENT '逻辑删除标记，NULL代表未删除，非NULL代表删除时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
