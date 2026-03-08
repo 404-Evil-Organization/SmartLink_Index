@@ -277,7 +277,7 @@ CREATE TABLE `abroad_case` (
     `description` TEXT COMMENT '案例详情',
     `cover_image` VARCHAR(255) COMMENT '封面图URL',
     `publish_time` DATETIME COMMENT '发布时间',
-    `status` TINYINT COMMENT '状态：0草稿 1发布',
+    `status` TINYINT DEFAULT 0 COMMENT '状态：0草稿 1发布',
     `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
