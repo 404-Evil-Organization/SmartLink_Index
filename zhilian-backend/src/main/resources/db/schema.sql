@@ -104,18 +104,6 @@ CREATE TABLE `tag` (
     INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='标签字典表';
 
-    `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    `demand_id` BIGINT COMMENT '关联demand.id',
-    `tag_id` BIGINT COMMENT '关联tag.id',
-    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
-    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
-    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-    FOREIGN KEY (`demand_id`) REFERENCES `demand`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE,
-    INDEX idx_deleted (`deleted`),
-    UNIQUE INDEX uk_demand_tag_dtd (`demand_id`, `tag_id`, `deleted`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='需求标签关系表';
-
 -- 7. 服务商能力标签表
 CREATE TABLE `service_tag` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
