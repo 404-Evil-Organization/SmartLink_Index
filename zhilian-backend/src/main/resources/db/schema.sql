@@ -14,10 +14,12 @@ CREATE TABLE `user` (
     `phone` VARCHAR(20) COMMENT '联系电话',
     `email` VARCHAR(100) COMMENT '电子邮箱',
     `status` TINYINT DEFAULT 1 COMMENT '状态：0禁用 1正常',
-    `create_time` DATETIME COMMENT '注册时间',
-    `update_time` DATETIME COMMENT '更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_role (`role`),
-    INDEX idx_status (`status`)
+    INDEX idx_status (`status`),
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- 2. 制造企业表
@@ -36,11 +38,13 @@ CREATE TABLE `manufacture` (
     `description` TEXT COMMENT '企业简介',
     `logo` VARCHAR(255) COMMENT 'Logo图片URL',
     `established_date` DATE COMMENT '成立日期',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
     INDEX idx_region (`region`),
-    INDEX idx_scale (`scale`)
+    INDEX idx_scale (`scale`),
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='制造企业表';
 
 -- 3. 服务商表
@@ -59,10 +63,12 @@ CREATE TABLE `service_provider` (
     `established_date` DATE COMMENT '成立日期',
     `employee_count` INT COMMENT '员工人数',
     `qualification` TEXT COMMENT '资质概述',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
-    INDEX idx_region (`region`)
+    INDEX idx_region (`region`),
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务商表';
 
 -- 4. 需求表
@@ -75,45 +81,53 @@ CREATE TABLE `demand` (
     `deadline` DATE COMMENT '期望完成日期',
     `status` ENUM('draft','published','matched','closed') DEFAULT 'published' COMMENT '状态：草稿、已发布、已匹配、已关闭',
     `views` INT DEFAULT 0 COMMENT '浏览次数',
-    `create_time` DATETIME COMMENT '发布时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`manu_id`) REFERENCES `manufacture`(`id`) ON DELETE CASCADE,
     INDEX idx_manu_id (`manu_id`),
     INDEX idx_status (`status`),
-    INDEX idx_create_time (`create_time`)
+    INDEX idx_create_time (`create_time`),
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='需求表';
 
 -- 5. 标签字典表
 CREATE TABLE `tag` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '标签唯一标识',
     `name` VARCHAR(50) NOT NULL COMMENT '标签名称（如“PCB设计”、“CE认证”）',
-    `category` VARCHAR(50) COMMENT '标签类别（如“服务类型”、“认证类型”）',
+    `category` VARCHAR(50) NOT NULL DEFAULT 'general' COMMENT '标签类别（如“服务类型”、“认证类型”）',
     `description` VARCHAR(200) COMMENT '标签说明',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
-    UNIQUE INDEX uk_name_category (`name`, `category`)
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
+    UNIQUE INDEX uk_name_category (`name`, `category`),
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='标签字典表';
 
 -- 6. 需求标签关系表
 CREATE TABLE `demand_tag` (
     `demand_id` BIGINT COMMENT '关联demand.id',
     `tag_id` BIGINT COMMENT '关联tag.id',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     PRIMARY KEY (`demand_id`, `tag_id`),
     FOREIGN KEY (`demand_id`) REFERENCES `demand`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE,
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='需求标签关系表';
 
 -- 7. 服务商能力标签表
 CREATE TABLE `service_tag` (
     `service_id` BIGINT COMMENT '关联service_provider.id',
     `tag_id` BIGINT COMMENT '关联tag.id',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     PRIMARY KEY (`service_id`, `tag_id`),
     FOREIGN KEY (`service_id`) REFERENCES `service_provider`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`tag_id`) REFERENCES `tag`(`id`) ON DELETE CASCADE,
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务商能力标签表';
 
 -- 8. 合作记录表
@@ -127,8 +141,9 @@ CREATE TABLE `cooperation` (
     `amount` DECIMAL(12,2) COMMENT '合同金额（万元）',
     `description` VARCHAR(500) COMMENT '合作内容简述',
     `status` ENUM('ongoing','completed','cancelled') DEFAULT 'ongoing' COMMENT '合作状态',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`manu_id`) REFERENCES `manufacture`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`service_id`) REFERENCES `service_provider`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`demand_id`) REFERENCES `demand`(`id`) ON DELETE SET NULL,
@@ -136,7 +151,8 @@ CREATE TABLE `cooperation` (
     INDEX idx_service_id (`service_id`),
     INDEX idx_demand_id (`demand_id`),
     INDEX idx_status (`status`),
-    INDEX idx_start_date (`start_date`)
+    INDEX idx_start_date (`start_date`),
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='合作记录表';
 
 -- 9. 评价表
@@ -146,10 +162,12 @@ CREATE TABLE `evaluation` (
     `score` TINYINT NOT NULL COMMENT '评分（1-5星）',
     `content` VARCHAR(500) COMMENT '评价内容',
     `is_anonymous` TINYINT DEFAULT 0 COMMENT '是否匿名（0否 1是）',
-    `create_time` DATETIME COMMENT '评价时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '评价时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`coop_id`) REFERENCES `cooperation`(`id`) ON DELETE CASCADE,
     INDEX idx_score (`score`),
+    INDEX idx_deleted (`deleted`),
     CHECK (`score` BETWEEN 1 AND 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评价表';
 
@@ -165,11 +183,13 @@ CREATE TABLE `diagnosis` (
     `level` VARCHAR(20) COMMENT '等级（起步期/成长期/成熟期/引领期）',
     `suggestions` TEXT COMMENT '改进建议（可JSON存储多条）',
     `diagnosis_date` DATETIME COMMENT '诊断日期',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`manu_id`) REFERENCES `manufacture`(`id`) ON DELETE CASCADE,
     INDEX idx_manu_id (`manu_id`),
     INDEX idx_diagnosis_date (`diagnosis_date`),
+    INDEX idx_deleted (`deleted`),
     CHECK (`info_score` BETWEEN 1 AND 5),
     CHECK (`auto_score` BETWEEN 1 AND 5),
     CHECK (`data_score` BETWEEN 1 AND 5),
@@ -181,18 +201,20 @@ CREATE TABLE `diagnosis` (
 CREATE TABLE `region_index` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录唯一标识',
     `region` VARCHAR(50) NOT NULL COMMENT '区域名称（深圳/东莞/惠州/广州等）',
-    `year` SMALLINT COMMENT '年份',
-    `quarter` TINYINT COMMENT '季度（1-4）或月份（1-12），根据统计粒度',
+    `year` SMALLINT NOT NULL COMMENT '年份',
+    `quarter` TINYINT NOT NULL COMMENT '季度（1-4）或月份（1-12），根据统计粒度',
     `coop_density` DECIMAL(5,4) COMMENT '合作密度（合作次数/企业总数）',
     `service_rate` DECIMAL(5,4) COMMENT '服务渗透率（使用服务企业数/制造企业总数）',
     `cross_rate` DECIMAL(5,4) COMMENT '跨域协同度（跨区域合作次数/总合作次数）',
     `total_index` DECIMAL(6,2) COMMENT '协同指数综合得分',
     `calc_time` DATETIME COMMENT '计算时间',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     INDEX idx_region (`region`),
     INDEX idx_year_quarter (`year`, `quarter`),
-    UNIQUE INDEX uk_region_year_quarter (`region`, `year`, `quarter`)
+    UNIQUE INDEX uk_region_year_quarter (`region`, `year`, `quarter`),
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='区域指数表';
 
 -- 12. 资质证书表
@@ -206,12 +228,14 @@ CREATE TABLE `certification` (
     `expire_date` DATE COMMENT '有效期至',
     `cert_file_url` VARCHAR(255) COMMENT '证书文件路径',
     `status` TINYINT DEFAULT 1 COMMENT '状态：0失效 1有效',
-    `create_time` DATETIME COMMENT '上传时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`service_id`) REFERENCES `service_provider`(`id`) ON DELETE CASCADE,
     INDEX idx_service_id (`service_id`),
     INDEX idx_expire_date (`expire_date`),
-    INDEX idx_status (`status`)
+    INDEX idx_status (`status`),
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='资质证书表';
 
 -- 13. 信用分记录表
@@ -223,11 +247,13 @@ CREATE TABLE `credit_score` (
     `case_score` TINYINT COMMENT '案例分',
     `eval_score` TINYINT COMMENT '评价分',
     `calc_time` DATETIME COMMENT '计算时间',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     FOREIGN KEY (`service_id`) REFERENCES `service_provider`(`id`) ON DELETE CASCADE,
     INDEX idx_service_id (`service_id`),
     INDEX idx_calc_time (`calc_time`),
+    INDEX idx_deleted (`deleted`),
     CHECK (`score` BETWEEN 0 AND 100),
     CHECK (`qual_score` BETWEEN 0 AND 100),
     CHECK (`case_score` BETWEEN 0 AND 100),
@@ -246,9 +272,11 @@ CREATE TABLE `abroad_case` (
     `cover_image` VARCHAR(255) COMMENT '封面图URL',
     `publish_time` DATETIME COMMENT '发布时间',
     `status` TINYINT COMMENT '状态：0草稿 1发布',
-    `create_time` DATETIME COMMENT '记录创建时间',
-    `update_time` DATETIME COMMENT '最后更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     INDEX idx_country (`country`),
     INDEX idx_publish_time (`publish_time`),
-    INDEX idx_status (`status`)
+    INDEX idx_status (`status`),
+    INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='出海成功案例表';
