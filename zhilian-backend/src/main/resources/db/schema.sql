@@ -218,7 +218,6 @@ CREATE TABLE `region_index` (
     `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-    INDEX idx_region (`region`),
     INDEX idx_period (`year`, `period_type`, `period_value`),
     UNIQUE INDEX uk_region_year_period (`region`, `year`, `period_type`, `period_value`),
     INDEX idx_deleted (`deleted`),
