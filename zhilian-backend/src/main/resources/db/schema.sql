@@ -100,7 +100,7 @@ CREATE TABLE `tag` (
     `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0未删除 1已删除',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-    UNIQUE INDEX uk_name_category (`name`, `category`),
+    UNIQUE INDEX uk_name_category (`name`, `category`, `deleted`),
     INDEX idx_deleted (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='标签字典表';
 
