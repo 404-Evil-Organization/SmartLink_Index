@@ -122,8 +122,8 @@ CREATE TABLE `demand_tag` (
 -- 7. 服务商能力标签表
 CREATE TABLE `service_tag` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    `service_id` BIGINT COMMENT '关联service_provider.id',
-    `tag_id` BIGINT COMMENT '关联tag.id',
+    `service_id` BIGINT NOT NULL COMMENT '关联service_provider.id',
+    `tag_id` BIGINT NOT NULL COMMENT '关联tag.id',
     `deleted` DATETIME DEFAULT NULL COMMENT '逻辑删除标记，NULL代表未删除，非NULL代表删除时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
