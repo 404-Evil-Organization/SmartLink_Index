@@ -24,6 +24,7 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- 2. 制造企业表
+-- 注意：外键约束使用 ON DELETE RESTRICT 确保用户不能被删除，避免产生孤立企业记录
 CREATE TABLE `manufacture` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '企业唯一标识',
     `user_id` BIGINT NOT NULL COMMENT '关联user.id，不可为空，确保企业有归属',
@@ -42,7 +43,7 @@ CREATE TABLE `manufacture` (
     `deleted` DATETIME DEFAULT NULL COMMENT '逻辑删除标记，NULL代表未删除，非NULL代表删除时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE RESTRICT COMMENT '禁止删除已被关联的用户',
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE RESTRICT,
     UNIQUE INDEX uk_user_id_deleted (`user_id`, `deleted`),
     INDEX idx_region (`region`),
     INDEX idx_scale (`scale`),
@@ -50,6 +51,7 @@ CREATE TABLE `manufacture` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='制造企业表';
 
 -- 3. 服务商表
+-- 注意：外键约束使用 ON DELETE RESTRICT 确保用户不能被删除，避免产生孤立服务商记录
 CREATE TABLE `service_provider` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '服务商唯一标识',
     `user_id` BIGINT NOT NULL COMMENT '关联user.id，不可为空，确保服务商有归属',
@@ -68,7 +70,7 @@ CREATE TABLE `service_provider` (
     `deleted` DATETIME DEFAULT NULL COMMENT '逻辑删除标记，NULL代表未删除，非NULL代表删除时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE RESTRICT COMMENT '禁止删除已被关联的用户',
+    FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE RESTRICT,
     UNIQUE INDEX uk_user_id_deleted (`user_id`, `deleted`),
     INDEX idx_region (`region`),
     INDEX idx_deleted (`deleted`)
@@ -87,7 +89,7 @@ CREATE TABLE `demand` (
     `deleted` DATETIME DEFAULT NULL COMMENT '逻辑删除标记，NULL代表未删除，非NULL代表删除时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-    FOREIGN KEY (`manu_id`) REFERENCES `manufacture`(`id`) ON DELETE RESTRICT,
+    FOREIGN KEY (`manu_id`) REFERENCES `manufacture`(`id`) ON DELETE CASCADE,
     INDEX idx_manu_id (`manu_id`),
     INDEX idx_status (`status`),
     INDEX idx_create_time (`create_time`),
