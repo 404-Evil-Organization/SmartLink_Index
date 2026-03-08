@@ -140,14 +140,16 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px 0;
 }
 
 .login-card {
-  width: 420px;
-  max-width: 90%;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  padding: 10px 0;
+  width: 420px;                /* 登录卡片稍窄，适合少量内容 */
+  max-width: 94%;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  padding: 30px 32px 40px;
+  background-color: #ffffff;
 }
 
 .logo-wrapper {
@@ -155,7 +157,7 @@ const handleLogin = async () => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin: 20px 0 10px;
+  margin: 0 0 20px;
 }
 
 .logo-text {
@@ -169,7 +171,7 @@ const handleLogin = async () => {
   text-align: center;
   color: #909399;
   font-size: 14px;
-  margin: 5px 0 10px;
+  margin: 5px 0 6px;
   letter-spacing: 1px;
 }
 
@@ -177,7 +179,33 @@ const handleLogin = async () => {
   text-align: center;
   color: #666;
   font-size: 14px;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
+}
+
+/* 表单项间距 */
+.el-form-item {
+  margin-bottom: 22px;
+}
+
+/* 输入框样式优化 */
+:deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #e4e7ed inset;
+  border-radius: 12px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  padding: 4px 12px;
+}
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #409eff inset;
+}
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px #409eff inset;
+}
+
+/* 标签样式微调 */
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #34495e;
+  padding-bottom: 6px;
 }
 
 .login-options {
@@ -190,22 +218,30 @@ const handleLogin = async () => {
 
 .login-button {
   width: 100%;
-  height: 40px;
+  height: 48px;
   font-size: 16px;
+  font-weight: 500;
+  margin-top: 16px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+.login-button:active {
+  transform: translateY(0);
 }
 
 .register-link {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 24px;
   font-size: 14px;
   color: #666;
 }
-
-/* 自定义输入框边框 hover 效果 */
-:deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #dcdfe6 inset;
-}
-:deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #409eff inset;
+.register-link .el-link {
+  font-weight: 500;
 }
 </style>
