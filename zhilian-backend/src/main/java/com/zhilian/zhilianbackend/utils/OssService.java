@@ -3,7 +3,6 @@ package com.zhilian.zhilianbackend.utils;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.PutObjectRequest;
-import com.aliyun.oss.model.PutObjectResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -166,17 +165,54 @@ public class OssService {
             return false;
         }
     }
-
+     /**
+      * 规范化并校验目录，防止路径穿越和非法前后斜杠
+      *
+      * @param directory 原始目录参数，可能为 null、空或包含非法片段
+      * @return 经过校验与规范化后的安全目录，不包含首尾斜杠
+      */
+     private String normalizeDirectory(String directory) {
+         // 默认兜底目录，避免出现 null/ 或 // 等异常前缀
+         final String defaultDir = "uploads";
+         if (directory == null || directory.trim().isEmpty()) {
+             return defaultDir;
+         }
+         // 统一分隔符为正斜杠
+         String normalized = directory.trim().replace("\\", "/");
+         // 合并重复斜杠
+         normalized = normalized.replaceAll("/{2,}", "/");
+         // 去掉首尾斜杠，避免生成 // 或 /xxx/yyy/ 这类多余层级
+         if (normalized.startsWith("/")) {
+             normalized = normalized.substring(1);
+         }
+         if (normalized.endsWith("/")) {
+             normalized = normalized.substring(0, normalized.length() - 1);
+         }
+         if (normalized.isEmpty()) {
+             return defaultDir;
+         }
+         // 防止路径穿越：拒绝 "." 或 ".." 片段
+         String[] segments = normalized.split("/");
+         for (String segment : segments) {
+             if (".".equals(segment) || "..".equals(segment)) {
+                 log.warn("检测到非法目录片段，已回退到默认目录。originalDirectory={}", directory);
+                 return defaultDir;
+             }
+         }
+         return normalized;
+     }
     /**
      * 生成唯一文件名
      */
     private String generateFileName(String directory, String extension) {
+        // 对 directory 做兜底校验与规范化，避免出现 null/、// 或路径穿越
+        String safeDirectory = normalizeDirectory(directory);
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
         String uniqueFileName = UUID.randomUUID().toString().replace("-", "")
                 + "_" + System.currentTimeMillis()
                 + extension;
-        return directory + "/" + datePath + "/" + uniqueFileName;
-    }
+        return safeDirectory + "/" + datePath + "/" + uniqueFileName;
+     }
 
     /**
      * 获取文件扩展名

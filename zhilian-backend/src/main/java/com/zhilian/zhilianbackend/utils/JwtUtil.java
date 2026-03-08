@@ -5,9 +5,11 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,6 +64,11 @@ public class JwtUtil {
      * 从token中获取所有claims
      */
     private Claims getAllClaimsFromToken(String token) {
+        // 对token进行非空校验
+        if (!StringUtils.hasText(token)) {
+            throw new IllegalArgumentException("JWT token cannot be null or empty");
+        }
+
         // 移除Bearer前缀
         if (token.startsWith(tokenPrefix + " ")) {
             token = token.substring(tokenPrefix.length() + 1);
@@ -94,6 +101,10 @@ public class JwtUtil {
      * 生成带有额外信息的token
      */
     public String generateToken(String username, Map<String, Object> claims) {
+        // 处理claims为空的情况，归一化为空Map
+        if (claims == null) {
+            claims = Collections.emptyMap();
+        }
         return createToken(claims, username);
     }
 
