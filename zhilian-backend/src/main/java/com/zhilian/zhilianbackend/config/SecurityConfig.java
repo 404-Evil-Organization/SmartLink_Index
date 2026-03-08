@@ -32,8 +32,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 白名单放行
                         .requestMatchers(PUBLIC_URLS).permitAll()
-                        // 其他所有请求都需要认证
-                        .anyRequest().authenticated()
+                        // 初始化阶段：其他请求也先全部放开，待引入 JWT 等认证后再收紧
+                        .anyRequest().permitAll()
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
