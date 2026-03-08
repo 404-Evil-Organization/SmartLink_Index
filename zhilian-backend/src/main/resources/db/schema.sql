@@ -220,7 +220,7 @@ CREATE TABLE `region_index` (
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     INDEX idx_period (`year`, `period_type`, `period_value`),
-    UNIQUE INDEX uk_region_year_period (`region`, `year`, `period_type`, `period_value`),
+    UNIQUE INDEX uk_region_year_period (`region`, `year`, `period_type`, `period_value`, `deleted`),
     INDEX idx_deleted (`deleted`),
     CHECK (
         (`period_type` = 'quarter' AND `period_value` BETWEEN 1 AND 4) OR
