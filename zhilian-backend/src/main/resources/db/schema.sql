@@ -158,7 +158,6 @@ CREATE TABLE `cooperation` (
 -- 9. 评价表
 CREATE TABLE `evaluation` (
     `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '评价唯一标识',
-    `coop_id` BIGINT NOT NULL UNIQUE COMMENT '关联cooperation.id，一次合作一条评价',
     `coop_id` BIGINT NOT NULL COMMENT '关联cooperation.id，一次合作可多条评价（按角色区分）',
     `evaluator_id` BIGINT NOT NULL COMMENT '评价人 user.id',
     `evaluator_role` ENUM('MANUFACTURE','SERVICE_PROVIDER') NOT NULL COMMENT '评价人角色（制造企业/服务商）',
