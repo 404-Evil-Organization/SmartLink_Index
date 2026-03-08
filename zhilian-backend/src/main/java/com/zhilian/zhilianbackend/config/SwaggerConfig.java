@@ -19,8 +19,7 @@ public class SwaggerConfig {
                         .version("1.0.0")
                         .contact(new Contact()
                                 .name("智链团队")
-                                .email("contact@zhilian.com")
-                                .url("http://localhost:8080"))
+                                .email("contact@zhilian.com"))
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("http://springdoc.org")));
