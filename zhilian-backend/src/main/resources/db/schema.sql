@@ -87,7 +87,7 @@ CREATE TABLE `demand` (
     `deleted` DATETIME DEFAULT NULL COMMENT '逻辑删除标记，NULL代表未删除，非NULL代表删除时间',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
-    FOREIGN KEY (`manu_id`) REFERENCES `manufacture`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`manu_id`) REFERENCES `manufacture`(`id`) ON DELETE RESTRICT,
     INDEX idx_manu_id (`manu_id`),
     INDEX idx_status (`status`),
     INDEX idx_create_time (`create_time`),
