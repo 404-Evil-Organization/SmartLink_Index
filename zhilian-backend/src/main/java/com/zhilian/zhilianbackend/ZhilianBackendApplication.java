@@ -7,7 +7,6 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication
 @MapperScan("com.zhilian.zhilianbackend.mapper")
-@ConfigurationPropertiesScan
 public class ZhilianBackendApplication {
 
 	public static void main(String[] args) {
