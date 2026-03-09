@@ -42,21 +42,9 @@ public class OssConfig {
     @Bean
     public OSS ossClient() {
         validateConfiguration();
-
-        try {
-            OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
-
-            if (ossClient.doesBucketExist(bucketName)) {
-                log.info("OSS客户端创建成功，Bucket：{}", bucketName);
-                return ossClient;
-            } else {
-                ossClient.shutdown();
-                throw new IllegalStateException("OSS Bucket不存在: " + bucketName);
-            }
-        } catch (Exception e) {
-            log.error("OSS客户端创建失败", e);
-            throw new IllegalStateException("OSS客户端创建失败", e);
-        }
+        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        log.info("OSS客户端实例创建成功，Endpoint：{}", endpoint);
+        return ossClient;
     }
 
     /**

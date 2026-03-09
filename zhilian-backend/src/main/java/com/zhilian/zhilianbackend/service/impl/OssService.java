@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * OSS文件存储服务 - 提供文件上传和删除功能
@@ -36,6 +37,12 @@ public class OssService {
     @Value("${app.upload.max-size:10485760}") // 默认10MB
     private long maxSize;
 
+    // 安全目录名称的正则表达式：只允许字母、数字、连字符、下划线、斜杠
+    private static final Pattern SAFE_DIRECTORY_PATTERN = Pattern.compile("^[a-zA-Z0-9\\-_/]+$");
+
+    // 默认目录名
+    private static final String DEFAULT_DIRECTORY = "uploads";
+
     /**
      * @Author:xiaodengyou
      * @Date: 2026/3/9 22:01
@@ -58,9 +65,12 @@ public class OssService {
             String originalFilename = file.getOriginalFilename();
             String fileExtension = getFileExtension(originalFilename);
 
+            // 安全处理目录参数
+            String safeDirectory = sanitizeDirectory(directory);
+
             // 生成文件路径：允许目录/日期/唯一文件名
             String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
-            String fileName = directory + "/" + datePath + "/" +
+            String fileName = safeDirectory + "/" + datePath + "/" +
                     UUID.randomUUID().toString().replace("-", "") + fileExtension;
 
             // 执行上传
@@ -75,6 +85,45 @@ public class OssService {
             log.error("文件上传失败", e);
             throw new RuntimeException("文件上传失败：" + e.getMessage(), e);
         }
+    }
+
+    /**
+     * @Author:xiaodengyou
+     * @Date: 2026/3/9 22:01
+     * @Param:
+     * @Return:
+     * @Description: 安全处理目录参数，防止路径遍历攻击
+     **/
+    private String sanitizeDirectory(String directory) {
+        // 处理null或空值，使用默认目录
+        if (directory == null || directory.trim().isEmpty()) {
+            return DEFAULT_DIRECTORY;
+        }
+
+        // 去除首尾空格和斜杠
+        String cleanDir = directory.trim();
+        cleanDir = cleanDir.replaceAll("^[/\\\\]+|[/\\\\]+$", "");
+
+        // 检查路径遍历攻击（包含..、反斜杠等）
+        if (cleanDir.contains("..") ||
+                cleanDir.contains("\\") ||
+                cleanDir.contains("./") ||
+                cleanDir.contains(".\\")) {
+            throw new IllegalArgumentException("目录名称包含非法字符或路径遍历尝试");
+        }
+
+        // 替换反斜杠为正斜杠（统一分隔符）
+        cleanDir = cleanDir.replace('\\', '/');
+
+        // 检查是否只包含安全字符
+        if (!SAFE_DIRECTORY_PATTERN.matcher(cleanDir).matches()) {
+            throw new IllegalArgumentException("目录名称只能包含字母、数字、连字符、下划线和斜杠");
+        }
+
+        // 防止多层斜杠（例如：a//b -> a/b）
+        cleanDir = cleanDir.replaceAll("/{2,}", "/");
+
+        return cleanDir;
     }
 
     /**

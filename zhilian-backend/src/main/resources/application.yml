@@ -131,15 +131,6 @@ logging:
 
 # 自定义应用配置
 app:
-  # 文件上传路径
-  upload:
-    path: /uploads
-    # 允许的文件类型（仅图片与 PDF，避免高风险的可执行文档格式）
-    allow-types:
-      - image/jpeg
-      - image/png
-      - image/gif
-      - application/pdf
   # 跨域配置
   cors:
     allowed-origins:
