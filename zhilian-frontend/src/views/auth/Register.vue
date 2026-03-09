@@ -12,22 +12,6 @@
         />
       </el-form-item>
 
-      <!-- 角色选择 -->
-      <el-form-item label="角色" prop="role">
-        <el-select
-          v-model="form.role"
-          placeholder="请选择角色"
-          style="width: 100%"
-        >
-          <el-option
-            v-for="item in options"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
-      </el-form-item>
-
       <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定图标组件 -->
       <el-form-item label="密码" prop="password">
         <el-input
@@ -48,6 +32,22 @@
           :prefix-icon="Lock"
           show-password
         />
+      </el-form-item>
+
+      <!-- 角色选择 -->
+      <el-form-item label="角色" prop="role">
+        <el-select
+          v-model="form.role"
+          placeholder="请选择角色"
+          style="width: 100%"
+        >
+          <el-option
+            v-for="item in options"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-form-item>
 
       <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定图标组件 -->
@@ -96,7 +96,13 @@ import { ElMessage } from "element-plus";
 import { register } from "@/api/auth";
 import { useRouter } from "vue-router";
 // 新增：引入图标，与登录页统一
-import { Connection, User, Lock, Phone, Message } from "@element-plus/icons-vue";
+import {
+  Connection,
+  User,
+  Lock,
+  Phone,
+  Message,
+} from "@element-plus/icons-vue";
 // 引入公共卡片组件
 import AuthCard from "@/components/AuthCard.vue";
 
