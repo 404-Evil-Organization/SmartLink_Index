@@ -27,17 +27,16 @@ public class MybatisPlusConfig {
             @Override
             public void insertFill(MetaObject metaObject) {
                 // 这些字段名需要和实体类中的属性名一致
-                // 这里使用 setFieldValByName，避免依赖实体类上的 @TableField(fill = ...) 注解
-                this.setFieldValByName("createTime", new Date(), metaObject);
-                this.setFieldValByName("updateTime", new Date(), metaObject);
-                // 逻辑删除标记保持为 null，通常由数据库默认值或业务逻辑进行设置
-                this.setFieldValByName("deleted", null, metaObject);
+                // 使用 strictInsertFill，仅在字段当前为 null 时进行填充，避免覆盖业务侧已显式设置的值
+                this.strictInsertFill(metaObject, "createTime", Date.class, new Date());
+                this.strictInsertFill(metaObject, "updateTime", Date.class, new Date());
+                // 逻辑删除标记不在这里默认填充，保持由数据库默认值或逻辑删除注解/业务逻辑控制
             }
 
             @Override
             public void updateFill(MetaObject metaObject) {
-                // 更新时统一刷新更新时间字段
-                this.setFieldValByName("updateTime", new Date(), metaObject);
+                // 更新时统一刷新更新时间字段，仅在当前值为 null 时填充，避免覆盖业务侧特殊处理
+                this.strictUpdateFill(metaObject, "updateTime", Date.class, new Date());
             }
         };
     }
