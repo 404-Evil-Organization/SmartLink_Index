@@ -89,7 +89,7 @@ const rules = {
 
 // 新增：忘记密码点击处理（功能预留）
 const handleForgotPassword = () => {
-  ElMessage.info('忘记密码功能开发中，敬请期待');
+  ElMessage.info("忘记密码功能开发中，敬请期待");
 };
 
 const handleLogin = async () => {
