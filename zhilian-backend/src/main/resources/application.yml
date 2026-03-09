@@ -145,6 +145,7 @@ app:
   cors:
     allowed-origins:
       - http://localhost:3000
+      - http://localhost:5173
       - http://localhost:8080
     allowed-methods:
       - GET
@@ -152,8 +153,12 @@ app:
       - PUT
       - DELETE
       - OPTIONS
+      - PATCH
     allowed-headers:
       - Authorization
       - Content-Type
+      - X-Requested-With
+      - Accept
     allow-credentials: true
     max-age: 3600
+

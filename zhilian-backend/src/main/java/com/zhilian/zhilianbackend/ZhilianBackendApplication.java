@@ -3,9 +3,11 @@ package com.zhilian.zhilianbackend;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 @SpringBootApplication
 @MapperScan("com.zhilian.zhilianbackend.mapper")
+@ConfigurationPropertiesScan
 public class ZhilianBackendApplication {
 
 	public static void main(String[] args) {

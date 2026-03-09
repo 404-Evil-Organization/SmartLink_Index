@@ -10,45 +10,37 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final CorsProperties corsProperties;
+
+    public SecurityConfig(CorsProperties corsProperties) {
+        this.corsProperties = corsProperties;
+    }
+
     /**
-     * CORS 配置源
-     * 这里定义允许的跨域规则
+     * 统一 CORS 配置，从 application.yml 读取
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 允许的域名（前端地址）
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",      // Vue 默认端口
-                "http://localhost:5173",      // Vite 默认端口
-                "http://localhost:8080"       // 后端自己
-        ));
+        // 从配置文件中读取允许的域名
+        configuration.setAllowedOrigins(corsProperties.getAllowedOrigins());
 
-        // 允许的 HTTP 方法
-        configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
-        ));
+        // 从配置文件中读取允许的 HTTP 方法
+        configuration.setAllowedMethods(corsProperties.getAllowedMethods());
 
-        // 允许的请求头
-        configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type",
-                "X-Requested-With",
-                "Accept"
-        ));
+        // 从配置文件中读取允许的请求头
+        configuration.setAllowedHeaders(corsProperties.getAllowedHeaders());
 
-        // 允许携带凭证（cookies）
-        configuration.setAllowCredentials(true);
+        // 从配置文件中读取是否允许携带凭证
+        configuration.setAllowCredentials(corsProperties.getAllowCredentials());
 
-        // 预检请求的缓存时间（秒）
-        configuration.setMaxAge(3600L);
+        // 从配置文件中读取预检请求缓存时间
+        configuration.setMaxAge(corsProperties.getMaxAge());
 
         // 对所有路径生效
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -61,12 +53,10 @@ public class SecurityConfig {
     @Profile({"dev", "default"})
     public SecurityFilterChain devFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. 启用 CORS（关键！使用上面配置的源）
+                // 1. 启用 CORS（使用统一的配置）
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
                 // 2. 禁用 CSRF
                 .csrf(csrf -> csrf.disable())
-
                 // 3. 授权配置
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
@@ -76,7 +66,6 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().permitAll()  // 开发环境全放行
                 )
-
                 // 4. 禁用不需要的功能
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
@@ -88,7 +77,7 @@ public class SecurityConfig {
     @Profile("prod")
     public SecurityFilterChain prodFilterChain(HttpSecurity http) throws Exception {
         http
-                // 同样要启用 CORS
+                // 同样要启用 CORS（使用统一的配置）
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
