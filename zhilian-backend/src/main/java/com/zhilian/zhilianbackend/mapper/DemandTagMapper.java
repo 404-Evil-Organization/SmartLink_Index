@@ -4,13 +4,12 @@ import com.zhilian.zhilianbackend.entity.DemandTag;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
- * <p>
- * 需求标签关系表 Mapper 接口
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:51
+ * @Param: 
+ * @Return: 
+ * @Description: 需求标签关系表Mapper接口，提供需求标签关联的数据库操作
+**/
 public interface DemandTagMapper extends BaseMapper<DemandTag> {
 
 }

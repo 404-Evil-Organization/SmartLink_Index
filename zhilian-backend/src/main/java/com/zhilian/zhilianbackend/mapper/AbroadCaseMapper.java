@@ -4,13 +4,12 @@ import com.zhilian.zhilianbackend.entity.AbroadCase;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
- * <p>
- * 出海成功案例表 Mapper 接口
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:53
+ * @Param: 
+ * @Return: 
+ * @Description: 出海成功案例表Mapper接口，提供案例相关的数据库操作
+**/
 public interface AbroadCaseMapper extends BaseMapper<AbroadCase> {
 
 }

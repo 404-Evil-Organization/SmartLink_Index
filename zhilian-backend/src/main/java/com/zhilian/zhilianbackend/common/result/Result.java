@@ -3,11 +3,26 @@ package com.zhilian.zhilianbackend.common.result;
 import lombok.Data;
 
 @Data
+
+/**
+ * @Author: 6017
+ * @Date: 2026/3/9 21:21
+ * @Param: 
+ * @Return: 
+ * @Description: 统一响应结果封装类，所有接口返回的标准格式
+**/
 public class Result<T> {
     private Integer code;
     private String message;
     private T data;
 
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/9 21:22
+     * @Param: code 状态码
+     * @Return: message 提示信息
+     * @Description: 私有构造方法，防止外部直接创建
+    **/
     private Result(Integer code, String message, T data) {
         this.code = code;
         this.message = message;

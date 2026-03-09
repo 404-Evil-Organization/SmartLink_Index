@@ -7,13 +7,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
 /**
- * <p>
- * 服务商能力标签表 服务实现类
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:30
+ * @Param: 
+ * @Return: 
+ * @Description: 服务商能力标签表业务逻辑实现类，实现服务商标签关联的业务方法
+**/
 @Service
 public class ServiceTagServiceImpl extends ServiceImpl<ServiceTagMapper, ServiceTag> implements ServiceTagService {
 

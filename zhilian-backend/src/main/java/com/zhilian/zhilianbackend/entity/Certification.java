@@ -12,13 +12,12 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 /**
- * <p>
- * 资质证书表
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:47
+ * @Param: 
+ * @Return: 
+ * @Description: 资质证书表实体类，对应certification表
+**/
 @Getter
 @Setter
 @Accessors(chain = true)

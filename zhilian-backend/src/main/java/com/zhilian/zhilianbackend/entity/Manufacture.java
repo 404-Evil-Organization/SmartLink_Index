@@ -13,13 +13,12 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 /**
- * <p>
- * 制造企业表
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:44
+ * @Param: 
+ * @Return: 
+ * @Description: 制造企业表实体类，对应manufacture表
+**/
 @Getter
 @Setter
 @Accessors(chain = true)

@@ -10,19 +10,37 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+/**
+ * @Author: 6017
+ * @Date: 2026/3/9 20:56
+ * @Param: 
+ * @Return: 
+ * @Description: Spring Security 配置类，配置认证授权、CORS 跨域和路径放行规则
+**/
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final CorsProperties corsProperties;
 
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/9 21:21
+     * @Param: corsProperties CORS配置属性
+     * @Return: 
+     * @Description: 构造方法注入CORS配置属性
+    **/
     public SecurityConfig(CorsProperties corsProperties) {
         this.corsProperties = corsProperties;
     }
 
     /**
-     * 统一 CORS 配置，从 application.yml 读取
-     */
+     * @Author: 6017
+     * @Date: 2026/3/9 20:59
+     * @Param: 
+     * @Return: CorsConfigurationSource CORS 配置源
+     * @Description: 配置 CORS 跨域规则，允许前端域名访问
+    **/
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -49,6 +67,13 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/9 20:59
+     * @Param: http HttpSecurity 对象
+     * @Return: SecurityFilterChain 安全过滤器链
+     * @Description: 开发环境安全配置，放行所有请求以便调试
+    **/
     @Bean
     @Profile({"dev", "default"})
     public SecurityFilterChain devFilterChain(HttpSecurity http) throws Exception {
@@ -73,6 +98,13 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/9 21:02
+     * @Param: http HttpSecurity 对象
+     * @Return: SecurityFilterChain 安全过滤器链
+     * @Description: 生产环境安全配置，除白名单外所有请求都需要认证
+    **/
     @Bean
     @Profile("prod")
     public SecurityFilterChain prodFilterChain(HttpSecurity http) throws Exception {

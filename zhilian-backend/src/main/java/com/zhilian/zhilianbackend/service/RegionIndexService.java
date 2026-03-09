@@ -4,13 +4,12 @@ import com.zhilian.zhilianbackend.entity.RegionIndex;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
- * <p>
- * 区域指数表 服务类
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:25
+ * @Param: 
+ * @Return: 
+ * @Description: 区域指数表业务逻辑接口，定义区域指数相关的业务方法
+**/
 public interface RegionIndexService extends IService<RegionIndex> {
 
 }

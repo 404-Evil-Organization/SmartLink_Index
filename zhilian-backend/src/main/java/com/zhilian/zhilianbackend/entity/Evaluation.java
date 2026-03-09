@@ -12,13 +12,12 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 /**
- * <p>
- * 评价表
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:46
+ * @Param: 
+ * @Return: 
+ * @Description: 评价表实体类，对应evaluation表
+**/
 @Getter
 @Setter
 @Accessors(chain = true)

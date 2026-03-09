@@ -12,13 +12,12 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 /**
- * <p>
- * 用户表
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:43
+ * @Param: 
+ * @Return: 
+ * @Description: 用户表实体类，对应数据库user表
+**/
 @Getter
 @Setter
 @Accessors(chain = true)

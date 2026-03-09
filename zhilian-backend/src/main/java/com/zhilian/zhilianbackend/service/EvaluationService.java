@@ -4,13 +4,12 @@ import com.zhilian.zhilianbackend.entity.Evaluation;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
- * <p>
- * 评价表 服务类
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:24
+ * @Param: 
+ * @Return: 
+ * @Description: 评价表业务逻辑接口，定义评价相关的业务方法
+**/
 public interface EvaluationService extends IService<Evaluation> {
 
 }

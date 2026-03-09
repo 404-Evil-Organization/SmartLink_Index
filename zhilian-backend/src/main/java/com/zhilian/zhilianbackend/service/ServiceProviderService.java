@@ -4,13 +4,12 @@ import com.zhilian.zhilianbackend.entity.ServiceProvider;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
- * <p>
- * 服务商表 服务类
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:22
+ * @Param: 
+ * @Return: 
+ * @Description: 服务商表业务逻辑接口，定义服务商相关的业务方法
+**/
 public interface ServiceProviderService extends IService<ServiceProvider> {
 
 }

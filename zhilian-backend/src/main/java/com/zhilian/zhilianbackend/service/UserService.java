@@ -4,13 +4,12 @@ import com.zhilian.zhilianbackend.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
- * <p>
- * 用户表 服务类
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 20:49
+ * @Param: 
+ * @Return: 
+ * @Description: 用户表业务逻辑接口，定义用户相关的业务方法
+**/
 public interface UserService extends IService<User> {
 
 }

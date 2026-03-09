@@ -7,13 +7,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
 /**
- * <p>
- * 评价表 服务实现类
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:30
+ * @Param: 
+ * @Return: 
+ * @Description: 评价表业务逻辑实现类，实现评价相关的业务方法
+**/
 @Service
 public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluation> implements EvaluationService {
 

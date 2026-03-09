@@ -12,13 +12,12 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 /**
- * <p>
- * 诊断记录表
- * </p>
- *
- * @author 智链团队
- * @since 2026-03-08
- */
+ * @Author: 6017
+ * @Date: 2026/3/9 21:46
+ * @Param: 
+ * @Return: 
+ * @Description: 诊断记录表实体类，对应diagnosis表
+**/
 @Getter
 @Setter
 @Accessors(chain = true)
