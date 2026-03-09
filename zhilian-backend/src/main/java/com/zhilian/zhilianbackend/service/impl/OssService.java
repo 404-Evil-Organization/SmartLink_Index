@@ -65,6 +65,9 @@ public class OssService {
     // 允许的文件扩展名集合
     private Set<String> allowedFileExtensions;
 
+    // 规范化的允许前缀
+    private String normalizedAllowedPrefix;
+
     /**
      * 初始化方法
      * 检查OSS客户端状态并初始化文件类型白名单
@@ -73,6 +76,9 @@ public class OssService {
     public void init() {
         // 初始化允许的文件类型
         initializeAllowedTypes();
+
+        // 初始化规范化允许前缀
+        initializeAllowedPrefix();
 
         // 检查OSS客户端是否可用
         if (ossClient != null && hasText(bucketName)) {
@@ -130,38 +136,78 @@ public class OssService {
     }
 
     /**
+     * 初始化规范化允许前缀
+     */
+    private void initializeAllowedPrefix() {
+        if (hasText(allowedPrefix)) {
+            normalizedAllowedPrefix = normalizePath(allowedPrefix);
+            log.info("允许的文件前缀已规范化：{}", normalizedAllowedPrefix);
+        } else {
+            normalizedAllowedPrefix = "uploads";
+            log.info("使用默认允许前缀：{}", normalizedAllowedPrefix);
+        }
+    }
+
+    /**
      * 上传文件
      *
      * @param file      待上传的文件
      * @param directory 文件存储目录
      * @return 文件的访问URL
-     * @throws IllegalStateException 当OSS服务不可用时抛出
+     * @throws OssServiceException 当OSS服务不可用或上传失败时抛出
      * @throws IllegalArgumentException 当文件校验不通过时抛出
-     * @throws OssServiceException 当上传过程中发生异常时抛出
      */
     public String uploadFile(MultipartFile file, String directory) {
         // 检查OSS服务是否可用
         if (!ossAvailable) {
             log.error("上传失败：OSS服务当前不可用");
-            throw new IllegalStateException("OSS服务当前不可用，无法执行上传操作");
+            throw new OssServiceException("OSS服务当前不可用，无法执行上传操作", OssErrorCode.SERVICE_UNAVAILABLE);
         }
 
-        // 1. 基础校验
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("上传文件不能为空");
+        try {
+            // 1. 基础校验
+            if (file == null || file.isEmpty()) {
+                throw new IllegalArgumentException("上传文件不能为空");
+            }
+
+            // 2. 文件大小校验
+            if (file.getSize() > maxSize) {
+                throw new IllegalArgumentException(String.format(
+                        "文件大小超过限制：最大允许 %d 字节，当前文件 %d 字节", maxSize, file.getSize()));
+            }
+
+            // 3. 文件类型白名单校验
+            validateFileType(file);
+
+            // 4. 规范化并校验目录（确保在允许前缀下）
+            String safeDirectory = normalizeAndValidateDirectory(directory);
+
+            // 5. 执行上传
+            return realUploadFile(file, safeDirectory);
+
+        } catch (IllegalArgumentException e) {
+            // 参数异常直接抛出
+            throw e;
+        } catch (Exception e) {
+            log.error("文件上传过程中发生未知错误", e);
+            throw new OssServiceException("文件上传失败：" + e.getMessage(), e, OssErrorCode.UNKNOWN_ERROR);
+        }
+    }
+
+    /**
+     * 规范化并校验目录，确保在允许前缀下
+     */
+    private String normalizeAndValidateDirectory(String directory) {
+        String normalized = normalizePath(directory);
+
+        // 确保目录在允许前缀下
+        if (!normalized.startsWith(normalizedAllowedPrefix)) {
+            log.warn("目录不在允许前缀下：{} (允许前缀：{})，将强制放置在允许前缀下",
+                    normalized, normalizedAllowedPrefix);
+            return normalizedAllowedPrefix;
         }
 
-        // 2. 文件大小校验
-        if (file.getSize() > maxSize) {
-            throw new IllegalArgumentException(String.format(
-                    "文件大小超过限制：最大允许 %d 字节，当前文件 %d 字节", maxSize, file.getSize()));
-        }
-
-        // 3. 文件类型白名单校验
-        validateFileType(file);
-
-        // 4. 执行上传
-        return realUploadFile(file, directory);
+        return normalized;
     }
 
     /**
@@ -172,16 +218,25 @@ public class OssService {
         String originalFilename = file.getOriginalFilename();
         String fileExtension = getFileExtension(originalFilename).toLowerCase();
 
-        // MIME类型校验
-        if (contentType != null && !allowedMimeTypes.isEmpty()) {
+        // MIME类型白名单已启用时，contentType 为空视为非法
+        if (!allowedMimeTypes.isEmpty()) {
+            if (contentType == null || contentType.trim().isEmpty()) {
+                log.warn("文件MIME类型缺失，已启用MIME白名单时禁止上传，文件名={}", originalFilename);
+                throw new IllegalArgumentException("文件MIME类型缺失，禁止上传");
+            }
             if (!allowedMimeTypes.contains(contentType)) {
                 log.warn("文件类型不被允许：MIME类型={}，文件名={}", contentType, originalFilename);
                 throw new IllegalArgumentException("不支持的文件类型：" + contentType);
             }
         }
 
-        // 文件扩展名校验
-        if (!fileExtension.isEmpty() && !allowedFileExtensions.isEmpty()) {
+        // 扩展名白名单已启用时，扩展名为空视为非法
+        if (!allowedFileExtensions.isEmpty()) {
+            if (originalFilename == null || fileExtension.isEmpty()) {
+                log.warn("文件扩展名缺失，已启用扩展名白名单时禁止上传，文件名={}", originalFilename);
+                throw new IllegalArgumentException("文件扩展名缺失，禁止上传");
+            }
+
             if (!allowedFileExtensions.contains(fileExtension)) {
                 log.warn("文件扩展名不被允许：扩展名={}，文件名={}", fileExtension, originalFilename);
                 throw new IllegalArgumentException("不支持的文件扩展名：" + fileExtension);
@@ -193,9 +248,13 @@ public class OssService {
      * 真实OSS上传
      */
     private String realUploadFile(MultipartFile file, String directory) {
-        try (InputStream inputStream = file.getInputStream()) {
+        InputStream inputStream = null;
+        try {
+            inputStream = file.getInputStream();
             String originalFilename = file.getOriginalFilename();
             String fileExtension = getFileExtension(originalFilename);
+
+            // 生成文件名时确保在允许前缀下
             String fileName = generateFileName(directory, fileExtension);
 
             PutObjectRequest putObjectRequest = new PutObjectRequest(
@@ -217,13 +276,51 @@ public class OssService {
 
         } catch (IOException e) {
             log.error("文件上传失败 - IO异常：{}", e.getMessage(), e);
-            throw new OssServiceException("文件上传失败：读取文件内容出错", e);
-        } catch (OSSException | ClientException e) {
-            log.error("文件上传失败 - OSS异常：{}", e.getMessage(), e);
-            throw new OssServiceException("文件上传失败：OSS服务异常 - " + e.getMessage(), e);
+            throw new OssServiceException("文件上传失败：读取文件内容出错", e, OssErrorCode.IO_ERROR);
+        } catch (OSSException e) {
+            log.error("文件上传失败 - OSS异常：错误码={}，错误消息={}，请求ID={}",
+                    e.getErrorCode(), e.getErrorMessage(), e.getRequestId(), e);
+            throw new OssServiceException("文件上传失败：OSS服务异常 - " + e.getErrorMessage(),
+                    e, mapOssErrorCode(e.getErrorCode()));
+        } catch (ClientException e) {
+            log.error("文件上传失败 - 客户端异常：{}", e.getMessage(), e);
+            throw new OssServiceException("文件上传失败：网络或客户端异常 - " + e.getMessage(),
+                    e, OssErrorCode.CLIENT_ERROR);
         } catch (Exception e) {
             log.error("文件上传失败 - 未知异常：{}", e.getMessage(), e);
-            throw new OssServiceException("文件上传失败：未知错误", e);
+            throw new OssServiceException("文件上传失败：未知错误", e, OssErrorCode.UNKNOWN_ERROR);
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    log.warn("关闭输入流失败", e);
+                }
+            }
+        }
+    }
+
+    /**
+     * 映射OSS错误码到业务错误码
+     */
+    private OssErrorCode mapOssErrorCode(String ossErrorCode) {
+        if (ossErrorCode == null) {
+            return OssErrorCode.OSS_SERVER_ERROR;
+        }
+
+        switch (ossErrorCode) {
+            case "NoSuchBucket":
+                return OssErrorCode.BUCKET_NOT_FOUND;
+            case "AccessDenied":
+                return OssErrorCode.ACCESS_DENIED;
+            case "SignatureDoesNotMatch":
+                return OssErrorCode.AUTHENTICATION_FAILED;
+            case "InvalidAccessKeyId":
+                return OssErrorCode.INVALID_ACCESS_KEY;
+            case "RequestTimeout":
+                return OssErrorCode.REQUEST_TIMEOUT;
+            default:
+                return OssErrorCode.OSS_SERVER_ERROR;
         }
     }
 
@@ -232,17 +329,57 @@ public class OssService {
      */
     private String buildFileUrl(String fileName) {
         if (hasText(domain)) {
-            // 确保domain不以斜杠结尾
             String cleanDomain = domain.endsWith("/") ?
                     domain.substring(0, domain.length() - 1) : domain;
             return cleanDomain + "/" + fileName;
         } else {
-            // 如果没有配置domain，使用endpoint构建
             String cleanEndpoint = endpoint.startsWith("http") ? endpoint : "https://" + endpoint;
-            if (cleanEndpoint.endsWith("/")) {
-                cleanEndpoint = cleanEndpoint.substring(0, cleanEndpoint.length() - 1);
+            try {
+                URI uri = new URI(cleanEndpoint);
+                String host = uri.getHost();
+                String path = uri.getPath();
+                int port = uri.getPort();
+
+                if (host != null && !host.isEmpty()) {
+                    StringBuilder urlBuilder = new StringBuilder();
+                    urlBuilder.append("https://")
+                            .append(bucketName)
+                            .append(".")
+                            .append(host);
+
+                    if (port != -1) {
+                        urlBuilder.append(":").append(port);
+                    }
+
+                    if (path != null && !path.isEmpty() && !"/".equals(path)) {
+                        if (!path.startsWith("/")) {
+                            urlBuilder.append("/");
+                        }
+                        urlBuilder.append(path);
+                    }
+
+                    if (urlBuilder.charAt(urlBuilder.length() - 1) != '/') {
+                        urlBuilder.append("/");
+                    }
+                    urlBuilder.append(fileName);
+                    return urlBuilder.toString();
+                }
+
+                // 降级逻辑
+                String fallbackEndpoint = cleanEndpoint.replaceFirst("^https?://", "");
+                if (fallbackEndpoint.endsWith("/")) {
+                    fallbackEndpoint = fallbackEndpoint.substring(0, fallbackEndpoint.length() - 1);
+                }
+                return "https://" + bucketName + "." + fallbackEndpoint + "/" + fileName;
+
+            } catch (URISyntaxException e) {
+                log.warn("解析OSS endpoint失败，使用降级拼接方式 - endpoint：{}", endpoint, e);
+                String fallbackEndpoint = cleanEndpoint.replaceFirst("^https?://", "");
+                if (fallbackEndpoint.endsWith("/")) {
+                    fallbackEndpoint = fallbackEndpoint.substring(0, fallbackEndpoint.length() - 1);
+                }
+                return "https://" + bucketName + "." + fallbackEndpoint + "/" + fileName;
             }
-            return "https://" + bucketName + "." + cleanEndpoint.replace("https://", "") + "/" + fileName;
         }
     }
 
@@ -251,12 +388,12 @@ public class OssService {
      *
      * @param fileUrlOrObjectKey 文件的访问URL或OSS对象键
      * @return 删除是否成功
-     * @throws IllegalStateException 当OSS服务不可用时抛出
+     * @throws OssServiceException 当OSS服务不可用时抛出
      */
     public boolean deleteFile(String fileUrlOrObjectKey) {
         if (!ossAvailable) {
             log.error("删除失败：OSS服务当前不可用");
-            throw new IllegalStateException("OSS服务当前不可用，无法执行删除操作");
+            throw new OssServiceException("OSS服务当前不可用，无法执行删除操作", OssErrorCode.SERVICE_UNAVAILABLE);
         }
 
         if (!hasText(fileUrlOrObjectKey)) {
@@ -265,24 +402,15 @@ public class OssService {
         }
 
         try {
-            // 判断是URL还是objectKey
-            String objectKey;
-            if (isUrl(fileUrlOrObjectKey)) {
-                // 如果是URL，提取objectKey
-                objectKey = extractObjectKeyFromUrl(fileUrlOrObjectKey);
-                if (objectKey == null) {
-                    log.warn("删除文件失败：无法从URL提取objectKey - {}", fileUrlOrObjectKey);
-                    return false;
-                }
-            } else {
-                // 直接作为objectKey使用
-                objectKey = fileUrlOrObjectKey;
+            String objectKey = extractObjectKey(fileUrlOrObjectKey);
+            if (objectKey == null) {
+                return false;
             }
 
             // 校验objectKey是否在允许的目录下
             if (!isAllowedObjectKey(objectKey)) {
                 log.warn("删除文件失败：objectKey不在允许的目录下 - {}", objectKey);
-                return false;
+                throw new OssServiceException("无权删除该文件：文件不在允许的目录下", OssErrorCode.FORBIDDEN);
             }
 
             // 执行删除
@@ -290,12 +418,16 @@ public class OssService {
             log.info("文件删除成功：{}", objectKey);
             return true;
 
-        } catch (OSSException | ClientException e) {
-            log.error("文件删除失败 - OSS异常：{}", e.getMessage(), e);
-            return false;
+        } catch (OSSException e) {
+            log.error("文件删除失败 - OSS异常：错误码={}，错误消息={}", e.getErrorCode(), e.getErrorMessage(), e);
+            throw new OssServiceException("文件删除失败：" + e.getErrorMessage(),
+                    e, mapOssErrorCode(e.getErrorCode()));
+        } catch (ClientException e) {
+            log.error("文件删除失败 - 客户端异常：{}", e.getMessage(), e);
+            throw new OssServiceException("文件删除失败：网络或客户端异常", e, OssErrorCode.CLIENT_ERROR);
         } catch (Exception e) {
             log.error("文件删除失败 - 未知异常：{}", e.getMessage(), e);
-            return false;
+            throw new OssServiceException("文件删除失败：未知错误", e, OssErrorCode.UNKNOWN_ERROR);
         }
     }
 
@@ -304,12 +436,12 @@ public class OssService {
      *
      * @param fileUrlOrObjectKey 文件的访问URL或OSS对象键
      * @return 文件是否存在
-     * @throws IllegalStateException 当OSS服务不可用时抛出
+     * @throws OssServiceException 当OSS服务不可用时抛出
      */
     public boolean doesFileExist(String fileUrlOrObjectKey) {
         if (!ossAvailable) {
             log.error("检查失败：OSS服务当前不可用");
-            throw new IllegalStateException("OSS服务当前不可用，无法执行检查操作");
+            throw new OssServiceException("OSS服务当前不可用，无法执行检查操作", OssErrorCode.SERVICE_UNAVAILABLE);
         }
 
         if (!hasText(fileUrlOrObjectKey)) {
@@ -317,15 +449,9 @@ public class OssService {
         }
 
         try {
-            // 判断是URL还是objectKey
-            String objectKey;
-            if (isUrl(fileUrlOrObjectKey)) {
-                objectKey = extractObjectKeyFromUrl(fileUrlOrObjectKey);
-                if (objectKey == null) {
-                    return false;
-                }
-            } else {
-                objectKey = fileUrlOrObjectKey;
+            String objectKey = extractObjectKey(fileUrlOrObjectKey);
+            if (objectKey == null) {
+                return false;
             }
 
             // 校验objectKey是否在允许的目录下
@@ -336,13 +462,27 @@ public class OssService {
 
             return ossClient.doesObjectExist(bucketName, objectKey);
 
-        } catch (OSSException | ClientException e) {
-            log.error("检查文件是否存在失败 - OSS异常：{}", e.getMessage(), e);
-            return false;
+        } catch (OSSException e) {
+            log.error("检查文件是否存在失败 - OSS异常：错误码={}，错误消息={}", e.getErrorCode(), e.getErrorMessage(), e);
+            throw new OssServiceException("检查文件存在失败：" + e.getErrorMessage(),
+                    e, mapOssErrorCode(e.getErrorCode()));
+        } catch (ClientException e) {
+            log.error("检查文件是否存在失败 - 客户端异常：{}", e.getMessage(), e);
+            throw new OssServiceException("检查文件存在失败：网络或客户端异常", e, OssErrorCode.CLIENT_ERROR);
         } catch (Exception e) {
             log.error("检查文件是否存在失败 - 未知异常：{}", e.getMessage(), e);
-            return false;
+            throw new OssServiceException("检查文件存在失败：未知错误", e, OssErrorCode.UNKNOWN_ERROR);
         }
+    }
+
+    /**
+     * 从URL或objectKey中提取objectKey
+     */
+    private String extractObjectKey(String fileUrlOrObjectKey) {
+        if (isUrl(fileUrlOrObjectKey)) {
+            return extractObjectKeyFromUrl(fileUrlOrObjectKey);
+        }
+        return fileUrlOrObjectKey;
     }
 
     /**
@@ -372,7 +512,7 @@ public class OssService {
                 path = path.substring(1);
             }
 
-            // 校验域名是否匹配（可选，用于增强安全性）
+            // 校验域名是否匹配
             if (!validateUrlHost(uri)) {
                 return null;
             }
@@ -386,7 +526,7 @@ public class OssService {
     }
 
     /**
-     * 校验URL的host是否合法（增强安全性）
+     * 校验URL的host是否合法
      */
     private boolean validateUrlHost(URI uri) {
         String actualHost = uri.getHost();
@@ -452,19 +592,10 @@ public class OssService {
             return false;
         }
 
-        // 如果配置了允许的前缀，检查objectKey是否以该前缀开头
-        if (hasText(allowedPrefix)) {
-            // 规范化前缀，确保不以斜杠开头
-            String normalizedPrefix = allowedPrefix;
-            if (normalizedPrefix.startsWith("/")) {
-                normalizedPrefix = normalizedPrefix.substring(1);
-            }
-
-            // 检查是否以允许的前缀开头
-            if (!objectKey.startsWith(normalizedPrefix + "/") && !objectKey.equals(normalizedPrefix)) {
-                log.debug("objectKey不在允许的目录下：{} (允许的前缀：{})", objectKey, normalizedPrefix);
-                return false;
-            }
+        // 检查是否以允许的前缀开头
+        if (!objectKey.startsWith(normalizedAllowedPrefix + "/") && !objectKey.equals(normalizedAllowedPrefix)) {
+            log.debug("objectKey不在允许的目录下：{} (允许的前缀：{})", objectKey, normalizedAllowedPrefix);
+            return false;
         }
 
         // 防止路径穿越攻击
@@ -477,18 +608,16 @@ public class OssService {
     }
 
     /**
-     * 规范化并校验目录
-     *
-     * @param directory 原始目录参数
-     * @return 经过校验与规范化后的安全目录
+     * 规范化路径
      */
-    private String normalizeDirectory(String directory) {
-        final String defaultDir = "uploads";
-        if (directory == null || directory.trim().isEmpty()) {
-            return defaultDir;
+    private String normalizePath(String path) {
+        final String defaultPath = "uploads";
+
+        if (path == null || path.trim().isEmpty()) {
+            return defaultPath;
         }
 
-        String normalized = directory.trim().replace("\\", "/");
+        String normalized = path.trim().replace("\\", "/");
         normalized = normalized.replaceAll("/{2,}", "/");
 
         if (normalized.startsWith("/")) {
@@ -499,14 +628,14 @@ public class OssService {
         }
 
         if (normalized.isEmpty()) {
-            return defaultDir;
+            return defaultPath;
         }
 
         String[] segments = normalized.split("/");
         for (String segment : segments) {
             if (".".equals(segment) || "..".equals(segment)) {
-                log.warn("检测到非法目录片段，已回退到默认目录。原始目录={}", directory);
-                return defaultDir;
+                log.warn("检测到非法目录片段，已回退到默认目录。原始目录={}", path);
+                return defaultPath;
             }
         }
 
@@ -517,12 +646,11 @@ public class OssService {
      * 生成唯一文件名
      */
     private String generateFileName(String directory, String extension) {
-        String safeDirectory = normalizeDirectory(directory);
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
         String uniqueFileName = UUID.randomUUID().toString().replace("-", "")
                 + "_" + System.currentTimeMillis()
                 + extension;
-        return safeDirectory + "/" + datePath + "/" + uniqueFileName;
+        return directory + "/" + datePath + "/" + uniqueFileName;
     }
 
     /**
@@ -550,15 +678,62 @@ public class OssService {
     }
 
     /**
+     * OSS错误码枚举
+     */
+    public enum OssErrorCode {
+        SERVICE_UNAVAILABLE("SERVICE_UNAVAILABLE", "OSS服务不可用"),
+        IO_ERROR("IO_ERROR", "IO异常"),
+        CLIENT_ERROR("CLIENT_ERROR", "客户端异常"),
+        OSS_SERVER_ERROR("OSS_SERVER_ERROR", "OSS服务器异常"),
+        BUCKET_NOT_FOUND("BUCKET_NOT_FOUND", "Bucket不存在"),
+        ACCESS_DENIED("ACCESS_DENIED", "访问被拒绝"),
+        AUTHENTICATION_FAILED("AUTHENTICATION_FAILED", "认证失败"),
+        INVALID_ACCESS_KEY("INVALID_ACCESS_KEY", "无效的AccessKey"),
+        REQUEST_TIMEOUT("REQUEST_TIMEOUT", "请求超时"),
+        FORBIDDEN("FORBIDDEN", "无权操作"),
+        UNKNOWN_ERROR("UNKNOWN_ERROR", "未知错误");
+
+        private final String code;
+        private final String message;
+
+        OssErrorCode(String code, String message) {
+            this.code = code;
+            this.message = message;
+        }
+
+        public String getCode() {
+            return code;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+    }
+
+    /**
      * 自定义OSS服务异常
      */
     public static class OssServiceException extends RuntimeException {
-        public OssServiceException(String message, Throwable cause) {
+        private final OssErrorCode errorCode;
+
+        public OssServiceException(String message, Throwable cause, OssErrorCode errorCode) {
             super(message, cause);
+            this.errorCode = errorCode;
         }
 
-        public OssServiceException(String message) {
+        public OssServiceException(String message, OssErrorCode errorCode) {
             super(message);
+            this.errorCode = errorCode;
+        }
+
+        public OssErrorCode getErrorCode() {
+            return errorCode;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("OssServiceException{errorCode=%s, message=%s}",
+                    errorCode, getMessage());
         }
     }
 }
