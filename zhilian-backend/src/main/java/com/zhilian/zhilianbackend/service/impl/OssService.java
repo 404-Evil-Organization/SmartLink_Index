@@ -44,10 +44,10 @@ public class OssService {
     @Value("${oss.endpoint:}")
     private String endpoint;
 
-    @Value("${app.upload.allow-types:image/jpeg,image/png,image/gif,image/webp,application/pdf}")
+    @Value("${app.upload.allow-types:image/jpeg,image/png,image/gif,application/pdf}")
     private String[] allowTypes;
 
-    @Value("${app.upload.allow-extensions:.jpg,.jpeg,.png,.gif,.webp,.pdf}")
+    @Value("${app.upload.allow-extensions:.jpg,.jpeg,.png,.gif,.pdf}")
     private String[] allowExtensions;
 
     @Value("${app.upload.max-size:10485760}") // 默认10MB
@@ -218,7 +218,11 @@ public class OssService {
         String originalFilename = file.getOriginalFilename();
         String fileExtension = getFileExtension(originalFilename).toLowerCase();
 
-        // MIME类型白名单已启用时，contentType 为空视为非法
+        // 记录校验状态
+        boolean mimeTypeValid = false;
+        boolean extensionValid = false;
+
+        // 1. MIME类型校验
         if (!allowedMimeTypes.isEmpty()) {
             if (contentType == null || contentType.trim().isEmpty()) {
                 log.warn("文件MIME类型缺失，已启用MIME白名单时禁止上传，文件名={}", originalFilename);
@@ -228,18 +232,74 @@ public class OssService {
                 log.warn("文件类型不被允许：MIME类型={}，文件名={}", contentType, originalFilename);
                 throw new IllegalArgumentException("不支持的文件类型：" + contentType);
             }
+            mimeTypeValid = true;
+            log.debug("MIME类型校验通过：{}", contentType);
         }
 
-        // 扩展名白名单已启用时，扩展名为空视为非法
+        // 2. 扩展名校验
         if (!allowedFileExtensions.isEmpty()) {
-            if (originalFilename == null || fileExtension.isEmpty()) {
+            if (originalFilename == null || originalFilename.trim().isEmpty()) {
+                log.warn("文件名为空，已启用扩展名白名单时禁止上传");
+                throw new IllegalArgumentException("文件名为空，禁止上传");
+            }
+
+            if (fileExtension.isEmpty()) {
                 log.warn("文件扩展名缺失，已启用扩展名白名单时禁止上传，文件名={}", originalFilename);
                 throw new IllegalArgumentException("文件扩展名缺失，禁止上传");
             }
 
-            if (!allowedFileExtensions.contains(fileExtension)) {
+            // 移除扩展名前的点进行比较（如果配置中包含点）
+            String extensionWithoutDot = fileExtension.startsWith(".") ?
+                    fileExtension.substring(1) : fileExtension;
+
+            // 检查两种格式：带点和不带点
+            boolean containsWithDot = allowedFileExtensions.contains(fileExtension);
+            boolean containsWithoutDot = allowedFileExtensions.contains(extensionWithoutDot);
+
+            if (!containsWithDot && !containsWithoutDot) {
                 log.warn("文件扩展名不被允许：扩展名={}，文件名={}", fileExtension, originalFilename);
                 throw new IllegalArgumentException("不支持的文件扩展名：" + fileExtension);
+            }
+            extensionValid = true;
+            log.debug("扩展名校验通过：{}", fileExtension);
+        }
+
+        // 3. 严格模式检查：至少有一种校验方式通过
+        if (allowedMimeTypes.isEmpty() && allowedFileExtensions.isEmpty()) {
+            // 如果两个白名单都为空，视为未配置类型校验，但需要记录警告
+            log.warn("文件类型白名单未配置，任何文件都可以上传！请检查配置");
+            // 建议：可以抛出异常要求配置至少一种校验方式
+            // throw new IllegalStateException("系统未配置文件类型校验规则，请联系管理员");
+        } else if (!mimeTypeValid && !extensionValid) {
+            // 理论上不会执行到这里，因为前面的校验会直接抛出异常
+            // 但保留这个安全检查
+            log.error("文件类型校验失败：既未通过MIME校验也未通过扩展名校验，文件名={}", originalFilename);
+            throw new IllegalArgumentException("文件类型校验失败");
+        }
+
+        // 4. 可选：MIME类型与扩展名一致性校验
+        if (mimeTypeValid && extensionValid) {
+            validateMimeTypeExtensionConsistency(contentType, fileExtension, originalFilename);
+        }
+    }
+
+    /**
+     * 验证MIME类型与扩展名是否一致（防止伪装文件）
+     */
+    private void validateMimeTypeExtensionConsistency(String contentType, String extension, String filename) {
+        // 定义常见的MIME类型与扩展名对应关系
+        java.util.Map<String, java.util.Set<String>> mimeTypeExtensionMap = new java.util.HashMap<>();
+        mimeTypeExtensionMap.put("image/jpeg", new java.util.HashSet<>(java.util.Arrays.asList(".jpg", ".jpeg")));
+        mimeTypeExtensionMap.put("image/png", new java.util.HashSet<>(java.util.Arrays.asList(".png")));
+        mimeTypeExtensionMap.put("image/gif", new java.util.HashSet<>(java.util.Arrays.asList(".gif")));
+        mimeTypeExtensionMap.put("application/pdf", new java.util.HashSet<>(java.util.Arrays.asList(".pdf")));
+
+        // 如果MIME类型在映射中，检查扩展名是否匹配
+        if (mimeTypeExtensionMap.containsKey(contentType)) {
+            if (!mimeTypeExtensionMap.get(contentType).contains(extension)) {
+                log.warn("MIME类型与扩展名不一致：MIME={}，扩展名={}，文件名={}",
+                        contentType, extension, filename);
+                throw new IllegalArgumentException("文件类型与扩展名不匹配");
             }
         }
     }

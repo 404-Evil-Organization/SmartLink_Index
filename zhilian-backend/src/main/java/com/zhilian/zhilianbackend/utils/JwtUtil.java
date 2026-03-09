@@ -211,11 +211,11 @@ public class JwtUtil implements InitializingBean {
      * @param token JWT令牌
      * @return true：已过期或无法解析过期时间；false：未过期
      */
-    private Boolean isTokenExpired(String token) {
+    private boolean isTokenExpired(String token) {
         Date expiration = getExpirationDateFromToken(token);
         if (expiration == null) {
             logger.debug("JWT令牌缺少过期时间（exp）声明，视为无效令牌");
-            return true;
+            return true; // 无法获取过期时间，视为过期
         }
         return expiration.before(new Date());
     }
@@ -272,25 +272,45 @@ public class JwtUtil implements InitializingBean {
      * @param username 预期的用户名
      * @return true：令牌有效且用户名匹配；false：无效
      */
-    public Boolean validateToken(String token, String username) {
+    public boolean validateToken(String token, String username) {
         if (!StringUtils.hasText(token) || !StringUtils.hasText(username)) {
             logger.debug("令牌或用户名为空，验证失败");
             return false;
         }
 
         try {
-            String tokenUsername = getUsernameFromToken(token);
-            if (tokenUsername == null) {
-                logger.debug("无法从令牌中提取用户名");
+            Claims claims = getAllClaimsFromToken(token);
+            if (claims == null) {
+                logger.debug("无法解析令牌claims");
                 return false;
             }
 
-            boolean isNotExpired = !isTokenExpired(token);
+            String tokenUsername = claims.getSubject();
+            if (tokenUsername == null) {
+                logger.debug("令牌中缺少用户名（sub）声明");
+                return false;
+            }
+
+            Date expirationDate = claims.getExpiration();
+            if (expirationDate == null) {
+                logger.debug("令牌中缺少过期时间（exp）声明");
+                return false;
+            }
+
+            boolean isNotExpired = !expirationDate.before(new Date());
             boolean usernameMatches = Objects.equals(tokenUsername, username);
 
+            if (!usernameMatches) {
+                logger.debug("用户名不匹配：期望={}，实际={}", username, tokenUsername);
+            }
+            if (!isNotExpired) {
+                logger.debug("令牌已过期：{}", expirationDate);
+            }
+
             return usernameMatches && isNotExpired;
+
         } catch (Exception e) {
-            logger.debug("令牌验证失败：{}", e.getMessage());
+            logger.debug("令牌验证过程中发生异常：{}", e.getMessage());
             return false;
         }
     }
@@ -300,7 +320,7 @@ public class JwtUtil implements InitializingBean {
      * @param token JWT令牌
      * @return true：令牌有效；false：无效
      */
-    public Boolean validateToken(String token) {
+    public boolean validateToken(String token) {
         if (!StringUtils.hasText(token)) {
             return false;
         }
@@ -318,10 +338,59 @@ public class JwtUtil implements InitializingBean {
                 return false;
             }
 
-            return !expiration.before(new Date());
+            boolean isValid = !expiration.before(new Date());
+
+            if (!isValid) {
+                logger.debug("令牌已过期：{}", expiration);
+            }
+
+            return isValid;
+
         } catch (Exception e) {
             logger.debug("令牌验证失败：{}", e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * 验证JWT令牌是否有效（带详细错误信息）
+     * @param token JWT令牌
+     * @return TokenValidationResult 包含验证结果和错误信息
+     */
+    public TokenValidationResult validateTokenWithDetail(String token) {
+        if (!StringUtils.hasText(token)) {
+            return TokenValidationResult.invalid("令牌为空");
+        }
+
+        try {
+            Claims claims = getAllClaimsFromToken(token);
+            if (claims == null) {
+                return TokenValidationResult.invalid("无法解析令牌claims");
+            }
+
+            Date expiration = claims.getExpiration();
+            if (expiration == null) {
+                return TokenValidationResult.invalid("令牌缺少过期时间声明");
+            }
+
+            if (expiration.before(new Date())) {
+                return TokenValidationResult.expired(expiration);
+            }
+
+            return TokenValidationResult.valid(claims);
+
+        } catch (ExpiredJwtException e) {
+            return TokenValidationResult.expired(e.getClaims().getExpiration());
+        } catch (SecurityException e) {
+            return TokenValidationResult.invalid("签名验证失败");
+        } catch (MalformedJwtException e) {
+            return TokenValidationResult.invalid("令牌格式错误");
+        } catch (UnsupportedJwtException e) {
+            return TokenValidationResult.invalid("不支持的令牌格式");
+        } catch (IllegalArgumentException e) {
+            return TokenValidationResult.invalid("令牌参数非法");
+        } catch (Exception e) {
+            return TokenValidationResult.invalid("验证过程中发生未知错误: " + e.getMessage());
         }
     }
 
@@ -341,7 +410,11 @@ public class JwtUtil implements InitializingBean {
             if (claims == null) {
                 throw new JwtException("无效的令牌：无法提取claims");
             }
-            return createToken(claims, claims.getSubject());
+            String subject = claims.getSubject();
+            if (!StringUtils.hasText(subject)) {
+                throw new JwtException("Invalid token: subject (sub) claim is missing or empty, cannot refresh token");
+            }
+            return createToken(claims, subject);
         } catch (Exception e) {
             logger.error("刷新令牌失败：{}", e.getMessage());
             throw new JwtException("刷新令牌失败：" + e.getMessage(), e);
@@ -376,8 +449,57 @@ public class JwtUtil implements InitializingBean {
      * @param thresholdMillis 阈值毫秒数
      * @return true：剩余时间小于阈值或无法获取剩余时间；false：剩余时间大于等于阈值
      */
-    public Boolean isTokenExpiringSoon(String token, long thresholdMillis) {
+    public boolean isTokenExpiringSoon(String token, long thresholdMillis) {
         Long remaining = getRemainingExpiration(token);
-        return remaining != null && remaining < thresholdMillis;
+        return remaining == null || remaining < thresholdMillis;
+    }
+
+    /**
+     * 令牌验证结果类（内部静态类）
+     */
+    public static class TokenValidationResult {
+        private final boolean valid;
+        private final String errorMessage;
+        private final Date expirationDate;
+        private final Claims claims;
+
+        private TokenValidationResult(boolean valid, String errorMessage, Date expirationDate, Claims claims) {
+            this.valid = valid;
+            this.errorMessage = errorMessage;
+            this.expirationDate = expirationDate;
+            this.claims = claims;
+        }
+
+        public static TokenValidationResult valid(Claims claims) {
+            return new TokenValidationResult(true, null, null, claims);
+        }
+
+        public static TokenValidationResult invalid(String errorMessage) {
+            return new TokenValidationResult(false, errorMessage, null, null);
+        }
+
+        public static TokenValidationResult expired(Date expirationDate) {
+            return new TokenValidationResult(false, "令牌已过期", expirationDate, null);
+        }
+
+        public boolean isValid() {
+            return valid;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+
+        public Date getExpirationDate() {
+            return expirationDate;
+        }
+
+        public Claims getClaims() {
+            return claims;
+        }
+
+        public boolean isExpired() {
+            return !valid && "令牌已过期".equals(errorMessage);
+        }
     }
 }

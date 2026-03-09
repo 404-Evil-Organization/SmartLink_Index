@@ -7,22 +7,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
 /**
  * OSS客户端配置类
- * 只有在所有配置属性都存在时才创建OSS客户端
  */
 @Slf4j
 @Configuration
 @ConditionalOnProperty(
-        name = {
-                "oss.endpoint",
-                "oss.access-key-id",
-                "oss.access-key-secret",
-                "oss.bucket-name"
-        },
-        havingValue = "true",  // 配置项需要非空值
-        matchIfMissing = false
+        prefix = "oss",
+        name = {"endpoint", "access-key-id", "access-key-secret", "bucket-name"}
+        // 移除 havingValue="true"，只要属性存在且不为空字符串即可
 )
 public class OssConfig {
 
@@ -43,6 +38,9 @@ public class OssConfig {
      */
     @Bean
     public OSS ossClient() {
+        // 额外校验值是否为空
+        validateConfiguration();
+
         try {
             OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
 
@@ -58,6 +56,24 @@ public class OssConfig {
         } catch (Exception e) {
             log.error("OSS客户端创建失败", e);
             throw new IllegalStateException("OSS客户端创建失败", e);
+        }
+    }
+
+    /**
+     * 验证配置值不为空
+     */
+    private void validateConfiguration() {
+        if (!StringUtils.hasText(endpoint)) {
+            throw new IllegalStateException("OSS endpoint不能为空");
+        }
+        if (!StringUtils.hasText(accessKeyId)) {
+            throw new IllegalStateException("OSS access-key-id不能为空");
+        }
+        if (!StringUtils.hasText(accessKeySecret)) {
+            throw new IllegalStateException("OSS access-key-secret不能为空");
+        }
+        if (!StringUtils.hasText(bucketName)) {
+            throw new IllegalStateException("OSS bucket-name不能为空");
         }
     }
 }
