@@ -1,13 +1,13 @@
-package com.zhilian.zhilianbackend.utils;
+package com.zhilian.zhilianbackend.service.impl;
 
 import com.aliyun.oss.OSS;
-import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.OSSException;
-import com.aliyun.oss.model.PutObjectRequest;
 import com.aliyun.oss.ClientException;
+import com.aliyun.oss.model.PutObjectRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.annotation.PostConstruct;
@@ -24,37 +24,25 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * OSS服务类
- * 支持真实OSS上传和Stub模式（模拟上传）
- *
- * 优化点：
- * 1. 支持无配置自动降级为Stub模式
- * 2. 增强异常处理，统一包装为业务异常
- * 3. 优化URL解析，使用URI进行可靠的文件路径提取
- * 4. 添加配置完整性校验
- * 5. 添加文件类型白名单校验
- * 6. 增强URL解析的安全校验，防止越权操作
- * 7. 添加文件前缀目录限制
+ * OSS文件存储服务
+ * 提供文件上传、删除、存在性检查等功能
+ * 当OSS客户端不可用时，服务将不可用并抛出明确的异常信息
  */
 @Slf4j
-@Component
+@Service
 public class OssService {
 
-    // 提供默认空值，避免启动失败
-    @Value("${oss.endpoint:}")
-    private String endpoint;
-
-    @Value("${oss.access-key-id:}")
-    private String accessKeyId;
-
-    @Value("${oss.access-key-secret:}")
-    private String accessKeySecret;
+    @Autowired(required = false)
+    private OSS ossClient;
 
     @Value("${oss.bucket-name:}")
     private String bucketName;
 
     @Value("${oss.domain:}")
     private String domain;
+
+    @Value("${oss.endpoint:}")
+    private String endpoint;
 
     @Value("${app.upload.allow-types:image/jpeg,image/png,image/gif,image/webp,application/pdf}")
     private String[] allowTypes;
@@ -68,13 +56,8 @@ public class OssService {
     @Value("${app.upload.allowed-prefix:uploads}") // 允许的文件前缀目录
     private String allowedPrefix;
 
-    private OSS ossClient;
-
-    // 标志位，表示是否使用真实OSS
-    private boolean useRealOss = false;
-
-    // 配置完整性标志
-    private boolean configComplete = false;
+    // 标志位，表示OSS客户端是否可用
+    private boolean ossAvailable = false;
 
     // 允许的文件类型集合
     private Set<String> allowedMimeTypes;
@@ -82,45 +65,49 @@ public class OssService {
     // 允许的文件扩展名集合
     private Set<String> allowedFileExtensions;
 
+    /**
+     * 初始化方法
+     * 检查OSS客户端状态并初始化文件类型白名单
+     */
     @PostConstruct
     public void init() {
         // 初始化允许的文件类型
         initializeAllowedTypes();
 
-        // 检查所有必要配置是否完整
-        configComplete = checkConfiguration();
-
-        if (!configComplete) {
-            log.warn("OSS配置不完整，将使用Stub模式（模拟上传）。缺失配置：{}{}{}{}",
-                    !hasText(endpoint) ? "endpoint " : "",
-                    !hasText(accessKeyId) ? "accessKeyId " : "",
-                    !hasText(accessKeySecret) ? "accessKeySecret " : "",
-                    !hasText(bucketName) ? "bucketName " : "");
-            useRealOss = false;
-            return;
+        // 检查OSS客户端是否可用
+        if (ossClient != null && hasText(bucketName)) {
+            try {
+                // 验证bucket是否存在
+                if (ossClient.doesBucketExist(bucketName)) {
+                    ossAvailable = true;
+                    log.info("OSS服务初始化成功，Bucket：{}", bucketName);
+                } else {
+                    log.error("OSS Bucket不存在：{}，OSS服务将不可用", bucketName);
+                    ossAvailable = false;
+                }
+            } catch (Exception e) {
+                log.error("OSS服务初始化失败，OSS服务将不可用", e);
+                ossAvailable = false;
+            }
+        } else {
+            log.warn("OSS客户端未创建或Bucket名称为空，OSS服务将不可用");
+            ossAvailable = false;
         }
 
-        try {
-            // 初始化OSS客户端
-            ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+        if (!ossAvailable) {
+            log.error("OSS服务当前不可用，请检查配置和网络连接");
+        }
+    }
 
-            // 可选：验证bucket是否存在，确保配置正确
-            if (ossClient.doesBucketExist(bucketName)) {
-                useRealOss = true;
-                log.info("OSS客户端初始化成功，Bucket：{}，Endpoint：{}", bucketName, endpoint);
-            } else {
-                log.error("OSS Bucket不存在：{}，将使用Stub模式", bucketName);
-                useRealOss = false;
-                ossClient.shutdown();
-                ossClient = null;
-            }
-        } catch (Exception e) {
-            log.error("OSS客户端初始化失败，将使用Stub模式", e);
-            useRealOss = false;
-            if (ossClient != null) {
-                ossClient.shutdown();
-                ossClient = null;
-            }
+    /**
+     * 销毁方法
+     * 关闭OSS客户端
+     */
+    @PreDestroy
+    public void destroy() {
+        if (ossClient != null) {
+            ossClient.shutdown();
+            log.info("OSS客户端已关闭");
         }
     }
 
@@ -143,34 +130,22 @@ public class OssService {
     }
 
     /**
-     * 检查配置完整性
-     */
-    private boolean checkConfiguration() {
-        return hasText(endpoint) &&
-                hasText(accessKeyId) &&
-                hasText(accessKeySecret) &&
-                hasText(bucketName);
-    }
-
-    /**
-     * 判断字符串是否有内容
-     */
-    private boolean hasText(String str) {
-        return str != null && !str.trim().isEmpty();
-    }
-
-    @PreDestroy
-    public void destroy() {
-        if (ossClient != null) {
-            ossClient.shutdown();
-            log.info("OSS客户端已关闭");
-        }
-    }
-
-    /**
-     * 上传文件 - 自动选择真实OSS或Stub模式
+     * 上传文件
+     *
+     * @param file      待上传的文件
+     * @param directory 文件存储目录
+     * @return 文件的访问URL
+     * @throws IllegalStateException 当OSS服务不可用时抛出
+     * @throws IllegalArgumentException 当文件校验不通过时抛出
+     * @throws OssServiceException 当上传过程中发生异常时抛出
      */
     public String uploadFile(MultipartFile file, String directory) {
+        // 检查OSS服务是否可用
+        if (!ossAvailable) {
+            log.error("上传失败：OSS服务当前不可用");
+            throw new IllegalStateException("OSS服务当前不可用，无法执行上传操作");
+        }
+
         // 1. 基础校验
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("上传文件不能为空");
@@ -186,11 +161,7 @@ public class OssService {
         validateFileType(file);
 
         // 4. 执行上传
-        if (useRealOss) {
-            return realUploadFile(file, directory);
-        } else {
-            return stubUploadFile(file, directory);
-        }
+        return realUploadFile(file, directory);
     }
 
     /**
@@ -216,17 +187,12 @@ public class OssService {
                 throw new IllegalArgumentException("不支持的文件扩展名：" + fileExtension);
             }
         }
-
-        // TODO: 可选：添加文件头魔数校验，提高安全性
-        // 对于关键文件类型，可以进一步验证文件头魔数
     }
 
     /**
      * 真实OSS上传
-     * 增强的异常处理
      */
     private String realUploadFile(MultipartFile file, String directory) {
-        // 使用try-with-resources确保InputStream自动关闭
         try (InputStream inputStream = file.getInputStream()) {
             String originalFilename = file.getOriginalFilename();
             String fileExtension = getFileExtension(originalFilename);
@@ -281,41 +247,45 @@ public class OssService {
     }
 
     /**
-     * Stub模式上传
+     * 删除文件
+     *
+     * @param fileUrlOrObjectKey 文件的访问URL或OSS对象键
+     * @return 删除是否成功
+     * @throws IllegalStateException 当OSS服务不可用时抛出
      */
-    public String stubUploadFile(MultipartFile file, String directory) {
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = getFileExtension(originalFilename);
-        String fileName = generateFileName(directory, fileExtension);
-
-        log.info("[STUB] 模拟文件上传 - 原始文件名：{}，模拟路径：{}", originalFilename, fileName);
-
-        // 返回模拟的URL
-        return "https://" + (hasText(bucketName) ? bucketName : "stub-bucket") +
-                ".oss-cn-stub.aliyuncs.com/" + fileName;
-    }
-
-    /**
-     * 删除文件 - 接收内部objectKey（推荐方式）
-     */
-    public boolean deleteFileByKey(String objectKey) {
-        if (!hasText(objectKey)) {
-            log.warn("删除文件失败：objectKey为空");
-            return false;
+    public boolean deleteFile(String fileUrlOrObjectKey) {
+        if (!ossAvailable) {
+            log.error("删除失败：OSS服务当前不可用");
+            throw new IllegalStateException("OSS服务当前不可用，无法执行删除操作");
         }
 
-        // 校验objectKey是否在允许的前缀目录下
-        if (!isAllowedObjectKey(objectKey)) {
-            log.warn("删除文件失败：objectKey不在允许的目录下 - {}", objectKey);
+        if (!hasText(fileUrlOrObjectKey)) {
+            log.warn("删除文件失败：参数为空");
             return false;
-        }
-
-        if (!useRealOss) {
-            log.info("[STUB] 模拟文件删除 - objectKey：{}", objectKey);
-            return true;
         }
 
         try {
+            // 判断是URL还是objectKey
+            String objectKey;
+            if (isUrl(fileUrlOrObjectKey)) {
+                // 如果是URL，提取objectKey
+                objectKey = extractObjectKeyFromUrl(fileUrlOrObjectKey);
+                if (objectKey == null) {
+                    log.warn("删除文件失败：无法从URL提取objectKey - {}", fileUrlOrObjectKey);
+                    return false;
+                }
+            } else {
+                // 直接作为objectKey使用
+                objectKey = fileUrlOrObjectKey;
+            }
+
+            // 校验objectKey是否在允许的目录下
+            if (!isAllowedObjectKey(objectKey)) {
+                log.warn("删除文件失败：objectKey不在允许的目录下 - {}", objectKey);
+                return false;
+            }
+
+            // 执行删除
             ossClient.deleteObject(bucketName, objectKey);
             log.info("文件删除成功：{}", objectKey);
             return true;
@@ -330,48 +300,40 @@ public class OssService {
     }
 
     /**
-     * 删除文件 - 通过URL（带安全校验）
+     * 检查文件是否存在
+     *
+     * @param fileUrlOrObjectKey 文件的访问URL或OSS对象键
+     * @return 文件是否存在
+     * @throws IllegalStateException 当OSS服务不可用时抛出
      */
-    public boolean deleteFile(String fileUrl) {
-        if (!hasText(fileUrl)) {
-            log.warn("删除文件失败：文件URL为空");
+    public boolean doesFileExist(String fileUrlOrObjectKey) {
+        if (!ossAvailable) {
+            log.error("检查失败：OSS服务当前不可用");
+            throw new IllegalStateException("OSS服务当前不可用，无法执行检查操作");
+        }
+
+        if (!hasText(fileUrlOrObjectKey)) {
             return false;
         }
 
         try {
-            String objectKey = extractAndValidateObjectKey(fileUrl);
-            if (objectKey == null) {
-                log.warn("删除文件失败：无法从URL提取或校验失败 - {}", fileUrl);
+            // 判断是URL还是objectKey
+            String objectKey;
+            if (isUrl(fileUrlOrObjectKey)) {
+                objectKey = extractObjectKeyFromUrl(fileUrlOrObjectKey);
+                if (objectKey == null) {
+                    return false;
+                }
+            } else {
+                objectKey = fileUrlOrObjectKey;
+            }
+
+            // 校验objectKey是否在允许的目录下
+            if (!isAllowedObjectKey(objectKey)) {
+                log.debug("objectKey不在允许的目录下：{}", objectKey);
                 return false;
             }
 
-            return deleteFileByKey(objectKey);
-
-        } catch (Exception e) {
-            log.error("删除文件失败 - 处理URL时发生异常：{}", e.getMessage(), e);
-            return false;
-        }
-    }
-
-    /**
-     * 检查文件是否存在 - 通过内部objectKey
-     */
-    public boolean doesFileExistByKey(String objectKey) {
-        if (!hasText(objectKey)) {
-            return false;
-        }
-
-        // 校验objectKey是否在允许的前缀目录下
-        if (!isAllowedObjectKey(objectKey)) {
-            log.debug("objectKey不在允许的目录下：{}", objectKey);
-            return false;
-        }
-
-        if (!useRealOss) {
-            return true; // Stub模式默认返回true
-        }
-
-        try {
             return ossClient.doesObjectExist(bucketName, objectKey);
 
         } catch (OSSException | ClientException e) {
@@ -384,32 +346,18 @@ public class OssService {
     }
 
     /**
-     * 检查文件是否存在 - 通过URL
+     * 判断字符串是否为URL
      */
-    public boolean doesFileExist(String fileUrl) {
-        if (!hasText(fileUrl)) {
-            return false;
-        }
-
-        try {
-            String objectKey = extractAndValidateObjectKey(fileUrl);
-            if (objectKey == null) {
-                return false;
-            }
-
-            return doesFileExistByKey(objectKey);
-
-        } catch (Exception e) {
-            log.error("检查文件是否存在失败 - 处理URL时发生异常：{}", e.getMessage(), e);
-            return false;
-        }
+    private boolean isUrl(String str) {
+        return str != null && (str.startsWith("http://") || str.startsWith("https://"));
     }
 
     /**
-     * 从URL提取并校验objectKey
-     * @return 校验通过的objectKey，校验失败返回null
+     * 从URL提取objectKey
+     *
+     * @return 提取出的objectKey，提取失败返回null
      */
-    private String extractAndValidateObjectKey(String fileUrl) {
+    private String extractObjectKeyFromUrl(String fileUrl) {
         try {
             URI uri = new URI(fileUrl);
             String path = uri.getPath();
@@ -424,14 +372,8 @@ public class OssService {
                 path = path.substring(1);
             }
 
-            // 校验域名是否匹配
+            // 校验域名是否匹配（可选，用于增强安全性）
             if (!validateUrlHost(uri)) {
-                return null;
-            }
-
-            // 校验objectKey是否在允许的目录下
-            if (!isAllowedObjectKey(path)) {
-                log.warn("objectKey不在允许的目录下：{}", path);
                 return null;
             }
 
@@ -444,7 +386,7 @@ public class OssService {
     }
 
     /**
-     * 校验URL的host是否合法
+     * 校验URL的host是否合法（增强安全性）
      */
     private boolean validateUrlHost(URI uri) {
         String actualHost = uri.getHost();
@@ -535,25 +477,20 @@ public class OssService {
     }
 
     /**
-     * 规范化并校验目录，防止路径穿越和非法前后斜杠
+     * 规范化并校验目录
      *
-     * @param directory 原始目录参数，可能为 null、空或包含非法片段
-     * @return 经过校验与规范化后的安全目录，不包含首尾斜杠
+     * @param directory 原始目录参数
+     * @return 经过校验与规范化后的安全目录
      */
     private String normalizeDirectory(String directory) {
-        // 默认兜底目录，避免出现 null/ 或 // 等异常前缀
         final String defaultDir = "uploads";
         if (directory == null || directory.trim().isEmpty()) {
             return defaultDir;
         }
 
-        // 统一分隔符为正斜杠
         String normalized = directory.trim().replace("\\", "/");
-
-        // 合并重复斜杠
         normalized = normalized.replaceAll("/{2,}", "/");
 
-        // 去掉首尾斜杠，避免生成 // 或 /xxx/yyy/ 这类多余层级
         if (normalized.startsWith("/")) {
             normalized = normalized.substring(1);
         }
@@ -565,11 +502,10 @@ public class OssService {
             return defaultDir;
         }
 
-        // 防止路径穿越：拒绝 "." 或 ".." 片段
         String[] segments = normalized.split("/");
         for (String segment : segments) {
             if (".".equals(segment) || "..".equals(segment)) {
-                log.warn("检测到非法目录片段，已回退到默认目录。originalDirectory={}", directory);
+                log.warn("检测到非法目录片段，已回退到默认目录。原始目录={}", directory);
                 return defaultDir;
             }
         }
@@ -581,7 +517,6 @@ public class OssService {
      * 生成唯一文件名
      */
     private String generateFileName(String directory, String extension) {
-        // 对 directory 做兜底校验与规范化，避免出现 null/、// 或路径穿越
         String safeDirectory = normalizeDirectory(directory);
         String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
         String uniqueFileName = UUID.randomUUID().toString().replace("-", "")
@@ -601,17 +536,17 @@ public class OssService {
     }
 
     /**
-     * 是否使用真实OSS
+     * OSS服务是否可用
      */
-    public boolean isUseRealOss() {
-        return useRealOss;
+    public boolean isOssAvailable() {
+        return ossAvailable;
     }
 
     /**
-     * 配置是否完整
+     * 判断字符串是否有内容
      */
-    public boolean isConfigComplete() {
-        return configComplete;
+    private boolean hasText(String str) {
+        return str != null && !str.trim().isEmpty();
     }
 
     /**
