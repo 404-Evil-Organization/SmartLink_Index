@@ -4,9 +4,8 @@
     <el-card class="auth-card" :class="{ compact }">
       <!-- 新增 Logo 区域：统一品牌形象 -->
       <div class="logo-wrapper">
-        <el-icon :size="logoSize" color="#409eff">
-          <Connection />
-        </el-icon>
+        <!-- 修改 Logo ：为特定图标 -->
+        <img src="@/assets/logo.png" :style="{ height: logoSize + 'px', width: 'auto' }" alt="智链指数" />
         <span class="logo-text">智链指数</span>
       </div>
 
@@ -26,7 +25,7 @@ import { Connection } from "@element-plus/icons-vue";
 defineProps({
   logoSize: {
     type: Number,
-    default: 40,
+    default: 32  // ← 将 40 改为 32 ，更适合整体设计。
   },
   compact: {
     type: Boolean,

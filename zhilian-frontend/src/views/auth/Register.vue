@@ -1,6 +1,6 @@
 <template>
   <!-- 优化：统一全屏居中卡片风格，与登录页一致 -->
-  <AuthCard :logo-size="36" compact>
+  <AuthCard>
     <!-- 优化：改为垂直单列布局，所有字段顺序排列（原两列布局已移除） -->
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
       <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定图标组件 -->
@@ -72,7 +72,7 @@
         <el-button
           type="primary"
           :loading="registerLoading"
-          class="auth-button"
+          class="auth-button register-button"
           @click="handleRegister"
         >
           注册
@@ -231,5 +231,10 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-/* 与登录页保持完全一致的视觉风格，尺寸调小以更紧凑 */
+/* 与登录页保持完全一致的视觉风格 */
+.register-button {
+  height: 48px !important;
+  font-size: 16px !important;
+  margin-top: 16px !important;
+}
 </style>
