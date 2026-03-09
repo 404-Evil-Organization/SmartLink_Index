@@ -17,7 +17,6 @@ import org.springframework.util.StringUtils;
 @ConditionalOnProperty(
         prefix = "oss",
         name = {"endpoint", "access-key-id", "access-key-secret", "bucket-name"}
-        // 移除 havingValue="true"，只要属性存在且不为空字符串即可
 )
 public class OssConfig {
 
@@ -34,22 +33,23 @@ public class OssConfig {
     private String bucketName;
 
     /**
-     * 创建OSS客户端Bean
-     */
+     * @Author:xiaodengyou
+     * @Date: 2026/3/9 22:01
+     * @Param:
+     * @Return:
+     * @Description: 创建OSS客户端Bean，并验证Bucket是否存在
+     **/
     @Bean
     public OSS ossClient() {
-        // 额外校验值是否为空
         validateConfiguration();
 
         try {
             OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
 
-            // 验证bucket是否存在，确保配置正确
             if (ossClient.doesBucketExist(bucketName)) {
-                log.info("OSS客户端创建成功，Bucket：{}，Endpoint：{}", bucketName, endpoint);
+                log.info("OSS客户端创建成功，Bucket：{}", bucketName);
                 return ossClient;
             } else {
-                log.error("OSS Bucket不存在：{}", bucketName);
                 ossClient.shutdown();
                 throw new IllegalStateException("OSS Bucket不存在: " + bucketName);
             }
@@ -60,8 +60,12 @@ public class OssConfig {
     }
 
     /**
-     * 验证配置值不为空
-     */
+     * @Author:xiaodengyou
+     * @Date: 2026/3/9 22:01
+     * @Param:
+     * @Return:
+     * @Description: 验证OSS配置参数不能为空
+     **/
     private void validateConfiguration() {
         if (!StringUtils.hasText(endpoint)) {
             throw new IllegalStateException("OSS endpoint不能为空");
