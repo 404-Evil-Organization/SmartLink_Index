@@ -1,5 +1,6 @@
 <template>
   <!-- 优化：统一全屏居中卡片风格，与登录页一致 -->
+  <!-- 修改：移除 :logo-size 和 compact 属性，与登录页完全一致 -->
   <AuthCard>
     <!-- 优化：改为垂直单列布局，所有字段顺序排列（原两列布局已移除） -->
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
@@ -79,12 +80,10 @@
         </el-button>
       </el-form-item>
 
-      <!-- 新增登录入口链接，便于已注册用户跳转 -->
+      <!-- 修改：统一跳转方式，使用方法调用而非 $router.push -->
       <div class="auth-link">
         已有账号？
-        <el-link type="primary" @click="$router.push('/login')"
-          >立即登录</el-link
-        >
+        <el-link type="primary" @click="goToLogin">立即登录</el-link>
       </div>
     </el-form>
   </AuthCard>
@@ -95,15 +94,8 @@ import { reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { register } from "@/api/auth";
 import { useRouter } from "vue-router";
-// 新增：引入图标，与登录页统一
-import {
-  Connection,
-  User,
-  Lock,
-  Phone,
-  Message,
-} from "@element-plus/icons-vue";
-// 引入公共卡片组件
+// 修改：移除未使用的 Connection 图标
+import { User, Lock, Phone, Message } from "@element-plus/icons-vue";
 import AuthCard from "@/components/AuthCard.vue";
 
 const router = useRouter();
@@ -197,7 +189,11 @@ const rules = {
   ],
 };
 
-//注册行为
+// 修改：新增跳转登录页的方法
+const goToLogin = () => {
+  router.push('/login');
+};
+
 const handleRegister = async () => {
   if (registerLoading.value) return;
 
@@ -231,10 +227,10 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-/* 与登录页保持完全一致的视觉风格 */
-.register-button {
-  height: 48px !important;
-  font-size: 16px !important;
-  margin-top: 16px !important;
+/* 修改：移除 !important，通过组合选择器提高权重覆盖基础样式 */
+.auth-button.register-button {
+  height: 48px;
+  font-size: 16px;
+  margin-top: 16px;
 }
 </style>
