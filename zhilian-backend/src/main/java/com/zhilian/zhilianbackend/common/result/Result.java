@@ -3,7 +3,6 @@ package com.zhilian.zhilianbackend.common.result;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import org.apache.ibatis.annotations.Param;
 
 /**
  * @Author: 6017
