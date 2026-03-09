@@ -99,7 +99,8 @@ public class SecurityConfig {
                                 "/auth/login",
                                 "/auth/register"
                         ).permitAll()
-                        .anyRequest().authenticated()
+                        // TODO: 引入 JWT 或其他认证机制后，将这里改回 .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable());
