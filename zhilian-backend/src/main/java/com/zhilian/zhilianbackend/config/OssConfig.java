@@ -2,22 +2,18 @@ package com.zhilian.zhilianbackend.config;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.StringUtils;
 
 /**
- * OSS客户端配置类
- */
-@Slf4j
+ * @Author:xiaodengyou
+ * @Date: 2026/3/10 11:30
+ * @Param:
+ * @Return:
+ * @Description: 阿里云OSS配置类
+ **/
 @Configuration
-@ConditionalOnProperty(
-        prefix = "oss",
-        name = {"endpoint", "access-key-id", "access-key-secret", "bucket-name"}
-)
 public class OssConfig {
 
     @Value("${oss.endpoint}")
@@ -29,43 +25,15 @@ public class OssConfig {
     @Value("${oss.access-key-secret}")
     private String accessKeySecret;
 
-    @Value("${oss.bucket-name}")
-    private String bucketName;
-
     /**
      * @Author:xiaodengyou
-     * @Date: 2026/3/9 22:01
+     * @Date: 2026/3/10 11:30
      * @Param:
-     * @Return:
-     * @Description: 创建OSS客户端Bean，并验证Bucket是否存在
+     * @Return: OSS客户端实例
+     * @Description: 创建OSS客户端Bean
      **/
     @Bean
     public OSS ossClient() {
-        validateConfiguration();
-        OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
-        log.info("OSS客户端实例创建成功，Endpoint：{}", endpoint);
-        return ossClient;
-    }
-
-    /**
-     * @Author:xiaodengyou
-     * @Date: 2026/3/9 22:01
-     * @Param:
-     * @Return:
-     * @Description: 验证OSS配置参数不能为空
-     **/
-    private void validateConfiguration() {
-        if (!StringUtils.hasText(endpoint)) {
-            throw new IllegalStateException("OSS endpoint不能为空");
-        }
-        if (!StringUtils.hasText(accessKeyId)) {
-            throw new IllegalStateException("OSS access-key-id不能为空");
-        }
-        if (!StringUtils.hasText(accessKeySecret)) {
-            throw new IllegalStateException("OSS access-key-secret不能为空");
-        }
-        if (!StringUtils.hasText(bucketName)) {
-            throw new IllegalStateException("OSS bucket-name不能为空");
-        }
+        return new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
     }
 }
