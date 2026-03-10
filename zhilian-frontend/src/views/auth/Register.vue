@@ -1,18 +1,47 @@
 <template>
-  <div style="max-width: 400px; margin: 100px auto">
-    <h2>注册</h2>
-    <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
+  <!-- 优化：统一全屏居中卡片风格，与登录页一致 -->
+  <!-- 修改：移除 :logo-size 和 compact 属性，与登录页完全一致 -->
+  <AuthCard>
+    <!-- 优化：改为垂直单列布局，所有字段顺序排列（原两列布局已移除） -->
+    <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
+      <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定图标组件 -->
       <el-form-item label="用户名" prop="username">
-        <el-input v-model="form.username" />
+        <el-input
+          v-model="form.username"
+          placeholder="请输入用户名"
+          :prefix-icon="User"
+        />
       </el-form-item>
+
+      <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定图标组件 -->
       <el-form-item label="密码" prop="password">
-        <el-input v-model="form.password" type="password" />
+        <el-input
+          v-model="form.password"
+          type="password"
+          placeholder="请输入密码"
+          :prefix-icon="Lock"
+          show-password
+        />
       </el-form-item>
+
+      <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定图标组件 -->
       <el-form-item label="确认密码" prop="confirmPassword">
-        <el-input v-model="form.confirmPassword" type="password" />
+        <el-input
+          v-model="form.confirmPassword"
+          type="password"
+          placeholder="请再次输入密码"
+          :prefix-icon="Lock"
+          show-password
+        />
       </el-form-item>
+
+      <!-- 角色选择 -->
       <el-form-item label="角色" prop="role">
-        <el-select v-model="form.role" placeholder="请选择角色">
+        <el-select
+          v-model="form.role"
+          placeholder="请选择角色"
+          style="width: 100%"
+        >
           <el-option
             v-for="item in options"
             :key="item.value"
@@ -21,23 +50,43 @@
           />
         </el-select>
       </el-form-item>
+
+      <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定图标组件 -->
       <el-form-item label="联系电话" prop="phone">
-        <el-input v-model="form.phone" type="phone" />
+        <el-input
+          v-model="form.phone"
+          placeholder="请输入手机号"
+          :prefix-icon="Phone"
+        />
       </el-form-item>
+
+      <!-- 优化：添加 prefix-icon 图标；改为 :prefix-icon 绑定图标组件 -->
       <el-form-item label="电子邮箱" prop="email">
-        <el-input v-model="form.email" type="email" />
+        <el-input
+          v-model="form.email"
+          placeholder="请输入邮箱"
+          :prefix-icon="Message"
+        />
       </el-form-item>
+
       <el-form-item>
         <el-button
           type="primary"
           :loading="registerLoading"
+          class="auth-button register-button"
           @click="handleRegister"
-          >注册</el-button
         >
-        <el-button @click="$router.push('/login')">返回登录</el-button>
+          注册
+        </el-button>
       </el-form-item>
+
+      <!-- 修改：统一跳转方式，使用方法调用而非 $router.push -->
+      <div class="auth-link">
+        已有账号？
+        <el-link type="primary" @click="goToLogin">立即登录</el-link>
+      </div>
     </el-form>
-  </div>
+  </AuthCard>
 </template>
 
 <script setup>
@@ -45,6 +94,9 @@ import { reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { register } from "@/api/auth";
 import { useRouter } from "vue-router";
+// 修改：移除未使用的 Connection 图标
+import { User, Lock, Phone, Message } from "@element-plus/icons-vue";
+import AuthCard from "@/components/AuthCard.vue";
 
 const router = useRouter();
 const registerLoading = ref(false);
@@ -137,7 +189,11 @@ const rules = {
   ],
 };
 
-//注册行为
+// 修改：新增跳转登录页的方法
+const goToLogin = () => {
+  router.push('/login');
+};
+
 const handleRegister = async () => {
   if (registerLoading.value) return;
 
@@ -159,7 +215,6 @@ const handleRegister = async () => {
       email: form.email,
     });
     ElMessage.success("注册成功");
-
     // 跳转登录页
     router.push("/login");
   } catch (err) {
@@ -170,3 +225,12 @@ const handleRegister = async () => {
   }
 };
 </script>
+
+<style scoped>
+/* 修改：移除 !important，通过组合选择器提高权重覆盖基础样式 */
+.auth-button.register-button {
+  height: 48px;
+  font-size: 16px;
+  margin-top: 16px;
+}
+</style>
