@@ -52,8 +52,8 @@ mybatis-plus:
       id-type: auto
       # 逻辑删除字段
       logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
+      logic-delete-value: now()
+      logic-not-delete-value: null
     # 是否打印banner
     banner: false
   # 原生配置
@@ -145,6 +145,7 @@ app:
   cors:
     allowed-origins:
       - http://localhost:3000
+      - http://localhost:5173
       - http://localhost:8080
     allowed-methods:
       - GET
@@ -152,8 +153,12 @@ app:
       - PUT
       - DELETE
       - OPTIONS
+      - PATCH
     allowed-headers:
       - Authorization
       - Content-Type
+      - X-Requested-With
+      - Accept
     allow-credentials: true
     max-age: 3600
+

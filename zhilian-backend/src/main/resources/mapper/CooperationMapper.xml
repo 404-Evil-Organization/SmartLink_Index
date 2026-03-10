@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhilian.zhilianbackend.mapper.CooperationMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.zhilian.zhilianbackend.entity.Cooperation">
+        <id column="id" property="id" />
+        <result column="manu_id" property="manuId" />
+        <result column="service_id" property="serviceId" />
+        <result column="demand_id" property="demandId" />
+        <result column="start_date" property="startDate" />
+        <result column="end_date" property="endDate" />
+        <result column="amount" property="amount" />
+        <result column="description" property="description" />
+        <result column="status" property="status" />
+        <result column="deleted" property="deleted" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, manu_id, service_id, demand_id, start_date, end_date, amount, description, status, deleted, create_time, update_time
+    </sql>
+
+</mapper>

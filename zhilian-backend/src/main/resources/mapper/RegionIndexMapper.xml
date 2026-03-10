@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhilian.zhilianbackend.mapper.RegionIndexMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.zhilian.zhilianbackend.entity.RegionIndex">
+        <id column="id" property="id" />
+        <result column="region" property="region" />
+        <result column="year" property="year" />
+        <result column="period_type" property="periodType" />
+        <result column="period_value" property="periodValue" />
+        <result column="coop_density" property="coopDensity" />
+        <result column="service_rate" property="serviceRate" />
+        <result column="cross_rate" property="crossRate" />
+        <result column="total_index" property="totalIndex" />
+        <result column="calc_time" property="calcTime" />
+        <result column="deleted" property="deleted" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, region, year, period_type, period_value, coop_density, service_rate, cross_rate, total_index, calc_time, deleted, create_time, update_time
+    </sql>
+
+</mapper>
