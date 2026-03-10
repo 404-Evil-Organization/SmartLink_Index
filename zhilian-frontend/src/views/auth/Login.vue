@@ -29,10 +29,9 @@
         />
       </el-form-item>
 
-      <!-- 新增“记住密码”和“忘记密码”选项，功能预留，界面更完整 -->
+      <!-- 修改：记住密码功能暂未实现，添加 disabled 并标注“开发中” -->
       <div class="login-options">
-        <el-checkbox v-model="remember">记住密码</el-checkbox>
-        <!-- 优化：为“忘记密码”添加点击事件，避免无反馈链接（功能暂未实现，预留提示） -->
+        <el-checkbox v-model="remember" disabled>记住密码（开发中）</el-checkbox>
         <el-link type="primary" :underline="false" @click="handleForgotPassword">忘记密码？</el-link>
       </div>
 
@@ -47,12 +46,10 @@
         </el-button>
       </el-form-item>
 
-      <!-- 新增注册引导链接，便于用户切换操作 -->
+      <!-- 修改：统一跳转方式，使用方法调用而非 $router.push -->
       <div class="auth-link">
         还没有账号？
-        <el-link type="primary" @click="$router.push('/register')"
-          >立即注册</el-link
-        >
+        <el-link type="primary" @click="goToRegister">立即注册</el-link>
       </div>
     </el-form>
   </AuthCard>
@@ -64,9 +61,8 @@ import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { login } from "@/api/auth";
 import { useUserStore } from "@/stores/user";
-// 新增：显式引入图标，保证按需加载
-import { Connection, User, Lock } from "@element-plus/icons-vue";
-// 引入公共卡片组件
+// 修改：移除未使用的 Connection 图标
+import { User, Lock } from "@element-plus/icons-vue";
 import AuthCard from "@/components/AuthCard.vue";
 
 const router = useRouter();
@@ -74,8 +70,7 @@ const userStore = useUserStore();
 const formRef = ref(null);
 // 创建loading状态防止用户重复请求登录
 const loginLoading = ref(false);
-// 新增：记住密码状态（功能暂未实现，UI预留）
-const remember = ref(false);
+const remember = ref(false); // 修改：记住密码状态预留，但已禁用
 
 const form = reactive({
   username: "",
@@ -90,6 +85,11 @@ const rules = {
 // 新增：忘记密码点击处理（功能预留）
 const handleForgotPassword = () => {
   ElMessage.info('忘记密码功能开发中，敬请期待');
+};
+
+// 修改：新增跳转注册页的方法
+const goToRegister = () => {
+  router.push('/register');
 };
 
 const handleLogin = async () => {
@@ -113,6 +113,9 @@ const handleLogin = async () => {
     // 跳转到首页
     router.push("/");
   } catch (error) {
+    // 修改：增加用户友好错误提示
+    const message = error?.response?.data?.message || error?.message || "登录失败，请检查用户名或密码或稍后重试";
+    ElMessage.error(message);
     console.error("登录失败", error);
   } finally {
     loginLoading.value = false;
@@ -129,9 +132,10 @@ const handleLogin = async () => {
   font-size: 14px;
 }
 
-.login-button {
-  height: 48px !important;
-  font-size: 16px !important;
-  margin-top: 16px !important;
+/* 修改：移除 !important，通过组合选择器提高权重覆盖基础样式 */
+.auth-button.login-button {
+  height: 48px;
+  font-size: 16px;
+  margin-top: 16px;
 }
 </style>
