@@ -96,16 +96,15 @@ jwt:
 
 # 阿里云OSS配置
 oss:
-  # 阿里云OSS端点（根据实际区域修改）
-  endpoint: oss-cn-hangzhou.aliyuncs.com
-  # AccessKey ID（必须从环境变量读取:OSS_ACCESS_KEY_ID)）
+  # 阿里云OSS端点（广州区域）
+  endpoint: oss-cn-guangzhou.aliyuncs.com
+  # AccessKey 从环境变量读取
   access-key-id: ${OSS_ACCESS_KEY_ID:}
-  # AccessKey Secret（必须从环境变量读取:OSS_ACCESS_KEY_SECRET）
   access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
   # 存储空间名称
-  bucket-name: zhilian-bucket
-  # 访问域名（可选）
-  domain: https://zhilian-bucket.oss-cn-hangzhou.aliyuncs.com
+  bucket-name: smartlink-index
+  # 访问域名
+  domain: https://smartlink-index.oss-cn-guangzhou.aliyuncs.com
 
 # 日志配置
 logging:
@@ -132,15 +131,6 @@ logging:
 
 # 自定义应用配置
 app:
-  # 文件上传路径
-  upload:
-    path: /uploads
-    # 允许的文件类型（仅图片与 PDF，避免高风险的可执行文档格式）
-    allow-types:
-      - image/jpeg
-      - image/png
-      - image/gif
-      - application/pdf
   # 跨域配置
   cors:
     allowed-origins:
