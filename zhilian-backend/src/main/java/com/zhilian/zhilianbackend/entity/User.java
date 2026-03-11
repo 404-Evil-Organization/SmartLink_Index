@@ -70,7 +70,7 @@ public class User implements Serializable {
      * 逻辑删除标记，NULL代表未删除，非NULL代表删除时间
      */
     @TableField("deleted")
-    @TableLogic
+    @TableLogic(value = "null", delval = "now()")
     private Date deleted;
 
     /**

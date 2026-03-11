@@ -15,21 +15,22 @@ import com.zhilian.zhilianbackend.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 /**
  * @Author: 6017
  * @Date: 2026/3/9 20:50
- * @Param: 
- * @Return: 
+ * @Param:
+ * @Return:
  * @Description: 用户表业务逻辑实现类，实现用户相关的业务方法
-**/
+ **/
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
      * @Author: 6017
@@ -37,7 +38,7 @@ public class UserServiceImpl implements UserService {
      * @Param: request 用户注册请求参数
      * @Return: UserRegisterResponse 注册响应信息
      * @Description: 用户注册业务实现
-    **/
+     **/
     @Override
     public UserRegisterResponse register(UserRegisterRequest request) {
         // 1. 检查用户名是否已存在
@@ -45,20 +46,20 @@ public class UserServiceImpl implements UserService {
         wrapper.eq(User::getUsername, request.getUsername())
                 .isNull(User::getDeleted);
         if (userMapper.selectCount(wrapper) > 0) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(409, "用户名已存在"); // 409 Conflict
         }
 
         // 2. 创建新用户
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+
         // 2.1 校验并设置用户角色，仅允许 manufacture/service/park/admin
         String role = request.getRole();
         if (!"manufacture".equals(role)
                 && !"service".equals(role)
                 && !"park".equals(role)
                 && !"admin".equals(role)) {
-            // 用户角色不合法属于请求参数错误，使用 400 业务码而非默认 500
             throw new BusinessException(400, "用户角色不合法");
         }
         user.setRole(role);
@@ -83,26 +84,33 @@ public class UserServiceImpl implements UserService {
      * @Param: request 用户登录请求参数
      * @Return: UserLoginResponse 登录响应信息（JWT token）
      * @Description: 用户登录业务实现
-    **/
+     **/
     @Override
     public UserLoginResponse login(UserLoginRequest request) {
-        // 1. 查询用户
+
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, request.getUsername())
                 .isNull(User::getDeleted);
-        User user = userMapper.selectOne(wrapper);
+        List<User> users = userMapper.selectList(wrapper);
 
-        // 2. 校验
-        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BusinessException("用户名或密码错误");
+
+        if (users.isEmpty()) {
+            throw new BusinessException(404, "用户不存在");
         }
 
-        // 3. 检查状态
-        if (!Integer.valueOf(1).equals(user.getStatus()))  {
-            throw new BusinessException("账号已被禁用");
+        User user = users.get(0);
+
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BusinessException(401, "用户名或密码错误"); // 401 Unauthorized
         }
 
-        // 4. 生成Token
+
+        if (!Integer.valueOf(1).equals(user.getStatus())) {
+            throw new BusinessException(403, "账号已被禁用"); // 403 Forbidden
+        }
+
+
         String token = jwtUtil.generateToken(user.getId(), user.getUsername());
 
         UserLoginResponse response = new UserLoginResponse();
@@ -116,12 +124,12 @@ public class UserServiceImpl implements UserService {
      * @Param: userId 用户ID
      * @Return: UserInfoResponse 用户详细信息
      * @Description: 获取当前用户信息业务实现
-    **/
+     **/
     @Override
     public UserInfoResponse getCurrentUser(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null || user.getDeleted() != null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(404, "用户不存在");
         }
 
         UserInfoResponse response = new UserInfoResponse();
@@ -139,18 +147,18 @@ public class UserServiceImpl implements UserService {
      * @Author: 6017
      * @Date: 2026/3/11 16:12
      * @Param: userId 用户ID,request 修改密码请求参数
-     * @Return: 
+     * @Return:
      * @Description: 修改密码业务实现
-    **/
+     **/
     @Override
     public void changePassword(Long userId, UserChangePasswordRequest request) {
         User user = userMapper.selectById(userId);
         if (user == null || user.getDeleted() != null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(404, "用户不存在");
         }
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new BusinessException("旧密码错误");
+            throw new BusinessException(401, "旧密码错误"); // 401 Unauthorized
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
