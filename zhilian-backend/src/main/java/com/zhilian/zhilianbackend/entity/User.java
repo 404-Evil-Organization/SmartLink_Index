@@ -76,7 +76,7 @@ public class User implements Serializable {
     /**
      * 注册时间
      */
-    @TableField
+    @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 
     /**
