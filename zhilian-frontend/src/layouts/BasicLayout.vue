@@ -16,10 +16,6 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-menu-item index="/manage/manufacture">
-          <el-icon><OfficeBuilding /></el-icon>
-          <span>制造企业</span>
-        </el-menu-item>
         <!-- 后续可继续添加其他菜单项 -->
       </el-menu>
     </el-aside>
@@ -31,7 +27,7 @@
           <span class="welcome"
             >欢迎，{{ userStore.userInfo?.username || "用户" }}</span
           >
-          <el-button type="text" @click="handleLogout">退出登录</el-button>
+          <el-button type="info" @click="handleLogout">退出登录</el-button>
         </div>
       </el-header>
       <el-main>
@@ -69,7 +65,7 @@ const handleLogout = async () => {
   try {
     userStore.clearToken(); // 自定义方法清除 store 和 localStorage
     ElMessage.success("已退出登录");
-    router.push("/login");
+    await router.push("/login");
   } catch (error) {
     ElMessage.error("退出失败");
   }
