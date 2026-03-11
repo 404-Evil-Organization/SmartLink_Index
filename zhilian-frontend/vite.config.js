@@ -9,6 +9,8 @@ export default defineConfig({
     viteMockServe({
       mockPath: "mock",
       localEnabled: process.env.VITE_MOCK_ENABLED === "true", // 开发环境启用
+      enablePrefix: false,
+      ignore: ["node_modules"]
     }),
   ],
   server: {

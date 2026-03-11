@@ -16,6 +16,13 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
+
+        <!-- 新增服务商管理菜单项 -->
+        <el-menu-item index="/manage/service-provider">
+          <el-icon><OfficeBuilding /></el-icon>
+          <span>服务商管理</span>
+        </el-menu-item>
+
         <!-- 后续可继续添加其他菜单项 -->
       </el-menu>
     </el-aside>

@@ -3,6 +3,7 @@ import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
 
 import dashboardRoutes from "./modules/dashboard";
+import serviceProviderRoutes from "./modules/manage";
 
 const routes = [
   {
@@ -19,7 +20,7 @@ const routes = [
     path: "/",
     component: () => import("@/layouts/BasicLayout.vue"),
     meta: { requiresAuth: true },
-    children: [...dashboardRoutes],
+    children: [...dashboardRoutes, ...serviceProviderRoutes],
   },
 ];
 
