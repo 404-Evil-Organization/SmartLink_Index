@@ -58,7 +58,8 @@ public class UserServiceImpl implements UserService {
                 && !"service".equals(role)
                 && !"park".equals(role)
                 && !"admin".equals(role)) {
-            throw new BusinessException("用户角色不合法");
+            // 用户角色不合法属于请求参数错误，使用 400 业务码而非默认 500
+            throw new BusinessException(400, "用户角色不合法");
         }
         user.setRole(role);
         user.setPhone(request.getPhone());
