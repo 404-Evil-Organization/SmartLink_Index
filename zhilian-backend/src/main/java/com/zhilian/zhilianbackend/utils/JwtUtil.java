@@ -113,4 +113,41 @@ public class JwtUtil {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 15:18
+     * @Param: userId 用户ID
+     * @Return: String JWT token字符串
+     * @Description: 生成Token（只传用户ID）
+    **/
+    public String generateToken(Long userId) {
+        Map<String, Object> claims = new HashMap<>();
+        return generateToken(String.valueOf(userId), claims);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 15:19
+     * @Param: userId 用户ID,username 用户名
+     * @Return: String JWT token字符串
+     * @Description: 生成Token（传用户ID和用户名，用户名会存入claims中）
+    **/
+    public String generateToken(Long userId, String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("username", username);
+        return generateToken(String.valueOf(userId), claims);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 15:21
+     * @Param: token JWT token字符串
+     * @Return: Long 用户ID
+     * @Description: 从Token中解析并获取用户ID
+    **/
+    public Long getUserIdFromToken(String token) {
+        Claims claims = parseToken(token);
+        return Long.parseLong(claims.getSubject());
+    }
 }

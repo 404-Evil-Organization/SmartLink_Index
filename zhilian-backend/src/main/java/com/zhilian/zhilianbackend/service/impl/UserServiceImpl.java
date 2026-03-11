@@ -1,9 +1,20 @@
 package com.zhilian.zhilianbackend.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.zhilian.zhilianbackend.dto.request.UserChangePasswordRequest;
+import com.zhilian.zhilianbackend.dto.request.UserLoginRequest;
+import com.zhilian.zhilianbackend.dto.request.UserRegisterRequest;
+import com.zhilian.zhilianbackend.dto.response.UserInfoResponse;
+import com.zhilian.zhilianbackend.dto.response.UserLoginResponse;
+import com.zhilian.zhilianbackend.dto.response.UserRegisterResponse;
 import com.zhilian.zhilianbackend.entity.User;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.UserMapper;
 import com.zhilian.zhilianbackend.service.UserService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhilian.zhilianbackend.utils.JwtUtil;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -14,6 +25,127 @@ import org.springframework.stereotype.Service;
  * @Description: 用户表业务逻辑实现类，实现用户相关的业务方法
 **/
 @Service
-public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
 
+    private final UserMapper userMapper;
+    private final JwtUtil jwtUtil;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 16:09
+     * @Param: request 用户注册请求参数
+     * @Return: UserRegisterResponse 注册响应信息
+     * @Description: 用户注册业务实现
+    **/
+    @Override
+    public UserRegisterResponse register(UserRegisterRequest request) {
+        // 1. 检查用户名是否已存在
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, request.getUsername())
+                .isNull(User::getDeleted);
+        if (userMapper.selectCount(wrapper) > 0) {
+            throw new BusinessException("用户名已存在");
+        }
+
+        // 2. 创建新用户
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(request.getRole());
+        user.setPhone(request.getPhone());
+        user.setEmail(request.getEmail());
+        user.setStatus(1); // 默认正常
+
+        // 3. 保存到数据库
+        userMapper.insert(user);
+
+        // 4. 返回响应
+        UserRegisterResponse response = new UserRegisterResponse();
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setRole(user.getRole());
+        return response;
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 16:09
+     * @Param: request 用户登录请求参数
+     * @Return: UserLoginResponse 登录响应信息（JWT token）
+     * @Description: 用户登录业务实现
+    **/
+    @Override
+    public UserLoginResponse login(UserLoginRequest request) {
+        // 1. 查询用户
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, request.getUsername())
+                .isNull(User::getDeleted);
+        User user = userMapper.selectOne(wrapper);
+
+        // 2. 校验
+        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BusinessException("用户名或密码错误");
+        }
+
+        // 3. 检查状态
+        if (user.getStatus() != 1) {
+            throw new BusinessException("账号已被禁用");
+        }
+
+        // 4. 生成Token
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+
+        UserLoginResponse response = new UserLoginResponse();
+        response.setToken(token);
+        return response;
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 16:10
+     * @Param: userId 用户ID
+     * @Return: UserInfoResponse 用户详细信息
+     * @Description: 获取当前用户信息业务实现
+    **/
+    @Override
+    public UserInfoResponse getCurrentUser(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null || user.getDeleted() != null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        UserInfoResponse response = new UserInfoResponse();
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setRole(user.getRole());
+        response.setPhone(user.getPhone());
+        response.setEmail(user.getEmail());
+        response.setStatus(user.getStatus());
+        response.setCreateTime(user.getCreateTime());
+        return response;
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 16:12
+     * @Param: userId 用户ID,request 修改密码请求参数
+     * @Return: 
+     * @Description: 修改密码业务实现
+    **/
+    @Override
+    public void changePassword(Long userId, UserChangePasswordRequest request) {
+        User user = userMapper.selectById(userId);
+        if (user == null || user.getDeleted() != null) {
+            throw new BusinessException("用户不存在");
+        }
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new BusinessException("旧密码错误");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userMapper.updateById(user);
+    }
 }
