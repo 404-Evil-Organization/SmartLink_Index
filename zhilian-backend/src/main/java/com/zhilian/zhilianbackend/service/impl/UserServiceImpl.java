@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder;
 
     /**
      * @Author: 6017
@@ -52,7 +52,15 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole());
+        // 2.1 校验并设置用户角色，仅允许 manufacture/service/park/admin
+        String role = request.getRole();
+        if (!"manufacture".equals(role)
+                && !"service".equals(role)
+                && !"park".equals(role)
+                && !"admin".equals(role)) {
+            throw new BusinessException("用户角色不合法");
+        }
+        user.setRole(role);
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
         user.setStatus(1); // 默认正常

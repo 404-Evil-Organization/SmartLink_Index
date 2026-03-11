@@ -145,9 +145,34 @@ public class JwtUtil {
      * @Param: token JWT token字符串
      * @Return: Long 用户ID
      * @Description: 从Token中解析并获取用户ID
-    **/
+     * <p>
+     * 注意：当 token 过期、签名不合法或 subject 非数字时，会抛出业务异常 InvalidTokenException，
+     * 由全局异常处理器转换为 401 等认证失败响应，避免将认证失败误判为 500 系统异常。
+     **/
     public Long getUserIdFromToken(String token) {
-        Claims claims = parseToken(token);
-        return Long.parseLong(claims.getSubject());
+        try {
+            Claims claims = parseToken(token);
+            return Long.parseLong(claims.getSubject());
+        } catch (JwtException | IllegalArgumentException | NumberFormatException e) {
+            // 将底层解析异常统一包装为业务异常，供上层识别为认证失败
+            throw new InvalidTokenException("Token无效或已过期", e);
+        }
+    }
+
+    /**
+     * 业务层 Token 无效异常。
+     * <p>
+     * 用于将 JWT 底层异常（过期、签名不合法、格式错误等）封装为统一的业务异常，
+     * 方便全局异常处理器将其映射为 401 等认证失败响应，而不是 500 系统异常。
+     */
+    public static class InvalidTokenException extends RuntimeException {
+
+        public InvalidTokenException(String message) {
+            super(message);
+        }
+
+        public InvalidTokenException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.io.Serializable;
 import java.util.Date;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -77,7 +76,7 @@ public class User implements Serializable {
     /**
      * 注册时间
      */
-    @TableField(fill = FieldFill.INSERT)
+    @TableField
     private Date createTime;
 
     /**
