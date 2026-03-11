@@ -68,6 +68,7 @@ const handleLogout = async () => {
     await router.push("/login");
   } catch (error) {
     ElMessage.error("退出失败");
+    console.error("退出登录失败", error);
   }
 };
 </script>
