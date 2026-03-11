@@ -6,8 +6,6 @@ import com.zhilian.zhilianbackend.dto.request.UserRegisterRequest;
 import com.zhilian.zhilianbackend.dto.response.UserInfoResponse;
 import com.zhilian.zhilianbackend.dto.response.UserLoginResponse;
 import com.zhilian.zhilianbackend.dto.response.UserRegisterResponse;
-import com.zhilian.zhilianbackend.entity.User;
-import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * @Author: 6017

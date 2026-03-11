@@ -20,7 +20,6 @@ import lombok.experimental.Accessors;
 @Getter
 @Setter
 @Accessors(chain = true)
-@Data
 @TableName("user")
 public class User implements Serializable {
 
@@ -72,7 +71,7 @@ public class User implements Serializable {
      * 逻辑删除标记，NULL代表未删除，非NULL代表删除时间
      */
     @TableField("deleted")
-    @TableLogic(value = "null", delval = "now()")
+    @TableLogic
     private Date deleted;
 
     /**

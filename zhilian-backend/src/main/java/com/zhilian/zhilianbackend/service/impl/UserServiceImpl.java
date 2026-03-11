@@ -11,7 +11,6 @@ import com.zhilian.zhilianbackend.entity.User;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.UserMapper;
 import com.zhilian.zhilianbackend.service.UserService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -90,7 +89,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // 3. 检查状态
-        if (user.getStatus() != 1) {
+        if (!Integer.valueOf(1).equals(user.getStatus()))  {
             throw new BusinessException("账号已被禁用");
         }
 
