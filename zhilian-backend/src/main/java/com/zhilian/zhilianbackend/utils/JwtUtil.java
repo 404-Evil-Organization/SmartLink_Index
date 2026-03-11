@@ -146,33 +146,19 @@ public class JwtUtil {
      * @Return: Long 用户ID
      * @Description: 从Token中解析并获取用户ID
      * <p>
-     * 注意：当 token 过期、签名不合法或 subject 非数字时，会抛出业务异常 InvalidTokenException，
+     * 注意：当 token 过期、签名不合法或 subject 非数字时，会抛出 JwtException，
      * 由全局异常处理器转换为 401 等认证失败响应，避免将认证失败误判为 500 系统异常。
      **/
     public Long getUserIdFromToken(String token) {
+        // parseToken 内部已经会在 token 过期、签名不合法、格式错误时抛出 JwtException 或其子类，
+        // 这里直接调用，让全局异常处理器按 401 统一处理认证失败。
+        Claims claims = parseToken(token);
         try {
-            Claims claims = parseToken(token);
             return Long.parseLong(claims.getSubject());
-        } catch (JwtException | IllegalArgumentException | NumberFormatException e) {
-            // 将底层解析异常统一包装为业务异常，供上层识别为认证失败
-            throw new InvalidTokenException("Token无效或已过期", e);
-        }
-    }
-
-    /**
-     * 业务层 Token 无效异常。
-     * <p>
-     * 用于将 JWT 底层异常（过期、签名不合法、格式错误等）封装为统一的业务异常，
-     * 方便全局异常处理器将其映射为 401 等认证失败响应，而不是 500 系统异常。
-     */
-    public static class InvalidTokenException extends RuntimeException {
-
-        public InvalidTokenException(String message) {
-            super(message);
-        }
-
-        public InvalidTokenException(String message, Throwable cause) {
-            super(message, cause);
+        } catch (NumberFormatException e) {
+            // 当 subject 不是数字时，将其视为非法 Token，转换为 JwtException 抛出，
+            // 便于全局异常处理器统一按认证失败（如 401）处理，而不是 500 系统异常。
+            throw new JwtException("Token subject 非法，必须是数字类型的用户ID", e);
         }
     }
 }
