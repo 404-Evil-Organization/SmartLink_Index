@@ -67,8 +67,6 @@ const activeMenu = computed(() => route.path);
 // 退出登录
 const handleLogout = async () => {
   try {
-    // 如果有退出接口可调用，否则直接清除前端状态
-    // await userStore.logout()  // 假设 store 中有 logout 方法
     userStore.clearToken(); // 自定义方法清除 store 和 localStorage
     ElMessage.success("已退出登录");
     router.push("/login");
@@ -81,7 +79,7 @@ const handleLogout = async () => {
 <style scoped>
 .el-aside {
   background-color: #304156;
-  min-height: 100vh;
+  min-height: 98vh;
 }
 .logo {
   height: 60px;
@@ -96,7 +94,7 @@ const handleLogout = async () => {
   border-right: none;
 }
 .el-header {
-  background-color: #fff;
+  background-color: rgb(252, 252, 252);
   border-bottom: 1px solid #e6e9f0;
 }
 .header-content {
