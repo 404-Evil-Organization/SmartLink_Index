@@ -93,9 +93,21 @@ public class UserController {
     **/
     private String extractToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+        // 优先判断是否缺少 Authorization 头或值为空
+        if (bearerToken == null || bearerToken.isBlank()) {
+            // 401 未授权：客户端未提供任何认证信息
+            throw new BusinessException(401, "缺少Authorization请求头");
         }
-        throw new BusinessException("无效的Token");
+        // 存在 Authorization 头，但格式不符合 Bearer Token 规范
+        if (!bearerToken.startsWith("Bearer ")) {
+            // 401 未授权：认证信息格式错误
+            throw new BusinessException(401, "Authorization格式错误，缺少Bearer前缀");
+        }
+        String token = bearerToken.substring(7);
+        // 进一步校验 Bearer 后的 token 内容是否为空，避免空串 token
+        if (token.isBlank()) {
+            throw new BusinessException(401, "Token内容为空");
+        }
+        return token;
     }
 }
