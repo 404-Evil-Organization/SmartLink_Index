@@ -93,14 +93,17 @@ public class UserServiceImpl implements UserService {
                 .isNull(User::getDeleted);
         List<User> users = userMapper.selectList(wrapper);
 
-
+        // 如果未查到用户，直接返回“用户不存在”
         if (users.isEmpty()) {
             throw new BusinessException(404, "用户不存在");
         }
 
+        // 如果查到多条，说明数据库存在重复用户名记录，属于数据一致性问题，需显式报错/告警
+        if (users.size() > 1) {
+            throw new BusinessException(500, "系统存在重复用户名数据，请联系管理员处理");
+        }
+
         User user = users.get(0);
-
-
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BusinessException(401, "用户名或密码错误"); // 401 Unauthorized
         }
