@@ -21,7 +21,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OssService {
+public class OssServiceImpl {
 
     private final OSS ossClient;
 
@@ -107,11 +107,11 @@ public class OssService {
             } else {
                 fileName = fileUrl;
             }
-        // 兼容带查询参数的签名URL，去掉文件名中的 query string，避免删除失败
-        int queryIndex = fileName.indexOf("?");
-        if (queryIndex != -1) {
-            fileName = fileName.substring(0, queryIndex);
-        }
+            // 兼容带查询参数的签名URL，去掉文件名中的 query string，避免删除失败
+            int queryIndex = fileName.indexOf("?");
+            if (queryIndex != -1) {
+                fileName = fileName.substring(0, queryIndex);
+            }
 
             // 删除文件
             ossClient.deleteObject(bucketName, fileName);
