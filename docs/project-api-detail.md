@@ -547,6 +547,50 @@
 }
 ```
 
+#### 1.5.4 OSS文件上传
+
+- **URL**: `/api/common/upload`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`，Content-Type: `multipart/form-data`
+- **请求参数**（Form Data）:
+
+| 参数名 | 类型 | 必填 | 描述         |
+| :----- | :--- | :--- | :----------- |
+| file   | file | 是   | 要上传的文件 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "fileUrl": "https://oss.example.com/path/to/file.jpg"
+  }
+}
+```
+
+#### 1.5.5 OSS文件删除
+
+- **URL**: `/api/common/delete`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`，Content-Type: `application/json`
+- **请求参数**（JSON Body）:
+
+| 参数名  | 类型   | 必填 | 描述                  |
+| :------ | :----- | :--- | :-------------------- |
+| fileUrl | string | 是   | 要删除的文件的完整URL |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
 ------
 
 ## 二、企业数字化诊断模块
