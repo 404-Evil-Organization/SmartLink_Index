@@ -16,6 +16,10 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
+        <el-menu-item index="/manage/manufacture">
+          <el-icon><OfficeBuilding /></el-icon>
+          <span>制造商管理页</span>
+        </el-menu-item>
         <!-- 后续可继续添加其他菜单项 -->
       </el-menu>
     </el-aside>
