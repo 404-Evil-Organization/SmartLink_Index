@@ -94,7 +94,8 @@ public class UserServiceImpl implements UserService {
 
         // 2. 校验
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BusinessException("用户名或密码错误");
+            // 登录失败属于可预期的认证失败场景，使用 401 业务码而非默认 500，避免前端误判为系统异常
+            throw new BusinessException(401, "用户名或密码错误");
         }
 
         // 3. 检查状态
