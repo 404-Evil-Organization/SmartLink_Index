@@ -29,7 +29,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
-    private final BCryptPasswordEncoder passwordEncoder;
+    // 直接在字段处初始化 BCryptPasswordEncoder，避免依赖缺失的 Bean 注入导致应用启动失败
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /**
      * @Author: 6017
