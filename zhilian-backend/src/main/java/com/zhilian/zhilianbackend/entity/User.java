@@ -76,12 +76,12 @@ public class User implements Serializable {
     /**
      * 注册时间
      */
-    @TableField
+    @TableField("create_time")
     private Date createTime;
 
     /**
      * 更新时间
      */
-    @TableField(fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     private Date updateTime;
 }
