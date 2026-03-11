@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
 
+import dashboardRoutes from "./modules/dashboard";
+
 const routes = [
   {
     path: "/login",
@@ -17,7 +19,7 @@ const routes = [
     path: "/",
     component: () => import("@/layouts/BasicLayout.vue"),
     meta: { requiresAuth: true },
-    children: [],
+    children: [...dashboardRoutes],
   },
 ];
 

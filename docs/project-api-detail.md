@@ -246,7 +246,151 @@
 
 ### 1.3 服务商管理接口
 
-（类似修改，所有成功响应 `message` 改为 `"success"`）
+#### 1.3.1 获取服务商列表
+
+- **URL**: `/api/service-provider/list`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **请求参数**（Query）:
+
+| 参数名      | 类型   | 必填 | 描述                         |
+| :---------- | :----- | :--- | :--------------------------- |
+| page        | int    | 否   | 页码，默认1                  |
+| size        | int    | 否   | 每页条数，默认10             |
+| region      | string | 否   | 区域筛选（如“深圳”）         |
+| serviceType | string | 否   | 服务大类筛选（如“检测认证”） |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 50,
+    "records": [
+      {
+        "id": 2001,
+        "companyName": "华测检测认证集团",
+        "region": "深圳",
+        "serviceType": "检测认证",
+        "contactPerson": "王五",
+        "contactPhone": "13700137003",
+        "qualification": "CNAS、CMA"
+      }
+    ]
+  }
+}
+```
+
+#### 1.3.2 获取服务商详情
+
+- **URL**: `/api/service-provider/{id}`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **路径参数**: `id` (服务商ID)
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 2001,
+    "userId": 2001,
+    "companyName": "华测检测认证集团",
+    "region": "深圳",
+    "address": "深圳市南山区科技园",
+    "contactPerson": "王五",
+    "contactPhone": "13700137003",
+    "serviceType": "检测认证",
+    "description": "CNAS认可实验室，提供国际认证服务",
+    "logo": "https://...",
+    "website": "www.cti.com",
+    "establishedDate": "2003-01-01",
+    "employeeCount": 2000,
+    "qualification": "CNAS、CMA",
+    "createTime": "2026-03-01 10:00:00",
+    "updateTime": "2026-03-01 10:00:00",
+    "certifications": [
+      {
+        "id": 3001,
+        "certName": "CNAS认证",
+        "certNo": "CNAS L1234",
+        "expireDate": "2026-12-31"
+      }
+    ]
+  }
+}
+```
+
+#### 1.3.3 新增服务商
+
+- **URL**: `/api/service-provider`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`（需具有相应权限）
+- **请求参数**（JSON Body）:
+
+| 参数名          | 类型   | 必填 | 描述                               |
+| :-------------- | :----- | :--- | :--------------------------------- |
+| userId          | long   | 是   | 关联的用户ID                       |
+| companyName     | string | 是   | 企业全称                           |
+| region          | string | 否   | 区域                               |
+| address         | string | 否   | 详细地址                           |
+| contactPerson   | string | 否   | 联系人                             |
+| contactPhone    | string | 否   | 联系电话                           |
+| serviceType     | string | 否   | 服务大类（可多选，逗号分隔或JSON） |
+| description     | string | 否   | 服务介绍                           |
+| logo            | string | 否   | Logo图片URL                        |
+| website         | string | 否   | 企业官网                           |
+| establishedDate | date   | 否   | 成立日期                           |
+| employeeCount   | int    | 否   | 员工人数                           |
+| qualification   | string | 否   | 资质概述                           |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 2010
+  }
+}
+```
+
+#### 1.3.4 修改服务商信息
+
+- **URL**: `/api/service-provider/{id}`
+- **Method**: `PUT`
+- **请求头**: `Authorization: Bearer <token>`
+- **路径参数**: `id` (服务商ID)
+- **请求参数**（JSON Body，只传需修改字段）: 同新增接口字段
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+#### 1.3.5 删除服务商
+
+- **URL**: `/api/service-provider/{id}`
+- **Method**: `DELETE`
+- **请求头**: `Authorization: Bearer <token>`
+- **路径参数**: `id` (服务商ID)
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
 
 ------
 
@@ -400,6 +544,50 @@
     { "id": 2, "name": "工业设计", "category": "服务类型" },
     { "id": 3, "name": "物流供应链", "category": "服务类型" }
   ]
+}
+```
+
+#### 1.5.4 OSS文件上传
+
+- **URL**: `/api/common/upload`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`，Content-Type: `multipart/form-data`
+- **请求参数**（Form Data）:
+
+| 参数名 | 类型 | 必填 | 描述         |
+| :----- | :--- | :--- | :----------- |
+| file   | file | 是   | 要上传的文件 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "fileUrl": "https://oss.example.com/path/to/file.jpg"
+  }
+}
+```
+
+#### 1.5.5 OSS文件删除
+
+- **URL**: `/api/common/delete`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`，Content-Type: `application/json`
+- **请求参数**（JSON Body）:
+
+| 参数名  | 类型   | 必填 | 描述                  |
+| :------ | :----- | :--- | :-------------------- |
+| fileUrl | string | 是   | 要删除的文件的完整URL |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
 }
 ```
 
