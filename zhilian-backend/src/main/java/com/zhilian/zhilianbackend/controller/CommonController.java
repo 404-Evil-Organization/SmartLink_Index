@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * 通用接口控制器 - 提供文件上传、删除等通用功能
@@ -44,6 +45,12 @@ public class CommonController {
     // 最大文件大小：10MB
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
 
+    // OSS文件URL的正则表达式：用于验证URL格式并提取路径
+    // 示例格式：https://<bucket>.oss-<region>.aliyuncs.com/uploads/xxx.jpg
+    private static final Pattern OSS_URL_PATTERN = Pattern.compile(
+            "^https?://[^/]+/uploads/[a-zA-Z0-9/\\-_]+\\.(png|jpg|jpeg)$"
+    );
+
     /**
      * 1.5.4 OSS文件上传
      * URL: /api/common/upload
@@ -54,7 +61,7 @@ public class CommonController {
     @Operation(summary = "OSS文件上传", description = "上传文件到阿里云OSS，返回文件访问URL。仅支持png、jpg、jpeg格式，最大10MB")
     public Result<Map<String, String>> uploadFile(
             @Parameter(description = "要上传的文件（仅支持png、jpg、jpeg格式，最大10MB）", required = true)
-            @RequestParam(value = "file", required = false) MultipartFile file) {
+            @RequestParam(value = "file", required = true) MultipartFile file) {
 
         // ============= 文件基础校验 =============
 
@@ -154,29 +161,21 @@ public class CommonController {
         String fileUrl = request.get("fileUrl");
         log.info("接收文件删除请求，URL：{}", fileUrl);
 
-        // 参数校验：非空校验
+        // ============= 统一的URL校验 =============
+
+        // 1. 非空校验
         if (fileUrl == null || fileUrl.trim().isEmpty()) {
             log.warn("文件删除失败：文件URL不能为空");
             return Result.badRequest("文件URL不能为空");
         }
-        // 安全校验：禁止目录穿越等非法路径片段
-        if (fileUrl.contains("..")) {
-            log.warn("文件删除失败：检测到疑似目录穿越风险，fileUrl={}", fileUrl);
-            return Result.badRequest("非法的文件URL");
-        }
-        // 安全校验：限制仅允许删除项目约定的上传目录（例如 /uploads/ 下的文件）
-        // 注意：这里仅做基础前缀限制，实际生产中应结合登录用户、业务域进一步校验文件归属
-        if (!fileUrl.contains("/uploads/")) {
-            log.warn("文件删除失败：不允许删除非上传目录下的文件，fileUrl={}", fileUrl);
-            return Result.badRequest("非法的文件URL");
+
+        // 2. 统一的URL格式和安全性校验
+        String validationError = validateFileUrl(fileUrl);
+        if (validationError != null) {
+            return Result.badRequest(validationError);
         }
 
-        // 安全校验：防止目录穿越
-        if (fileUrl.contains("..") || fileUrl.contains("./") || fileUrl.contains("/.")) {
-            log.warn("文件删除失败：检测到非法路径，fileUrl={}", fileUrl);
-            return Result.badRequest("非法的文件URL");
-        }
-
+        // ============= 执行删除 =============
         try {
             // 调用OSS服务删除文件（面向接口编程）
             boolean deleted = ossService.deleteFile(fileUrl);
@@ -196,5 +195,42 @@ public class CommonController {
             // 返回统一的业务提示，不暴露内部细节
             return Result.error(500, "文件删除失败，请稍后重试或联系管理员");
         }
+    }
+
+    /**
+     * 统一的文件URL校验方法
+     * @param fileUrl 待校验的文件URL
+     * @return 校验失败时的错误信息，校验通过返回null
+     */
+    private String validateFileUrl(String fileUrl) {
+        // 基础校验：必须是 http/https URL，避免传入本地路径或其他非法格式
+        if (!fileUrl.startsWith("http://") && !fileUrl.startsWith("https://")) {
+            log.warn("URL格式非法，仅支持http/https，fileUrl={}", fileUrl);
+            return "非法的文件URL";
+        }
+
+        // 安全校验：防止目录穿越和非法路径（统一校验所有危险模式）
+        // 检查的危险模式包括：.. 、 ./ 、 /. 、 // 、 \ 等
+        String[] dangerousPatterns = {"..", "./", "/.", "//", "\\", "%2e", "%2f"};
+        for (String pattern : dangerousPatterns) {
+            if (fileUrl.toLowerCase().contains(pattern)) {
+                log.warn("检测到非法路径模式[{}]，fileUrl={}", pattern, fileUrl);
+                return "非法的文件URL";
+            }
+        }
+
+        // 路径规范：确保URL格式符合OSS的预期格式
+        // 这里使用正则表达式进行严格校验，确保URL格式正确且只包含允许的字符
+        if (!OSS_URL_PATTERN.matcher(fileUrl).matches()) {
+            log.warn("URL格式不符合OSS规范，fileUrl={}", fileUrl);
+            return "非法的文件URL";
+        }
+
+        // 可以添加更多业务相关的校验，例如：
+        // - 校验文件是否属于当前用户
+        // - 校验文件是否在允许的目录下
+        // - 校验文件扩展名是否在白名单内
+
+        return null;
     }
 }
