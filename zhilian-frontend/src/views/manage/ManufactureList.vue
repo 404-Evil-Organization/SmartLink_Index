@@ -622,7 +622,14 @@ const openEditDialog = async (row) => {
 
 const submitForm = async () => {
   if (!formRef.value) return;
-  await formRef.value.validate();
+  try {
+    // 表单校验：若校验失败会抛出异常，这里用 try/catch 捕获，防止未捕获 Promise 拒绝
+    await formRef.value.validate();
+  } catch (error) {
+    // 校验未通过时不进入后续提交流程，只输出调试日志
+    console.log("表单校验未通过：", error);
+    return;
+  }
 
   // 按与后端接口一致的字段一次性提交企业信息
   const payload = {
