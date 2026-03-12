@@ -13,17 +13,18 @@ import com.zhilian.zhilianbackend.mapper.UserMapper;
 import com.zhilian.zhilianbackend.service.UserService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @Author: 6017
  * @Date: 2026/3/9 20:50
- * @Param:
- * @Return:
  * @Description: 用户表业务逻辑实现类，实现用户相关的业务方法
  **/
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -32,29 +33,19 @@ public class UserServiceImpl implements UserService {
     private final JwtUtil jwtUtil;
     private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    // 用于用户名的锁缓存
+    private final ConcurrentHashMap<String, Object> lockMap = new ConcurrentHashMap<>();
+
     /**
      * @Author: 6017
      * @Date: 2026/3/11 16:09
      * @Param: request 用户注册请求参数
      * @Return: UserRegisterResponse 注册响应信息
-     * @Description: 用户注册业务实现
+     * @Description: 用户注册业务实现（加锁处理并发注册）
      **/
     @Override
     public UserRegisterResponse register(UserRegisterRequest request) {
-        // 1. 检查用户名是否已存在
-        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUsername, request.getUsername())
-                .isNull(User::getDeleted);
-        if (userMapper.selectCount(wrapper) > 0) {
-            throw new BusinessException(409, "用户名已存在"); // 409 Conflict
-        }
-
-        // 2. 创建新用户
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-
-        // 2.1 校验并设置用户角色，仅允许 manufacture/service/park/admin
+        // 1. 校验并设置用户角色，仅允许 manufacture/service/park/admin
         String role = request.getRole();
         if (!"manufacture".equals(role)
                 && !"service".equals(role)
@@ -62,20 +53,46 @@ public class UserServiceImpl implements UserService {
                 && !"admin".equals(role)) {
             throw new BusinessException(400, "用户角色不合法");
         }
-        user.setRole(role);
-        user.setPhone(request.getPhone());
-        user.setEmail(request.getEmail());
-        user.setStatus(1); // 默认正常
 
-        // 3. 保存到数据库
-        userMapper.insert(user);
+        String username = request.getUsername();
 
-        // 4. 返回响应
-        UserRegisterResponse response = new UserRegisterResponse();
-        response.setUserId(user.getId());
-        response.setUsername(user.getUsername());
-        response.setRole(user.getRole());
-        return response;
+        // 2. 获取用户名锁（避免并发注册相同用户名）
+        Object lock = lockMap.computeIfAbsent(username, k -> new Object());
+
+        synchronized (lock) {
+            try {
+                // 3. 双检锁：再次检查用户名是否已存在
+                LambdaQueryWrapper<User> checkWrapper = new LambdaQueryWrapper<>();
+                checkWrapper.eq(User::getUsername, username)
+                        .isNull(User::getDeleted);
+                if (userMapper.selectCount(checkWrapper) > 0) {
+                    throw new BusinessException(409, "用户名已存在"); // 409 Conflict
+                }
+
+                // 4. 创建新用户
+                User user = new User();
+                user.setUsername(username);
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+                user.setRole(role);
+                user.setPhone(request.getPhone());
+                user.setEmail(request.getEmail());
+                user.setStatus(1); // 默认正常
+
+                // 5. 保存到数据库
+                userMapper.insert(user);
+
+                // 6. 返回响应
+                UserRegisterResponse response = new UserRegisterResponse();
+                response.setUserId(user.getId());
+                response.setUsername(user.getUsername());
+                response.setRole(user.getRole());
+                return response;
+
+            } finally {
+                // 7. 释放锁
+                lockMap.remove(username);
+            }
+        }
     }
 
     /**
@@ -100,7 +117,26 @@ public class UserServiceImpl implements UserService {
 
         // 如果查到多条，说明数据库存在重复用户名记录，属于数据一致性问题，需显式报错/告警
         if (users.size() > 1) {
-            throw new BusinessException(500, "系统存在重复用户名数据，请联系管理员处理");
+            log.error("系统数据异常：用户名【{}】存在多条有效记录", request.getUsername());
+            // 按创建时间倒序取最新的用户
+            users.sort((u1, u2) -> u2.getCreateTime().compareTo(u1.getCreateTime()));
+            User latestUser = users.get(0);
+            log.warn("使用最新创建的用户记录: userId={}, createTime={}",
+                    latestUser.getId(), latestUser.getCreateTime());
+
+            // 验证密码
+            if (!passwordEncoder.matches(request.getPassword(), latestUser.getPassword())) {
+                throw new BusinessException(401, "用户名或密码错误");
+            }
+
+            if (!Integer.valueOf(1).equals(latestUser.getStatus())) {
+                throw new BusinessException(403, "账号已被禁用");
+            }
+
+            String token = jwtUtil.generateToken(latestUser.getId(), latestUser.getUsername());
+            UserLoginResponse response = new UserLoginResponse();
+            response.setToken(token);
+            return response;
         }
 
         User user = users.get(0);

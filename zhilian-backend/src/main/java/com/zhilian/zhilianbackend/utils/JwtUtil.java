@@ -76,11 +76,16 @@ public class JwtUtil {
      * @Description: 解析JWT Token，返回Claims对象
      **/
     public Claims parseToken(String token) throws JwtException {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException e) {
+            // 直接抛出 JwtException，让全局异常处理器捕获
+            throw e;
+        }
     }
 
     /**
