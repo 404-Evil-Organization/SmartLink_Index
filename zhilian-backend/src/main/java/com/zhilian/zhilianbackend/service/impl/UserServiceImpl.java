@@ -49,8 +49,8 @@ public class UserServiceImpl implements UserService {
         String role = request.getRole();
         if (!"manufacture".equals(role)
                 && !"service".equals(role)
-                && !"park".equals(role)
-                && !"admin".equals(role)) {
+                && !"park".equals(role)) {
+            // 禁止通过注册接口创建管理员账号，避免任意用户自注册为 admin
             throw new BusinessException(400, "用户角色不合法");
         }
 
