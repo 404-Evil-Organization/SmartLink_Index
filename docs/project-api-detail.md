@@ -591,7 +591,139 @@
 }
 ```
 
-------
+### 1.6 标签管理接口
+
+#### 1.6.1 获取标签列表
+
+- **URL**: `/api/tag/list`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **请求参数**（Query）:
+
+| 参数名   | 类型   | 必填 | 描述                 |
+| :------- | :----- | :--- | :------------------- |
+| page     | int    | 否   | 页码，默认1          |
+| size     | int    | 否   | 每页条数，默认10     |
+| name     | string | 否   | 标签名称（模糊匹配） |
+| category | string | 否   | 类别筛选             |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 100,
+    "records": [
+      {
+        "id": 1,
+        "name": "CNAS认证",
+        "category": "certification",
+        "description": "中国合格评定国家认可委员会认证",
+        "createTime": "2026-03-01 10:00:00",
+        "updateTime": "2026-03-01 10:00:00"
+      },
+      {
+        "id": 2,
+        "name": "工业设计",
+        "category": "service",
+        "description": "产品外观、结构设计服务",
+        "createTime": "2026-03-01 10:00:00",
+        "updateTime": "2026-03-01 10:00:00"
+      }
+    ]
+  }
+}
+```
+
+#### 1.6.2 获取标签详情
+
+- **URL**: `/api/tag/{id}`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **路径参数**: `id` (标签ID)
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "name": "CNAS认证",
+    "category": "certification",
+    "description": "中国合格评定国家认可委员会认证",
+    "createTime": "2026-03-01 10:00:00",
+    "updateTime": "2026-03-01 10:00:00"
+  }
+}
+```
+
+#### 1.6.3 新增标签
+
+- **URL**: `/api/tag`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`
+- **请求参数**（JSON Body）:
+
+| 参数名      | 类型   | 必填 | 描述     |
+| :---------- | :----- | :--- | :------- |
+| name        | string | 是   | 标签名称 |
+| category    | string | 否   | 类别     |
+| description | string | 否   | 标签说明 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 101
+  }
+}
+```
+
+#### 1.6.4 修改标签
+
+- **URL**: `/api/tag/{id}`
+- **Method**: `PUT`
+- **请求头**: `Authorization: Bearer <token>`
+- **路径参数**: `id` (标签ID)
+- **请求参数**（JSON Body）: 同新增接口字段（全部可选，只传需要修改的字段）
+
+| 参数名      | 类型   | 必填 | 描述     |
+| :---------- | :----- | :--- | :------- |
+| name        | string | 否   | 标签名称 |
+| category    | string | 否   | 类别     |
+| description | string | 否   | 标签说明 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+#### 1.6.5 删除标签
+
+- **URL**: `/api/tag/{id}`
+- **Method**: `DELETE`
+- **请求头**: `Authorization: Bearer <token>`
+- **路径参数**: `id` (标签ID)
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
 
 ## 二、企业数字化诊断模块
 

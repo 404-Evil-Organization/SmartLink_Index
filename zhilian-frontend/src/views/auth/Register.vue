@@ -126,10 +126,6 @@ const options = [
     value: "park",
     label: "园区/政府",
   },
-  {
-    value: "admin",
-    label: "管理员",
-  },
 ];
 
 // 手机号正则（中国大陆手机号）
@@ -191,7 +187,7 @@ const rules = {
 
 // 修改：新增跳转登录页的方法
 const goToLogin = () => {
-  router.push('/login');
+  router.push("/login");
 };
 
 const handleRegister = async () => {

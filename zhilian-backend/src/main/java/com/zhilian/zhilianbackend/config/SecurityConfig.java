@@ -85,6 +85,7 @@ public class SecurityConfig {
                 // 3. 授权配置
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/auth/**",
                                 "/test/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
@@ -114,6 +115,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/auth/register",
+                                "/auth/login",
                                 "/test/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
