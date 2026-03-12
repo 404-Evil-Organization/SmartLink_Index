@@ -88,7 +88,8 @@ public class SecurityConfig {
                                 "/auth/**",
                                 "/test/**",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/manufacture/list"
                         ).permitAll()
                         .anyRequest().permitAll()  // 开发环境全放行
                 )
