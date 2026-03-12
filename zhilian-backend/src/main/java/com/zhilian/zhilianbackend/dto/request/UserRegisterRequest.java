@@ -19,7 +19,7 @@ public class UserRegisterRequest {
     private String password;
 
     @NotBlank(message = "角色不能为空")
-    private String role;  // manufacture, service, park, admin
+    private String role;  // manufacture, service, park
 
     @NotBlank(message = "手机号不能为空")
     private String phone;
