@@ -58,8 +58,6 @@
                 v-model="searchForm.region"
                 placeholder="选择区域"
                 clearable
-                multiple
-                @change="handleSearch"
               >
                 <el-option label="深圳" value="深圳" />
                 <el-option label="华南" value="south" />
@@ -74,8 +72,6 @@
                 v-model="searchForm.scale"
                 placeholder="选择规模"
                 clearable
-                multiple
-                @change="handleSearch"
               >
                 <el-option label="微型企业" value="micro" />
                 <el-option label="小型企业" value="small" />
@@ -90,7 +86,6 @@
                 v-model="searchForm.productType"
                 placeholder="输入产品类型"
                 clearable
-                @clear="handleSearch"
               />
             </el-form-item>
           </el-col>
@@ -461,8 +456,8 @@ const { hasPermission } = usePermission();
 
 // 搜索表单
 const searchForm = reactive({
-  region: [],
-  scale: [],
+  region: "",
+  scale: "",
   productType: "",
   // status: null, // 如果接口不支持，可忽略
 });
@@ -482,8 +477,8 @@ const fetchList = async () => {
     const params = {
       page: pagination.current,
       size: pagination.size,
-      region: searchForm.region.length != 0 ? searchForm.region : null,
-      scale: searchForm.scale.length != 0 ? searchForm.scale : null,
+      region: searchForm.region || "",
+      scale: searchForm.scale || "",
       productType: searchForm.productType || null,
     };
     const res = await getManufactureList(params);
@@ -503,8 +498,8 @@ const handleSearch = () => {
 };
 
 const resetSearch = () => {
-  searchForm.region = [];
-  searchForm.scale = [];
+  searchForm.region = "";
+  searchForm.scale = "";
   searchForm.productType = "";
   // searchForm.status = null;
   handleSearch();
