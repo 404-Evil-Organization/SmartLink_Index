@@ -191,7 +191,6 @@ const fetchList = async () => {
     tableData.value = res.records || [];
     pagination.total = res.total || 0;
   } catch (error) {
-    ElMessage.error("获取标签列表失败");
     console.error(error);
   } finally {
     loading.value = false;
@@ -260,7 +259,12 @@ const resetForm = () => {
 
 const submitForm = async () => {
   if (!formRef.value) return;
-  await formRef.value.validate();
+  try {
+    await formRef.value.validate();
+  } catch (error) {
+    console.log("表单校验未通过：", error);
+    return;
+  }
 
   try {
     if (form.id) {
