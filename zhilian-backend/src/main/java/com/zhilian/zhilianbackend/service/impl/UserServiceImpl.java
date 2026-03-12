@@ -60,38 +60,32 @@ public class UserServiceImpl implements UserService {
         Object lock = lockMap.computeIfAbsent(username, k -> new Object());
 
         synchronized (lock) {
-            try {
-                // 3. 双检锁：再次检查用户名是否已存在
-                LambdaQueryWrapper<User> checkWrapper = new LambdaQueryWrapper<>();
-                checkWrapper.eq(User::getUsername, username)
-                        .isNull(User::getDeleted);
-                if (userMapper.selectCount(checkWrapper) > 0) {
-                    throw new BusinessException(409, "用户名已存在"); // 409 Conflict
-                }
-
-                // 4. 创建新用户
-                User user = new User();
-                user.setUsername(username);
-                user.setPassword(passwordEncoder.encode(request.getPassword()));
-                user.setRole(role);
-                user.setPhone(request.getPhone());
-                user.setEmail(request.getEmail());
-                user.setStatus(1); // 默认正常
-
-                // 5. 保存到数据库
-                userMapper.insert(user);
-
-                // 6. 返回响应
-                UserRegisterResponse response = new UserRegisterResponse();
-                response.setUserId(user.getId());
-                response.setUsername(user.getUsername());
-                response.setRole(user.getRole());
-                return response;
-
-            } finally {
-                // 7. 释放锁
-                lockMap.remove(username);
+            // 3. 双检锁：再次检查用户名是否已存在（在同一用户名锁内，确保并发互斥）
+            LambdaQueryWrapper<User> checkWrapper = new LambdaQueryWrapper<>();
+            checkWrapper.eq(User::getUsername, username)
+                    .isNull(User::getDeleted);
+            if (userMapper.selectCount(checkWrapper) > 0) {
+                throw new BusinessException(409, "用户名已存在"); // 409 Conflict
             }
+
+            // 4. 创建新用户
+            User user = new User();
+            user.setUsername(username);
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setRole(role);
+            user.setPhone(request.getPhone());
+            user.setEmail(request.getEmail());
+            user.setStatus(1); // 默认正常
+
+            // 5. 保存到数据库
+            userMapper.insert(user);
+
+            // 6. 返回响应
+            UserRegisterResponse response = new UserRegisterResponse();
+            response.setUserId(user.getId());
+            response.setUsername(user.getUsername());
+            response.setRole(user.getRole());
+            return response;
         }
     }
 
