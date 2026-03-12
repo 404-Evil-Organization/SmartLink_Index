@@ -76,11 +76,16 @@ public class JwtUtil {
      * @Description: 解析JWT Token，返回Claims对象
      **/
     public Claims parseToken(String token) throws JwtException {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException e) {
+            // 直接抛出 JwtException，让全局异常处理器捕获
+            throw e;
+        }
     }
 
     /**
@@ -112,5 +117,53 @@ public class JwtUtil {
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 15:18
+     * @Param: userId 用户ID
+     * @Return: String JWT token字符串
+     * @Description: 生成Token（只传用户ID）
+    **/
+    public String generateToken(Long userId) {
+        Map<String, Object> claims = new HashMap<>();
+        return generateToken(String.valueOf(userId), claims);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 15:19
+     * @Param: userId 用户ID,username 用户名
+     * @Return: String JWT token字符串
+     * @Description: 生成Token（传用户ID和用户名，用户名会存入claims中）
+    **/
+    public String generateToken(Long userId, String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("username", username);
+        return generateToken(String.valueOf(userId), claims);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/11 15:21
+     * @Param: token JWT token字符串
+     * @Return: Long 用户ID
+     * @Description: 从Token中解析并获取用户ID
+     * <p>
+     * 注意：当 token 过期、签名不合法或 subject 非数字时，会抛出 JwtException，
+     * 由全局异常处理器转换为 401 等认证失败响应，避免将认证失败误判为 500 系统异常。
+     **/
+    public Long getUserIdFromToken(String token) {
+        // parseToken 内部已经会在 token 过期、签名不合法、格式错误时抛出 JwtException 或其子类，
+        // 这里直接调用，让全局异常处理器按 401 统一处理认证失败。
+        Claims claims = parseToken(token);
+        try {
+            return Long.parseLong(claims.getSubject());
+        } catch (NumberFormatException e) {
+            // 当 subject 不是数字时，将其视为非法 Token，转换为 JwtException 抛出，
+            // 便于全局异常处理器统一按认证失败（如 401）处理，而不是 500 系统异常。
+            throw new JwtException("Token subject 非法，必须是数字类型的用户ID", e);
+        }
     }
 }
