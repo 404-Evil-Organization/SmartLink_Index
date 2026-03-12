@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
      **/
     @Override
     public UserRegisterResponse register(UserRegisterRequest request) {
-        // 1. 校验并设置用户角色，仅允许 manufacture/service/park/admin
+        // 1. 校验并设置用户角色，仅允许 manufacture/service/park
         String role = request.getRole();
         if (!"manufacture".equals(role)
                 && !"service".equals(role)
