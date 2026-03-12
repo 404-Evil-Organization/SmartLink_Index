@@ -116,6 +116,7 @@
       </div>
 
       <el-table
+        v-loading="loading"
         :data="tableData"
         border
         stripe
@@ -304,7 +305,7 @@
             action="#"
             :limit="1"
             accept=".png,.jpg,.jpeg"
-            :file-list="form.logo"
+            :file-list="fileList"
             :http-request="customUpload"
             :on-remove="handleRemove"
             :before-upload="beforeUpload"
@@ -322,6 +323,7 @@
         </el-form-item>
         <el-form-item label="企业成立日期" prop="establishedDate">
           <el-date-picker
+            value-format="YYYY-MM-DD"
             v-model="form.establishedDate"
             placeholder="选择日期"
           />
@@ -501,8 +503,8 @@ const handleSearch = () => {
 };
 
 const resetSearch = () => {
-  searchForm.region = "";
-  searchForm.scale = "";
+  searchForm.region = [];
+  searchForm.scale = [];
   searchForm.productType = "";
   // searchForm.status = null;
   handleSearch();
@@ -534,8 +536,8 @@ const form = reactive({
   contactPerson: "",
   contactPhone: "",
   scale: "",
-  employeeCount: "",
-  annualRevenue: "",
+  employeeCount: null,
+  annualRevenue: null,
   productType: "",
   description: "",
   logo: "",
@@ -571,12 +573,14 @@ const openAddDialog = () => {
   form.contactPerson = "";
   form.contactPhone = "";
   form.scale = "";
-  form.employeeCount = "";
-  form.annualRevenue = "";
+  form.employeeCount = null;
+  form.annualRevenue = null;
   form.productType = "";
   form.description = "";
   form.logo = "";
   form.establishedDate = "";
+
+  fileList.value = [];
   dialog.visible = true;
 };
 
@@ -599,10 +603,20 @@ const openEditDialog = async (row) => {
     form.productType = detail.productType || "";
     form.description = detail.description || "";
     form.logo = detail.logo || "";
-    const establishedDateStr = detail.establishedDate;
-    form.establishedDate = establishedDateStr
-      ? new Date(establishedDateStr)
-      : null;
+    form.establishedDate = detail.establishedDate || null;
+
+    if (detail.logo) {
+      const fileName = detail.logo.split("/").pop() || "logo.jpg";
+      fileList.value = [
+        {
+          name: fileName,
+          url: detail.logo,
+          status: "success",
+        },
+      ];
+    } else {
+      fileList.value = [];
+    }
 
     dialog.visible = true;
   } catch (error) {
@@ -623,8 +637,14 @@ const submitForm = async () => {
     contactPerson: form.contactPerson,
     contactPhone: form.contactPhone,
     scale: form.scale,
-    employeeCount: form.employeeCount,
-    annualRevenue: form.annualRevenue,
+    employeeCount:
+      form.employeeCount !== null && form.employeeCount !== undefined
+        ? String(form.employeeCount)
+        : "",
+    annualRevenue:
+      form.annualRevenue !== null && form.annualRevenue !== undefined
+        ? String(form.annualRevenue)
+        : "",
     productType: form.productType,
     description: form.description,
     logo: form.logo,
@@ -671,13 +691,30 @@ const handleDelete = (row) => {
 };
 
 // ---------- 文件上传/删除 ----------
+const fileList = ref([]);
+
 const customUpload = async (options) => {
+  const { file, onSuccess, onError } = options;
   try {
-    const url = await uploadFile(options.file);
+    const url = await uploadFile(file);
     form.logo = url;
+    // 构造符合 UploadFile 格式的对象
+    const uploadedFile = {
+      name: file.name,
+      url: url,
+      uid: file.uid,
+      status: "success",
+    };
+    if (typeof onSuccess === "function") {
+      onSuccess({ url });
+    }
+    fileList.value = [uploadedFile];
     ElMessage.success("上传成功");
   } catch (error) {
     ElMessage.error("上传失败");
+    if (typeof onError === "function") {
+      onError(error);
+    }
     console.log("上传失败", error);
   }
 };
@@ -712,6 +749,7 @@ const handleRemove = async () => {
   try {
     await deleteFile(form.logo);
     form.logo = "";
+    fileList.value = [];
     ElMessage.success("删除成功");
   } catch (error) {
     ElMessage.error("删除失败");

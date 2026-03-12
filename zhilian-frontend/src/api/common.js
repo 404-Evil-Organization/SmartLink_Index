@@ -8,9 +8,6 @@ export function uploadFile(file) {
   return request({
     url: "/common/upload",
     method: "post",
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
     data: formData,
   }).then((res) => {
     return res.fileUrl;

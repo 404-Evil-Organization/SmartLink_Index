@@ -43,7 +43,7 @@ export default [
           annualRevenue: 8000.0,
           productType: "PCB",
           description: "专业PCB制造商",
-          logo: "https://...",
+          logo: "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/avatar.png?Expires=1773298622&OSSAccessKeyId=TMP.3Ko3D4CEunQzVEaENPJkqpo2RPcm2AUkRCsHH8SFsBFSKTeTYWtqjZ1DZPrAZxfZkmfVZRHTJRJXVNBZJHS86ZZzG5zs7i&Signature=oHEVS7HetaDnwJh9WwSz1Ic%2FBjg%3D",
           establishedDate: "2010-05-01",
           createTime: "2026-03-01 10:00:00",
           updateTime: "2026-03-01 10:00:00",
