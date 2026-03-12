@@ -115,7 +115,6 @@
         border
         stripe
         style="width: 100%"
-        @expand-change="handleExpandChange"
         row-key="id"
       >
         <!-- 展开行，显示更多信息 -->
@@ -291,7 +290,7 @@
             action="#"
             :limit="1"
             accept=".png,.jpg,.jpeg"
-            v-model="form.logo"
+            :file-list="form.logo"
             :http-request="customUpload"
             :on-remove="handleRemove"
             :before-upload="beforeUpload"
@@ -444,8 +443,8 @@ import { uploadFile, deleteFile } from "@/api/common";
 
 // 搜索表单
 const searchForm = reactive({
-  region: "",
-  scale: "",
+  region: [],
+  scale: [],
   productType: "",
   // status: null, // 如果接口不支持，可忽略
 });
@@ -465,8 +464,8 @@ const fetchList = async () => {
     const params = {
       page: pagination.current,
       size: pagination.size,
-      region: searchForm.region || null,
-      scale: searchForm.scale || null,
+      region: searchForm.region.length != 0 ? searchForm.region : null,
+      scale: searchForm.scale.length != 0 ? searchForm.scale : null,
       productType: searchForm.productType || null,
     };
     const res = await getManufactureList(params);
@@ -489,7 +488,7 @@ const resetSearch = () => {
   searchForm.region = "";
   searchForm.scale = "";
   searchForm.productType = "";
-  searchForm.status = null;
+  // searchForm.status = null;
   handleSearch();
 };
 
@@ -584,14 +583,15 @@ const openEditDialog = async (row) => {
     form.productType = detail.productType || "";
     form.description = detail.description || "";
     form.logo = detail.logo || "";
-    form.establishedDate = detail.establishedDate || "";
+    const establishedDateStr = detail.establishedDate;
+    form.establishedDate = establishedDateStr
+      ? new Date(establishedDateStr)
+      : null;
 
     dialog.visible = true;
   } catch (error) {
     ElMessage.error("获取企业详情失败");
     console.log("获取企业详情失败", error);
-  } finally {
-    editLoading.value = false;
   }
 };
 
@@ -599,22 +599,29 @@ const submitForm = async () => {
   if (!formRef.value) return;
   await formRef.value.validate();
 
+  // 按与后端接口一致的字段一次性提交企业信息
+  const payload = {
+    companyName: form.companyName,
+    region: form.region,
+    address: form.address,
+    contactPerson: form.contactPerson,
+    contactPhone: form.contactPhone,
+    scale: form.scale,
+    employeeCount: form.employeeCount,
+    annualRevenue: form.annualRevenue,
+    productType: form.productType,
+    description: form.description,
+    logo: form.logo,
+    establishedDate: form.establishedDate,
+  };
+
   try {
     if (form.id) {
-      // 编辑
-      await updateManufacture(form.id, {
-        name: form.name,
-        region: form.region,
-        scale: form.scale,
-      });
+      await updateManufacture(form.id, payload);
       ElMessage.success("修改成功");
     } else {
       // 新增
-      await addManufacture({
-        name: form.name,
-        region: form.region,
-        scale: form.scale,
-      });
+      await addManufacture(payload);
       ElMessage.success("新增成功");
     }
     dialog.visible = false;
