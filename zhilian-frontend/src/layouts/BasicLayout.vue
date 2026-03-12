@@ -16,6 +16,10 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
+        <el-menu-item index="/manage/tag">
+          <el-icon><OfficeBuilding /></el-icon>
+          <span>标签管理</span>
+        </el-menu-item>
         <!-- 后续可继续添加其他菜单项 -->
       </el-menu>
     </el-aside>
