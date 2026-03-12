@@ -10,7 +10,12 @@
         </el-breadcrumb>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="openAddDialog" :icon="Plus">
+        <el-button
+          v-if="hasPermission('add')"
+          type="primary"
+          @click="openAddDialog"
+          :icon="Plus"
+        >
           新增企业
         </el-button>
         <!-- <el-button :icon="Download">导出</el-button> -->
@@ -174,10 +179,19 @@
             <el-button size="small" @click="openViewDialog(row)">
               <el-icon><View /></el-icon> 查看
             </el-button>
-            <el-button size="small" @click="openEditDialog(row)">
+            <el-button
+              v-if="hasPermission('edit')"
+              size="small"
+              @click="openEditDialog(row)"
+            >
               <el-icon><Edit /></el-icon> 编辑
             </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">
+            <el-button
+              v-if="hasPermission('delete')"
+              size="small"
+              type="danger"
+              @click="handleDelete(row)"
+            >
               <el-icon><Delete /></el-icon> 删除
             </el-button>
           </template>
@@ -398,6 +412,8 @@ import {
   deleteManufacture,
 } from "@/api/manufacture";
 import { uploadFile, deleteFile } from "@/api/common";
+import { usePermission } from "@/composables/usePermission";
+const { hasPermission } = usePermission();
 
 // ---------- 统计卡片数据（静态，可改为接口获取） ----------
 // const statistics = ref([
