@@ -156,7 +156,18 @@
         />
         <el-table-column prop="productType" label="主营产品" min-width="120" />
         <el-table-column prop="contactPerson" label="联系人" width="100" />
-        <el-table-column prop="contactPhone" label="联系电话" width="130" />
+        <el-table-column prop="contactPhone" label="联系电话" width="130">
+          <template #default="{ row }">
+            <!-- 对手机号进行脱敏处理，仅展示前3位和后4位，避免直接暴露完整号码 -->
+            <span>
+              {{
+                row.contactPhone
+                  ? row.contactPhone.replace(/(\d{3})\d{4}(\d{4})/, "$1****$2")
+                  : "-"
+              }}
+            </span>
+          </template>
+        </el-table-column>
         <!-- 状态列（假设接口有 status 字段，若无可以暂时隐藏） -->
         <!-- <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
@@ -347,8 +358,8 @@
         <el-descriptions-item label="联系人">{{
           detailDialog.data.contactPerson || "-"
         }}</el-descriptions-item>
-        <el-descriptions-item label="联系电话">{{
-          detailDialog.data.contactPhone || "-"
+        <el-descriptions-item label="手机号">{{
+          showPhone(detailDialog.data.contactPhone)
         }}</el-descriptions-item>
         <el-descriptions-item label="规模">{{
           formatScale(detailDialog.data)
@@ -698,8 +709,18 @@ const fileList = ref([]);
 const customUpload = async (options) => {
   const { file, onSuccess, onError } = options;
   try {
+    // 先上传新文件
     const url = await uploadFile(file);
-    await deleteFile(form.logo);
+    // 记录旧的 logo 地址，仅在存在且非空时尝试删除
+    const oldLogo = form.logo;
+    if (oldLogo && typeof oldLogo === "string" && oldLogo.trim() !== "") {
+      try {
+        await deleteFile(oldLogo);
+      } catch (deleteError) {
+        console.warn("删除旧 logo 失败", deleteError);
+        ElMessage.warning("新 logo 已上传，但旧 logo 删除失败，请稍后重试");
+      }
+    }
     form.logo = url;
     // 构造符合 UploadFile 格式的对象
     const uploadedFile = {
@@ -771,6 +792,13 @@ const openViewDialog = async (row) => {
     ElMessage.error("获取企业详情失败");
     console.log("获取企业详情失败", error);
   }
+};
+
+import { maskPhone } from "@/utils/desensitize";
+import { useUserStore } from "@/stores/user";
+const userStore = useUserStore();
+const showPhone = (phone) => {
+  return maskPhone(phone, userStore.userInfo.role);
 };
 
 // 展开行事件：expandedRows 是当前展开的所有行数据
