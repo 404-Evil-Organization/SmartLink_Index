@@ -54,12 +54,12 @@ public class UserServiceImpl implements UserService {
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        // 2.1 校验并设置用户角色，仅允许 manufacture/service/park/admin
+        // 2.1 校验并设置用户角色，仅允许 manufacture/service/park，禁止注册 admin 角色
         String role = request.getRole();
         if (!"manufacture".equals(role)
                 && !"service".equals(role)
-                && !"park".equals(role)
-                && !"admin".equals(role)) {
+                && !"park".equals(role)) {
+            // 禁止通过注册接口创建管理员账号，避免任意用户自注册为 admin
             throw new BusinessException(400, "用户角色不合法");
         }
         user.setRole(role);
