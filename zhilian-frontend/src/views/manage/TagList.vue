@@ -106,7 +106,7 @@
           :page-sizes="[5, 10, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="pagination.total"
-          @size-change="handlePageChange"
+          @size-change="handlePageSizeChange"
           @current-change="handlePageChange"
         />
       </div>
@@ -210,8 +210,17 @@ const resetSearch = () => {
   handleSearch();
 };
 
-// 分页变化
-const handlePageChange = () => {
+// 分页变化 - 当前页改变
+const handlePageChange = (page) => {
+  // 更新当前页并拉取列表
+  pagination.current = page;
+  fetchList();
+};
+// 分页变化 - 每页条数改变
+const handlePageSizeChange = (pageSize) => {
+  // 更新每页条数时重置到第一页，避免请求到不存在的页码
+  pagination.size = pageSize;
+  pagination.current = 1;
   fetchList();
 };
 
