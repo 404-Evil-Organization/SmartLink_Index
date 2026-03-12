@@ -1,12 +1,10 @@
 package com.zhilian.zhilianbackend.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.io.Serializable;
 import java.util.Date;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -14,8 +12,8 @@ import lombok.experimental.Accessors;
 /**
  * @Author: 6017
  * @Date: 2026/3/9 21:43
- * @Param: 
- * @Return: 
+ * @Param:
+ * @Return:
  * @Description: 用户表实体类，对应数据库user表
 **/
 @Getter
@@ -66,13 +64,13 @@ public class User implements Serializable {
      * 状态：0禁用 1正常
      */
     @TableField("status")
-    private Byte status;
+    private Integer status;
 
     /**
      * 逻辑删除标记，NULL代表未删除，非NULL代表删除时间
      */
     @TableField("deleted")
-    @TableLogic
+    @TableLogic(value = "null", delval = "now()")
     private Date deleted;
 
     /**
@@ -84,6 +82,6 @@ public class User implements Serializable {
     /**
      * 更新时间
      */
-    @TableField("update_time")
+    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     private Date updateTime;
 }

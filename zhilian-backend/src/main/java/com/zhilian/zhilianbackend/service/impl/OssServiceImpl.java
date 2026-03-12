@@ -2,6 +2,7 @@ package com.zhilian.zhilianbackend.service.impl;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.model.PutObjectRequest;
+import com.zhilian.zhilianbackend.service.OssService;  // 导入接口
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,14 +15,12 @@ import java.util.UUID;
 /**
  * @Author:xiaodengyou
  * @Date: 2026/3/10 11:30
- * @Param:
- * @Return:
  * @Description: 阿里云OSS服务类，提供文件上传和删除功能
  **/
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OssService {
+public class OssServiceImpl implements OssService {  // 添加 implements OssService
 
     private final OSS ossClient;
 
@@ -38,6 +37,7 @@ public class OssService {
      * @Return: String 文件访问URL
      * @Description: 上传文件到OSS
      **/
+    @Override  // 添加 @Override 注解
     public String uploadFile(MultipartFile file) {
         try {
             // 生成唯一且安全的文件名
@@ -98,6 +98,7 @@ public class OssService {
      * @Return: boolean true-删除成功 false-删除失败
      * @Description: 从OSS删除文件
      **/
+    @Override  // 添加 @Override 注解
     public boolean deleteFile(String fileUrl) {
         try {
             // 从URL中提取文件名
@@ -107,11 +108,11 @@ public class OssService {
             } else {
                 fileName = fileUrl;
             }
-        // 兼容带查询参数的签名URL，去掉文件名中的 query string，避免删除失败
-        int queryIndex = fileName.indexOf("?");
-        if (queryIndex != -1) {
-            fileName = fileName.substring(0, queryIndex);
-        }
+            // 兼容带查询参数的签名URL，去掉文件名中的 query string，避免删除失败
+            int queryIndex = fileName.indexOf("?");
+            if (queryIndex != -1) {
+                fileName = fileName.substring(0, queryIndex);
+            }
 
             // 删除文件
             ossClient.deleteObject(bucketName, fileName);
