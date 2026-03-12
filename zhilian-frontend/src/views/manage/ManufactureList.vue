@@ -598,8 +598,8 @@ const openEditDialog = async (row) => {
     form.contactPerson = detail.contactPerson || "";
     form.contactPhone = detail.contactPhone || "";
     form.scale = detail.scale || "";
-    form.employeeCount = detail.employeeCount || "";
-    form.annualRevenue = detail.annualRevenue || "";
+    form.employeeCount = detail.employeeCount ?? null;
+    form.annualRevenue = detail.annualRevenue ?? null;
     form.productType = detail.productType || "";
     form.description = detail.description || "";
     form.logo = detail.logo || "";
@@ -697,6 +697,7 @@ const customUpload = async (options) => {
   const { file, onSuccess, onError } = options;
   try {
     const url = await uploadFile(file);
+    await deleteFile(form.logo);
     form.logo = url;
     // 构造符合 UploadFile 格式的对象
     const uploadedFile = {

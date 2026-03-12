@@ -8,7 +8,7 @@ export default [
         message: "success",
         data: {
           fileUrl:
-            "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/avatar.png?Expires=1773298622&OSSAccessKeyId=TMP.3Ko3D4CEunQzVEaENPJkqpo2RPcm2AUkRCsHH8SFsBFSKTeTYWtqjZ1DZPrAZxfZkmfVZRHTJRJXVNBZJHS86ZZzG5zs7i&Signature=oHEVS7HetaDnwJh9WwSz1Ic%2FBjg%3D",
+            "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/avatar.png?Expires=1773302233&OSSAccessKeyId=TMP.3Ko3D4CEunQzVEaENPJkqpo2RPcm2AUkRCsHH8SFsBFSKTeTYWtqjZ1DZPrAZxfZkmfVZRHTJRJXVNBZJHS86ZZzG5zs7i&Signature=lFXGhCZ4RN7kp1Y60fdWnW0XjlA%3D",
         },
       };
     },
