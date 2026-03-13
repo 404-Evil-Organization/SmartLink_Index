@@ -122,6 +122,7 @@ CREATE TABLE `demand`
     `update_time`     DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
     PRIMARY KEY (`id`),
     KEY               `idx_manu_id` (`manu_id`),
+    KEY               `idx_audit_user_id` (`audit_user_id`),
     KEY               `idx_status` (`status`),
     KEY               `idx_audit_status` (`audit_status`),
     KEY               `idx_create_time` (`create_time`),
