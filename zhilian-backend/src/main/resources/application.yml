@@ -130,7 +130,10 @@ logging:
       max-history: 7
 
 # 自定义应用配置
+
 app:
+  # 应用运行状态：0-开发模式（所有接口放行），1-生产模式（JWT认证）
+  state: 0
   # 跨域配置
   cors:
     allowed-origins:
