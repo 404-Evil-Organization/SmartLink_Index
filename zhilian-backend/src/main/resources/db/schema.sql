@@ -59,6 +59,7 @@ CREATE TABLE `manufacture`
     KEY                `idx_scale` (`scale`),
     KEY                `idx_audit_status` (`audit_status`),
     KEY                `idx_deleted` (`deleted`),
+    KEY                `idx_audit_user_id` (`audit_user_id`),
     CONSTRAINT `fk_manufacture_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_manufacture_audit_user` FOREIGN KEY (`audit_user_id`) REFERENCES `user` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='制造企业表';
