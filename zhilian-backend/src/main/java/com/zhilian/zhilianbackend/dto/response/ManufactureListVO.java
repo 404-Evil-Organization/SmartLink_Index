@@ -36,4 +36,12 @@ public class ManufactureListVO {
     @Schema(description = "联系人")
     private String contactPerson;
 
+    @Schema(description = "联系电话")
+    private String contactPhone;
+
+    @Schema(description = "审核状态：pending/approved/rejected")
+    private String auditStatus;
+
+    @Schema(description = "Logo图片URL")
+    private String logo;
 }

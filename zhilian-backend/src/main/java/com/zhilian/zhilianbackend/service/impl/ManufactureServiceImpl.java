@@ -88,6 +88,9 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             queryWrapper.like(Manufacture::getProductType, escapedProductType);
         }
 
+        // 仅返回审核通过的企业
+        queryWrapper.eq(Manufacture::getAuditStatus, "approved");
+
         queryWrapper.orderByDesc(Manufacture::getCreateTime);
 
         Page<Manufacture> manufacturePage = this.page(page, queryWrapper);
@@ -141,6 +144,9 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
 
         Manufacture manufacture = new Manufacture();
         BeanUtils.copyProperties(requestDTO, manufacture);
+        
+        // 设置默认审核状态
+        manufacture.setAuditStatus("pending");
 
         boolean saved = this.save(manufacture);
         if (!saved) {

@@ -63,6 +63,15 @@ public class ManufactureDetailVO {
     @Schema(description = "成立日期")
     private Date establishedDate;
 
+    @Schema(description = "审核状态：pending/approved/rejected")
+    private String auditStatus;
+
+    @Schema(description = "审核意见")
+    private String auditRemark;
+
+    @Schema(description = "审核时间")
+    private Date auditTime;
+
     @Schema(description = "创建时间")
     private Date createTime;
 
