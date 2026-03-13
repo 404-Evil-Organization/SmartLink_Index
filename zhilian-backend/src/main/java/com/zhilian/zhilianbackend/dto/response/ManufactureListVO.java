@@ -36,6 +36,4 @@ public class ManufactureListVO {
     @Schema(description = "联系人")
     private String contactPerson;
 
-    @Schema(description = "联系电话")
-    private String contactPhone;
 }
