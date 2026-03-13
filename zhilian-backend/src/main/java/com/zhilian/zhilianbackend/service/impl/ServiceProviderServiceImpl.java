@@ -308,10 +308,11 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
      * @Param: source 源对象
      * @Param: target 目标对象
      * @Return: void
-     * @Description: 复制非空属性（使用反射手动实现）
+     * @Description: 复制非空属性（使用反射手动实现）- 改进版异常处理
      **/
     private void copyNonNullProperties(Object source, Object target) {
         if (source == null || target == null) {
+            log.warn("源对象或目标对象为null，source={}, target={}", source, target);
             return;
         }
 
@@ -328,14 +329,26 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
                 // 如果值不为null，则复制到目标对象
                 if (value != null) {
-                    // 获取目标对象的对应字段
-                    java.lang.reflect.Field targetField = target.getClass().getDeclaredField(field.getName());
-                    targetField.setAccessible(true);
-                    targetField.set(target, value);
+                    try {
+                        // 获取目标对象的对应字段
+                        java.lang.reflect.Field targetField = target.getClass().getDeclaredField(field.getName());
+                        targetField.setAccessible(true);
+                        targetField.set(target, value);
+                        log.debug("属性复制成功：{} = {}", field.getName(), value);
+                    } catch (NoSuchFieldException e) {
+                        // 目标对象不存在该字段，这是预期可能的情况，记录debug级别
+                        log.debug("目标对象不存在字段：{}，跳过复制", field.getName());
+                    } catch (IllegalAccessException e) {
+                        // 字段访问权限问题，记录warn级别
+                        log.warn("复制属性失败，无法访问目标字段：{}，错误：{}", field.getName(), e.getMessage(), e);
+                    }
                 }
+            } catch (IllegalAccessException e) {
+                // 源字段访问失败，记录error级别
+                log.error("复制属性失败，无法访问源字段：{}，错误：{}", field.getName(), e.getMessage(), e);
             } catch (Exception e) {
-                // 忽略无法复制的字段（比如没有对应字段的情况）
-                log.debug("复制属性失败：{}", field.getName());
+                // 其他未知异常，记录error级别
+                log.error("复制属性时发生未知异常，字段：{}，错误：{}", field.getName(), e.getMessage(), e);
             }
         }
     }
