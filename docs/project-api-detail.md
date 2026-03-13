@@ -103,11 +103,11 @@
 
 ### 1.2 制造企业管理接口
 
-#### 1.2.1 获取制造企业列表
+#### 1.2.1 获取制造企业列表（公共列表）
 
 - **URL**: `/api/manufacture/list`
 - **Method**: `GET`
-- **请求头**: `Authorization: Bearer <token>`
+- **请求头**: `Authorization: Bearer <token>`（需登录）
 - **请求参数**（Query）:
 
 | 参数名      | 类型   | 必填 | 描述                                       |
@@ -134,12 +134,15 @@
         "scale": "medium",
         "productType": "PCB",
         "contactPerson": "张三",
-        "contactPhone": "13800138001"
+        "contactPhone": "13800138001",
+        "auditStatus": "approved"
       }
     ]
   }
 }
 ```
+
+> **说明**：此接口仅返回审核状态为 `approved` 的企业，供所有用户浏览。
 
 #### 1.2.2 获取制造企业详情
 
@@ -168,23 +171,65 @@
     "description": "专业PCB制造商",
     "logo": "https://...",
     "establishedDate": "2010-05-01",
+    "auditStatus": "approved",
+    "auditRemark": null,
+    "auditTime": null,
     "createTime": "2026-03-01 10:00:00",
     "updateTime": "2026-03-01 10:00:00"
   }
 }
 ```
 
+> **说明**：若企业审核未通过，仅创建者或管理员可查看详情；其他用户访问将返回404或权限错误。
+
 #### 1.2.3 新增制造企业
 
 - **URL**: `/api/manufacture`
 - **Method**: `POST`
-- **请求头**: `Authorization: Bearer <token>`（需具有相应权限）
+- **请求头**: `Authorization: Bearer <token>`（需登录，且只能创建自己的企业）
 - **请求参数**（JSON Body）:
 
 | 参数名          | 类型    | 必填 | 描述           |
 | :-------------- | :------ | :--- | :------------- |
-| userId          | long    | 是   | 关联的用户ID   |
 | companyName     | string  | 是   | 企业全称       |
+| region          | string  | 否   | 区域           |
+| address         | string  | 否   | 详细地址       |
+| contactPerson   | string  | 否   | 联系人         |
+| contactPhone    | string  | 否   | 联系电话       |
+| scale           | string  | 否   | 规模枚举       |
+| employeeCount   | int     | 否   | 员工人数       |
+| annualRevenue   | decimal | 否   | 年营收（万元） |
+| productType     | string  | 否   | 主营产品类型   |
+| description     | string  | 否   | 企业简介       |
+| logo            | string  | 否   | Logo图片URL    |
+| establishedDate | date    | 否   | 成立日期       |
+
+> **注意**：新增企业后，审核状态默认为 `pending`，并关联当前登录用户。
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1010,
+    "auditStatus": "pending"
+  }
+}
+```
+
+#### 1.2.4 修改制造企业信息
+
+- **URL**: `/api/manufacture/{id}`
+- **Method**: `PUT`
+- **请求头**: `Authorization: Bearer <token>`（需具有修改权限：创建者或管理员）
+- **路径参数**: `id` (企业ID)
+- **请求参数**（JSON Body，全部可选，只传需要修改的字段）:
+
+| 参数名          | 类型    | 必填 | 描述           |
+| :-------------- | :------ | :--- | :------------- |
+| companyName     | string  | 否   | 企业全称       |
 | region          | string  | 否   | 区域           |
 | address         | string  | 否   | 详细地址       |
 | contactPerson   | string  | 否   | 联系人         |
@@ -203,25 +248,6 @@
 {
   "code": 200,
   "message": "success",
-  "data": {
-    "id": 1010
-  }
-}
-```
-
-#### 1.2.4 修改制造企业信息
-
-- **URL**: `/api/manufacture/{id}`
-- **Method**: `PUT`
-- **请求头**: `Authorization: Bearer <token>`
-- **路径参数**: `id` (企业ID)
-- **请求参数**（JSON Body，只传需修改字段）: 同新增接口字段
-- **返回数据**:
-
-```json
-{
-  "code": 200,
-  "message": "success",
   "data": null
 }
 ```
@@ -230,7 +256,7 @@
 
 - **URL**: `/api/manufacture/{id}`
 - **Method**: `DELETE`
-- **请求头**: `Authorization: Bearer <token>`
+- **请求头**: `Authorization: Bearer <token>`（需具有删除权限：创建者或管理员）
 - **路径参数**: `id` (企业ID)
 - **返回数据**:
 
@@ -246,11 +272,11 @@
 
 ### 1.3 服务商管理接口
 
-#### 1.3.1 获取服务商列表
+#### 1.3.1 获取服务商列表（公共列表）
 
 - **URL**: `/api/service-provider/list`
 - **Method**: `GET`
-- **请求头**: `Authorization: Bearer <token>`
+- **请求头**: `Authorization: Bearer <token>`（需登录）
 - **请求参数**（Query）:
 
 | 参数名      | 类型   | 必填 | 描述                         |
@@ -276,12 +302,15 @@
         "serviceType": "检测认证",
         "contactPerson": "王五",
         "contactPhone": "13700137003",
-        "qualification": "CNAS、CMA"
+        "qualification": "CNAS、CMA",
+        "auditStatus": "approved"
       }
     ]
   }
 }
 ```
+
+> **说明**：此接口仅返回审核状态为 `approved` 的服务商。
 
 #### 1.3.2 获取服务商详情
 
@@ -310,6 +339,9 @@
     "establishedDate": "2003-01-01",
     "employeeCount": 2000,
     "qualification": "CNAS、CMA",
+    "auditStatus": "approved",
+    "auditRemark": null,
+    "auditTime": null,
     "createTime": "2026-03-01 10:00:00",
     "updateTime": "2026-03-01 10:00:00",
     "certifications": [
@@ -328,12 +360,11 @@
 
 - **URL**: `/api/service-provider`
 - **Method**: `POST`
-- **请求头**: `Authorization: Bearer <token>`（需具有相应权限）
+- **请求头**: `Authorization: Bearer <token>`（需登录，且只能创建自己的服务商）
 - **请求参数**（JSON Body）:
 
 | 参数名          | 类型   | 必填 | 描述                               |
 | :-------------- | :----- | :--- | :--------------------------------- |
-| userId          | long   | 是   | 关联的用户ID                       |
 | companyName     | string | 是   | 企业全称                           |
 | region          | string | 否   | 区域                               |
 | address         | string | 否   | 详细地址                           |
@@ -354,7 +385,8 @@
   "code": 200,
   "message": "success",
   "data": {
-    "id": 2010
+    "id": 2010,
+    "auditStatus": "pending"
   }
 }
 ```
@@ -363,9 +395,25 @@
 
 - **URL**: `/api/service-provider/{id}`
 - **Method**: `PUT`
-- **请求头**: `Authorization: Bearer <token>`
+- **请求头**: `Authorization: Bearer <token>`（需具有修改权限：创建者或管理员）
 - **路径参数**: `id` (服务商ID)
-- **请求参数**（JSON Body，只传需修改字段）: 同新增接口字段
+- **请求参数**（JSON Body，全部可选，只传需要修改的字段）:
+
+| 参数名          | 类型   | 必填 | 描述                               |
+| :-------------- | :----- | :--- | :--------------------------------- |
+| companyName     | string | 否   | 企业全称                           |
+| region          | string | 否   | 区域                               |
+| address         | string | 否   | 详细地址                           |
+| contactPerson   | string | 否   | 联系人                             |
+| contactPhone    | string | 否   | 联系电话                           |
+| serviceType     | string | 否   | 服务大类（可多选，逗号分隔或JSON） |
+| description     | string | 否   | 服务介绍                           |
+| logo            | string | 否   | Logo图片URL                        |
+| website         | string | 否   | 企业官网                           |
+| establishedDate | date   | 否   | 成立日期                           |
+| employeeCount   | int    | 否   | 员工人数                           |
+| qualification   | string | 否   | 资质概述                           |
+
 - **返回数据**:
 
 ```json
@@ -380,7 +428,7 @@
 
 - **URL**: `/api/service-provider/{id}`
 - **Method**: `DELETE`
-- **请求头**: `Authorization: Bearer <token>`
+- **请求头**: `Authorization: Bearer <token>`（需具有删除权限：创建者或管理员）
 - **路径参数**: `id` (服务商ID)
 - **返回数据**:
 
@@ -465,7 +513,17 @@
 - **Method**: `PUT`
 - **请求头**: `Authorization: Bearer <token>`
 - **路径参数**: `id` (证书ID)
-- **请求参数**（JSON Body）: 可更新字段同上传接口（不含文件）
+- **请求参数**（JSON Body，全部可选，只传需要修改的字段）:
+
+| 参数名         | 类型   | 必填 | 描述              |
+| :------------- | :----- | :--- | :---------------- |
+| certName       | string | 否   | 证书名称          |
+| certNo         | string | 否   | 证书编号          |
+| issueAuthority | string | 否   | 发证机构          |
+| issueDate      | date   | 否   | 发证日期          |
+| expireDate     | date   | 否   | 有效期至          |
+| status         | int    | 否   | 状态：0失效 1有效 |
+
 - **返回数据**:
 
 ```json
@@ -476,7 +534,7 @@
 }
 ```
 
-#### 1.4.4 删除证书
+- 1.4.4 删除证书
 
 - **URL**: `/api/certification/{id}`
 - **Method**: `DELETE`
@@ -590,6 +648,8 @@
   "data": null
 }
 ```
+
+---
 
 ### 1.6 标签管理接口
 
@@ -725,6 +785,83 @@
 }
 ```
 
+### 1.7 个人企业管理接口
+
+#### 1.7.1 获取个人制造企业列表
+
+- **URL**: `/api/enterprise/manufacture/list`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需登录）
+- **请求参数**（Query）:
+
+| 参数名 | 类型 | 必填 | 描述             |
+| :----- | :--- | :--- | :--------------- |
+| page   | int  | 否   | 页码，默认1      |
+| size   | int  | 否   | 每页条数，默认10 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 5,
+    "records": [
+      {
+        "id": 1001,
+        "companyName": "深圳电子科技",
+        "region": "深圳",
+        "scale": "medium",
+        "productType": "PCB",
+        "contactPerson": "张三",
+        "contactPhone": "13800138001",
+        "auditStatus": "approved",
+        "createTime": "2026-03-01 10:00:00"
+      }
+    ]
+  }
+}
+```
+
+> **说明**：此接口仅返回当前登录用户创建的制造企业（包含所有审核状态）。
+
+#### 1.7.2 获取个人服务商列表
+
+- **URL**: `/api/enterprise/service/list`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需登录）
+- **请求参数**（Query）:
+
+| 参数名 | 类型 | 必填 | 描述             |
+| :----- | :--- | :--- | :--------------- |
+| page   | int  | 否   | 页码，默认1      |
+| size   | int  | 否   | 每页条数，默认10 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 3,
+    "records": [
+      {
+        "id": 2001,
+        "companyName": "华测检测",
+        "region": "深圳",
+        "serviceType": "检测认证",
+        "contactPerson": "王五",
+        "contactPhone": "13700137003",
+        "auditStatus": "pending",
+        "createTime": "2026-03-02 14:00:00"
+      }
+    ]
+  }
+}
+```
+
 ## 二、企业数字化诊断模块
 
 ### 2.1 提交诊断问卷
@@ -832,9 +969,50 @@
 
 - **URL**: `/api/index/region/{region}`
 - **Method**: `GET`
-- **路径参数**: `region` (区域名称，如"深圳")
-- **请求参数**（可选）: 同3.1的时间参数
-- **返回数据**: 单个区域指数详情（字段同上，且包含 `message`）
+- **请求头**: `Authorization: Bearer <token>`（可选）
+- **路径参数**:
+
+| 参数名 | 类型   | 必填 | 描述               |
+| :----- | :----- | :--- | :----------------- |
+| region | string | 是   | 区域名称，如“深圳” |
+
+- **请求参数**（Query，可选）:
+
+| 参数名  | 类型 | 必填 | 描述                                                   |
+| :------ | :--- | :--- | :----------------------------------------------------- |
+| year    | int  | 否   | 年份，如2026，与 `quarter` 或 `month` 配合使用         |
+| quarter | int  | 否   | 季度（1-4），与 `year` 配合使用，此时不能传 `month`    |
+| month   | int  | 否   | 月份（1-12），与 `year` 配合使用，此时不能传 `quarter` |
+
+> **说明**：
+>
+> - 若同时提供了 `year` 和 `quarter`，则返回该区域指定季度的指数。
+> - 若同时提供了 `year` 和 `month`，则返回该区域指定月份的指数。
+> - 若未提供任何时间参数，则返回该区域最新一期的指数。
+> - 不支持同时提供 `quarter` 和 `month`。
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 101,
+    "region": "深圳",
+    "year": 2026,
+    "periodType": "quarter",
+    "periodValue": 1,
+    "coopDensity": 0.85,
+    "serviceRate": 0.72,
+    "crossRate": 0.45,
+    "totalIndex": 75.8,
+    "calcTime": "2026-04-01 00:00:00",
+    "createTime": "2026-04-01 00:10:00",
+    "updateTime": "2026-04-01 00:10:00"
+  }
+}
+```
 
 ### 3.3 获取趋势数据
 
@@ -872,14 +1050,14 @@
 - **请求头**: `Authorization: Bearer <token>`（制造企业）
 - **请求参数**（JSON Body）:
 
-| 参数名          | 类型    | 必填 | 描述         |
-| :-------------- | :------ | :--- | :----------- |
-| manuId          | long    | 是   | 制造企业ID   |
-| title           | string  | 是   | 需求标题     |
-| description     | string  | 否   | 详细描述     |
-| expected_budget | decimal | 否   | 预算（万元） |
-| deadline        | date    | 否   | 期望完成日期 |
-| tags            | long[]  | 否   | 标签ID列表   |
+| 参数名         | 类型    | 必填 | 描述         |
+| :------------- | :------ | :--- | :----------- |
+| manuId         | long    | 是   | 制造企业ID   |
+| title          | string  | 是   | 需求标题     |
+| description    | string  | 否   | 详细描述     |
+| expectedBudget | decimal | 否   | 预算（万元） |
+| deadline       | date    | 否   | 期望完成日期 |
+| tags           | long[]  | 否   | 标签ID列表   |
 
 - **返回数据**:
 
@@ -888,7 +1066,8 @@
   "code": 200,
   "message": "success",
   "data": {
-    "demandId": 3001
+    "demandId": 3001,
+    "auditStatus": "pending"
   }
 }
 ```
@@ -978,12 +1157,12 @@
 - **请求头**: `Authorization: Bearer <token>`（制造企业）
 - **请求参数**（JSON Body）:
 
-| 参数名       | 类型    | 必填 | 描述                |
-| :----------- | :------ | :--- | :------------------ |
-| coopId       | long    | 是   | 合作记录ID          |
-| score        | int     | 是   | 评分（1-5星）       |
-| content      | string  | 否   | 评价内容            |
-| is_anonymous | boolean | 否   | 是否匿名，默认false |
+| 参数名      | 类型    | 必填 | 描述                |
+| :---------- | :------ | :--- | :------------------ |
+| coopId      | long    | 是   | 合作记录ID          |
+| score       | int     | 是   | 评分（1-5星）       |
+| content     | string  | 否   | 评价内容            |
+| isAnonymous | boolean | 否   | 是否匿名，默认false |
 
 - **返回数据**:
 
@@ -1203,5 +1382,596 @@
       { "source": "m1001", "target": "s2001", "value": 3 }
     ]
   }
+}
+```
+
+---
+
+## 八、管理员后台管理模块
+
+### 8.1 管理员用户管理接口
+
+#### 8.1.1 获取用户列表（管理员）
+
+- **URL**: `/api/admin/user/list`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **请求参数**（Query）:
+
+| 参数名  | 类型   | 必填 | 描述                                             |
+| :------ | :----- | :--- | :----------------------------------------------- |
+| page    | int    | 否   | 页码，默认1                                      |
+| size    | int    | 否   | 每页条数，默认10                                 |
+| role    | string | 否   | 角色筛选：`manufacture`/`service`/`park`/`admin` |
+| status  | int    | 否   | 状态筛选：0禁用 1正常                            |
+| keyword | string | 否   | 用户名/手机号模糊搜索                            |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 150,
+    "records": [
+      {
+        "id": 1001,
+        "username": "tech_company",
+        "role": "manufacture",
+        "phone": "13800138001",
+        "email": "test@example.com",
+        "status": 1,
+        "createTime": "2026-03-01 10:00:00"
+      }
+    ]
+  }
+}
+```
+
+#### 8.1.2 获取用户详情（管理员）
+
+- **URL**: `/api/admin/user/{id}`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 用户ID |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 1001,
+    "username": "tech_company",
+    "role": "manufacture",
+    "phone": "13800138001",
+    "email": "test@example.com",
+    "status": 1,
+    "createTime": "2026-03-01 10:00:00",
+    "manufactureInfo": {  // 如果是制造企业，返回关联的企业信息
+      "id": 2001,
+      "companyName": "深圳电子科技",
+      "region": "深圳",
+      "scale": "medium"
+    }
+  }
+}
+```
+
+#### 8.1.3 修改用户状态（启用/禁用）
+
+- **URL**: `/api/admin/user/status/{id}`
+- **Method**: `PUT`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 用户ID |
+
+- **请求参数**（JSON Body）:
+
+| 参数名 | 类型 | 必填 | 描述        |
+| :----- | :--- | :--- | :---------- |
+| status | int  | 是   | 0禁用 1正常 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+#### 8.1.4 重置用户密码（管理员）
+
+- **URL**: `/api/admin/user/reset-password/{id}`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 用户ID |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "newPassword": "temp123456"  // 系统生成的临时密码
+  }
+}
+```
+
+------
+
+### 8.2 需求审核接口
+
+#### 8.2.1 获取待审核需求列表
+
+- **URL**: `/api/admin/demand/pending`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **请求参数**（Query）:
+
+| 参数名 | 类型 | 必填 | 描述             |
+| :----- | :--- | :--- | :--------------- |
+| page   | int  | 否   | 页码，默认1      |
+| size   | int  | 否   | 每页条数，默认10 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 20,
+    "records": [
+      {
+        "id": 3001,
+        "manuId": 1001,
+        "manuName": "深圳电子科技",
+        "title": "寻求PCB设计服务",
+        "description": "需要专业PCB设计公司，有高速PCB设计经验者优先。",
+        "expectedBudget": 10.00,
+        "deadline": "2026-04-01",
+        "createTime": "2026-03-07 14:30:00",
+        "tags": [
+          { "id": 1, "name": "PCB设计" },
+          { "id": 2, "name": "高速电路" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### 8.2.2 审核需求（通过/驳回）
+
+- **URL**: `/api/admin/demand/approve/{id}`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 需求ID |
+
+- **请求参数**（JSON Body）:
+
+| 参数名 | 类型   | 必填 | 描述                              |
+| :----- | :----- | :--- | :-------------------------------- |
+| status | string | 是   | `approved` 通过 / `rejected` 驳回 |
+| remark | string | 否   | 审核意见（驳回时建议填写）        |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+------
+
+### 8.3 区域指数管理接口
+
+#### 8.3.1 获取区域指数列表（管理员）
+
+- **URL**: `/api/admin/region-index/list`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **请求参数**（Query）:
+
+| 参数名 | 类型   | 必填 | 描述             |
+| :----- | :----- | :--- | :--------------- |
+| page   | int    | 否   | 页码，默认1      |
+| size   | int    | 否   | 每页条数，默认10 |
+| region | string | 否   | 区域筛选         |
+| year   | int    | 否   | 年份筛选         |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 50,
+    "records": [
+      {
+        "id": 101,
+        "region": "深圳",
+        "year": 2026,
+        "quarter": 1,
+        "coopDensity": 0.85,
+        "serviceRate": 0.72,
+        "crossRate": 0.45,
+        "totalIndex": 75.8,
+        "calcTime": "2026-04-01 00:00:00",
+        "createTime": "2026-04-01 00:10:00",
+        "updateTime": "2026-04-01 00:10:00"
+      }
+    ]
+  }
+}
+```
+
+#### 8.3.2 新增区域指数
+
+- **URL**: `/api/admin/region-index`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **请求参数**（JSON Body）:
+
+| 参数名      | 类型    | 必填 | 说明               |
+| :---------- | :------ | :--- | :----------------- |
+| region      | string  | 是   | 区域，如“深圳”     |
+| year        | int     | 是   | 年份，如2026       |
+| quarter     | int     | 是   | 季度（1-4）        |
+| coopDensity | decimal | 否   | 合作密度，如0.85   |
+| serviceRate | decimal | 否   | 服务渗透率，如0.72 |
+| crossRate   | decimal | 否   | 跨域协同度，如0.45 |
+| totalIndex  | decimal | 否   | 综合得分，如75.8   |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 102
+  }
+}
+```
+
+#### 8.3.3 修改区域指数
+
+- **URL**: `/api/admin/region-index/{id}`
+- **Method**: `PUT`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 记录ID |
+
+- **请求参数**（JSON Body，全部可选，只需传需要修改的字段）:
+
+| 参数名      | 类型    | 必填 | 说明       |
+| :---------- | :------ | :--- | :--------- |
+| region      | string  | 否   | 区域       |
+| year        | int     | 否   | 年份       |
+| quarter     | int     | 否   | 季度       |
+| coopDensity | decimal | 否   | 合作密度   |
+| serviceRate | decimal | 否   | 服务渗透率 |
+| crossRate   | decimal | 否   | 跨域协同度 |
+| totalIndex  | decimal | 否   | 综合得分   |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+#### 8.3.4 删除区域指数
+
+- **URL**: `/api/admin/region-index/{id}`
+- **Method**: `DELETE`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 记录ID |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+------
+
+### 8.4 出海案例管理接口
+
+#### 8.4.1 获取出海案例列表（管理员）
+
+- **URL**: `/api/admin/abroad-case/list`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **请求参数**（Query）:
+
+| 参数名  | 类型   | 必填 | 描述              |
+| :------ | :----- | :--- | :---------------- |
+| page    | int    | 否   | 页码，默认1       |
+| size    | int    | 否   | 每页条数，默认10  |
+| country | string | 否   | 目标国家筛选      |
+| status  | int    | 否   | 状态：0草稿 1发布 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 30,
+    "records": [
+      {
+        "id": 7001,
+        "title": "某电子公司CE认证成功案例",
+        "companyName": "东莞电子",
+        "companyType": "manufacture",
+        "country": "欧盟",
+        "serviceType": "CE认证",
+        "description": "通过华测检测服务，顺利获得CE认证，产品成功进入欧洲市场。",
+        "coverImage": "https://zhilian-cert.oss-cn-shenzhen.aliyuncs.com/cases/2026/03/abc.jpg",
+        "publishTime": "2026-02-10 10:00:00",
+        "status": 1,
+        "createTime": "2026-02-10 09:00:00",
+        "updateTime": "2026-02-10 09:00:00"
+      }
+    ]
+  }
+}
+```
+
+#### 8.4.2 新增出海案例
+
+- **URL**: `/api/admin/abroad-case`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色），Content-Type: `multipart/form-data`
+- **请求参数**（Form Data）:
+
+| 参数名      | 类型   | 必填 | 描述                        |
+| :---------- | :----- | :--- | :-------------------------- |
+| title       | string | 是   | 案例标题                    |
+| companyName | string | 是   | 企业名称                    |
+| companyType | string | 是   | `manufacture` 或 `service`  |
+| country     | string | 是   | 目标国家                    |
+| serviceType | string | 是   | 涉及服务类型                |
+| description | string | 是   | 案例详情                    |
+| coverImage  | file   | 否   | 封面图片文件（支持jpg/png） |
+| status      | int    | 否   | 0草稿 1发布，默认1          |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 7002
+  }
+}
+```
+
+#### 8.4.3 修改出海案例
+
+- **URL**: `/api/admin/abroad-case/{id}`
+- **Method**: `PUT`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色），Content-Type: `multipart/form-data`
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 案例ID |
+
+- **请求参数**（Form Data，全部可选，只需传需要修改的字段）:
+
+| 参数名      | 类型   | 必填 | 描述           |
+| :---------- | :----- | :--- | :------------- |
+| title       | string | 否   | 案例标题       |
+| companyName | string | 否   | 企业名称       |
+| companyType | string | 否   | 企业类型       |
+| country     | string | 否   | 目标国家       |
+| serviceType | string | 否   | 服务类型       |
+| description | string | 否   | 案例详情       |
+| coverImage  | file   | 否   | 新封面图片文件 |
+| status      | int    | 否   | 状态           |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+#### 8.4.4 删除出海案例
+
+- **URL**: `/api/admin/abroad-case/{id}`
+- **Method**: `DELETE`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 案例ID |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+------
+
+### 8.5 操作日志接口
+
+#### 8.5.1 获取操作日志列表
+
+- **URL**: `/api/admin/log/list`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **请求参数**（Query）:
+
+| 参数名    | 类型   | 必填 | 描述                               |
+| :-------- | :----- | :--- | :--------------------------------- |
+| page      | int    | 否   | 页码，默认1                        |
+| size      | int    | 否   | 每页条数，默认10                   |
+| username  | string | 否   | 操作人用户名（模糊匹配）           |
+| operation | string | 否   | 操作类型（如“用户登录”）           |
+| startTime | string | 否   | 开始时间，格式 yyyy-MM-dd HH:mm:ss |
+| endTime   | string | 否   | 结束时间，格式同上                 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 500,
+    "records": [
+      {
+        "id": 10001,
+        "userId": 1001,
+        "username": "admin",
+        "operation": "用户登录",
+        "params": "{}",
+        "result": "成功",
+        "ip": "192.168.1.1",
+        "createTime": "2026-03-12 09:30:00"
+      },
+      {
+        "id": 10002,
+        "userId": 1002,
+        "username": "tech_company",
+        "operation": "修改密码",
+        "params": "{\"userId\":1001}",
+        "result": "成功",
+        "ip": "192.168.1.2",
+        "createTime": "2026-03-12 10:15:00"
+      }
+    ]
+  }
+}
+```
+
+### 8.6 企业审核接口
+
+#### 8.6.1 获取待审核企业列表
+
+- **URL**: `/api/admin/enterprise/pending`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **请求参数**（Query）:
+
+| 参数名 | 类型 | 必填 | 描述             |
+| :----- | :--- | :--- | :--------------- |
+| page   | int  | 否   | 页码，默认1      |
+| size   | int  | 否   | 每页条数，默认10 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 10,
+    "records": [
+      {
+        "id": 2001,
+        "type": "manufacture",
+        "companyName": "深圳电子科技",
+        "region": "深圳",
+        "contactPerson": "张三",
+        "contactPhone": "13800138001",
+        "auditStatus": "pending",
+        "createTime": "2026-03-13 10:00:00"
+      },
+      {
+        "id": 3001,
+        "type": "service",
+        "companyName": "华测检测",
+        "region": "深圳",
+        "contactPerson": "王五",
+        "contactPhone": "13700137003",
+        "auditStatus": "pending",
+        "createTime": "2026-03-13 11:00:00"
+      }
+    ]
+  }
+}
+```
+
+#### 8.6.2 审核企业
+
+- **URL**: `/api/admin/enterprise/approve/{id}`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 企业ID |
+
+- **请求参数**（JSON Body）:
+
+| 参数名 | 类型   | 必填 | 描述                                 |
+| :----- | :----- | :--- | :----------------------------------- |
+| type   | string | 是   | 企业类型：`manufacture` 或 `service` |
+| status | string | 是   | `approved` 通过 / `rejected` 驳回    |
+| remark | string | 否   | 审核意见（驳回时建议填写）           |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
 }
 ```
