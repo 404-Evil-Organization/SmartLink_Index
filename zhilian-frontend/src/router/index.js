@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
 
-import dashboardRoutes from "./modules/dashboard";
+import dashboardRoutes from "./models/dashboard";
 
 const routes = [
   {
