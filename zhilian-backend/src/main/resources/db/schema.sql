@@ -95,6 +95,7 @@ CREATE TABLE `service_provider`
     KEY                `idx_region` (`region`),
     KEY                `idx_audit_status` (`audit_status`),
     KEY                `idx_deleted` (`deleted`),
+    KEY                `idx_audit_user_id` (`audit_user_id`),
     CONSTRAINT `fk_service_provider_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_service_provider_audit_user` FOREIGN KEY (`audit_user_id`) REFERENCES `user` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务商表';
