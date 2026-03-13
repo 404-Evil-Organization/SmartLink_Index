@@ -76,7 +76,31 @@ public class Demand implements Serializable {
     private Integer views;
 
     /**
-     * 逻辑删除标记，NULL代表未删除，非NULL代表删除时间
+     * 审核状态：待审核、通过、驳回
+     */
+    @TableField("audit_status")
+    private String auditStatus;
+
+    /**
+     * 审核意见（驳回时填写）
+     */
+    @TableField("audit_remark")
+    private String auditRemark;
+
+    /**
+     * 审核时间
+     */
+    @TableField("audit_time")
+    private Date auditTime;
+
+    /**
+     * 审核人ID，关联user.id
+     */
+    @TableField("audit_user_id")
+    private Long auditUserId;
+
+    /**
+     * 逻辑删除时间，NULL未删除，非NULL已删除
      */
     @TableField("deleted")
     @TableLogic
