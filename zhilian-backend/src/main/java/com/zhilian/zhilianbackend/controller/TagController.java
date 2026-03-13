@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 /**
  * @Author: 周冠杰
@@ -61,7 +62,7 @@ public class TagController {
     **/
     @Operation(summary = "新增标签")
     @PostMapping
-    public Result<Long> add(@RequestBody TagRequest request) {
+    public Result<Long> add(@RequestBody @Valid TagRequest request) {
         return Result.success(tagService.addTag(request));
     }
 
@@ -74,7 +75,7 @@ public class TagController {
     **/
     @Operation(summary = "修改标签")
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody TagRequest request) {
+    public Result<Void> update(@PathVariable Long id, @RequestBody @Valid TagRequest request) {
         tagService.updateTag(id, request);
         return Result.success();
     }
