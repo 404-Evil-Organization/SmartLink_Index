@@ -24,10 +24,5 @@ public class ManufactureListRequestDTO extends PageRequestDTO {
 
     @Schema(description = "主营产品类型（模糊匹配）")
     private String productType;
-
-    @Schema(description = "企业名称（模糊搜索）")
-    private String companyName;
-
-    @Schema(description = "状态：0-待审核，1-已审核，2-已驳回")
-    private Integer status;
+    
 }

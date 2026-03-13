@@ -161,7 +161,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 requestDTO.getScale(),
                 requestDTO.getAnnualRevenue(),
                 requestDTO.getEmployeeCount(),
-                requestDTO.getCompanyName() != null ? id : null  // 如果修改了企业名称，需要检查重名
+                id
         );
 
         // 4. 复制非空字段到实体对象

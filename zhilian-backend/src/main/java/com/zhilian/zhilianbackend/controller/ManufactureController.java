@@ -42,7 +42,7 @@ public class ManufactureController {
      **/
     @GetMapping("/list")
     @Operation(summary = "获取制造企业列表", description = "分页查询制造企业列表，支持区域、规模、产品类型筛选")
-    public Result<PageResult<ManufactureListVO>> getManufactureList(ManufactureListRequestDTO requestDTO) {
+    public Result<PageResult<ManufactureListVO>> getManufactureList(@Valid ManufactureListRequestDTO requestDTO) {
         log.info("获取制造企业列表，请求参数：{}", requestDTO);
         PageResult<ManufactureListVO> pageResult = PageResult.from(manufactureService.getManufactureList(requestDTO));
         return Result.success(pageResult);
