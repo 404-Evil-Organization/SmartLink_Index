@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
  * @Date: 2026/3/12 22:51
  * @Param:
  * @Return:
- * @Description: 标签新增/修改请求参数，用于接收前端传递的标签数据
+ * @Description: 标签分页查询请求参数，用于接收前端传递的标签查询条件
  **/
 @EqualsAndHashCode(callSuper = true)
 @Data

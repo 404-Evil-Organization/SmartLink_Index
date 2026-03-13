@@ -9,7 +9,9 @@ import com.zhilian.zhilianbackend.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 /**
  * @Author: 周冠杰
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/tag")
 @RequiredArgsConstructor
+@Validated
 public class TagController {
 
     private final TagService tagService;
@@ -35,7 +38,7 @@ public class TagController {
     **/
     @Operation(summary = "获取标签列表（分页）")
     @GetMapping("/list")
-    public Result<IPage<TagResponse>> list(TagQueryRequest queryRequest) {
+    public Result<IPage<TagResponse>> list(@Valid TagQueryRequest queryRequest) {
         return Result.success(tagService.pageQuery(queryRequest));
     }
 
@@ -61,7 +64,7 @@ public class TagController {
     **/
     @Operation(summary = "新增标签")
     @PostMapping
-    public Result<Long> add(@RequestBody TagRequest request) {
+    public Result<Long> add(@RequestBody @Valid TagRequest request) {
         return Result.success(tagService.addTag(request));
     }
 
@@ -74,7 +77,7 @@ public class TagController {
     **/
     @Operation(summary = "修改标签")
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody TagRequest request) {
+    public Result<Void> update(@PathVariable Long id, @RequestBody @Valid TagRequest request) {
         tagService.updateTag(id, request);
         return Result.success();
     }
