@@ -389,5 +389,6 @@ CREATE TABLE `oper_log`
     KEY           `idx_user_id` (`user_id`),
     KEY           `idx_operation` (`operation`),
     KEY           `idx_create_time` (`create_time`),
-    KEY           `idx_deleted` (`deleted`)
+    KEY           `idx_deleted` (`deleted`),
+    CONSTRAINT `fk_oper_log_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作日志表';
