@@ -131,9 +131,11 @@ logging:
 
 # 自定义应用配置
 
+# 自定义应用配置
 app:
-  # 应用运行状态：0-开发模式（所有接口放行），1-生产模式（JWT认证）
-  state: 1
+  # JWT模式：0-开发模式（所有接口放行），1-JWT模式（白名单接口放行，其他需要token）
+  jwt-mode: 1
+
   # 跨域配置
   cors:
     allowed-origins:

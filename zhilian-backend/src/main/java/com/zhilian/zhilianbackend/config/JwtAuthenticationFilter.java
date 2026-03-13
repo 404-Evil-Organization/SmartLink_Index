@@ -1,6 +1,5 @@
 package com.zhilian.zhilianbackend.config;
 
-import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -17,7 +16,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.zhilian.zhilianbackend.common.result.Result;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -25,7 +23,7 @@ import java.util.ArrayList;
 
 /**
  * @Author: xiaodengyou
- * @Date: 2026/3/13 16:35
+ * @Date: 2026/3/13 18:15
  * @Param:
  * @Return:
  * @Description: JWT认证过滤器，拦截请求并验证Token
@@ -47,19 +45,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Value("${jwt.token-prefix:Bearer}")
     private String tokenPrefix;
 
-    @Autowired
-    private AppStateConfig appStateConfig;
+    @Value("${app.jwt-mode:0}")
+    private String jwtMode;
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    /**
+     * 白名单路径 - 在JWT模式下，这些路径不需要认证
+     */
+    private static final String[] WHITE_LIST = {
+            "/auth/login",
+            "/auth/register",
+            "/test/public",
+            "/test/status",
+            "/test/info",
+            "/test/generate-token",
+            "/swagger-ui/**",      // Swagger UI相关资源
+            "/v3/api-docs/**",     // OpenAPI文档
+            "/swagger-ui.html",    // Swagger首页
+            "/webjars/**"          // Swagger依赖的静态资源
+    };
+
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/13 16:36
+     * @Date: 2026/3/13 18:16
      * @Param: request HTTP请求
      * @Param: response HTTP响应
      * @Param: filterChain 过滤器链
      * @Return:
-     * @Description: 过滤器核心逻辑，验证JWT token并设置认证信息
+     * @Description: 过滤器核心逻辑，根据jwt-mode配置决定是否进行JWT验证
      **/
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -67,21 +82,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         try {
-            // 开发模式直接放行所有请求
-            if (appStateConfig.isDevMode()) {
+            // 判断是否为JWT模式（1-开启JWT认证，0-开发模式全放行）
+            if (!isJwtMode()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("开发模式(0) - 放行所有请求: {} {}", request.getMethod(), request.getRequestURI());
+                }
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            // 生产模式才进行JWT验证
+            // JWT模式：进行JWT验证
             String requestURI = request.getRequestURI();
 
-            // 登录和注册接口不需要认证
-            if (requestURI != null && (requestURI.contains("/auth/login") ||
-                    requestURI.contains("/auth/register") ||
-                    requestURI.contains("/test/public") ||
-                    requestURI.contains("/test/status") ||
-                    requestURI.contains("/test/info"))) {
+            // 检查是否为白名单路径
+            if (isWhiteListed(requestURI)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("JWT模式(1) - 白名单路径放行: {} {}", request.getMethod(), requestURI);
+                }
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -104,39 +121,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                         // 设置到SecurityContext中
                         SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("JWT模式(1) - Token验证成功, userId: {}, 请求: {} {}",
+                                    userId, request.getMethod(), requestURI);
+                        }
                     }
                     filterChain.doFilter(request, response);
                 } catch (JwtException e) {
-                    // token无效，返回401，使用统一Result封装并通过ObjectMapper序列化
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType("application/json;charset=UTF-8");
-                    Result<?> result = Result.unauthorized("Token无效或已过期");
-                    response.getWriter().write(objectMapper.writeValueAsString(result));
-                    response.getWriter().flush();
-                    return;
+                    // token无效，返回401
+                    log.warn("JWT模式(1) - Token验证失败: {}, 请求: {} {}",
+                            e.getMessage(), request.getMethod(), requestURI);
+                    sendUnauthorizedResponse(response, "Token无效或已过期");
                 }
             } else {
-                // 没有token，返回401，使用统一Result封装并通过ObjectMapper序列化
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json;charset=UTF-8");
-                Result<?> result = Result.unauthorized("缺少Token，请先登录");
-                response.getWriter().write(objectMapper.writeValueAsString(result));
-                response.getWriter().flush();
-                return;
+                // 没有token，返回401
+                log.warn("JWT模式(1) - 缺少Token, 请求: {} {}", request.getMethod(), requestURI);
+                sendUnauthorizedResponse(response, "缺少Token，请先登录");
             }
         } catch (Exception e) {
-            // 统一捕获过滤器中未处理的异常，记录错误日志并返回合适的HTTP状态码
+            // 统一捕获过滤器中未处理的异常
             log.error("JWT认证过滤器执行异常", e);
-            // 如果响应尚未提交，则根据异常类型构造标准错误响应
             if (!response.isCommitted()) {
                 response.setContentType("application/json;charset=UTF-8");
-                if (e instanceof JwtException || e instanceof BusinessException) {
-                    // JWT相关异常或业务鉴权异常，返回401
-                    response.setStatus(401);
+                if (e instanceof JwtException) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.getWriter().write("{\"code\":401,\"message\":\"Token无效或已过期，请重新登录\",\"data\":null}");
                 } else {
-                    // 其他未知异常，返回500，避免静默放行导致安全风险
-                    response.setStatus(500);
+                    response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                     response.getWriter().write("{\"code\":500,\"message\":\"服务器内部错误，请稍后重试\",\"data\":null}");
                 }
             }
@@ -145,7 +157,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/13 16:37
+     * @Date: 2026/3/13 18:17
+     * @Param:
+     * @Return: boolean 是否为JWT模式
+     * @Description: 判断是否开启JWT认证模式
+     **/
+    private boolean isJwtMode() {
+        return "1".equals(jwtMode);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/13 18:17
+     * @Param: requestURI 请求路径
+     * @Return: boolean 是否为白名单路径
+     * @Description: 判断请求路径是否在白名单中
+     **/
+    private boolean isWhiteListed(String requestURI) {
+        if (requestURI == null) {
+            return false;
+        }
+        for (String whitePath : WHITE_LIST) {
+            if (requestURI.contains(whitePath)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/13 18:02
      * @Param: request HTTP请求
      * @Return: String JWT token字符串
      * @Description: 从请求中获取token
@@ -156,5 +198,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(tokenPrefix.length() + 1);
         }
         return null;
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/13 18:03
+     * @Param: response HTTP响应
+     * @Param: message 错误信息
+     * @Return:
+     * @Description: 发送401未授权响应
+     **/
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        String jsonResponse = String.format(
+                "{\"code\":401,\"message\":\"%s\",\"data\":null,\"timestamp\":%d}",
+                message, System.currentTimeMillis()
+        );
+        response.getWriter().write(jsonResponse);
+        response.getWriter().flush();
     }
 }

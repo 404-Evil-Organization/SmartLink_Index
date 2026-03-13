@@ -23,23 +23,19 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final CorsProperties corsProperties;
-    private final AppStateConfig appStateConfig;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     /**
      * @Author: 6017
      * @Date: 2026/3/9 21:21
      * @Param: corsProperties CORS配置属性
-     * @Param: appStateConfig 应用状态配置
      * @Param: jwtAuthenticationFilter JWT认证过滤器
      * @Return:
      * @Description: 构造方法注入所需依赖
      **/
     public SecurityConfig(CorsProperties corsProperties,
-                          AppStateConfig appStateConfig,
                           JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.corsProperties = corsProperties;
-        this.appStateConfig = appStateConfig;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
@@ -78,10 +74,10 @@ public class SecurityConfig {
 
     /**
      * @Author: 6017
-     * @Date: 2026/3/13 14:35
+     * @Date: 2026/3/13 18:05
      * @Param: http HttpSecurity 对象
      * @Return: SecurityFilterChain 安全过滤器链
-     * @Description: 统一的安全配置，根据state变量动态决定认证策略
+     * @Description: 安全配置，JWT过滤器会通过jwt-mode控制是否进行验证
      **/
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -94,25 +90,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // 4. 禁用表单登录和HTTP Basic
                 .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable());
-
-        // 5. 根据state配置不同的认证策略
-        if (appStateConfig.isDevMode()) {
-            // 开发模式：放行所有请求
-            http.authorizeHttpRequests(auth -> auth
-                    .anyRequest().permitAll()
-            );
-        } else {
-            // 生产模式：JWT认证
-            http.authorizeHttpRequests(auth -> auth
-                            // 登录和注册接口放行
-                            .requestMatchers("/auth/login", "/auth/register").permitAll()
-                            // 其他所有请求都需要认证
-                            .anyRequest().authenticated()
-                    )
-                    // 添加JWT过滤器（在UsernamePasswordAuthenticationFilter之前执行）
-                    .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        }
+                .httpBasic(basic -> basic.disable())
+                // 5. 放行所有请求，认证逻辑在JwtAuthenticationFilter中控制
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll()
+                )
+                // 6. 添加JWT过滤器
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
