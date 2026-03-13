@@ -133,7 +133,7 @@ logging:
 
 app:
   # 应用运行状态：0-开发模式（所有接口放行），1-生产模式（JWT认证）
-  state: 0
+  state: 1
   # 跨域配置
   cors:
     allowed-origins:
