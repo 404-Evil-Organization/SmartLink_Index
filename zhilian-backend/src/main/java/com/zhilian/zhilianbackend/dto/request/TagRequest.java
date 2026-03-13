@@ -8,7 +8,7 @@ import lombok.Data;
  * @Date: 2026/3/12 22:51
  * @Param:
  * @Return:
- * @Description: 标签分页查询请求参数，继承分页基础类
+ * @Description: 标签新增/修改请求参数
  **/
 @Data
 @Schema(description = "标签新增/修改请求参数")

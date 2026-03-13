@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -84,23 +85,28 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             throw new IllegalArgumentException("标签名称不能为空");
         }
 
-        // 2. 检查标签名是否已存在
-        LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Tag::getName, request.getName())
-                .eq(StringUtils.hasText(request.getCategory()), Tag::getCategory, request.getCategory());
+        // 2. 基于 (name, category) 维度做本地互斥，避免“先查后插”并发竞态
+        String categoryKey = StringUtils.hasText(request.getCategory()) ? request.getCategory() : "";
+        String lockKey = (request.getName() + "::" + categoryKey).intern();
+        synchronized (lockKey) {
+            // 2.1 再次检查标签名在当前分类下是否已存在（在锁内保证串行）
+            LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Tag::getName, request.getName())
+                    .eq(StringUtils.hasText(request.getCategory()), Tag::getCategory, request.getCategory());
 
-        long count = this.count(wrapper);
-        if (count > 0) {
-            throw new RuntimeException("标签名称已存在"); // 可以换成 BusinessException
+            long count = this.count(wrapper);
+            if (count > 0) {
+                throw new RuntimeException("标签名称已存在"); // 可以换成 BusinessException
+            }
+
+            // 3. 转换为实体并保存
+            Tag tag = new Tag();
+            BeanUtils.copyProperties(request, tag);
+            this.save(tag);
+
+            log.info("标签新增成功，ID：{}", tag.getId());
+            return tag.getId();
         }
-
-        // 3. 转换为实体并保存
-        Tag tag = new Tag();
-        BeanUtils.copyProperties(request, tag);
-        this.save(tag);
-
-        log.info("标签新增成功，ID：{}", tag.getId());
-        return tag.getId();
     }
 
     /**
@@ -118,19 +124,27 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         // 1. 检查标签是否存在
         Tag existingTag = this.getById(id);
         if (existingTag == null) {
-            throw new RuntimeException("标签不存在，ID：" + id);
+            // 标签不存在属于业务异常，返回 404 状态码，便于前端区分资源不存在场景
+            throw new BusinessException(404, "标签不存在");
         }
 
         // 2. 如果修改了名称，检查新名称是否与其他标签冲突
         if (StringUtils.hasText(request.getName()) && !request.getName().equals(existingTag.getName())) {
+            // 生效的分类：请求中有传则用请求值，否则沿用原标签的分类，避免只按 name 全局查重
+            String targetCategory = StringUtils.hasText(request.getCategory())
+                    ? request.getCategory()
+                    : existingTag.getCategory();
+
             LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Tag::getName, request.getName())
-                    .eq(StringUtils.hasText(request.getCategory()), Tag::getCategory, request.getCategory())
+                    // 按 (name, category) 维度查重；如果分类为空，则仅按名称查重
+                    .eq(StringUtils.hasText(targetCategory), Tag::getCategory, targetCategory)
                     .ne(Tag::getId, id); // 排除自身
 
             long count = this.count(wrapper);
             if (count > 0) {
-                throw new RuntimeException("标签名称已存在");
+                // 标签名称已存在属于冲突场景，返回 409 状态码，与 Result 约定保持一致
+                throw new BusinessException(409, "标签名称已存在");
             }
         }
 

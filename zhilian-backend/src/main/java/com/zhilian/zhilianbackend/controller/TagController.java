@@ -9,6 +9,7 @@ import com.zhilian.zhilianbackend.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
@@ -23,6 +24,7 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/tag")
 @RequiredArgsConstructor
+@Validated
 public class TagController {
 
     private final TagService tagService;
@@ -36,7 +38,7 @@ public class TagController {
     **/
     @Operation(summary = "获取标签列表（分页）")
     @GetMapping("/list")
-    public Result<IPage<TagResponse>> list(TagQueryRequest queryRequest) {
+    public Result<IPage<TagResponse>> list(@Valid TagQueryRequest queryRequest) {
         return Result.success(tagService.pageQuery(queryRequest));
     }
 
