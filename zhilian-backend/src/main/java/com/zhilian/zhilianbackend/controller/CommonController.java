@@ -1,7 +1,11 @@
 package com.zhilian.zhilianbackend.controller;
 
 import com.zhilian.zhilianbackend.common.result.Result;
+import com.zhilian.zhilianbackend.dto.response.ScaleResponse;
+import com.zhilian.zhilianbackend.dto.response.ServiceTagResponse;
+import com.zhilian.zhilianbackend.dto.response.TagResponse;
 import com.zhilian.zhilianbackend.service.OssService;
+import com.zhilian.zhilianbackend.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 通用接口控制器 - 提供文件上传、删除等通用功能
@@ -31,6 +36,9 @@ public class CommonController {
 
     // 注入OssService接口（面向接口编程，避免与具体实现耦合）
     private final OssService ossService;
+
+    // 注入TagService
+    private final TagService tagService;
 
     // 允许的文件扩展名列表（统一小写）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("png", "jpg", "jpeg");
@@ -50,6 +58,76 @@ public class CommonController {
     private static final Pattern OSS_URL_PATTERN = Pattern.compile(
             "^https?://[^/]+/uploads/[a-zA-Z0-9/\\-_]+\\.(png|jpg|jpeg)$"
     );
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/12 23:02
+     * @Param: 
+     * @Return: Result<List<String>> 包含区域列表的响应结果
+     * @Description: 获取粤港澳大湾区区域列表，用于前端下拉选择
+    **/
+    @GetMapping("/regions")
+    @Operation(summary = "获取区域列表", description = "返回粤港澳大湾区的区域列表，用于下拉选择")
+    public Result<List<String>> getRegions() {
+        log.info("接收获取区域列表请求");
+
+        List<String> regions = Arrays.asList(
+                "深圳", "东莞", "惠州", "广州", "佛山",
+                "中山", "珠海", "江门", "肇庆"
+        );
+
+        log.info("返回区域列表，共{}个区域", regions.size());
+        return Result.success(regions);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/12 23:02
+     * @Param:
+     * @Return: Result<List<ScaleResponse>> 包含企业规模枚举的响应结果
+     * @Description: 获取企业规模枚举值，用于前端下拉选择
+    **/
+    @GetMapping("/scales")
+    @Operation(summary = "获取企业规模枚举", description = "返回企业规模枚举值，用于下拉选择")
+    public Result<List<ScaleResponse>> getScales() {
+        log.info("接收获取企业规模枚举请求");
+
+        List<ScaleResponse> scales = Arrays.asList(
+                new ScaleResponse("micro", "微型企业"),
+                new ScaleResponse("small", "小型企业"),
+                new ScaleResponse("medium", "中型企业"),
+                new ScaleResponse("large", "大型企业")
+        );
+
+        log.info("返回企业规模枚举，共{}个", scales.size());
+        return Result.success(scales);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/12 23:44
+     * @Param: 
+     * @Return: Result<List<ServiceTagResponse>> 包含服务标签列表的响应结果
+     * @Description: 获取服务类型标签列表，用于服务商的服务类型多选
+    **/
+    @GetMapping("/service-tags")
+    @Operation(summary = "获取服务类型标签", description = "返回服务类型标签列表，用于服务商的服务类型多选")
+    public Result<List<ServiceTagResponse>> getServiceTags() {
+        log.info("接收获取服务标签请求");
+
+        // 调用TagService获取所有category为service的标签
+        List<TagResponse> tags = tagService.getServiceTags();
+
+        // 转换为前端需要的格式
+        List<ServiceTagResponse> serviceTags = tags.stream()
+                .map(tag -> new ServiceTagResponse(tag.getId(), tag.getName(), tag.getCategory()))
+                .collect(Collectors.toList());
+
+        log.info("返回服务标签，共{}个", serviceTags.size());
+        return Result.success(serviceTags);
+    }
+
+
 
     /**
      * 1.5.4 OSS文件上传
