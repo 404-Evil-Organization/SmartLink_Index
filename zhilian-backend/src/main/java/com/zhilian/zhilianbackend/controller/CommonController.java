@@ -14,10 +14,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -375,8 +378,33 @@ public class CommonController {
     public Result<List<Map<String, String>>> getTagCategories() {
         log.info("接收获取标签类别选项请求");
         List<Map<String, String>> options = TagCategory.getOptions();
-        log.info("返回标签类别选项，共{}个", options.size());
-        return Result.success(options);
+
+        // 为避免前端下拉列表出现重复的“其他类型”等标签，这里按 label 进行去重处理
+        // 兼容历史：当存在多个枚举值共享同一 label（如 RESTS / GENERAL 均为“其他类型”）时，
+        // 保留第一个出现的选项，其余同名 label 的选项不再对外暴露，避免前端 value 混乱
+        List<Map<String, String>> deduplicatedOptions = new ArrayList<>();
+        Set<String> seenLabels = new HashSet<>();
+        for (Map<String, String> option : options) {
+            if (option == null) {
+                continue;
+            }
+            String label = option.get("label");
+            // 对于没有 label 字段的选项，为避免误删，直接透传
+            if (label == null) {
+                deduplicatedOptions.add(option);
+                continue;
+            }
+            if (seenLabels.add(label)) {
+                // 第一次出现该 label，加入结果列表
+                deduplicatedOptions.add(option);
+            } else {
+                // 重复的 label（如另一个“其他类型”）不再对外暴露，仅作为历史兼容别名保留在后端枚举中
+                log.debug("过滤重复标签类别，label={}", label);
+            }
+        }
+
+        log.info("返回标签类别选项，原始{}个，去重后{}个", options.size(), deduplicatedOptions.size());
+        return Result.success(deduplicatedOptions);
     }
 
 

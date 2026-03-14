@@ -10,6 +10,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -29,6 +33,34 @@ import jakarta.validation.Valid;
 public class TagController {
 
     private final TagService tagService;
+
+    /**
+     * 校验当前登录用户是否为管理员。
+     * 说明：
+     * 1. 由于当前项目未启用 @EnableMethodSecurity，方法上的 @PreAuthorize 暂时不会生效，
+     *    因此这里通过显式读取 SecurityContext 做一次兜底校验，避免任意携带 token 的用户越权调用管理接口。
+     * 2. 当后续完善 JWT 中的角色信息后，本方法会根据 Authentication 中的 authorities 判断是否包含 ADMIN 角色；
+     *    若不存在角色信息，则默认视为非管理员，拒绝本次操作。
+     */
+    private void checkAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("仅管理员可以执行该操作");
+        }
+
+        boolean isAdmin = false;
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            String role = authority.getAuthority();
+            if ("ROLE_ADMIN".equals(role) || "ADMIN".equals(role)) {
+                isAdmin = true;
+                break;
+            }
+        }
+
+        if (!isAdmin) {
+            throw new AccessDeniedException("仅管理员可以执行该操作");
+        }
+    }
 
     /**
      * @Author: 6017
@@ -67,6 +99,8 @@ public class TagController {
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Result<Long> add(@RequestBody @Valid TagRequest request) {
+        // 兜底管理员校验：在未启用方法级安全或 Jwt 未正确注入角色时，防止任意用户越权新增标签
+        checkAdmin();
         return Result.success(tagService.addTag(request));
     }
 
@@ -81,6 +115,8 @@ public class TagController {
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody @Valid TagRequest request) {
+        // 兜底管理员校验，防止非管理员用户修改标签信息
+        checkAdmin();
         tagService.updateTag(id, request);
         return Result.success();
     }
@@ -96,6 +132,8 @@ public class TagController {
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
+        // 兜底管理员校验，防止非管理员用户逻辑删除标签
+        checkAdmin();
         tagService.deleteTag(id);
         return Result.success();
     }

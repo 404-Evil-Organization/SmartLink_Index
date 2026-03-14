@@ -87,7 +87,8 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         // 2. 校验category是否有效
         String category = request.getCategory();
         if (!StringUtils.hasText(category)) {
-            category = TagCategory.RESTS.getValue();  // 默认使用"rests"
+            // 未传入类别时默认使用 GENERAL（"general"），与数据库 schema.sql 中 tag.category 默认值保持一致
+            category = TagCategory.GENERAL.getValue();
         } else if (!TagCategory.isValid(category)) {
             throw new BusinessException(400, "无效的标签类别，可选值：" +
                     String.join(", ", TagCategory.getAllValues()));
@@ -112,13 +113,13 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         boolean saved = this.save(tag);
         if (!saved) {
             log.error("新增标签持久化失败，name={}，category={}", request.getName(), category);
-            throw new RuntimeException("新增标签失败，请稍后重试");
+            throw new BusinessException(500, "新增标签失败，请稍后重试");
         }
 
         // 再次校验 ID 是否成功回填，避免因主键未生成导致业务误判
         if (tag.getId() == null) {
             log.error("新增标签后主键ID未回填，name={}，category={}", request.getName(), category);
-            throw new RuntimeException("新增标签失败（ID 未生成），请联系管理员");
+            throw new BusinessException(500, "新增标签失败（ID 未生成），请联系管理员");
         }
 
         log.info("标签新增成功，ID：{}，category：{}", tag.getId(), category);
@@ -141,12 +142,14 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         // 1. 检查标签是否存在
         Tag existingTag = this.getById(id);
         if (existingTag == null) {
-            throw new RuntimeException("标签不存在，ID：" + id);
+            // 使用业务异常返回 404，表示标签资源不存在
+            throw new BusinessException(404, "标签不存在，ID：" + id);
         }
 
         // 2. 校验category是否有效（如果传了的话）
         if (StringUtils.hasText(request.getCategory()) && !TagCategory.isValid(request.getCategory())) {
-            throw new IllegalArgumentException("无效的标签类别，可选值：" +
+            // 使用业务异常返回 400，表示请求参数（标签类别）不合法
+            throw new BusinessException(400, "无效的标签类别，可选值：" +
                     String.join(", ", TagCategory.getAllValues()));
         }
 
@@ -167,7 +170,8 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
 
             long count = this.count(wrapper);
             if (count > 0) {
-                throw new IllegalArgumentException("标签名称已存在");
+                // 使用业务异常返回 400，表示请求参数导致的名称冲突
+                throw new BusinessException(400, "标签名称已存在");
             }
         }
 
@@ -192,7 +196,8 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         } else {
             // 这里一般表示在并发删除/修改或逻辑删除等场景下，未能成功更新任何记录
             log.warn("标签修改失败，未更新任何记录，ID：{}", id);
-            throw new RuntimeException("标签修改失败，可能是标签已被删除或发生并发修改");
+            // 使用业务异常返回 500，表示标签更新业务处理失败
+            throw new BusinessException(500, "标签修改失败，可能是标签已被删除或发生并发修改");
         }
     }
 
