@@ -14,11 +14,13 @@ import com.zhilian.zhilianbackend.service.UserService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @Author: 6017
@@ -34,8 +36,25 @@ public class UserServiceImpl implements UserService {
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    // 用于用户名的锁缓存（注意：使用完后需要清理）
-    private final ConcurrentHashMap<String, Object> lockMap = new ConcurrentHashMap<>();
+    // 用于用户名的锁缓存：使用带引用计数的锁对象，避免并发场景下错误移除导致互斥失效
+    private final ConcurrentHashMap<String, UsernameLock> lockMap = new ConcurrentHashMap<>();
+
+    /**
+     * 用户名级别锁对象：
+     * - mutex 作为 synchronized 的真正锁
+     * - refCount 记录当前持有/等待该锁的线程数量，用于安全地从缓存中移除锁
+     */
+    private static class UsernameLock {
+        /**
+         * 实际用于 synchronized 的锁对象
+         */
+        final Object mutex = new Object();
+
+        /**
+         * 引用计数，表示有多少线程正在使用该锁（包含持有和等待）
+         */
+        final AtomicInteger refCount = new AtomicInteger(0);
+    }
 
     /**
      * @Author: 6017
@@ -58,7 +77,16 @@ public class UserServiceImpl implements UserService {
         String username = request.getUsername();
 
         // 2. 获取用户名锁（避免并发注册相同用户名）
-        Object lock = lockMap.computeIfAbsent(username, k -> new Object());
+        // 使用 compute + 引用计数，保证同一个 username 始终复用同一把锁对象
+        UsernameLock usernameLock = lockMap.compute(username, (k, existing) -> {
+            if (existing == null) {
+                existing = new UsernameLock();
+            }
+            // 当前线程开始使用该锁（包括后续 synchronized 阻塞等待的场景）
+            existing.refCount.incrementAndGet();
+            return existing;
+        });
+        Object lock = usernameLock.mutex;
 
         try {
             synchronized (lock) {
@@ -80,7 +108,12 @@ public class UserServiceImpl implements UserService {
                 user.setStatus(1); // 默认正常
 
                 // 5. 保存到数据库
-                userMapper.insert(user);
+                try {
+                    userMapper.insert(user);
+                } catch (DuplicateKeyException e) {
+                    // 并发场景下数据库唯一键约束兜底：转换为 409 业务异常，而非 500
+                    throw new BusinessException(409, "用户名已存在");
+                }
 
                 // 6. 返回响应
                 UserRegisterResponse response = new UserRegisterResponse();
@@ -90,8 +123,11 @@ public class UserServiceImpl implements UserService {
                 return response;
             }
         } finally {
-            // 7. 清理锁，避免内存泄漏
-            lockMap.remove(username);
+            // 7. 安全释放锁：仅当引用计数归零时才从缓存中移除，避免并发场景下互斥失效
+            lockMap.computeIfPresent(username, (k, existing) -> {
+                int newCount = existing.refCount.decrementAndGet();
+                return newCount == 0 ? null : existing;
+            });
         }
     }
 

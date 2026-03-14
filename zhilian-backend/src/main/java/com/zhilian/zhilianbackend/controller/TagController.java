@@ -23,14 +23,12 @@ import com.zhilian.zhilianbackend.exception.BusinessException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import com.zhilian.zhilianbackend.util.JwtUtil;
 /**
  * @Author: 周冠杰
  * @Date: 2026/3/12 22:55
@@ -186,48 +184,15 @@ public class TagController {
      * 从当前 HTTP 请求头中的 JWT（Authorization: Bearer xxx）中解析角色信息。
      *
      * 说明：
-     * - 仅作为兜底逻辑使用，用于解决 JwtAuthenticationFilter 未正确注入 authorities 的场景；
-     * - 通过 JwtUtil.parseToken(...) 对 JWT 做签名/过期等校验，避免直接 Base64 解码 payload 带来的伪造风险；
-     * - 解析失败时返回 null，不抛出异常。
+     * - 历史上该方法作为兜底逻辑，用于在 JwtAuthenticationFilter 未正确注入 authorities 时，从 JWT 中手动解析角色；
+     * - 现已统一由 Spring Security + 数据库角色体系完成权限校验，此处不再单独解析 JWT，避免重复和不一致；
+     * - 为保持接口兼容性，方法保留但恒返回 null。
      *
-     * @return 角色字符串（如 "ADMIN"、"ROLE_ADMIN"），解析失败返回 null
+     * @return 角色字符串（如 "ADMIN"、"ROLE_ADMIN"），当前实现恒为 null
      */
     private String extractRoleFromJwtToken() {
-        try {
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attributes == null) {
-                return null;
-            }
-            HttpServletRequest request = attributes.getRequest();
-            if (request == null) {
-                return null;
-            }
-
-            String authorization = request.getHeader("Authorization");
-            if (authorization == null || authorization.isEmpty()) {
-                return null;
-            }
-
-            String prefix = "Bearer ";
-            if (!authorization.regionMatches(true, 0, prefix, 0, prefix.length())) {
-                // 非 Bearer Token，直接返回
-                return null;
-            }
-
-            String token = authorization.substring(prefix.length()).trim();
-            if (token.isEmpty()) {
-                return null;
-            }
-
-            // 使用统一的 JwtUtil 进行解析和签名/过期校验，避免直接 Base64 解码 payload 形成信任边界
-            Object claims = JwtUtil.parseToken(token);
-
-            // 复用已有的角色提取逻辑，从 claims 中抽取 role 信息
-            return extractRoleFromObject(claims);
-        } catch (Exception ex) {
-            // 作为兜底逻辑，不因解析异常影响主流程，直接返回 null
-            return null;
-        }
+        // 已移除 JWT 兜底解析逻辑，统一依赖 Spring Security 中的 Authentication/authorities 及数据库角色校验
+        return null;
     }
 
     /**
