@@ -33,46 +33,6 @@ public class TagController {
 
     private final TagService tagService;
 
-    /**
-     * 从 Authentication 的 principal 中尽可能提取当前登录用户的 userId。
-     * <p>
-     * 支持以下几种常见情况：
-     * <ul>
-     *     <li>principal 为 Long / Integer：直接作为 userId 使用；</li>
-     *     <li>principal 为 String：尝试解析为 Long；</li>
-     *     <li>principal 为自定义用户对象，且包含 getUserId() 方法：通过反射调用获取。</li>
-     * </ul>
-     * 提取失败时返回 null，由调用方决定是否拒绝访问。
-     */
-    private Long extractUserId(Object principal) {
-        if (principal == null) {
-            return null;
-        }
-        if (principal instanceof Long) {
-            return (Long) principal;
-        }
-        if (principal instanceof Integer) {
-            return ((Integer) principal).longValue();
-        }
-        if (principal instanceof String) {
-            try {
-                return Long.parseLong((String) principal);
-            } catch (NumberFormatException ignored) {
-                return null;
-            }
-        }
-        // 兼容自定义用户对象：优先尝试调用 getUserId() 方法
-        try {
-            Method getUserIdMethod = principal.getClass().getMethod("getUserId");
-            Object userIdValue = getUserIdMethod.invoke(principal);
-            if (userIdValue instanceof Number) {
-                return ((Number) userIdValue).longValue();
-            }
-        } catch (Exception ignored) {
-            // 忽略反射异常，返回 null 由上层处理
-        }
-        return null;
-    }
 
     /**
      * 从 SecurityContext 获取当前用户ID
