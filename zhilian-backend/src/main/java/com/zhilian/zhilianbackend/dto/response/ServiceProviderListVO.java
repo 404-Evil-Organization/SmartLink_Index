@@ -38,4 +38,10 @@ public class ServiceProviderListVO {
 
     @Schema(description = "资质概述")
     private String qualification;
+
+    @Schema(description = "审核状态：pending/approved/rejected")
+    private String auditStatus;
+
+    @Schema(description = "Logo图片URL")
+    private String logo;
 }

@@ -52,6 +52,9 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             queryWrapper.like(ServiceProvider::getServiceType, requestDTO.getServiceType());
         }
 
+        // 仅返回审核通过的服务商
+        queryWrapper.eq(ServiceProvider::getAuditStatus, "approved");
+
         // 按创建时间倒序排序
         queryWrapper.orderByDesc(ServiceProvider::getCreateTime);
 
@@ -106,6 +109,9 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         // 4. 创建实体对象
         ServiceProvider provider = new ServiceProvider();
         BeanUtils.copyProperties(requestDTO, provider);
+
+        // 设置默认审核状态
+        provider.setAuditStatus("pending");
 
         // 5. 保存到数据库
         boolean saved = this.save(provider);
