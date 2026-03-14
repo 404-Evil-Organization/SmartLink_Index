@@ -92,9 +92,12 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         } else if (!TagCategory.isValid(category)) {
             throw new BusinessException(400, "无效的标签类别，可选值：" +
                     String.join(", ", TagCategory.getAllValues()));
+        } else {
+            // 对传入的合法类别做主值归一化，例如将 rests/general 等别名统一映射为 GENERAL
+            category = TagCategory.fromValue(category).getValue();
         }
 
-        // 3. 检查标签名是否已存在（必须同时检查 name 和 category）
+        // 3. 检查标签名是否已存在（必须同时检查 name 和 category，且 category 使用归一化后的主值）
         LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Tag::getName, request.getName())
                 .eq(Tag::getCategory, category);
@@ -104,7 +107,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             throw new BusinessException(400, "标签名称已存在");
         }
 
-        // 4. 转换为实体并保存
+        // 4. 转换为实体并保存（持久化的 category 也使用归一化后的主值）
         Tag tag = new Tag();
         BeanUtils.copyProperties(request, tag);
         tag.setCategory(category);
