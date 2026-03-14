@@ -15,6 +15,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -33,6 +39,31 @@ public class ServiceProviderController {
 
     private final ServiceProviderService serviceProviderService;
 
+
+    /**
+     * 从 Spring Security 上下文中获取当前登录用户的 ID。
+     * 约定：认证成功后，用户的主标识（如 userId）存放在 Authentication 的 name 或 UserDetails.username 中，
+     * 且可以被解析为 Long 类型。
+     */
+    private Long getCurrentUserIdFromSecurityContext() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("未登录或登录状态已失效，禁止访问该接口");
+        }
+        Object principal = authentication.getPrincipal();
+        String identifier;
+        if (principal instanceof UserDetails userDetails) {
+            identifier = userDetails.getUsername();
+        } else {
+            identifier = authentication.getName();
+        }
+        try {
+            return Long.parseLong(identifier);
+        } catch (NumberFormatException ex) {
+            log.error("无法从认证信息中解析当前用户ID，identifier={}", identifier, ex);
+            throw new AccessDeniedException("无法识别当前用户身份，禁止访问该接口");
+        }
+    }
     /**
      * @Author: xiaodengyou
      * @Date: 2026-03-13 01:02
@@ -43,7 +74,8 @@ public class ServiceProviderController {
     @GetMapping("/list")
     @Operation(summary = "获取服务商列表", description = "分页查询服务商列表，支持区域、服务大类筛选")
     public Result<IPage<ServiceProviderListVO>> getServiceProviderList(ServiceProviderListRequestDTO requestDTO) {
-        log.info("获取服务商列表，请求参数：{}", requestDTO);
+        // 为避免敏感信息（如联系人电话）落盘，这里不再直接打印完整请求 DTO
+        log.info("获取服务商列表，请求参数已接收");
         IPage<ServiceProviderListVO> pageResult = serviceProviderService.getServiceProviderList(requestDTO);
         return Result.success(pageResult);
     }
@@ -68,14 +100,19 @@ public class ServiceProviderController {
     /**
      * @Author: xiaodengyou
      * @Date: 2026-03-13 01:02
-     * @Param: requestDTO 新增服务商请求参数
+     * @Param:  requestDTO 新增服务商请求参数（userId 将被服务端根据当前登录用户强制覆盖）
      * @Return: Result<ServiceProviderAddVO> 新增结果（返回新ID）
-     * @Description: 新增服务商
+     * @Description: 新增服务商，仅允许服务商角色或管理员调用
      **/
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','SERVICE')")
     @Operation(summary = "新增服务商", description = "创建新的服务商信息")
     public Result<ServiceProviderAddVO> addServiceProvider(@Valid @RequestBody ServiceProviderAddRequestDTO requestDTO) {
-        log.info("新增服务商，请求参数：{}", requestDTO);
+        // 从当前登录用户的认证信息中获取 userId，防止客户端伪造 userId 越权创建服务商
+        Long currentUserId = getCurrentUserIdFromSecurityContext();
+        requestDTO.setUserId(currentUserId);
+        // 为保护联系人电话等敏感信息，不在日志中直接输出完整请求 DTO
+        log.info("新增服务商，请求参数已接收");
         ServiceProviderAddVO result = serviceProviderService.addServiceProvider(requestDTO);
         return Result.success("新增成功", result);
     }
@@ -89,6 +126,7 @@ public class ServiceProviderController {
      * @Description: 修改服务商信息
      **/
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE_PROVIDER')")
     @Operation(summary = "修改服务商", description = "根据ID修改服务商信息，只传需要修改的字段")
     public Result<Void> updateServiceProvider(
             @Parameter(description = "服务商ID", required = true, example = "2010")

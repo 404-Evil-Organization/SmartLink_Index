@@ -36,8 +36,20 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
     @Override
     public IPage<ServiceProviderListVO> getServiceProviderList(ServiceProviderListRequestDTO requestDTO) {
+        // 基础参数校验，防止空指针和异常分页参数导致资源消耗
+        if (requestDTO == null) {
+            throw new BusinessException(400, "请求参数不能为空");
+        }
+        Integer pageNum = requestDTO.getPage();
+        Integer pageSize = requestDTO.getSize();
+        if (pageNum == null || pageNum < 1) {
+            throw new BusinessException(400, "分页参数 page 不合法，必须从 1 开始");
+        }
+        if (pageSize == null || pageSize < 1 || pageSize > 100) {
+            throw new BusinessException(400, "分页参数 size 不合法，取值范围为 1-100");
+        }
         // 1. 构建分页对象
-        Page<ServiceProvider> page = new Page<>(requestDTO.getPage(), requestDTO.getSize());
+        Page<ServiceProvider> page = new Page<>(pageNum, pageSize);
 
         // 2. 构建查询条件
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
@@ -85,12 +97,18 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             throw new BusinessException(404, "服务商不存在");
         }
 
-        // 4. 检查是否已删除（虽然逻辑删除会自动过滤，但手动检查更安全）
+        // 4. 审核状态校验：对外公开详情仅允许审核通过的服务商
+        //    列表接口已经限制 audit_status=approved，这里保持一致，防止未审核/驳回的数据被直接通过 ID 暴露
+        String auditStatus = provider.getAuditStatus();
+        if (!"approved".equalsIgnoreCase(auditStatus)) {
+            throw new BusinessException(403, "服务商未审核通过，暂不支持查看详情");
+        }
+        // 5. 检查是否已删除（虽然逻辑删除会自动过滤，但手动检查更安全）
         if (provider.getDeleted() != null) {
             throw new BusinessException(404, "服务商已删除");
         }
 
-        // 5. 转换为返回对象
+        // 6. 转换为返回对象
         return convertToDetailVO(provider);
     }
 
@@ -143,14 +161,17 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         if (existingProvider.getDeleted() != null) {
             throw new BusinessException(404, "服务商已删除，无法修改");
         }
-
-        // 4. 如果修改了企业名称，检查新名称是否已存在
+        // 4. 如果传入了企业名称但为空串，拒绝本次更新，避免把必填字段清空
+        if (requestDTO.getCompanyName() != null && StringUtils.isBlank(requestDTO.getCompanyName())) {
+            throw new BusinessException(400, "企业名称不能为空");
+        }
+        // 5. 如果修改了企业名称，检查新名称是否已存在
         if (StringUtils.isNotBlank(requestDTO.getCompanyName()) &&
                 !requestDTO.getCompanyName().equals(existingProvider.getCompanyName())) {
             checkCompanyNameExists(requestDTO.getCompanyName(), id);
         }
 
-        // 5. 校验其他字段（如果填写了）
+        // 6. 校验其他字段（如果填写了）
         validateUpdateFields(requestDTO);
 
         // 6. 复制非空字段到实体对象
