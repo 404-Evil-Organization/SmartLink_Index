@@ -40,7 +40,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
 
     private static final String PHONE_REGEX = "^1[3-9]\\d{9}$";
     private static final String SCALE_REGEX = "micro|small|medium|large";
-    private static final BigDecimal MAX_ANNUAL_REVENUE = new BigDecimal("1000000");
+    private static final BigDecimal MAX_ANNUAL_REVENUE = new BigDecimal("1000000"); // 年营收上限（单位：万元），1000000 万元 = 100 亿元
     private static final int MAX_EMPLOYEE_COUNT = 100000;
 
     /**
