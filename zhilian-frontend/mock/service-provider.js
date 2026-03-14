@@ -25,7 +25,10 @@ export default [
           auditRemark: null,
           auditTime: null,
           createTime: '2026-03-01 10:00:00',
-          updateTime: '2026-03-01 10:00:00'
+          updateTime: '2026-03-01 10:00:00',
+          email: 'wangwu@cti.com',
+          rating: 4.8,
+          annualRevenue: 5000,
         },
         {
           id: 2,
@@ -45,7 +48,10 @@ export default [
           auditRemark: null,
           auditTime: null,
           createTime: '2026-03-01 10:00:00',
-          updateTime: '2026-03-01 10:00:00'
+          updateTime: '2026-03-01 10:00:00',
+          email: 'lisi@sgs.com',
+          rating: 4.9,
+          annualRevenue: 8000,
         },
         {
           id: 3,
@@ -65,8 +71,11 @@ export default [
           auditRemark: '资质文件待补充',
           auditTime: null,
           createTime: '2026-03-02 14:30:00',
-          updateTime: '2026-03-02 14:30:00'
-        },
+          updateTime: '2026-03-02 14:30:00',
+          email: 'zhaoliu@dg.com',
+          rating: 4.5,
+          annualRevenue: 2000,
+        }
       ]
 
       // 筛选
