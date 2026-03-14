@@ -1,23 +1,20 @@
 package com.zhilian.zhilianbackend.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
-import java.io.Serializable;
-import java.util.Date;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.io.Serializable;
+import java.util.Date;
+
 /**
- * @Author: 6017
- * @Date: 2026/3/9 21:47
- * @Param: 
- * @Return: 
+ * @Author: xiaodengyou
+ * @Date: 2026/3/14 14:13
+ * @Param:
+ * @Return:
  * @Description: 资质证书表实体类，对应certification表
-**/
+ **/
 @Getter
 @Setter
 @Accessors(chain = true)
@@ -82,20 +79,21 @@ public class Certification implements Serializable {
 
     /**
      * 逻辑删除时间，NULL未删除，非NULL已删除
+     * 配合 MybatisPlusConfig 中的自动填充
      */
     @TableField("deleted")
-    @TableLogic
+    @TableLogic(value = "null", delval = "now()")
     private Date deleted;
 
     /**
-     * 上传时间
+     * 上传时间（由自动填充处理）
      */
-    @TableField("create_time")
+    @TableField(value = "create_time", fill = FieldFill.INSERT)
     private Date createTime;
 
     /**
-     * 最后更新时间
+     * 最后更新时间（由自动填充处理）
      */
-    @TableField("update_time")
+    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     private Date updateTime;
 }

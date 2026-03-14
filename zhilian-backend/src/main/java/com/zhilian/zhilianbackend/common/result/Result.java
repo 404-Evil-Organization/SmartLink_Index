@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * @Author: 6017
  * @Date: 2026/3/9 23:10
