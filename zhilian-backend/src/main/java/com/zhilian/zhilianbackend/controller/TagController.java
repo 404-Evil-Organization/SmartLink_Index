@@ -6,10 +6,12 @@ import com.zhilian.zhilianbackend.dto.request.TagQueryRequest;
 import com.zhilian.zhilianbackend.dto.request.TagRequest;
 import com.zhilian.zhilianbackend.dto.response.TagResponse;
 import com.zhilian.zhilianbackend.service.TagService;
+import com.zhilian.zhilianbackend.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import com.zhilian.zhilianbackend.util.JwtUtil;
 /**
  * @Author: 周冠杰
  * @Date: 2026/3/12 22:55
@@ -43,6 +46,48 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class TagController {
 
     private final TagService tagService;
+    private final UserService userService;
+
+    /**
+     * 从 Authentication 的 principal 中尽可能提取当前登录用户的 userId。
+     * <p>
+     * 支持以下几种常见情况：
+     * <ul>
+     *     <li>principal 为 Long / Integer：直接作为 userId 使用；</li>
+     *     <li>principal 为 String：尝试解析为 Long；</li>
+     *     <li>principal 为自定义用户对象，且包含 getUserId() 方法：通过反射调用获取。</li>
+     * </ul>
+     * 提取失败时返回 null，由调用方决定是否拒绝访问。
+     */
+    private Long extractUserId(Object principal) {
+        if (principal == null) {
+            return null;
+        }
+        if (principal instanceof Long) {
+            return (Long) principal;
+        }
+        if (principal instanceof Integer) {
+            return ((Integer) principal).longValue();
+        }
+        if (principal instanceof String) {
+            try {
+                return Long.parseLong((String) principal);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        // 兼容自定义用户对象：优先尝试调用 getUserId() 方法
+        try {
+            Method getUserIdMethod = principal.getClass().getMethod("getUserId");
+            Object userIdValue = getUserIdMethod.invoke(principal);
+            if (userIdValue instanceof Number) {
+                return ((Number) userIdValue).longValue();
+            }
+        } catch (Exception ignored) {
+            // 忽略反射异常，返回 null 由上层处理
+        }
+        return null;
+    }
 
     /**
      * 校验当前登录用户是否为管理员。
@@ -50,12 +95,22 @@ public class TagController {
      * 1. 由于当前项目未启用 @EnableMethodSecurity，方法上的 @PreAuthorize 暂时不会生效，
      *    因此这里通过显式读取 SecurityContext 做一次兜底校验，避免任意携带 token 的用户越权调用管理接口。
      * 2. 优先根据 Authentication 中的 authorities 判断是否包含 ADMIN 角色；
-     *    若 authorities 为空（如 JwtAuthenticationFilter 未填充权限），则尝试从 principal/details 中解析 role 信息。
+     *    若 authorities 为空或未标识为管理员，则退回到基于 userId 查询数据库校验角色；
      * 3. 若无法确认当前用户为管理员，则一律按非管理员处理，抛出 403，避免放宽权限。
      */
     private void checkAdmin() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            // 显式拒绝匿名认证，避免匿名用户继续走后续 JWT/角色解析逻辑
+            throw new BusinessException(403, "仅管理员可以执行该操作");
+        }
+
+        // 从 principal 中提取当前登录用户的 userId
+        Long userId = extractUserId(authentication.getPrincipal());
+        if (userId == null) {
+            // 无法识别当前用户身份，按未授权处理
             throw new BusinessException(403, "仅管理员可以执行该操作");
         }
 
@@ -80,16 +135,16 @@ public class TagController {
             }
         }
 
-        // 2. 若 authorities 未标识为管理员，则从 principal 中尝试解析 JWT 中的角色信息
+        // 2. 若 authorities 未标识为管理员，则基于 userId 查询数据库确认角色
         if (!isAdmin) {
-            String principalRole = extractRoleFromObject(authentication.getPrincipal());
-            if (principalRole != null) {
-                String normalized = principalRole.toUpperCase();
-                if ("ADMIN".equals(normalized) || "ROLE_ADMIN".equals(normalized)) {
-                    isAdmin = true;
-                }
-            }
+            // 这里依赖 UserService 根据 userId 判断是否为管理员，实现细节在服务层完成
+            isAdmin = userService.isAdmin(userId);
         }
+
+        if (!isAdmin) {
+            throw new BusinessException(403, "仅管理员可以执行该操作");
+        }
+    }
 
         // 3. 若仍未标识为管理员，则从 details 中尝试解析 JWT 中的角色信息
         if (!isAdmin) {
@@ -132,7 +187,7 @@ public class TagController {
      *
      * 说明：
      * - 仅作为兜底逻辑使用，用于解决 JwtAuthenticationFilter 未正确注入 authorities 的场景；
-     * - 默认 JWT 已在过滤器中完成签名校验，这里只解析 payload，不重复验签；
+     * - 通过 JwtUtil.parseToken(...) 对 JWT 做签名/过期等校验，避免直接 Base64 解码 payload 带来的伪造风险；
      * - 解析失败时返回 null，不抛出异常。
      *
      * @return 角色字符串（如 "ADMIN"、"ROLE_ADMIN"），解析失败返回 null
@@ -164,20 +219,10 @@ public class TagController {
                 return null;
             }
 
-            String[] parts = token.split("\\.");
-            if (parts.length < 2) {
-                // 非标准 JWT 结构
-                return null;
-            }
+            // 使用统一的 JwtUtil 进行解析和签名/过期校验，避免直接 Base64 解码 payload 形成信任边界
+            Object claims = JwtUtil.parseToken(token);
 
-            // JWT 第二段为 payload，使用 URL-safe Base64 解码
-            byte[] payloadBytes = Base64.getUrlDecoder().decode(parts[1]);
-            String payloadJson = new String(payloadBytes, StandardCharsets.UTF_8);
-
-            // 使用 Jackson 将 payload 解析为 Map，然后复用 extractRoleFromObject 抽取角色
-            @SuppressWarnings("unchecked")
-            Map<String, Object> claims = objectMapper.readValue(payloadJson, Map.class);
-
+            // 复用已有的角色提取逻辑，从 claims 中抽取 role 信息
             return extractRoleFromObject(claims);
         } catch (Exception ex) {
             // 作为兜底逻辑，不因解析异常影响主流程，直接返回 null
