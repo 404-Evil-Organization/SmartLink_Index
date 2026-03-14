@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import com.zhilian.zhilianbackend.common.exception.BusinessException;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -333,18 +333,15 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     /**
      * @Author: 6017
      * @Date: 2026/3/14 01:06
-     * @Param: 
      * @Return: List<ServiceTagResponse> 其他类型标签列表
-     * @Description: 获取所有类别为'rests'的标签，用于通用标签选择
-    **/
+     * @Description: 获取所有类别为'general'的标签，用于通用标签选择
+     **/
     @Override
-    public List<ServiceTagResponse> getRestsTags() {
+    public List<ServiceTagResponse> getGeneralTags() {
         log.info("查询其他类型标签列表");
-
         LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Tag::getCategory, TagCategory.RESTS.getValue())
+        wrapper.eq(Tag::getCategory, TagCategory.GENERAL.getValue())
                 .orderByAsc(Tag::getName);
-
         return this.list(wrapper).stream()
                 .map(tag -> new ServiceTagResponse(
                         tag.getId(),

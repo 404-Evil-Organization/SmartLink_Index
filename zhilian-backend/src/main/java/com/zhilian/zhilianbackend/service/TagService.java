@@ -98,5 +98,5 @@ public interface TagService extends IService<Tag> {
      * @Return: List<ServiceTagResponse> 其他类型标签列表
      * @Description: 获取所有类别为'rests'的标签，用于通用标签选择
     **/
-    List<ServiceTagResponse> getRestsTags();
+    List<ServiceTagResponse> getGeneralTags();
 }

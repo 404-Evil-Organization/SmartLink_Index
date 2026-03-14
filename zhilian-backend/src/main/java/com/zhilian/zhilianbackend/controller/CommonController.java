@@ -169,13 +169,13 @@ public class CommonController {
      * @Return: Result<List<ServiceTagResponse>> 包含其他类型标签列表的响应结果
      * @Description: 获取其他类型标签列表，用于通用标签选择
     **/
-    @GetMapping("/rests-tags")
+    @GetMapping("/general-tags")
     @Operation(summary = "获取其他类型标签",
             description = "返回其他类型标签列表，用于通用标签选择，对应 category = 'rests' 的标签")
-    public Result<List<ServiceTagResponse>> getRestsTags() {
+    public Result<List<ServiceTagResponse>> getGeneralTags() {
         log.info("接收获取其他类型标签请求");
 
-        List<ServiceTagResponse> tags = tagService.getRestsTags();
+        List<ServiceTagResponse> tags = tagService.getGeneralTags();
 
         log.info("返回其他类型标签，共{}个", tags.size());
         return Result.success(tags);
