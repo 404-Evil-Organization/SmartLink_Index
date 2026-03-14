@@ -120,6 +120,14 @@ public class TagController {
     }
 
     /**
+     * 通过 JWT Token 提取角色信息。
+     *
+     * 说明：ObjectMapper 通过 Spring 单例注入，避免每次 new 带来的性能开销，
+     *       同时复用全局 Jackson 配置（时间格式、反序列化特性等）。
+     */
+    private final ObjectMapper objectMapper;
+
+    /**
      * 从当前 HTTP 请求头中的 JWT（Authorization: Bearer xxx）中解析角色信息。
      *
      * 说明：
@@ -129,14 +137,6 @@ public class TagController {
      *
      * @return 角色字符串（如 "ADMIN"、"ROLE_ADMIN"），解析失败返回 null
      */
-    /**
-     * 通过 JWT Token 提取角色信息。
-     *
-     * 说明：ObjectMapper 通过 Spring 单例注入，避免每次 new 带来的性能开销，
-     *       同时复用全局 Jackson 配置（时间格式、反序列化特性等）。
-     */
-    private final ObjectMapper objectMapper;
-
     private String extractRoleFromJwtToken() {
         try {
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
