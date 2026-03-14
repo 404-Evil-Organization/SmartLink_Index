@@ -5,6 +5,9 @@ export default [
     method: 'get',
     response: ({ query }) => {
       const { page = 1, size = 10, companyName, region, serviceType, status } = query
+      // 分页参数显式转为 number，避免字符串参与加法导致拼接
+      const pageNum = Number(page) || 1
+      const sizeNum = Number(size) || 10
       // 模拟数据源
       const mockList = [
         {
@@ -88,8 +91,8 @@ export default [
       })
 
       // 分页
-      const start = (page - 1) * size
-      const end = start + size
+      const start = (pageNum - 1) * sizeNum
+      const end = start + sizeNum
       const records = filtered.slice(start, end)
 
       return {
