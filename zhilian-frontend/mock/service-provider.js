@@ -78,7 +78,7 @@ export default [
           email: 'zhaoliu@dg.com',
           rating: 4.5,
           annualRevenue: 2000,
-        }
+        }                                                    
       ]
 
       // 筛选
@@ -86,7 +86,7 @@ export default [
         if (companyName && !item.companyName.includes(companyName)) return false
         if (region && item.region !== region) return false
         if (serviceType && !item.serviceType.includes(serviceType)) return false
-        if (status !== undefined && item.status !== Number(status)) return false
+        // if (auditStatus !== undefined && item.auditStatus !== auditStatus) return false
         return true
       })
 
