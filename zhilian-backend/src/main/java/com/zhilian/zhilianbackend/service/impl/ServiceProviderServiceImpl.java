@@ -10,15 +10,19 @@ import com.zhilian.zhilianbackend.dto.request.ServiceProviderUpdateRequestDTO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderAddVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderDetailVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderListVO;
-import com.zhilian.zhilianbackend.entity.ServiceProvider;
+import com.zhilian.zhilianbackend.entity.User;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.ServiceProviderMapper;
+import com.zhilian.zhilianbackend.mapper.UserMapper;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DuplicateKeyException;
+import com.zhilian.zhilianbackend.entity.ServiceProvider;
 
 import java.util.Date;
 import java.util.stream.Collectors;
@@ -32,7 +36,10 @@ import java.util.stream.Collectors;
  **/
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMapper, ServiceProvider> implements ServiceProviderService {
+
+    private final UserMapper userMapper;
 
     @Override
     public IPage<ServiceProviderListVO> getServiceProviderList(ServiceProviderListRequestDTO requestDTO) {
@@ -103,12 +110,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         if (!"approved".equalsIgnoreCase(auditStatus)) {
             throw new BusinessException(403, "服务商未审核通过，暂不支持查看详情");
         }
-        // 5. 检查是否已删除（虽然逻辑删除会自动过滤，但手动检查更安全）
-        if (provider.getDeleted() != null) {
-            throw new BusinessException(404, "服务商已删除");
-        }
-
-        // 6. 转换为返回对象
+        // 5. 转换为返回对象
         return convertToDetailVO(provider);
     }
 
@@ -118,23 +120,37 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         // 1. 参数校验
         validateAddRequest(requestDTO);
 
-        // 2. 检查企业名称是否已存在
-        checkCompanyNameExists(requestDTO.getCompanyName(), null);
-
+        // 2. 加锁并校验用户ID（防止并发重复创建）
+        // 使用 SELECT ... FOR UPDATE 锁定用户记录，确保同一用户ID在同一时刻只有一个事务能通过此校验
+        User user = userMapper.selectByIdForUpdate(requestDTO.getUserId());
+        if (user == null) {
+            throw new BusinessException(404, "关联的用户不存在");
+        }
+        
         // 3. 检查用户ID是否已被使用（一个用户只能关联一个服务商）
         checkUserIdExists(requestDTO.getUserId(), null);
 
-        // 4. 创建实体对象
+        // 4. 检查企业名称是否已存在
+        checkCompanyNameExists(requestDTO.getCompanyName(), null);
+
+        // 5. 创建实体对象
         ServiceProvider provider = new ServiceProvider();
         BeanUtils.copyProperties(requestDTO, provider);
 
         // 设置默认审核状态
         provider.setAuditStatus("pending");
 
-        // 5. 保存到数据库
-        boolean saved = this.save(provider);
-        if (!saved) {
-            throw new BusinessException(500, "新增服务商失败");
+        // 6. 保存到数据库
+        try {
+            boolean saved = this.save(provider);
+            if (!saved) {
+                // 未抛出异常但保存失败，视为服务异常
+                throw new BusinessException(500, "新增服务商失败");
+            }
+        } catch (DuplicateKeyException e) {
+            // 兼容数据库层唯一约束（如 company_name + deleted）冲突，避免并发下插入重复企业名称
+            log.warn("新增服务商出现唯一约束冲突，companyName={}, userId={}", provider.getCompanyName(), provider.getUserId(), e);
+            throw new BusinessException(409, "企业名称已存在，请勿重复创建");
         }
 
         log.info("服务商新增成功，ID：{}，企业名称：{}", provider.getId(), provider.getCompanyName());
@@ -224,6 +240,12 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
      * @Description: 校验新增请求参数
      **/
     private void validateAddRequest(ServiceProviderAddRequestDTO requestDTO) {
+        // 请求对象不能为空，避免出现 NullPointerException
+        if (requestDTO == null) {
+            throw new BusinessException(400, "请求参数不能为空");
+        }
+
+
         // 企业名称长度校验
         if (StringUtils.length(requestDTO.getCompanyName()) > 100) {
             throw new BusinessException(400, "企业名称不能超过100个字符");

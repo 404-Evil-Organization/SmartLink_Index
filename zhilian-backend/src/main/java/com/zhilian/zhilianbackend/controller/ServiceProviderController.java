@@ -20,7 +20,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -105,7 +104,7 @@ public class ServiceProviderController {
      * @Description: 新增服务商，仅允许服务商角色或管理员调用
      **/
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','SERVICE')")
+    @PreAuthorize("hasAnyRole('admin','service')")
     @Operation(summary = "新增服务商", description = "创建新的服务商信息")
     public Result<ServiceProviderAddVO> addServiceProvider(@Valid @RequestBody ServiceProviderAddRequestDTO requestDTO) {
         // 从当前登录用户的认证信息中获取 userId，防止客户端伪造 userId 越权创建服务商
@@ -126,7 +125,7 @@ public class ServiceProviderController {
      * @Description: 修改服务商信息
      **/
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE_PROVIDER')")
+    @PreAuthorize("hasAnyRole('admin', 'service')")
     @Operation(summary = "修改服务商", description = "根据ID修改服务商信息，只传需要修改的字段")
     public Result<Void> updateServiceProvider(
             @Parameter(description = "服务商ID", required = true, example = "2010")

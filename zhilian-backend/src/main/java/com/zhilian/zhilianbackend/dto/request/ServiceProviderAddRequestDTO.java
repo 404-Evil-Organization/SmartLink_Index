@@ -2,9 +2,7 @@ package com.zhilian.zhilianbackend.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,9 +23,7 @@ import java.util.Date;
 @Schema(description = "新增服务商请求参数")
 public class ServiceProviderAddRequestDTO {
 
-    @NotNull(message = "用户ID不能为空")
-    @Positive(message = "用户ID必须为正数")
-    @Schema(description = "关联的用户ID", required = true, example = "2001")
+    @Schema(description = "关联的用户ID（由服务端根据当前登录用户自动填充，客户端可不传）", example = "2001")
     private Long userId;
 
     @NotBlank(message = "企业全称不能为空")
