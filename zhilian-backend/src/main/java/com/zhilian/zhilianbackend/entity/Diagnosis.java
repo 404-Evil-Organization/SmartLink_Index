@@ -87,7 +87,7 @@ public class Diagnosis implements Serializable {
     private Date diagnosisDate;
 
     /**
-     * 逻辑删除标记，NULL代表未删除，非NULL代表删除时间
+     * 逻辑删除时间，NULL未删除，非NULL已删除
      */
     @TableField("deleted")
     @TableLogic
