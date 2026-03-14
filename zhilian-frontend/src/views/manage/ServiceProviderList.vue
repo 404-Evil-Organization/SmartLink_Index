@@ -175,7 +175,7 @@
         <el-descriptions-item label="成立日期">{{ detailDialog.data.establishedDate || "-" }}</el-descriptions-item>
         <el-descriptions-item label="员工人数">{{ detailDialog.data.employeeCount || "-" }}</el-descriptions-item>
         <el-descriptions-item label="资质概述">{{ detailDialog.data.qualification || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="年收入(万元)">{{ detailDialog.data.annualRevenue || "-" }}</el-descriptions-item>
+        <!-- <el-descriptions-item label="年收入(万元)">{{ detailDialog.data.annualRevenue || "-" }}</el-descriptions-item> -->
         <el-descriptions-item label="企业logo" :span="2">
           <el-image
             v-if="detailDialog.data.logo"
