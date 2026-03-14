@@ -146,6 +146,20 @@ public class JwtUtil {
 
     /**
      * @Author: 6017
+     * @Date: 2026/3/14 16:34
+     * @Param: userId 用户ID, username 用户名, role 用户角色
+     * @Return: String JWT token字符串
+     * @Description: 生成Token（传用户ID、用户名和角色，用户名和角色会存入claims中）
+    **/
+    public String generateToken(Long userId, String username, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("username", username);
+        claims.put("role", role);
+        return generateToken(String.valueOf(userId), claims);
+    }
+
+    /**
+     * @Author: 6017
      * @Date: 2026/3/11 15:21
      * @Param: token JWT token字符串
      * @Return: Long 用户ID

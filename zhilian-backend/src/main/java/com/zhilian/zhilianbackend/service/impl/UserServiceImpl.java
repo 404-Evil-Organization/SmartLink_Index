@@ -127,7 +127,7 @@ public class UserServiceImpl implements UserService {
                 throw new BusinessException(403, "账号已被禁用");
             }
 
-            String token = jwtUtil.generateToken(latestUser.getId(), latestUser.getUsername());
+            String token = jwtUtil.generateToken(latestUser.getId(), latestUser.getUsername(),latestUser.getRole());
             UserLoginResponse response = new UserLoginResponse();
             response.setToken(token);
             return response;
