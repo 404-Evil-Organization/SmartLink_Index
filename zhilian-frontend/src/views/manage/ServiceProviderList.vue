@@ -298,10 +298,11 @@ const fetchRegions = async () => {
 }
 
 // 服务类型下拉静态兜底选项（当接口异常或返回格式错误时使用）
+// 注意：结构需与模板中使用的 { id, name } 保持一致，避免渲染告警
 const DEFAULT_SERVICE_TYPE_OPTIONS = [
-  { label: '技术咨询', value: 'tech_consult' },
-  { label: '系统集成', value: 'system_integration' },
-  { label: '运维服务', value: 'operation_maintenance' }
+  { id: 'tech_consult', name: '技术咨询' },
+  { id: 'system_integration', name: '系统集成' },
+  { id: 'operation_maintenance', name: '运维服务' }
 ];
 
 const serviceTypeOptions = ref([]);
@@ -355,7 +356,7 @@ const handleDetail = async (row) => {
     detailDialog.data = res
     detailDialog.visible = true
   } catch (error) {
-    ElMessage.error('获取服务企业详情失败')
+    // 请求错误已由全局响应拦截器统一提示，这里仅记录日志避免重复弹窗
     console.error('获取详情失败', error)
   }
 }
