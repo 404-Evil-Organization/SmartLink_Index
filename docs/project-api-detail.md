@@ -558,6 +558,7 @@
 
 - **URL**: `/api/common/regions`
 - **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
 - **返回数据**:
 
 ```json
@@ -572,6 +573,7 @@
 
 - **URL**: `/api/common/scales`
 - **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
 - **返回数据**:
 
 ```json
@@ -591,6 +593,7 @@
 
 - **URL**: `/api/common/service-tags`
 - **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
 - **返回数据**:
 
 ```json
@@ -750,6 +753,40 @@
 ```
 
 > **说明**：从 `tag` 表中筛选 `category` 为 `'rests'` 的标签返回，`category` 字段在返回时转换为中文描述“其他类型”。示例数据仅为演示，实际返回数据库中所有其他类型标签。
+
+#### 1.5.9 获取标签类别选项
+
+- **URL**: `/api/common/tag-categories`
+- **Method**: `GET`
+- **请求头**: 无需认证（公开接口）
+
+- **请求参数**: 无
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "value": "service",
+      "label": "服务类型"
+    },
+    {
+      "value": "certification",
+      "label": "认证类型"
+    },
+    {
+      "value": "product",
+      "label": "产品类型"
+    },
+    {
+      "value": "rests",
+      "label": "其他类型"
+    }
+  ]
+}
+```
 
 ---
 
