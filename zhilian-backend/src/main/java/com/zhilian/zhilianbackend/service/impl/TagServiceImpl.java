@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.util.StringUtils;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 
@@ -55,13 +56,16 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         if (StringUtils.hasText(rawCategory)) {
             try {
                 TagCategory tagCategory = TagCategory.fromValue(rawCategory);
-                if (tagCategory != null) {
-                    normalizedCategory = tagCategory.getValue();
-                } else {
+                // 如果无法匹配到任何有效枚举，则认为是非法参数，抛出业务异常而不是静默忽略
+                if (tagCategory == null) {
                     log.warn("分页查询标签时收到无效的分类入参（无法匹配到枚举）：{}", rawCategory);
+                    throw new BusinessException("标签分类参数不合法：" + rawCategory);
                 }
+                normalizedCategory = tagCategory.getValue();
             } catch (IllegalArgumentException ex) {
                 log.warn("分页查询标签时分类入参解析失败：{}", rawCategory, ex);
+                // 统一将解析异常转换为业务异常，便于前端明确感知入参错误
+                throw new BusinessException("标签分类参数不合法：" + rawCategory);
             }
         }
 
@@ -129,11 +133,17 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         BeanUtils.copyProperties(request, tag);
         tag.setCategory(category);
 
-        // 注意：必须检查 save 返回值，防止插入失败却继续返回 null ID 导致上层误判
-        boolean saved = this.save(tag);
-        if (!saved) {
-            log.error("新增标签持久化失败，name={}，category={}", request.getName(), category);
-            throw new BusinessException(500, "新增标签失败，请稍后重试");
+        try {
+            // 注意：必须检查 save 返回值，防止插入失败却继续返回 null ID 导致上层误判
+            boolean saved = this.save(tag);
+            if (!saved) {
+                log.error("新增标签持久化失败，name={}，category={}", request.getName(), category);
+                throw new BusinessException(500, "新增标签失败，请稍后重试");
+            }
+        } catch (DuplicateKeyException e) {
+            // 并发场景下依赖数据库唯一约束兜底，转换为统一的业务异常提示
+            log.warn("新增标签唯一约束冲突，可能存在并发插入，name={}，category={}", request.getName(), category, e);
+            throw new BusinessException(400, "标签名称已存在");
         }
 
         // 再次校验 ID 是否成功回填，避免因主键未生成导致业务误判
@@ -201,7 +211,15 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             }
         }
 
-        // 4. 更新字段（只更新有值的字段）
+        // 4. 校验至少有一个可更新字段被传入，避免无意义或无效的更新 SQL
+        if (!StringUtils.hasText(request.getName())
+                && !StringUtils.hasText(request.getCategory())
+                && !StringUtils.hasText(request.getDescription())) {
+            // 使用业务异常返回 400，表示请求体中缺少任何可更新字段
+            throw new BusinessException(400, "至少提供一个可更新字段（name、category 或 description）");
+        }
+
+        // 5. 更新字段（只更新有值的字段）
         Tag tag = new Tag();
         tag.setId(id);
 

@@ -19,9 +19,15 @@ import jakarta.validation.Valid;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 /**
  * @Author: 周冠杰
  * @Date: 2026/3/12 22:55
@@ -74,7 +80,7 @@ public class TagController {
             }
         }
 
-        // 2. 若 authorities 未标识为管理员，则从 principal/details 中尝试解析 JWT 中的角色信息
+        // 2. 若 authorities 未标识为管理员，则从 principal 中尝试解析 JWT 中的角色信息
         if (!isAdmin) {
             String principalRole = extractRoleFromObject(authentication.getPrincipal());
             if (principalRole != null) {
@@ -85,6 +91,7 @@ public class TagController {
             }
         }
 
+        // 3. 若仍未标识为管理员，则从 details 中尝试解析 JWT 中的角色信息
         if (!isAdmin) {
             String detailRole = extractRoleFromObject(authentication.getDetails());
             if (detailRole != null) {
@@ -95,9 +102,79 @@ public class TagController {
             }
         }
 
+        // 4. 兜底方案：从当前请求头中的 JWT 解析角色，解决 JwtAuthenticationFilter 未注入 authorities 的问题
+        if (!isAdmin) {
+            String tokenRole = extractRoleFromJwtToken();
+            if (tokenRole != null) {
+                String normalized = tokenRole.toUpperCase();
+                if ("ADMIN".equals(normalized) || "ROLE_ADMIN".equals(normalized)) {
+                    isAdmin = true;
+                }
+            }
+        }
+
         if (!isAdmin) {
             // 安全兜底：无法确认管理员身份时，统一拒绝访问
             throw new BusinessException(403, "仅管理员可以执行该操作");
+        }
+    }
+
+    /**
+     * 从当前 HTTP 请求头中的 JWT（Authorization: Bearer xxx）中解析角色信息。
+     *
+     * 说明：
+     * - 仅作为兜底逻辑使用，用于解决 JwtAuthenticationFilter 未正确注入 authorities 的场景；
+     * - 默认 JWT 已在过滤器中完成签名校验，这里只解析 payload，不重复验签；
+     * - 解析失败时返回 null，不抛出异常。
+     *
+     * @return 角色字符串（如 "ADMIN"、"ROLE_ADMIN"），解析失败返回 null
+     */
+    private String extractRoleFromJwtToken() {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes == null) {
+                return null;
+            }
+            HttpServletRequest request = attributes.getRequest();
+            if (request == null) {
+                return null;
+            }
+
+            String authorization = request.getHeader("Authorization");
+            if (authorization == null || authorization.isEmpty()) {
+                return null;
+            }
+
+            String prefix = "Bearer ";
+            if (!authorization.regionMatches(true, 0, prefix, 0, prefix.length())) {
+                // 非 Bearer Token，直接返回
+                return null;
+            }
+
+            String token = authorization.substring(prefix.length()).trim();
+            if (token.isEmpty()) {
+                return null;
+            }
+
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                // 非标准 JWT 结构
+                return null;
+            }
+
+            // JWT 第二段为 payload，使用 URL-safe Base64 解码
+            byte[] payloadBytes = Base64.getUrlDecoder().decode(parts[1]);
+            String payloadJson = new String(payloadBytes, StandardCharsets.UTF_8);
+
+            // 使用 Jackson 将 payload 解析为 Map，然后复用 extractRoleFromObject 抽取角色
+            ObjectMapper objectMapper = new ObjectMapper();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> claims = objectMapper.readValue(payloadJson, Map.class);
+
+            return extractRoleFromObject(claims);
+        } catch (Exception ex) {
+            // 作为兜底逻辑，不因解析异常影响主流程，直接返回 null
+            return null;
         }
     }
 
