@@ -3,8 +3,10 @@ package com.zhilian.zhilianbackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zhilian.zhilianbackend.common.enums.TagCategory;
 import com.zhilian.zhilianbackend.dto.request.TagQueryRequest;
 import com.zhilian.zhilianbackend.dto.request.TagRequest;
+import com.zhilian.zhilianbackend.dto.response.ServiceTagResponse;
 import com.zhilian.zhilianbackend.dto.response.TagResponse;
 import com.zhilian.zhilianbackend.entity.Tag;
 import com.zhilian.zhilianbackend.mapper.TagMapper;
@@ -15,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import com.zhilian.zhilianbackend.exception.BusinessException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
  * @Author: 6017
  * @Date: 2026/3/9 20:49
  * @Param:
- * @Return: 
+ * @Return:
  * @Description: 标签字典表业务逻辑实现类，实现标签相关的业务方法
 **/
 @Slf4j
@@ -45,22 +46,19 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
                 queryRequest.getPage(), queryRequest.getSize(),
                 queryRequest.getName(), queryRequest.getCategory());
 
-        // 1. 构建分页对象
         Page<Tag> page = new Page<>(queryRequest.getPage(), queryRequest.getSize());
 
-        // 2. 构建查询条件
         LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StringUtils.hasText(queryRequest.getName()), Tag::getName, queryRequest.getName())
                 .eq(StringUtils.hasText(queryRequest.getCategory()), Tag::getCategory, queryRequest.getCategory())
                 .orderByDesc(Tag::getCreateTime);
 
-        // 3. 执行查询
         Page<Tag> tagPage = this.page(page, wrapper);
 
-        // 4. 转换为Response
         IPage<TagResponse> resultPage = tagPage.convert(tag -> {
             TagResponse response = new TagResponse();
             BeanUtils.copyProperties(tag, response);
+            // 可以在这里添加中文描述的转换，但建议留给前端或单独接口
             return response;
         });
 
@@ -85,35 +83,42 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             throw new IllegalArgumentException("标签名称不能为空");
         }
 
-        // 2. 基于 (name, category) 维度做本地互斥，避免“先查后插”并发竞态
-        String categoryKey = StringUtils.hasText(request.getCategory()) ? request.getCategory() : "";
-        String lockKey = (request.getName() + "::" + categoryKey).intern();
-        synchronized (lockKey) {
-            // 2.1 再次检查标签名在当前分类下是否已存在（在锁内保证串行）
-            LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(Tag::getName, request.getName())
-                    .eq(StringUtils.hasText(request.getCategory()), Tag::getCategory, request.getCategory());
-
-            long count = this.count(wrapper);
-            if (count > 0) {
-                throw new RuntimeException("标签名称已存在"); // 可以换成 BusinessException
-            }
-
-            // 3. 转换为实体并保存
-            Tag tag = new Tag();
-            BeanUtils.copyProperties(request, tag);
-            this.save(tag);
-
-            log.info("标签新增成功，ID：{}", tag.getId());
-            return tag.getId();
+        // 2. 校验category是否有效
+        String category = request.getCategory();
+        if (!StringUtils.hasText(category)) {
+            category = TagCategory.RESTS.getValue();  // 默认使用"rests"
+        } else if (!TagCategory.isValid(category)) {
+            throw new IllegalArgumentException("无效的标签类别，可选值：" +
+                    String.join(", ", TagCategory.getAllValues()));
         }
+
+        // 3. 检查标签名是否已存在（必须同时检查 name 和 category）
+        LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Tag::getName, request.getName())
+                .eq(Tag::getCategory, category);
+
+        long count = this.count(wrapper);
+        if (count > 0) {
+            throw new RuntimeException("标签名称已存在");
+        }
+
+        // 4. 转换为实体并保存
+        Tag tag = new Tag();
+        BeanUtils.copyProperties(request, tag);
+        tag.setCategory(category);
+
+        this.save(tag);
+
+        log.info("标签新增成功，ID：{}，category：{}", tag.getId(), category);
+        return tag.getId();
     }
+
 
     /**
      * @Author: 6017
      * @Date: 2026/3/12 23:46
      * @Param: id 要修改的标签ID;request 修改标签请求参数（只传需要修改的字段）
-     * @Return: 
+     * @Return:
      * @Description: 修改标签信息，如果修改名称会检查新名称是否与其他标签冲突
     **/
     @Override
@@ -124,31 +129,37 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         // 1. 检查标签是否存在
         Tag existingTag = this.getById(id);
         if (existingTag == null) {
-            // 标签不存在属于业务异常，返回 404 状态码，便于前端区分资源不存在场景
-            throw new BusinessException(404, "标签不存在");
+            throw new RuntimeException("标签不存在，ID：" + id);
         }
 
-        // 2. 如果修改了名称，检查新名称是否与其他标签冲突
-        if (StringUtils.hasText(request.getName()) && !request.getName().equals(existingTag.getName())) {
-            // 生效的分类：请求中有传则用请求值，否则沿用原标签的分类，避免只按 name 全局查重
-            String targetCategory = StringUtils.hasText(request.getCategory())
+        // 2. 校验category是否有效（如果传了的话）
+        if (StringUtils.hasText(request.getCategory()) && !TagCategory.isValid(request.getCategory())) {
+            throw new IllegalArgumentException("无效的标签类别，可选值：" +
+                    String.join(", ", TagCategory.getAllValues()));
+        }
+
+        // 3. 如果修改了名称或类别，检查是否与其他标签冲突
+        if (StringUtils.hasText(request.getName()) || StringUtils.hasText(request.getCategory())) {
+            String newName = StringUtils.hasText(request.getName())
+                    ? request.getName()
+                    : existingTag.getName();
+
+            String newCategory = StringUtils.hasText(request.getCategory())
                     ? request.getCategory()
                     : existingTag.getCategory();
 
             LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(Tag::getName, request.getName())
-                    // 按 (name, category) 维度查重；如果分类为空，则仅按名称查重
-                    .eq(StringUtils.hasText(targetCategory), Tag::getCategory, targetCategory)
-                    .ne(Tag::getId, id); // 排除自身
+            wrapper.eq(Tag::getName, newName)
+                    .eq(Tag::getCategory, newCategory)
+                    .ne(Tag::getId, id);
 
             long count = this.count(wrapper);
             if (count > 0) {
-                // 标签名称已存在属于冲突场景，返回 409 状态码，与 Result 约定保持一致
-                throw new BusinessException(409, "标签名称已存在");
+                throw new RuntimeException("标签名称已存在");
             }
         }
 
-        // 3. 更新字段（只更新有值的字段）
+        // 4. 更新字段（只更新有值的字段）
         Tag tag = new Tag();
         tag.setId(id);
 
@@ -166,24 +177,23 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         log.info("标签修改成功，ID：{}", id);
     }
 
+
     /**
      * @Author: 6017
      * @Date: 2026/3/12 23:47
      * @Param: id 要删除的标签ID
-     * @Return: 
+     * @Return:
      * @Description: 逻辑删除标签（@TableLogic 注解自动处理）
     **/
     @Override
     public void deleteTag(Long id) {
         log.info("删除标签，ID：{}", id);
 
-        // 1. 检查标签是否存在
         Tag existingTag = this.getById(id);
         if (existingTag == null) {
             throw new RuntimeException("标签不存在，ID：" + id);
         }
 
-        // 2. 逻辑删除（@TableLogic 注解会自动处理）
         boolean removed = this.removeById(id);
 
         if (removed) {
@@ -222,28 +232,98 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     /**
      * @Author: 6017
      * @Date: 2026/3/12 23:48
-     * @Param: 
-     * @Return: List<TagResponse> 服务标签列表
+     * @Param:
+     * @Return: List<ServiceTagResponse> 服务标签列表
      * @Description: 获取所有类别为'service'的标签，用于服务商的服务类型多选
     **/
-    public List<TagResponse> getServiceTags() {
-        log.info("查询服务标签列表");
+    @Override
+    public List<ServiceTagResponse> getServiceTags() {
+        log.info("查询服务类型标签列表");
 
         LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Tag::getCategory, "service")  // 只查询服务类型的标签
+        wrapper.eq(Tag::getCategory, TagCategory.SERVICE.getValue())
                 .orderByAsc(Tag::getName);
 
         List<Tag> tags = this.list(wrapper);
 
-        List<TagResponse> responses = tags.stream()
-                .map(tag -> {
-                    TagResponse response = new TagResponse();
-                    BeanUtils.copyProperties(tag, response);
-                    return response;
-                })
+        return tags.stream()
+                .map(tag -> new ServiceTagResponse(
+                        tag.getId(),
+                        tag.getName(),
+                        tag.getCategory()
+                ))
                 .collect(Collectors.toList());
+    }
 
-        log.info("查询到服务标签 {} 条", responses.size());
-        return responses;
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 01:05
+     * @Param: 
+     * @Return: List<ServiceTagResponse> 认证类型标签列表
+     * @Description: 获取所有类别为'certification'的标签，用于证书类型选择
+    **/
+    @Override
+    public List<ServiceTagResponse> getCertificationTags() {
+        log.info("查询认证类型标签列表");
+
+        LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Tag::getCategory, TagCategory.CERTIFICATION.getValue())
+                .orderByAsc(Tag::getName);
+
+        return this.list(wrapper).stream()
+                .map(tag -> new ServiceTagResponse(
+                        tag.getId(),
+                        tag.getName(),
+                        tag.getCategory()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 01:06
+     * @Param: 
+     * @Return: List<ServiceTagResponse> 产品类型标签列表
+     * @Description: 获取所有类别为'product'的标签，用于产品类型选择
+    **/
+    @Override
+    public List<ServiceTagResponse> getProductTags() {
+        log.info("查询产品类型标签列表");
+
+        LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Tag::getCategory, TagCategory.PRODUCT.getValue())
+                .orderByAsc(Tag::getName);
+
+        return this.list(wrapper).stream()
+                .map(tag -> new ServiceTagResponse(
+                        tag.getId(),
+                        tag.getName(),
+                        tag.getCategory()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 01:06
+     * @Param: 
+     * @Return: List<ServiceTagResponse> 其他类型标签列表
+     * @Description: 获取所有类别为'rests'的标签，用于通用标签选择
+    **/
+    @Override
+    public List<ServiceTagResponse> getRestsTags() {
+        log.info("查询其他类型标签列表");
+
+        LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Tag::getCategory, TagCategory.RESTS.getValue())
+                .orderByAsc(Tag::getName);
+
+        return this.list(wrapper).stream()
+                .map(tag -> new ServiceTagResponse(
+                        tag.getId(),
+                        tag.getName(),
+                        tag.getCategory()
+                ))
+                .collect(Collectors.toList());
     }
 }

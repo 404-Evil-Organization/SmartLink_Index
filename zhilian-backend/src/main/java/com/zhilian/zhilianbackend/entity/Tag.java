@@ -39,7 +39,8 @@ public class Tag implements Serializable {
     private String name;
 
     /**
-     * 标签类别（如“服务类型”、“认证类型”）
+     * 标签类别（英文）：service, certification, product, rests
+     * 前端展示时需要根据枚举转换为中文
      */
     @TableField("category")
     private String category;

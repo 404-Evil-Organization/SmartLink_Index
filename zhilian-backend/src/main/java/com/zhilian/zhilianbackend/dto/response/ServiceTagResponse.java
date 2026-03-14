@@ -24,6 +24,7 @@ public class ServiceTagResponse {
     @Schema(description = "标签名称", example = "检测认证")
     private String name;
 
-    @Schema(description = "标签类别", example = "service")
+    @Schema(description = "标签类别英文值", example = "service")
     private String category;
+
 }

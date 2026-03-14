@@ -1,9 +1,9 @@
 package com.zhilian.zhilianbackend.controller;
 
+import com.zhilian.zhilianbackend.common.enums.TagCategory;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.response.ScaleResponse;
 import com.zhilian.zhilianbackend.dto.response.ServiceTagResponse;
-import com.zhilian.zhilianbackend.dto.response.TagResponse;
 import com.zhilian.zhilianbackend.service.OssService;
 import com.zhilian.zhilianbackend.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -115,16 +115,68 @@ public class CommonController {
     public Result<List<ServiceTagResponse>> getServiceTags() {
         log.info("接收获取服务标签请求");
 
-        // 调用TagService获取所有category为service的标签
-        List<TagResponse> tags = tagService.getServiceTags();
-
-        // 转换为前端需要的格式
-        List<ServiceTagResponse> serviceTags = tags.stream()
-                .map(tag -> new ServiceTagResponse(tag.getId(), tag.getName(), tag.getCategory()))
-                .collect(Collectors.toList());
+        // 直接调用返回 ServiceTagResponse 的方法
+        List<ServiceTagResponse> serviceTags = tagService.getServiceTags();
 
         log.info("返回服务标签，共{}个", serviceTags.size());
         return Result.success(serviceTags);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 00:35
+     * @Param:
+     * @Return: Result<List<ServiceTagResponse>> 包含认证类型标签列表的响应结果
+     * @Description: 获取认证类型标签列表，用于服务商的证书类型多选
+    **/
+    @GetMapping("/certification-tags")
+    @Operation(summary = "获取认证类型标签",
+            description = "返回认证类型标签列表，用于服务商的证书类型多选，对应 category = 'certification' 的标签")
+    public Result<List<ServiceTagResponse>> getCertificationTags() {
+        log.info("接收获取认证类型标签请求");
+
+        List<ServiceTagResponse> tags = tagService.getCertificationTags();
+
+        log.info("返回认证类型标签，共{}个", tags.size());
+        return Result.success(tags);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 00:35
+     * @Param:
+     * @Return: Result<List<ServiceTagResponse>> 包含产品类型标签列表的响应结果
+     * @Description: 获取产品类型标签列表，用于制造企业的产品类型多选
+    **/
+    @GetMapping("/product-tags")
+    @Operation(summary = "获取产品类型标签",
+            description = "返回产品类型标签列表，用于制造企业的产品类型多选，对应 category = 'product' 的标签")
+    public Result<List<ServiceTagResponse>> getProductTags() {
+        log.info("接收获取产品类型标签请求");
+
+        List<ServiceTagResponse> tags = tagService.getProductTags();
+
+        log.info("返回产品类型标签，共{}个", tags.size());
+        return Result.success(tags);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 00:35
+     * @Param: 
+     * @Return: Result<List<ServiceTagResponse>> 包含其他类型标签列表的响应结果
+     * @Description: 获取其他类型标签列表，用于通用标签选择
+    **/
+    @GetMapping("/rests-tags")
+    @Operation(summary = "获取其他类型标签",
+            description = "返回其他类型标签列表，用于通用标签选择，对应 category = 'rests' 的标签")
+    public Result<List<ServiceTagResponse>> getRestsTags() {
+        log.info("接收获取其他类型标签请求");
+
+        List<ServiceTagResponse> tags = tagService.getRestsTags();
+
+        log.info("返回其他类型标签，共{}个", tags.size());
+        return Result.success(tags);
     }
 
 
@@ -311,4 +363,22 @@ public class CommonController {
 
         return null;
     }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 13:55
+     * @Param: 
+     * @Return: Result<List<Map<String, String>>> 包含标签类别选项的响应结果
+     * @Description: 获取标签类别选项，返回所有可用的标签类别，用于前端下拉选择（如新增/编辑标签时的类别下拉框）
+    **/
+    @GetMapping("/tag-categories")
+    @Operation(summary = "获取标签类别选项", description = "返回所有可用的标签类别，用于前端下拉选择")
+    public Result<List<Map<String, String>>> getTagCategories() {
+        log.info("接收获取标签类别选项请求");
+        List<Map<String, String>> options = TagCategory.getOptions();
+        log.info("返回标签类别选项，共{}个", options.size());
+        return Result.success(options);
+    }
+
+
 }

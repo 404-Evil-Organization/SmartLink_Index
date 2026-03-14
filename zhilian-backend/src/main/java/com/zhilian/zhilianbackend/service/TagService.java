@@ -3,6 +3,7 @@ package com.zhilian.zhilianbackend.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zhilian.zhilianbackend.dto.request.TagQueryRequest;
 import com.zhilian.zhilianbackend.dto.request.TagRequest;
+import com.zhilian.zhilianbackend.dto.response.ServiceTagResponse;
 import com.zhilian.zhilianbackend.dto.response.TagResponse;
 import com.zhilian.zhilianbackend.entity.Tag;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -67,8 +68,35 @@ public interface TagService extends IService<Tag> {
      * @Author: 6017
      * @Date: 2026/3/12 23:51
      * @Param: 
-     * @Return: List<TagResponse> 服务标签列表
+     * @Return: List<ServiceTagResponse> 服务标签列表
      * @Description: 获取所有类别为'service'的标签，用于服务商的服务类型多选
     **/
-    List<TagResponse> getServiceTags();
+    List<ServiceTagResponse> getServiceTags();
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 01:06
+     * @Param: 
+     * @Return: List<ServiceTagResponse> 认证类型标签列表
+     * @Description: 获取所有类别为'certification'的标签，用于证书类型选择
+    **/
+    List<ServiceTagResponse> getCertificationTags();
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 01:06
+     * @Param: 
+     * @Return: List<ServiceTagResponse> 产品类型标签列表
+     * @Description: 获取所有类别为'product'的标签，用于产品类型选择
+    **/
+    List<ServiceTagResponse> getProductTags();
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 01:06
+     * @Param: 
+     * @Return: List<ServiceTagResponse> 其他类型标签列表
+     * @Description: 获取所有类别为'rests'的标签，用于通用标签选择
+    **/
+    List<ServiceTagResponse> getRestsTags();
 }
