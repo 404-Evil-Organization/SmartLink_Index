@@ -21,6 +21,17 @@ import java.util.Map;
 @Component
 public class JwtUtil {
 
+    /**
+     * JWT claims 中用户名字段的键名常量，避免各处硬编码导致拼写不一致。
+     */
+    public static final String CLAIM_USERNAME = "username";
+
+    /**
+     * JWT claims 中角色字段的键名常量，避免各处硬编码导致拼写不一致。
+     */
+    public static final String CLAIM_ROLE = "role";
+public class JwtUtil {
+
     private String secret;
     private Long expiration;
 
@@ -140,7 +151,8 @@ public class JwtUtil {
     **/
     public String generateToken(Long userId, String username) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("username", username);
+        // 使用统一定义的 CLAIM_USERNAME 常量，避免硬编码字符串
+        claims.put(CLAIM_USERNAME, username);
         return generateToken(String.valueOf(userId), claims);
     }
 
@@ -153,8 +165,9 @@ public class JwtUtil {
     **/
     public String generateToken(Long userId, String username, String role) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("username", username);
-        claims.put("role", role);
+        // 使用统一定义的 CLAIM_USERNAME / CLAIM_ROLE 常量，避免硬编码字符串
+        claims.put(CLAIM_USERNAME, username);
+        claims.put(CLAIM_ROLE, role);
         return generateToken(String.valueOf(userId), claims);
     }
 
