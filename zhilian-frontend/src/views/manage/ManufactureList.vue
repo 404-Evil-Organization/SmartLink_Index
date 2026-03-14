@@ -75,11 +75,18 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="主营产品">
-              <el-input
+              <el-select
                 v-model="searchForm.productType"
-                placeholder="输入主营产品"
+                placeholder="选择主营产品"
                 clearable
-              />
+              >
+                <el-option
+                  v-for="item in productTagsOptions"
+                  :key="item.name"
+                  :label="item.name"
+                  :value="item.name"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6" style="text-align: right">
@@ -231,7 +238,7 @@ import {
   TrendCharts,
 } from "@element-plus/icons-vue";
 import { getManufactureList, getManufactureDetail } from "@/api/manufacture";
-import { getRegions, getScales } from "@/api/common";
+import { getRegions, getScales, getProductTags } from "@/api/common";
 
 // ---------- 统计卡片数据（静态，可改为接口获取） ----------
 // const statistics = ref([
@@ -293,7 +300,7 @@ const fetchList = async () => {
       size: pagination.size,
       region: searchForm.region || "",
       scale: searchForm.scale || "",
-      productType: searchForm.productType || null,
+      productType: searchForm.productType || "",
     };
     const res = await getManufactureList(params);
     tableData.value = res.records || [];
@@ -309,13 +316,19 @@ const fetchList = async () => {
 // 选项数据
 const regionOptions = ref([]);
 const scaleOptions = ref([]);
+const productTagsOptions = ref([]);
 
 // 获取选项数据
 const fetchOptions = async () => {
   try {
-    const [regions, scales] = await Promise.all([getRegions(), getScales()]);
+    const [regions, scales, productTags] = await Promise.all([
+      getRegions(),
+      getScales(),
+      getProductTags(),
+    ]);
     regionOptions.value = regions;
     scaleOptions.value = scales;
+    productTagsOptions.value = productTags;
   } catch (error) {
     ElMessage.error("获取选项数据失败");
     console.error(error);

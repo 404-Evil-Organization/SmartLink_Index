@@ -12,7 +12,7 @@ let manufactureList = [
     scale: "medium",
     employeeCount: 500,
     annualRevenue: 8000.0,
-    productType: "PCB",
+    productType: "PCB电路板",
     description: "专业PCB制造商",
     logo: "http://smartlink-index.oss-cn-guangzhou.aliyuncs.com/avatar.png",
     establishedDate: "2010-05-01",
