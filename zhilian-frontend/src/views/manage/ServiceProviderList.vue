@@ -270,10 +270,10 @@ const fetchList = async () => {
 
 // 区域下拉静态兜底选项（当接口异常或返回格式错误时使用）
 const DEFAULT_REGION_OPTIONS = [
-  { label: '全国', value: 'national' },
-  { label: '华北地区', value: 'north_china' },
-  { label: '华东地区', value: 'east_china' },
-  { label: '华南地区', value: 'south_china' }
+  '全国',
+  '华北地区',
+  '华东地区',
+  '华南地区'
 ];
 
 const regionOptions = ref([]);
