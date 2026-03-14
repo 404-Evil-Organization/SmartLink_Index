@@ -16,6 +16,9 @@ let manufactureList = [
     description: "专业PCB制造商",
     logo: "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/avatar.png?Expires=1773302233&OSSAccessKeyId=TMP.3Ko3D4CEunQzVEaENPJkqpo2RPcm2AUkRCsHH8SFsBFSKTeTYWtqjZ1DZPrAZxfZkmfVZRHTJRJXVNBZJHS86ZZzG5zs7i&Signature=lFXGhCZ4RN7kp1Y60fdWnW0XjlA%3D",
     establishedDate: "2010-05-01",
+    auditStatus: "approved",
+    auditRemark: null,
+    auditTime: null,
     createTime: "2026-03-01 10:00:00",
     updateTime: "2026-03-01 10:00:00",
   },
@@ -34,6 +37,9 @@ let manufactureList = [
     description: "高端模具制造商",
     logo: "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/avatar2.png",
     establishedDate: "2008-08-08",
+    auditStatus: "approved",
+    auditRemark: null,
+    auditTime: null,
     createTime: "2026-03-01 10:00:00",
     updateTime: "2026-03-01 10:00:00",
   },
@@ -52,19 +58,26 @@ let manufactureList = [
     description: "汽车零部件供应商",
     logo: "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/avatar3.png",
     establishedDate: "2012-03-15",
+    auditStatus: "pending", // 新增数据为待审核
+    auditRemark: null,
+    auditTime: null,
     createTime: "2026-03-01 10:00:00",
     updateTime: "2026-03-01 10:00:00",
   },
 ];
 
 export default [
-  // 1.2.1 获取制造企业列表（分页+筛选）
+  // 1.2.1 获取制造企业列表（公共列表）
   {
     url: "/api/manufacture/list",
     method: "get",
     response: ({ query }) => {
       const { page = 1, size = 10, region, scale, productType } = query;
       let filtered = manufactureList;
+
+      // 公共列表仅返回审核通过的企业
+      filtered = filtered.filter((item) => item.auditStatus === "approved");
+
       if (region) {
         filtered = filtered.filter((item) => item.region.includes(region));
       }
@@ -76,37 +89,44 @@ export default [
           item.productType.includes(productType),
         );
       }
+
       const start = (page - 1) * size;
       const end = start + parseInt(size);
-      const records = filtered.slice(start, end);
+      const records = filtered
+        .slice(start, end)
+        .map(
+          ({
+            id,
+            companyName,
+            region,
+            scale,
+            productType,
+            contactPerson,
+            contactPhone,
+            auditStatus,
+          }) => ({
+            id,
+            companyName,
+            region,
+            scale,
+            productType,
+            contactPerson,
+            contactPhone,
+            auditStatus,
+          }),
+        );
+
       return {
         code: 200,
         message: "success",
         data: {
           total: filtered.length,
-          records: records.map(
-            ({
-              id,
-              companyName,
-              region,
-              scale,
-              productType,
-              contactPerson,
-              contactPhone,
-            }) => ({
-              id,
-              companyName,
-              region,
-              scale,
-              productType,
-              contactPerson,
-              contactPhone,
-            }),
-          ),
+          records,
         },
       };
     },
   },
+
   // 1.2.2 获取制造企业详情
   {
     url: "/api/manufacture/:id",
@@ -129,6 +149,7 @@ export default [
       }
     },
   },
+
   // 1.2.3 新增制造企业
   {
     url: "/api/manufacture",
@@ -139,6 +160,9 @@ export default [
       const newItem = {
         id: newId,
         ...body,
+        auditStatus: "pending", // 新增默认待审核
+        auditRemark: null,
+        auditTime: null,
         createTime: now,
         updateTime: now,
       };
@@ -146,10 +170,14 @@ export default [
       return {
         code: 200,
         message: "success",
-        data: { id: newId },
+        data: {
+          id: newId,
+          auditStatus: "pending",
+        },
       };
     },
   },
+
   // 1.2.4 修改制造企业
   {
     url: "/api/manufacture/:id",
@@ -159,6 +187,7 @@ export default [
       const index = manufactureList.findIndex((item) => item.id === id);
       if (index !== -1) {
         const now = new Date().toISOString().replace("T", " ").substring(0, 19);
+        // 更新时，审核状态可能重置为待审核（根据业务需求决定，此处保持原有状态或按需修改）
         manufactureList[index] = {
           ...manufactureList[index],
           ...body,
@@ -178,6 +207,7 @@ export default [
       }
     },
   },
+
   // 1.2.5 删除制造企业
   {
     url: "/api/manufacture/:id",
