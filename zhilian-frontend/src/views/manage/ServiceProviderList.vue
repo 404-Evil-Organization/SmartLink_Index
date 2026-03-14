@@ -258,6 +258,14 @@ const fetchList = async () => {
   }
 }
 
+// 区域下拉静态兜底选项（当接口异常或返回格式错误时使用）
+const DEFAULT_REGION_OPTIONS = [
+  { label: '全国', value: 'national' },
+  { label: '华北地区', value: 'north_china' },
+  { label: '华东地区', value: 'east_china' },
+  { label: '华南地区', value: 'south_china' }
+];
+
 const regionOptions = ref([]);
 
 // 获取区域列表
@@ -269,11 +277,22 @@ const fetchRegions = async () => {
       regionOptions.value = res;
     } else {
       console.warn('区域接口返回格式异常，使用默认值');
+      // 接口返回非数组时使用静态兜底列表，避免下拉框无选项
+      regionOptions.value = DEFAULT_REGION_OPTIONS;
     }
   } catch (error) {
     console.error('获取区域列表失败，使用默认选项', error);
+    // 接口请求失败时同样使用静态兜底列表
+    regionOptions.value = DEFAULT_REGION_OPTIONS;
   }
 }
+
+// 服务类型下拉静态兜底选项（当接口异常或返回格式错误时使用）
+const DEFAULT_SERVICE_TYPE_OPTIONS = [
+  { label: '技术咨询', value: 'tech_consult' },
+  { label: '系统集成', value: 'system_integration' },
+  { label: '运维服务', value: 'operation_maintenance' }
+];
 
 const serviceTypeOptions = ref([]);
 
@@ -286,9 +305,13 @@ const fetchServiceTags = async () => {
       serviceTypeOptions.value = res;
     } else {
       console.warn('服务类型接口返回格式异常，使用默认值');
+      // 接口返回非数组时使用静态兜底列表，保证筛选可用
+      serviceTypeOptions.value = DEFAULT_SERVICE_TYPE_OPTIONS;
     }
   } catch (error) {
     console.error('获取服务类型标签失败，使用默认选项', error);
+    // 接口请求失败时同样使用静态兜底列表
+    serviceTypeOptions.value = DEFAULT_SERVICE_TYPE_OPTIONS;
   }
 }
 
