@@ -3,10 +3,10 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h2 class="page-title">服务商管理</h2>
+        <h2 class="page-title">服务企业列表</h2>
         <el-breadcrumb separator="/" class="breadcrumb">
           <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-          <el-breadcrumb-item>服务商管理</el-breadcrumb-item>
+          <el-breadcrumb-item>服务企业列表</el-breadcrumb-item>
         </el-breadcrumb>
       </div>
       <div class="header-right">
@@ -50,7 +50,7 @@
           <el-form :model="searchForm" label-width="100px" class="search-form">
             <el-row :gutter="20">
               <el-col :span="8">
-                <el-form-item label="服务商名称">
+                <el-form-item label="服务企业名称">
                   <el-input v-model="searchForm.companyName" placeholder="请输入" clearable />
                 </el-form-item>
               </el-col>
@@ -93,7 +93,7 @@
     <!-- 表格卡片 -->
     <el-card class="table-card" shadow="hover">
       <div class="table-toolbar">
-        <div class="table-title">服务商列表</div>
+        <div class="table-title">服务企业列表</div>
         <div class="table-actions">
           <el-tooltip content="刷新">
             <el-button :icon="Refresh" circle @click="fetchList" />
@@ -105,17 +105,8 @@
       </div>
 
       <el-table :data="tableData" v-loading="loading" border stripe style="width: 100%">
-        <el-table-column type="expand" width="40">
-          <template #default="{ row }">
-            <div class="expanded-detail">
-              <p><strong>详细地址：</strong>{{ row.address }}</p>
-              <p><strong>邮箱：</strong>{{ row.email }}</p>
-              <p><strong>简介：</strong>{{ row.description || '暂无简介' }}</p>
-            </div>
-          </template>
-        </el-table-column>
         <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="companyName" label="服务商名称" min-width="150" />
+        <el-table-column prop="companyName" label="服务企业名称" min-width="150" />
         <el-table-column prop="region" label="区域" width="90" />
         <el-table-column prop="serviceType" label="服务类型" min-width="180">
           <template #default="{ row }">
@@ -161,9 +152,9 @@
     </el-card>
 
     <!-- 服务商详情弹窗（只读） -->
-    <el-dialog v-model="detailDialog.visible" title="服务商详情" width="600px">
+    <el-dialog v-model="detailDialog.visible" title="服务企业详情" width="600px">
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="服务商名称">{{ detailDialog.data.companyName || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="服务企业名称">{{ detailDialog.data.companyName || "-" }}</el-descriptions-item>
         <el-descriptions-item label="区域">{{ detailDialog.data.region || "-" }}</el-descriptions-item>
         <el-descriptions-item label="详细地址" :span="2">{{ detailDialog.data.address || "-" }}</el-descriptions-item>
         <el-descriptions-item label="联系人">{{ detailDialog.data.contactPerson || "-" }}</el-descriptions-item>
@@ -216,8 +207,8 @@ const showPhone = (phone) => {
 
 // 统计卡片（注释保留）
 // const statistics = ref([
-//   { icon: Shop, label: '服务商总数', value: 128, trend: 12, bgColor: '#ecf5ff', color: '#409eff' },
-//   { icon: User, label: '活跃服务商', value: 98, trend: 5, bgColor: '#f0f9eb', color: '#67c23a' },
+//   { icon: Shop, label: '服务企业总数', value: 128, trend: 12, bgColor: '#ecf5ff', color: '#409eff' },
+//   { icon: User, label: '活跃服务企业', value: 98, trend: 5, bgColor: '#f0f9eb', color: '#67c23a' },
 //   { icon: Star, label: '平均评分', value: 4.6, trend: 2, bgColor: '#fdf6ec', color: '#e6a23c' },
 //   { icon: TrendCharts, label: '服务需求', value: 56, trend: -3, bgColor: '#fef0f0', color: '#f56c6c' }
 // ])
@@ -229,14 +220,6 @@ const searchForm = reactive({
   region: '',
   serviceType: ''
 })
-
-// 动态选项数据（默认静态值，接口失败时使用）
-const regionOptions = ref(['深圳', '东莞', '惠州', '广州', '佛山', '中山', '珠海', '江门', '肇庆'])
-const serviceTypeOptions = ref([
-  { id: 1, name: '检测认证' },
-  { id: 2, name: '工业设计' },
-  { id: 3, name: '物流供应链' }
-])
 
 // 表格数据
 const tableData = ref([])
@@ -267,26 +250,22 @@ const fetchList = async () => {
     tableData.value = res.records || []
     pagination.total = res.total || 0
   } catch (error) {
-    console.error('获取服务商列表失败', error)
+    console.error('获取服务企业列表失败', error)
     ElMessage.error('获取列表失败，请稍后重试')
   } finally {
     loading.value = false
   }
 }
 
+const regionOptions = ref([]);
+
 // 获取区域列表
 const fetchRegions = async () => {
   try {
-    const res = await getRegionList(); // 可能是数组，也可能是 { data: [...] }
+    const res = await getRegionList(); 
     
-    // 处理两种情况
-    let data = res;
-    if (res && typeof res === 'object' && 'data' in res && Array.isArray(res.data)) {
-      data = res.data; // 如果返回的是 { code, data }，取 data
-    }
-    
-    if (Array.isArray(data)) {
-      regionOptions.value = data;
+    if (Array.isArray(res)) {
+      regionOptions.value = res;
     } else {
       console.warn('区域接口返回格式异常，使用默认值');
     }
@@ -295,18 +274,15 @@ const fetchRegions = async () => {
   }
 }
 
+const serviceTypeOptions = ref([]);
+
 // 获取服务类型标签
 const fetchServiceTags = async () => {
   try {
     const res = await getServiceTagList();
     
-    let data = res;
-    if (res && typeof res === 'object' && 'data' in res && Array.isArray(res.data)) {
-      data = res.data;
-    }
-    
-    if (Array.isArray(data)) {
-      serviceTypeOptions.value = data;
+    if (Array.isArray(res)) {
+      serviceTypeOptions.value = res;
     } else {
       console.warn('服务类型接口返回格式异常，使用默认值');
     }
@@ -345,7 +321,7 @@ const handleDetail = async (row) => {
     detailDialog.data = res
     detailDialog.visible = true
   } catch (error) {
-    ElMessage.error('获取服务商详情失败')
+    ElMessage.error('获取服务企业详情失败')
     console.error('获取详情失败', error)
   }
 }
