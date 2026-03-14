@@ -1,11 +1,10 @@
-// mock/manage.js
 export default [
   // 获取服务商列表（分页+筛选）
   {
     url: '/api/service-provider/list',
     method: 'get',
     response: ({ query }) => {
-      const { page = 1, size = 10, companyName, region, serviceType } = query
+      const { page = 1, size = 10, companyName, region, serviceType, status } = query
       // 模拟数据源
       const mockList = [
         {
@@ -19,7 +18,12 @@ export default [
           address: '深圳市南山区科技园',
           rating: 4.8,
           status: 1,
-          description: 'CNAS认可实验室'
+          description: 'CNAS认可实验室',
+          website: 'https://www.cti.com',
+          employeeCount: 1200,
+          establishedDate: '2003-12-01',
+          qualification: 'CNAS, CMA',
+          logo: 'https://picsum.photos/100/100?random=1'
         },
         {
           id: 2,
@@ -32,7 +36,12 @@ export default [
           address: '广州市黄埔区',
           rating: 4.9,
           status: 1,
-          description: '全球领先检测机构'
+          description: '全球领先检测机构',
+          website: 'https://www.sgs.com',
+          employeeCount: 2000,
+          establishedDate: '1991-05-15',
+          qualification: 'CNAS, IAAC',
+          logo: 'https://picsum.photos/100/100?random=2'
         },
         {
           id: 3,
@@ -45,7 +54,12 @@ export default [
           address: '东莞市松山湖',
           rating: 4.5,
           status: 0,
-          description: '精密加工专家'
+          description: '精密加工专家',
+          website: '',
+          employeeCount: 350,
+          establishedDate: '2010-08-20',
+          qualification: 'ISO9001',
+          logo: ''
         }
       ]
 
@@ -54,6 +68,7 @@ export default [
         if (companyName && !item.companyName.includes(companyName)) return false
         if (region && item.region !== region) return false
         if (serviceType && !item.serviceType.includes(serviceType)) return false
+        if (status !== undefined && item.status !== Number(status)) return false
         return true
       })
 
@@ -77,8 +92,8 @@ export default [
   {
     url: '/api/service-provider/:id',
     method: 'get',
-    response: ({ params }) => {
-      const { id } = params
+    response: (request) => {
+      const id = request.params?.id || request.query?.id
       const mockDetail = {
         id: parseInt(id),
         companyName: '华测检测认证集团',
@@ -90,7 +105,13 @@ export default [
         address: '深圳市南山区科技园',
         rating: 4.8,
         status: 1,
-        description: 'CNAS认可实验室'
+        description: 'CNAS认可实验室',
+        website: 'https://www.cti.com',
+        employeeCount: 1200,
+        annualRevenue: 5000,
+        establishedDate: '2003-12-01',
+        qualification: 'CNAS, CMA',
+        logo: 'https://picsum.photos/100/100?random=1'
       }
       return {
         code: 200,
@@ -105,7 +126,6 @@ export default [
     url: '/api/service-provider',
     method: 'post',
     response: ({ body }) => {
-      // 模拟新增成功，返回新ID
       return {
         code: 200,
         message: '新增成功',
@@ -129,7 +149,7 @@ export default [
     }
   },
 
-  // 删除服务商（逻辑删除）
+  // 删除服务商
   {
     url: '/api/service-provider/:id',
     method: 'delete',
@@ -138,6 +158,36 @@ export default [
         code: 200,
         message: '删除成功',
         data: null
+      }
+    }
+  },
+
+  // 获取区域列表
+  {
+    url: '/api/common/regions',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        message: 'success',
+        data: ['深圳', '东莞', '惠州', '广州', '佛山', '中山', '珠海', '江门', '肇庆']
+      }
+    }
+  },
+
+  // 获取服务类型标签
+  {
+    url: '/api/common/service-tags',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        message: 'success',
+        data: [
+          { id: 1, name: '检测认证', category: '服务类型' },
+          { id: 2, name: '工业设计', category: '服务类型' },
+          { id: 3, name: '物流供应链', category: '服务类型' }
+        ]
       }
     }
   }

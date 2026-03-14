@@ -10,15 +10,13 @@
         </el-breadcrumb>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="handleAdd" :icon="Plus">
-          新增服务商
-        </el-button>
-        <el-button :icon="Download">导出</el-button>
+        <!-- 新增按钮已移除 -->
+        <!-- <el-button :icon="Download">导出</el-button> -->
       </div>
     </div>
 
-    <!-- 统计卡片区域 -->
-    <el-row :gutter="20" class="stat-cards">
+    <!-- 统计卡片区域（注释保留） -->
+    <!-- <el-row :gutter="20" class="stat-cards">
       <el-col :span="6" v-for="stat in statistics" :key="stat.label">
         <el-card class="stat-card" :body-style="{ padding: '20px' }" shadow="hover">
           <div class="stat-icon" :style="{ background: stat.bgColor }">
@@ -36,16 +34,17 @@
           </div>
         </el-card>
       </el-col>
-    </el-row>
+    </el-row> -->
 
-    <!-- 高级搜索卡片（可折叠） -->
+    <!-- 搜索卡片（可折叠） -->
     <el-card class="search-card" shadow="hover">
-      <div class="search-header" @click="toggleSearch">
+      <!-- 折叠头部（注释保留） -->
+      <!-- <div class="search-header" @click="toggleSearch">
         <span class="search-title">高级筛选</span>
         <el-icon :class="{ 'is-active': searchExpanded }">
           <ArrowDown />
         </el-icon>
-      </div>
+      </div> -->
       <el-collapse-transition>
         <div v-show="searchExpanded">
           <el-form :model="searchForm" label-width="100px" class="search-form">
@@ -58,39 +57,30 @@
               <el-col :span="8">
                 <el-form-item label="所在区域">
                   <el-select v-model="searchForm.region" placeholder="全部" clearable filterable>
-                    <el-option label="深圳" value="深圳" />
-                    <el-option label="东莞" value="东莞" />
-                    <el-option label="惠州" value="惠州" />
-                    <el-option label="广州" value="广州" />
+                    <el-option
+                      v-for="item in regionOptions"
+                      :key="item"
+                      :label="item"
+                      :value="item"
+                    />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="8">
                 <el-form-item label="服务类型">
                   <el-select v-model="searchForm.serviceType" placeholder="全部" clearable filterable>
-                    <el-option label="检测认证" value="检测认证" />
-                    <el-option label="工业设计" value="工业设计" />
-                    <el-option label="物流" value="物流" />
-                    <el-option label="翻译" value="翻译" />
+                    <el-option
+                      v-for="item in serviceTypeOptions"
+                      :key="item.id"
+                      :label="item.name"
+                      :value="item.name"
+                    />
                   </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row :gutter="20">
-              <el-col :span="8">
-                <el-form-item label="状态">
-                  <el-select v-model="searchForm.status" placeholder="全部" clearable>
-                    <el-option label="启用" :value="1" />
-                    <el-option label="禁用" :value="0" />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="评分区间">
-                  <el-slider v-model="searchForm.ratingRange" range :min="0" :max="5" :step="0.5" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8" class="search-actions">
+              <el-col :span="24" class="search-actions">
                 <el-button type="primary" @click="handleSearch">查询</el-button>
                 <el-button @click="resetSearch">重置</el-button>
               </el-col>
@@ -108,9 +98,9 @@
           <el-tooltip content="刷新">
             <el-button :icon="Refresh" circle @click="fetchList" />
           </el-tooltip>
-          <el-tooltip content="密度">
+          <!-- <el-tooltip content="密度">
             <el-button :icon="Grid" circle />
-          </el-tooltip>
+          </el-tooltip> -->
         </div>
       </div>
 
@@ -141,32 +131,16 @@
           </template>
         </el-table-column>
         <el-table-column prop="contactPerson" label="联系人" width="100" />
-        <el-table-column prop="contactPhone" label="联系电话" width="130" />
-        <el-table-column prop="rating" label="评分" width="100">
+        <el-table-column prop="contactPhone" label="联系电话" width="130">
           <template #default="{ row }">
-            <el-rate v-model="row.rating" disabled show-score text-color="#ff9900" />
+            {{ showPhone(row.contactPhone) }}
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="80">
+        <!-- 状态列已移除 -->
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-switch
-              v-model="row.status"
-              :active-value="1"
-              :inactive-value="0"
-              @change="(val) => handleStatusChange(row, val)"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="230" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" @click="handleEdit(row)">
-              <el-icon><Edit /></el-icon> 编辑
-            </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">
-              <el-icon><Delete /></el-icon> 删除
-            </el-button>
             <el-button size="small" link @click="handleDetail(row)">
-              详情
+              <el-icon><View /></el-icon>查看
             </el-button>
           </template>
         </el-table-column>
@@ -186,52 +160,32 @@
       </div>
     </el-card>
 
-    <!-- 新增/编辑弹窗 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogType === 'add' ? '新增服务商' : '编辑服务商'"
-      width="600px"
-      @close="resetForm"
-    >
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-width="100px"
-        label-position="right"
-      >
-        <el-form-item label="服务商名称" prop="companyName">
-          <el-input v-model="form.companyName" placeholder="请输入" />
-        </el-form-item>
-        <el-form-item label="所在区域" prop="region">
-          <el-select v-model="form.region" placeholder="请选择" style="width:100%">
-            <el-option label="深圳" value="深圳" />
-            <el-option label="东莞" value="东莞" />
-            <el-option label="惠州" value="惠州" />
-            <el-option label="广州" value="广州" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="服务类型" prop="serviceType">
-          <el-input v-model="form.serviceType" placeholder="多个用逗号分隔" />
-        </el-form-item>
-        <el-form-item label="联系人" prop="contactPerson">
-          <el-input v-model="form.contactPerson" placeholder="请输入" />
-        </el-form-item>
-        <el-form-item label="联系电话" prop="contactPhone">
-          <el-input v-model="form.contactPhone" placeholder="请输入" />
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="form.email" placeholder="请输入" />
-        </el-form-item>
-        <el-form-item label="地址" prop="address">
-          <el-input v-model="form.address" placeholder="请输入" />
-        </el-form-item>
-      </el-form>
+    <!-- 服务商详情弹窗（只读） -->
+    <el-dialog v-model="detailDialog.visible" title="服务商详情" width="600px">
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="服务商名称">{{ detailDialog.data.companyName || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="区域">{{ detailDialog.data.region || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="详细地址" :span="2">{{ detailDialog.data.address || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="联系人">{{ detailDialog.data.contactPerson || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话">{{ showPhone(detailDialog.data.contactPhone) }}</el-descriptions-item>
+        <el-descriptions-item label="邮箱">{{ detailDialog.data.email || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="服务类型" :span="2">{{ detailDialog.data.serviceType || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="员工人数">{{ detailDialog.data.employeeCount || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="年收入(万元)">{{ detailDialog.data.annualRevenue || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="成立日期">{{ detailDialog.data.establishedDate || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="企业简介" :span="2">{{ detailDialog.data.description || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="企业logo" :span="2">
+          <el-image
+            v-if="detailDialog.data.logo"
+            :src="detailDialog.data.logo"
+            fit="cover"
+            style="width: 100px; height: 100px; border-radius: 4px"
+          />
+          <span v-else>-</span>
+        </el-descriptions-item>
+      </el-descriptions>
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitForm">确 定</el-button>
-        </span>
+        <el-button @click="detailDialog.visible = false">关闭</el-button>
       </template>
     </el-dialog>
   </div>
@@ -239,73 +193,77 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
-  Plus,
-  Download,
-  ArrowDown,
   Refresh,
-  Grid,
-  Edit,
-  Delete,
-  User,
-  Star,
-  Shop,
-  TrendCharts
+  View
 } from '@element-plus/icons-vue'
 
-// ========== 导入真实 API 接口 ==========
+// API 接口
 import {
   getServiceProviderList,
-  addServiceProvider,
-  updateServiceProvider,
-  deleteServiceProvider
+  getServiceProviderDetail
 } from '@/api/service-provider'
+import { getRegionList, getServiceTagList } from '@/api/common'
+import { maskPhone } from '@/utils/desensitize'
+import { useUserStore } from '@/stores/user'
 
-// ---------- 统计卡片（静态数据，后续可从接口获取） ----------
-const statistics = ref([
-  { icon: Shop, label: '服务商总数', value: 128, trend: 12, bgColor: '#ecf5ff', color: '#409eff' },
-  { icon: User, label: '活跃服务商', value: 98, trend: 5, bgColor: '#f0f9eb', color: '#67c23a' },
-  { icon: Star, label: '平均评分', value: 4.6, trend: 2, bgColor: '#fdf6ec', color: '#e6a23c' },
-  { icon: TrendCharts, label: '服务需求', value: 56, trend: -3, bgColor: '#fef0f0', color: '#f56c6c' }
-])
+// 获取用户角色
+const userStore = useUserStore()
+const showPhone = (phone) => {
+  return maskPhone(phone, userStore.userInfo?.role)
+}
 
-// ---------- 搜索表单 ----------
+// 统计卡片（注释保留）
+// const statistics = ref([
+//   { icon: Shop, label: '服务商总数', value: 128, trend: 12, bgColor: '#ecf5ff', color: '#409eff' },
+//   { icon: User, label: '活跃服务商', value: 98, trend: 5, bgColor: '#f0f9eb', color: '#67c23a' },
+//   { icon: Star, label: '平均评分', value: 4.6, trend: 2, bgColor: '#fdf6ec', color: '#e6a23c' },
+//   { icon: TrendCharts, label: '服务需求', value: 56, trend: -3, bgColor: '#fef0f0', color: '#f56c6c' }
+// ])
+
+// 搜索表单
 const searchExpanded = ref(true)
 const searchForm = reactive({
   companyName: '',
   region: '',
-  serviceType: '',
-  status: null,
-  ratingRange: [0, 5] // 评分区间，目前接口不支持，仅前端筛选或预留
+  serviceType: ''
 })
 
-// ---------- 表格数据 ----------
+// 动态选项数据（默认静态值，接口失败时使用）
+const regionOptions = ref(['深圳', '东莞', '惠州', '广州', '佛山', '中山', '珠海', '江门', '肇庆'])
+const serviceTypeOptions = ref([
+  { id: 1, name: '检测认证' },
+  { id: 2, name: '工业设计' },
+  { id: 3, name: '物流供应链' }
+])
+
+// 表格数据
 const tableData = ref([])
 const loading = ref(false)
 
-// ---------- 分页 ----------
+// 分页
 const pagination = reactive({
   current: 1,
   size: 10,
   total: 0
 })
 
-// ---------- 获取列表数据（调用真实API） ----------
+// 详情弹窗
+const detailDialog = reactive({ visible: false, data: {} })
+
+// 获取列表
 const fetchList = async () => {
   loading.value = true
   try {
-    // 构建接口参数（根据接口文档只传支持的字段）
     const params = {
       page: pagination.current,
       size: pagination.size,
       ...(searchForm.companyName && { companyName: searchForm.companyName }),
       ...(searchForm.region && { region: searchForm.region }),
       ...(searchForm.serviceType && { serviceType: searchForm.serviceType })
-      // status 和 ratingRange 如果接口不支持则暂不传递
     }
     const res = await getServiceProviderList(params)
-    // 假设接口返回格式为 { total: 100, records: [...] }
     tableData.value = res.records || []
     pagination.total = res.total || 0
   } catch (error) {
@@ -316,12 +274,50 @@ const fetchList = async () => {
   }
 }
 
-// 初始化加载
-onMounted(() => {
-  fetchList()
-})
+// 获取区域列表
+const fetchRegions = async () => {
+  try {
+    const res = await getRegionList(); // 可能是数组，也可能是 { data: [...] }
+    console.log('区域接口返回原始数据:', res);
+    
+    // 处理两种情况
+    let data = res;
+    if (res && typeof res === 'object' && 'data' in res && Array.isArray(res.data)) {
+      data = res.data; // 如果返回的是 { code, data }，取 data
+    }
+    
+    if (Array.isArray(data)) {
+      regionOptions.value = data;
+    } else {
+      console.warn('区域接口返回格式异常，使用默认值');
+    }
+  } catch (error) {
+    console.error('获取区域列表失败，使用默认选项', error);
+  }
+}
 
-// ---------- 搜索与重置 ----------
+// 获取服务类型标签
+const fetchServiceTags = async () => {
+  try {
+    const res = await getServiceTagList();
+    console.log('服务类型接口返回原始数据:', res);
+    
+    let data = res;
+    if (res && typeof res === 'object' && 'data' in res && Array.isArray(res.data)) {
+      data = res.data;
+    }
+    
+    if (Array.isArray(data)) {
+      serviceTypeOptions.value = data;
+    } else {
+      console.warn('服务类型接口返回格式异常，使用默认值');
+    }
+  } catch (error) {
+    console.error('获取服务类型标签失败，使用默认选项', error);
+  }
+}
+
+// 搜索与重置
 const handleSearch = () => {
   pagination.current = 1
   fetchList()
@@ -331,16 +327,10 @@ const resetSearch = () => {
   searchForm.companyName = ''
   searchForm.region = ''
   searchForm.serviceType = ''
-  searchForm.status = null
-  searchForm.ratingRange = [0, 5]
   handleSearch()
 }
 
-const toggleSearch = () => {
-  searchExpanded.value = !searchExpanded.value
-}
-
-// ---------- 分页 ----------
+// 分页
 const handleSizeChange = (val) => {
   pagination.size = val
   fetchList()
@@ -350,107 +340,24 @@ const handleCurrentChange = (val) => {
   fetchList()
 }
 
-// ---------- 状态切换（调用更新接口） ----------
-const handleStatusChange = async (row, val) => {
+// 查看详情
+const handleDetail = async (row) => {
   try {
-    await updateServiceProvider(row.id, { status: val })
-    ElMessage.success(`${row.companyName} 已${val === 1 ? '启用' : '禁用'}`)
-    // 可选：刷新列表
-    fetchList()
+    const res = await getServiceProviderDetail(row.id)
+    detailDialog.data = res
+    detailDialog.visible = true
   } catch (error) {
-    // 失败时回滚状态
-    row.status = val === 1 ? 0 : 1
-    ElMessage.error('操作失败')
+    ElMessage.error('获取服务商详情失败')
+    console.error('获取详情失败', error)
   }
 }
 
-// ---------- 弹窗逻辑 ----------
-const dialogVisible = ref(false)
-const dialogType = ref('add')
-const formRef = ref(null)
-const form = reactive({
-  id: null,
-  companyName: '',
-  region: '',
-  serviceType: '',
-  contactPerson: '',
-  contactPhone: '',
-  email: '',
-  address: ''
+onMounted(() => {
+  // 尝试从接口获取，失败时保持静态默认值
+  fetchRegions()
+  fetchServiceTags()
+  fetchList()
 })
-
-const rules = {
-  companyName: [{ required: true, message: '请输入服务商名称', trigger: 'blur' }],
-  region: [{ required: true, message: '请选择区域', trigger: 'change' }],
-  serviceType: [{ required: true, message: '请输入服务类型', trigger: 'blur' }],
-  contactPerson: [{ required: true, message: '请输入联系人', trigger: 'blur' }],
-  contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
-}
-
-const handleAdd = () => {
-  dialogType.value = 'add'
-  resetForm()
-  dialogVisible.value = true
-}
-
-const handleEdit = (row) => {
-  dialogType.value = 'edit'
-  // 如果表格数据完整可直接使用，否则可调用详情接口
-  Object.assign(form, row)
-  dialogVisible.value = true
-}
-
-const handleDelete = (row) => {
-  ElMessageBox.confirm(`确认删除服务商“${row.companyName}”吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      await deleteServiceProvider(row.id)
-      ElMessage.success('删除成功')
-      fetchList()
-    } catch (error) {
-      ElMessage.error('删除失败')
-    }
-  }).catch(() => {})
-}
-
-const submitForm = async () => {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
-    try {
-      if (dialogType.value === 'add') {
-        await addServiceProvider(form)
-        ElMessage.success('新增成功')
-      } else {
-        await updateServiceProvider(form.id, form)
-        ElMessage.success('编辑成功')
-      }
-      dialogVisible.value = false
-      fetchList()
-    } catch (error) {
-      ElMessage.error('操作失败')
-    }
-  })
-}
-
-const resetForm = () => {
-  if (formRef.value) formRef.value.resetFields()
-  form.id = null
-  form.companyName = ''
-  form.region = ''
-  form.serviceType = ''
-  form.contactPerson = ''
-  form.contactPhone = ''
-  form.email = ''
-  form.address = ''
-}
-
-const handleDetail = (row) => {
-  ElMessage.info(`查看详情 ${row.companyName}`)
-}
 </script>
 
 <style scoped>
@@ -632,11 +539,6 @@ const handleDetail = (row) => {
   margin: 0;
 }
 
-/* 表格内评分 */
-.el-rate :deep(.el-rate__icon) {
-  margin-right: 2px;
-}
-
 /* 分页容器 */
 .pagination-container {
   margin-top: 20px;
@@ -645,4 +547,3 @@ const handleDetail = (row) => {
   padding: 0 20px 20px;
 }
 </style>
-
