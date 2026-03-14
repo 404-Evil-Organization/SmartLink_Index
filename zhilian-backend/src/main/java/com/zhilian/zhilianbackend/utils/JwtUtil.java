@@ -30,10 +30,10 @@ public class JwtUtil {
      * JWT claims 中角色字段的键名常量，避免各处硬编码导致拼写不一致。
      */
     public static final String CLAIM_ROLE = "role";
-public class JwtUtil {
 
     private String secret;
     private Long expiration;
+
 
     // 无参构造器，设置默认值（使用32字节以上的密钥）
     public JwtUtil() {
