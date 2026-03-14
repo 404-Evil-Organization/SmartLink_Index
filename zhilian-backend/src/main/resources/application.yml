@@ -130,7 +130,12 @@ logging:
       max-history: 7
 
 # 自定义应用配置
+
+# 自定义应用配置
 app:
+  # JWT模式：0-开发模式（所有接口放行），1-JWT模式（白名单接口放行，其他需要token）
+  jwt-mode: 1
+
   # 跨域配置
   cors:
     allowed-origins:
