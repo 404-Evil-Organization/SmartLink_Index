@@ -14,6 +14,10 @@ import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
 import com.zhilian.zhilianbackend.service.ManufactureService;
+import com.zhilian.zhilianbackend.utils.JwtUtil;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -36,7 +40,11 @@ import java.util.stream.Collectors;
  **/
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manufacture> implements ManufactureService {
+
+    private final JwtUtil jwtUtil;
+    private final HttpServletRequest request;
 
     private static final String PHONE_REGEX = "^1[3-9]\\d{9}$";
     private static final String SCALE_REGEX = "micro|small|medium|large";
@@ -178,6 +186,9 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             throw new BusinessException(404, "企业不存在或已被删除");
         }
 
+        // 权限校验：只能修改自己的企业，或者管理员操作
+        checkPermission(existingManufacture.getUserId());
+
         validateManufactureData(
                 requestDTO.getCompanyName() != null ? requestDTO.getCompanyName() : existingManufacture.getCompanyName(),
                 requestDTO.getContactPhone(),
@@ -219,12 +230,66 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             throw new BusinessException(404, "企业不存在或已被删除");
         }
 
+        // 权限校验：只能删除自己的企业，或者管理员操作
+        checkPermission(manufacture.getUserId());
+
         boolean deleted = this.removeById(id);
         if (!deleted) {
             throw new BusinessException(500, "删除企业失败");
         }
 
         log.info("企业删除成功，ID：{}，企业名称：{}", id, manufacture.getCompanyName());
+    }
+
+    /**
+     * 检查当前用户是否有权限操作目标数据
+     * @param targetUserId 数据所属用户ID
+     */
+    private void checkPermission(Long targetUserId) {
+        // 1. 获取请求头中的 Token
+        String authHeader = request.getHeader("Authorization");
+        if (StringUtils.isBlank(authHeader) || !authHeader.startsWith("Bearer ")) {
+            throw new BusinessException(401, "未登录或Token无效");
+        }
+        String token = authHeader.substring(7);
+
+        // 2. 解析 Token
+        Claims claims;
+        try {
+            claims = jwtUtil.parseToken(token);
+        } catch (Exception e) {
+            throw new BusinessException(401, "Token无效或已过期");
+        }
+
+        // 3. 获取用户信息
+        String userIdStr = claims.getSubject();
+        if (StringUtils.isBlank(userIdStr)) {
+            throw new BusinessException(401, "Token无效");
+        }
+        Long currentUserId = Long.parseLong(userIdStr);
+        String role = claims.get("role", String.class);
+
+        // 4. 权限判断
+        // 管理员直接放行
+        if ("admin".equals(role)) {
+            return;
+        }
+
+        // 普通用户只能操作自己的数据
+        if (!currentUserId.equals(targetUserId)) {
+            throw new BusinessException(403, "无权操作他人数据");
+        }
+    }
+
+    /**
+     * 检查用户是否已创建过企业
+     */
+    private void checkUserHasManufacture(Long userId) {
+        LambdaQueryWrapper<Manufacture> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Manufacture::getUserId, userId);
+        if (this.count(queryWrapper) > 0) {
+            throw new BusinessException(409, "该用户已创建过制造企业，不可重复创建");
+        }
     }
 
     /**

@@ -139,7 +139,7 @@ public class Manufacture implements Serializable {
      * 逻辑删除时间，NULL未删除，非NULL已删除
      */
     @TableField("deleted")
-    @TableLogic
+    @TableLogic(value = "null", delval = "now()")
     private Date deleted;
 
     /**
