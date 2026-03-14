@@ -111,7 +111,7 @@
         <el-table-column prop="serviceType" label="服务类型" min-width="180">
           <template #default="{ row }">
             <el-tag
-              v-for="tag in (
+              v-for="(tag, index) in (
                 Array.isArray(row.serviceType)
                   ? row.serviceType
                   : (row.serviceType == null || row.serviceType === ''
@@ -121,13 +121,15 @@
                           : String(row.serviceType).split(',')
                         )
                     )
-              )"
-              :key="tag"
+              )
+                .map(item => (item == null ? '' : String(item).trim()))
+                .filter(item => item !== '')"
+              :key="tag + '-' + index"
               size="small"
               effect="plain"
               style="margin-right: 5px; margin-bottom: 3px;"
             >
-              {{ tag && tag.trim() }}
+              {{ tag }}
             </el-tag>
           </template>
         </el-table-column>
