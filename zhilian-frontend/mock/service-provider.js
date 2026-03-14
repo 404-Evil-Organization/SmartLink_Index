@@ -11,56 +11,62 @@ export default [
           id: 1,
           companyName: '华测检测认证集团',
           region: '深圳',
-          serviceType: '检测认证, CE认证',
+          address: '深圳市南山区科技园',
           contactPerson: '王五',
           contactPhone: '13700137003',
-          email: 'wangwu@cti.com',
-          address: '深圳市南山区科技园',
-          rating: 4.8,
-          status: 1,
+          serviceType: '检测认证, CE认证',
           description: 'CNAS认可实验室',
+          logo: 'https://picsum.photos/100/100?random=1',
           website: 'https://www.cti.com',
-          employeeCount: 1200,
           establishedDate: '2003-12-01',
+          employeeCount: 1200,
           qualification: 'CNAS, CMA',
-          logo: 'https://picsum.photos/100/100?random=1'
+          auditStatus: 'approved',
+          auditRemark: null,
+          auditTime: null,
+          createTime: '2026-03-01 10:00:00',
+          updateTime: '2026-03-01 10:00:00'
         },
         {
           id: 2,
           companyName: 'SGS通标标准',
           region: '广州',
-          serviceType: '国际认证, 检验',
+          address: '广州市黄埔区科学城',
           contactPerson: '李四',
           contactPhone: '13800138004',
-          email: 'lisi@sgs.com',
-          address: '广州市黄埔区',
-          rating: 4.9,
-          status: 1,
+          serviceType: '国际认证, 检验',
           description: '全球领先检测机构',
+          logo: 'https://picsum.photos/100/100?random=2',
           website: 'https://www.sgs.com',
-          employeeCount: 2000,
           establishedDate: '1991-05-15',
+          employeeCount: 2000,
           qualification: 'CNAS, IAAC',
-          logo: 'https://picsum.photos/100/100?random=2'
+          auditStatus: 'approved',
+          auditRemark: null,
+          auditTime: null,
+          createTime: '2026-03-01 10:00:00',
+          updateTime: '2026-03-01 10:00:00'
         },
         {
           id: 3,
           companyName: '东莞精密制造服务',
           region: '东莞',
-          serviceType: '工业设计, 打样',
+          address: '东莞市松山湖高新技术区',
           contactPerson: '赵六',
           contactPhone: '13900139005',
-          email: 'zhaoliu@dg.com',
-          address: '东莞市松山湖',
-          rating: 4.5,
-          status: 0,
+          serviceType: '工业设计, 打样',
           description: '精密加工专家',
+          logo: 'https://picsum.photos/100/100?random=3',
           website: '',
-          employeeCount: 350,
           establishedDate: '2010-08-20',
+          employeeCount: 350,
           qualification: 'ISO9001',
-          logo: ''
-        }
+          auditStatus: 'pending',
+          auditRemark: '资质文件待补充',
+          auditTime: null,
+          createTime: '2026-03-02 14:30:00',
+          updateTime: '2026-03-02 14:30:00'
+        },
       ]
 
       // 筛选
@@ -88,35 +94,98 @@ export default [
     }
   },
 
-  // 获取服务商详情
+ // 获取服务商详情
   {
     url: '/api/service-provider/:id',
     method: 'get',
     response: (request) => {
-      const id = request.params?.id || request.query?.id
-      const mockDetail = {
-        id: parseInt(id),
-        companyName: '华测检测认证集团',
-        region: '深圳',
-        serviceType: '检测认证, CE认证',
-        contactPerson: '王五',
-        contactPhone: '13700137003',
-        email: 'wangwu@cti.com',
-        address: '深圳市南山区科技园',
-        rating: 4.8,
-        status: 1,
-        description: 'CNAS认可实验室',
-        website: 'https://www.cti.com',
-        employeeCount: 1200,
-        annualRevenue: 5000,
-        establishedDate: '2003-12-01',
-        qualification: 'CNAS, CMA',
-        logo: 'https://picsum.photos/100/100?random=1'
-      }
-      return {
-        code: 200,
-        message: 'success',
-        data: mockDetail
+      const id = parseInt(request.params?.id || request.query?.id);
+
+      const mockList = [
+        {
+          id: 1,
+          companyName: '华测检测认证集团',
+          region: '深圳',
+          address: '深圳市南山区科技园',
+          contactPerson: '王五',
+          contactPhone: '13700137003',
+          serviceType: '检测认证, CE认证',
+          description: 'CNAS认可实验室',
+          logo: 'https://picsum.photos/100/100?random=1',
+          website: 'https://www.cti.com',
+          establishedDate: '2003-12-01',
+          employeeCount: 1200,
+          qualification: 'CNAS, CMA',
+          auditStatus: 'approved',
+          auditRemark: null,
+          auditTime: null,
+          createTime: '2026-03-01 10:00:00',
+          updateTime: '2026-03-01 10:00:00',
+          email: 'wangwu@cti.com',
+          rating: 4.8,
+          annualRevenue: 5000,
+        },
+        {
+          id: 2,
+          companyName: 'SGS通标标准',
+          region: '广州',
+          address: '广州市黄埔区科学城',
+          contactPerson: '李四',
+          contactPhone: '13800138004',
+          serviceType: '国际认证, 检验',
+          description: '全球领先检测机构',
+          logo: 'https://picsum.photos/100/100?random=2',
+          website: 'https://www.sgs.com',
+          establishedDate: '1991-05-15',
+          employeeCount: 2000,
+          qualification: 'CNAS, IAAC',
+          auditStatus: 'approved',
+          auditRemark: null,
+          auditTime: null,
+          createTime: '2026-03-01 10:00:00',
+          updateTime: '2026-03-01 10:00:00',
+          email: 'lisi@sgs.com',
+          rating: 4.9,
+          annualRevenue: 8000,
+        },
+        {
+          id: 3,
+          companyName: '东莞精密制造服务',
+          region: '东莞',
+          address: '东莞市松山湖高新技术区',
+          contactPerson: '赵六',
+          contactPhone: '13900139005',
+          serviceType: '工业设计, 打样',
+          description: '精密加工专家',
+          logo: 'https://picsum.photos/100/100?random=3',
+          website: '',
+          establishedDate: '2010-08-20',
+          employeeCount: 350,
+          qualification: 'ISO9001',
+          auditStatus: 'pending',
+          auditRemark: '资质文件待补充',
+          auditTime: null,
+          createTime: '2026-03-02 14:30:00',
+          updateTime: '2026-03-02 14:30:00',
+          email: 'zhaoliu@dg.com',
+          rating: 4.5,
+          annualRevenue: 2000,
+        }
+      ];
+
+      const found = mockList.find(item => item.id === id);
+      if (found) {
+        return {
+          code: 200,
+          message: 'success',
+          data: found
+        };
+      } else {
+        return {
+          code: 404,
+          message: '服务商不存在',
+          data: null
+        };
       }
     }
   },
