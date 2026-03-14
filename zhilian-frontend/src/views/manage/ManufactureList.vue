@@ -129,13 +129,8 @@
         <el-table-column prop="contactPerson" label="联系人" width="100" />
         <el-table-column prop="contactPhone" label="联系电话" width="130">
           <template #default="{ row }">
-            <!-- 对手机号进行脱敏处理，仅展示前3位和后4位，避免直接暴露完整号码 -->
             <span>
-              {{
-                row.contactPhone
-                  ? row.contactPhone.replace(/(\d{3})\d{4}(\d{4})/, "$1****$2")
-                  : "-"
-              }}
+              {{ showPhone(row.contactPhone) }}
             </span>
           </template>
         </el-table-column>
@@ -322,11 +317,6 @@ const fetchOptions = async () => {
   }
 };
 
-onMounted(() => {
-  fetchOptions();
-  fetchList();
-});
-
 const handleSearch = () => {
   pagination.current = 1;
   fetchList();
@@ -351,7 +341,6 @@ const openViewDialog = async (row) => {
     const res = await getManufactureDetail(row.id);
     detailDialog.data = res;
     detailDialog.visible = true;
-    console.log(detailDialog.data.logo);
   } catch (error) {
     ElMessage.error("获取企业详情失败");
     console.log("获取企业详情失败", error);
@@ -376,6 +365,7 @@ const formatScale = (row) => {
 };
 
 onMounted(() => {
+  fetchOptions();
   fetchList();
 });
 </script>

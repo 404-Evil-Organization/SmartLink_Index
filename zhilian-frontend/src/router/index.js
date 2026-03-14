@@ -3,7 +3,7 @@ import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
 
 import dashboardRoutes from "./models/dashboard";
-import ManufactureRouter from "./models/manage";
+import ManufactureRoutes from "./models/manage";
 
 const routes = [
   {
@@ -20,7 +20,7 @@ const routes = [
     path: "/",
     component: () => import("@/layouts/BasicLayout.vue"),
     meta: { requiresAuth: true },
-    children: [...dashboardRoutes, ...ManufactureRouter],
+    children: [...dashboardRoutes, ...ManufactureRoutes],
   },
 ];
 
