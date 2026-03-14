@@ -251,8 +251,8 @@ const fetchList = async () => {
     tableData.value = res.records || []
     pagination.total = res.total || 0
   } catch (error) {
+    // 统一错误提示已在 request 响应拦截器中处理，这里仅记录日志和恢复状态
     console.error('获取服务企业列表失败', error)
-    ElMessage.error('获取列表失败，请稍后重试')
   } finally {
     loading.value = false
   }
