@@ -307,7 +307,7 @@ const fetchList = async () => {
     pagination.total = res.total || 0;
   } catch (error) {
     ElMessage.error("获取列表失败");
-    console.log("获取列表失败", error);
+    console.error("获取列表失败", error);
   } finally {
     loading.value = false;
   }
@@ -361,7 +361,7 @@ const openViewDialog = async (row) => {
     detailDialog.visible = true;
   } catch (error) {
     ElMessage.error("获取企业详情失败");
-    console.log("获取企业详情失败", error);
+    console.error("获取企业详情失败", error);
   }
 };
 
