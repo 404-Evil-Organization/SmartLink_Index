@@ -1,4 +1,4 @@
-// src/router/modules/manage.js
+// src/router/models/manage.js
 export default [
   {
     path: '/manage/service-provider',
