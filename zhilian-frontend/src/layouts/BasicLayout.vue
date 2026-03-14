@@ -16,10 +16,16 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-menu-item index="/manage/tag">
-          <el-icon><OfficeBuilding /></el-icon>
-          <span>标签管理</span>
-        </el-menu-item>
+        <el-sub-menu index="1">
+          <template #title>
+            <el-icon><Avatar /></el-icon>
+            <span>管理员</span>
+          </template>
+          <el-menu-item index="/manage/tag">
+            <el-icon><Collection /></el-icon>
+            <span>标签管理</span>
+          </el-menu-item>
+        </el-sub-menu>
         <!-- 后续可继续添加其他菜单项 -->
       </el-menu>
     </el-aside>
@@ -54,7 +60,7 @@ import {
   ElMenuItem,
   ElButton,
 } from "element-plus";
-import { HomeFilled, OfficeBuilding } from "@element-plus/icons-vue";
+import { HomeFilled, Avatar, Collection } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
 const route = useRoute();
