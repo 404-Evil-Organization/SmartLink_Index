@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import com.zhilian.zhilianbackend.common.exception.BusinessException;
 
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Map;
+
 /**
  * @Author: 周冠杰
  * @Date: 2026/3/12 22:55
@@ -39,8 +43,9 @@ public class TagController {
      * 说明：
      * 1. 由于当前项目未启用 @EnableMethodSecurity，方法上的 @PreAuthorize 暂时不会生效，
      *    因此这里通过显式读取 SecurityContext 做一次兜底校验，避免任意携带 token 的用户越权调用管理接口。
-     * 2. 当后续完善 JWT 中的角色信息后，本方法会根据 Authentication 中的 authorities 判断是否包含 ADMIN 角色；
-     *    若不存在角色信息，则默认视为非管理员，拒绝本次操作。
+     * 2. 优先根据 Authentication 中的 authorities 判断是否包含 ADMIN 角色；
+     *    若 authorities 为空（如 JwtAuthenticationFilter 未填充权限），则尝试从 principal/details 中解析 role 信息。
+     * 3. 若无法确认当前用户为管理员，则一律按非管理员处理，抛出 403，避免放宽权限。
      */
     private void checkAdmin() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -49,17 +54,101 @@ public class TagController {
         }
 
         boolean isAdmin = false;
-        for (GrantedAuthority authority : authentication.getAuthorities()) {
-            String role = authority.getAuthority();
-            if ("ROLE_ADMIN".equals(role) || "ADMIN".equals(role)) {
-                isAdmin = true;
-                break;
+
+        // 1. 优先从 authorities 中判断角色（适配标准 Spring Security 使用方式）
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        if (authorities != null) {
+            for (GrantedAuthority authority : authorities) {
+                if (authority == null) {
+                    continue;
+                }
+                String role = authority.getAuthority();
+                if (role == null) {
+                    continue;
+                }
+                String normalized = role.toUpperCase();
+                if ("ADMIN".equals(normalized) || "ROLE_ADMIN".equals(normalized)) {
+                    isAdmin = true;
+                    break;
+                }
+            }
+        }
+
+        // 2. 若 authorities 未标识为管理员，则从 principal/details 中尝试解析 JWT 中的角色信息
+        if (!isAdmin) {
+            String principalRole = extractRoleFromObject(authentication.getPrincipal());
+            if (principalRole != null) {
+                String normalized = principalRole.toUpperCase();
+                if ("ADMIN".equals(normalized) || "ROLE_ADMIN".equals(normalized)) {
+                    isAdmin = true;
+                }
             }
         }
 
         if (!isAdmin) {
+            String detailRole = extractRoleFromObject(authentication.getDetails());
+            if (detailRole != null) {
+                String normalized = detailRole.toUpperCase();
+                if ("ADMIN".equals(normalized) || "ROLE_ADMIN".equals(normalized)) {
+                    isAdmin = true;
+                }
+            }
+        }
+
+        if (!isAdmin) {
+            // 安全兜底：无法确认管理员身份时，统一拒绝访问
             throw new BusinessException(403, "仅管理员可以执行该操作");
         }
+    }
+
+    /**
+     * 从给定对象中提取角色信息。
+     *
+     * 兼容场景：
+     * - 对象为 Map：从 key 为 "role"/"roles" 的字段读取；
+     * - 对象为 String：直接视为角色字符串；
+     * - 对象为自定义用户实体：通过反射调用 getRole()/getRoles() 方法获取角色字符串。
+     *
+     * @param source 可能包含角色信息的对象（principal 或 details）
+     * @return 角色字符串（如 "ADMIN"、"ROLE_ADMIN"），无法解析则返回 null
+     */
+    private String extractRoleFromObject(Object source) {
+        if (source == null) {
+            return null;
+        }
+
+        // 场景一：JWT 解析后放入 Map 结构
+        if (source instanceof Map<?, ?>) {
+            Map<?, ?> map = (Map<?, ?>) source;
+            Object roleVal = map.get("role");
+            if (roleVal == null) {
+                roleVal = map.get("roles");
+            }
+            return roleVal != null ? String.valueOf(roleVal) : null;
+        }
+
+        // 场景二：直接为字符串
+        if (source instanceof String) {
+            return (String) source;
+        }
+
+        // 场景三：自定义用户对象，尝试通过反射读取 getRole()/getRoles()
+        try {
+            Method getRoleMethod;
+            try {
+                getRoleMethod = source.getClass().getMethod("getRole");
+            } catch (NoSuchMethodException e) {
+                getRoleMethod = source.getClass().getMethod("getRoles");
+            }
+            Object roleVal = getRoleMethod.invoke(source);
+            if (roleVal != null) {
+                return String.valueOf(roleVal);
+            }
+        } catch (Exception ignored) {
+            // 反射失败不影响主流程，直接视为未找到角色信息
+        }
+
+        return null;
     }
 
     /**
@@ -98,7 +187,7 @@ public class TagController {
     @Operation(summary = "新增标签")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public Result<Long> add(@RequestBody @Valid TagRequest request) {
+    public Result<Long> add(@RequestBody @Validated(TagRequest.Create.class) TagRequest request) {
         // 兜底管理员校验：在未启用方法级安全或 Jwt 未正确注入角色时，防止任意用户越权新增标签
         checkAdmin();
         return Result.success(tagService.addTag(request));
@@ -114,7 +203,7 @@ public class TagController {
     @Operation(summary = "修改标签")
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public Result<Void> update(@PathVariable Long id, @RequestBody @Valid TagRequest request) {
+    public Result<Void> update(@PathVariable Long id, @RequestBody @Validated(TagRequest.Update.class) TagRequest request) {
         // 兜底管理员校验，防止非管理员用户修改标签信息
         checkAdmin();
         tagService.updateTag(id, request);

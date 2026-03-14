@@ -49,9 +49,26 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
 
         Page<Tag> page = new Page<>(queryRequest.getPage(), queryRequest.getSize());
 
+        // 对前端传入的分类参数进行归一化，防止历史别名、大小写或空格导致查询不到数据
+        String rawCategory = queryRequest.getCategory();
+        String normalizedCategory = null;
+        if (StringUtils.hasText(rawCategory)) {
+            try {
+                TagCategory tagCategory = TagCategory.fromValue(rawCategory);
+                if (tagCategory != null) {
+                    normalizedCategory = tagCategory.getValue();
+                } else {
+                    log.warn("分页查询标签时收到无效的分类入参（无法匹配到枚举）：{}", rawCategory);
+                }
+            } catch (IllegalArgumentException ex) {
+                log.warn("分页查询标签时分类入参解析失败：{}", rawCategory, ex);
+            }
+        }
+
         LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StringUtils.hasText(queryRequest.getName()), Tag::getName, queryRequest.getName())
-                .eq(StringUtils.hasText(queryRequest.getCategory()), Tag::getCategory, queryRequest.getCategory())
+                // 仅当归一化后的分类有值时才参与 eq 筛选，避免无效入参影响结果
+                .eq(StringUtils.hasText(normalizedCategory), Tag::getCategory, normalizedCategory)
                 .orderByDesc(Tag::getCreateTime);
 
         Page<Tag> tagPage = this.page(page, wrapper);
@@ -156,6 +173,12 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
                     String.join(", ", TagCategory.getAllValues()));
         }
 
+        // 对传入的 category 做主值归一化，后续统一使用规范值参与冲突校验与更新
+        String normalizedRequestCategory = null;
+        if (StringUtils.hasText(request.getCategory())) {
+            normalizedRequestCategory = TagCategory.fromValue(request.getCategory()).getValue();
+        }
+
         // 3. 如果修改了名称或类别，检查是否与其他标签冲突
         if (StringUtils.hasText(request.getName()) || StringUtils.hasText(request.getCategory())) {
             String newName = StringUtils.hasText(request.getName())
@@ -163,7 +186,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
                     : existingTag.getName();
 
             String newCategory = StringUtils.hasText(request.getCategory())
-                    ? request.getCategory()
+                    ? normalizedRequestCategory
                     : existingTag.getCategory();
 
             LambdaQueryWrapper<Tag> wrapper = new LambdaQueryWrapper<>();
@@ -186,7 +209,9 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             tag.setName(request.getName());
         }
         if (StringUtils.hasText(request.getCategory())) {
-            tag.setCategory(request.getCategory());
+            // 这里同样使用 TagCategory 主值进行存储，确保与 addTag 的归一化策略一致
+            String normalizedCategory = TagCategory.fromValue(request.getCategory()).getValue();
+            tag.setCategory(normalizedCategory);
         }
         if (StringUtils.hasText(request.getDescription())) {
             tag.setDescription(request.getDescription());

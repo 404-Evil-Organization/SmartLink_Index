@@ -377,59 +377,11 @@ public class CommonController {
     @Operation(summary = "获取标签类别选项", description = "返回所有可用的标签类别，用于前端下拉选择")
     public Result<List<Map<String, String>>> getTagCategories() {
         log.info("接收获取标签类别选项请求");
+        // 当前 TagCategory 枚举项较少且 label 不重复，直接返回枚举提供的选项列表，
+        // 如后续明确引入“别名/重复 label”需求，再在此处增加去重与优先级逻辑即可
         List<Map<String, String>> options = TagCategory.getOptions();
-
-        // 为避免前端下拉列表出现重复的“其他类型”等标签，这里按 label 进行去重处理
-        // 兼容历史：当存在多个枚举值共享同一 label（如 RESTS / GENERAL 均为“其他类型”）时，
-        // 优先保留业务主值 GENERAL，对应 value=general；其余同名 label 的选项不再对外暴露，
-        // 避免前端将新数据错误写成 RESTS 等非主值
-        List<Map<String, String>> deduplicatedOptions = new ArrayList<>();
-        Set<String> seenLabels = new HashSet<>();
-        // 记录每个 label 在 deduplicatedOptions 中对应的下标，便于在发现更优选项（如 GENERAL）时进行替换
-        Map<String, Integer> labelIndexMap = new HashMap<>();
-        for (Map<String, String> option : options) {
-            if (option == null) {
-                continue;
-            }
-            String label = option.get("label");
-            // 对于没有 label 字段的选项，为避免误删，直接透传
-            if (label == null) {
-                deduplicatedOptions.add(option);
-                continue;
-            }
-            String value = option.get("value");
-            if (seenLabels.add(label)) {
-                // 第一次出现该 label，加入结果列表
-                deduplicatedOptions.add(option);
-                labelIndexMap.put(label, deduplicatedOptions.size() - 1);
-            } else {
-                // 已存在同名 label，判断是否需要用当前选项替换已保留的选项
-                Integer index = labelIndexMap.get(label);
-                if (index != null && index >= 0 && index < deduplicatedOptions.size()) {
-                    Map<String, String> existingOption = deduplicatedOptions.get(index);
-                    String existingValue = existingOption != null ? existingOption.get("value") : null;
-                    // 如果当前为 GENERAL 且已保留的不是 GENERAL，则用当前 GENERAL 覆盖历史别名（如 RESTS）
-                    if (value != null
-                            && "general".equalsIgnoreCase(value)
-                            && (existingValue == null || !"general".equalsIgnoreCase(existingValue))) {
-                        deduplicatedOptions.set(index, option);
-                        log.debug("发现同 label 更优标签类别，优先保留 GENERAL，label={}，原value={}，新value={}",
-                                label, existingValue, value);
-                    } else {
-                        // 其余重复的 label（如另一个“其他类型”别名）不再对外暴露，仅作为历史兼容别名保留在后端枚举中
-                        log.debug("过滤重复标签类别，label={}，value={}", label, value);
-                    }
-                } else {
-                    // 理论上不应出现，但为安全起见做一次降级处理：如果索引异常，则按首次出现规则重新加入
-                    deduplicatedOptions.add(option);
-                    labelIndexMap.put(label, deduplicatedOptions.size() - 1);
-                    log.warn("标签类别去重时发现 labelIndexMap 索引异常，已降级为追加模式，label={}", label);
-                }
-            }
-        }
-
-        log.info("返回标签类别选项，原始{}个，去重后{}个", options.size(), deduplicatedOptions.size());
-        return Result.success(deduplicatedOptions);
+        log.info("返回标签类别选项，共 {} 个", options != null ? options.size() : 0);
+        return Result.success(options);
     }
 
 
