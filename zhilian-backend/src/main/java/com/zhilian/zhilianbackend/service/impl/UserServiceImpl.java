@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,9 +32,9 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
-    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    // 用于用户名的锁缓存
+    // 用于用户名的锁缓存（注意：使用完后需要清理）
     private final ConcurrentHashMap<String, Object> lockMap = new ConcurrentHashMap<>();
 
     /**
@@ -59,33 +60,38 @@ public class UserServiceImpl implements UserService {
         // 2. 获取用户名锁（避免并发注册相同用户名）
         Object lock = lockMap.computeIfAbsent(username, k -> new Object());
 
-        synchronized (lock) {
-            // 3. 双检锁：再次检查用户名是否已存在（在同一用户名锁内，确保并发互斥）
-            LambdaQueryWrapper<User> checkWrapper = new LambdaQueryWrapper<>();
-            checkWrapper.eq(User::getUsername, username)
-                    .isNull(User::getDeleted);
-            if (userMapper.selectCount(checkWrapper) > 0) {
-                throw new BusinessException(409, "用户名已存在"); // 409 Conflict
+        try {
+            synchronized (lock) {
+                // 3. 双检锁：再次检查用户名是否已存在
+                LambdaQueryWrapper<User> checkWrapper = new LambdaQueryWrapper<>();
+                checkWrapper.eq(User::getUsername, username)
+                        .isNull(User::getDeleted);
+                if (userMapper.selectCount(checkWrapper) > 0) {
+                    throw new BusinessException(409, "用户名已存在");
+                }
+
+                // 4. 创建新用户
+                User user = new User();
+                user.setUsername(username);
+                user.setPassword(passwordEncoder.encode(request.getPassword()));
+                user.setRole(role);
+                user.setPhone(request.getPhone());
+                user.setEmail(request.getEmail());
+                user.setStatus(1); // 默认正常
+
+                // 5. 保存到数据库
+                userMapper.insert(user);
+
+                // 6. 返回响应
+                UserRegisterResponse response = new UserRegisterResponse();
+                response.setUserId(user.getId());
+                response.setUsername(user.getUsername());
+                response.setRole(user.getRole());
+                return response;
             }
-
-            // 4. 创建新用户
-            User user = new User();
-            user.setUsername(username);
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
-            user.setRole(role);
-            user.setPhone(request.getPhone());
-            user.setEmail(request.getEmail());
-            user.setStatus(1); // 默认正常
-
-            // 5. 保存到数据库
-            userMapper.insert(user);
-
-            // 6. 返回响应
-            UserRegisterResponse response = new UserRegisterResponse();
-            response.setUserId(user.getId());
-            response.setUsername(user.getUsername());
-            response.setRole(user.getRole());
-            return response;
+        } finally {
+            // 7. 清理锁，避免内存泄漏
+            lockMap.remove(username);
         }
     }
 
@@ -98,52 +104,41 @@ public class UserServiceImpl implements UserService {
      **/
     @Override
     public UserLoginResponse login(UserLoginRequest request) {
-
+        // 1. 查询用户
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, request.getUsername())
                 .isNull(User::getDeleted);
         List<User> users = userMapper.selectList(wrapper);
 
-        // 如果未查到用户，直接返回“用户不存在”
+        // 2. 用户不存在
         if (users.isEmpty()) {
             throw new BusinessException(404, "用户不存在");
         }
 
-        // 如果查到多条，说明数据库存在重复用户名记录，属于数据一致性问题，需显式报错/告警
+        // 3. 处理多条记录的情况（数据异常）
+        User user;
         if (users.size() > 1) {
             log.error("系统数据异常：用户名【{}】存在多条有效记录", request.getUsername());
             // 按创建时间倒序取最新的用户
             users.sort((u1, u2) -> u2.getCreateTime().compareTo(u1.getCreateTime()));
-            User latestUser = users.get(0);
+            user = users.get(0);
             log.warn("使用最新创建的用户记录: userId={}, createTime={}",
-                    latestUser.getId(), latestUser.getCreateTime());
-
-            // 验证密码
-            if (!passwordEncoder.matches(request.getPassword(), latestUser.getPassword())) {
-                throw new BusinessException(401, "用户名或密码错误");
-            }
-
-            if (!Integer.valueOf(1).equals(latestUser.getStatus())) {
-                throw new BusinessException(403, "账号已被禁用");
-            }
-
-            String token = jwtUtil.generateToken(latestUser.getId(), latestUser.getUsername(), latestUser.getRole());
-            UserLoginResponse response = new UserLoginResponse();
-            response.setToken(token);
-            return response;
+                    user.getId(), user.getCreateTime());
+        } else {
+            user = users.get(0);
         }
 
-        User user = users.get(0);
+        // 4. 验证密码
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BusinessException(401, "用户名或密码错误"); // 401 Unauthorized
+            throw new BusinessException(401, "用户名或密码错误");
         }
 
-
+        // 5. 验证账号状态
         if (!Integer.valueOf(1).equals(user.getStatus())) {
-            throw new BusinessException(403, "账号已被禁用"); // 403 Forbidden
+            throw new BusinessException(403, "账号已被禁用");
         }
 
-
+        // 6. 生成token（包含角色信息）
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
 
         UserLoginResponse response = new UserLoginResponse();
@@ -179,8 +174,9 @@ public class UserServiceImpl implements UserService {
     /**
      * @Author: 6017
      * @Date: 2026/3/11 16:12
-     * @Param: userId 用户ID,request 修改密码请求参数
-     * @Return:
+     * @Param: userId 用户ID
+     * @Param: request 修改密码请求参数
+     * @Return: void
      * @Description: 修改密码业务实现
      **/
     @Override
@@ -191,7 +187,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-            throw new BusinessException(401, "旧密码错误"); // 401 Unauthorized
+            throw new BusinessException(401, "旧密码错误");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
