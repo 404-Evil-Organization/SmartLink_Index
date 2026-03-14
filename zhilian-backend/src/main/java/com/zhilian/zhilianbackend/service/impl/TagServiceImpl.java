@@ -56,11 +56,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         if (StringUtils.hasText(rawCategory)) {
             try {
                 TagCategory tagCategory = TagCategory.fromValue(rawCategory);
-                // 如果无法匹配到任何有效枚举，则认为是非法参数，抛出业务异常而不是静默忽略
-                if (tagCategory == null) {
-                    log.warn("分页查询标签时收到无效的分类入参（无法匹配到枚举）：{}", rawCategory);
-                    throw new BusinessException("标签分类参数不合法：" + rawCategory);
-                }
+                // fromValue 当前约定：要么返回有效枚举，要么抛出 IllegalArgumentException，不会返回 null
                 normalizedCategory = tagCategory.getValue();
             } catch (IllegalArgumentException ex) {
                 log.warn("分页查询标签时分类入参解析失败：{}", rawCategory, ex);
