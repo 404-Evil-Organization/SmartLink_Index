@@ -278,7 +278,6 @@ const fetchList = async () => {
 const fetchRegions = async () => {
   try {
     const res = await getRegionList(); // 可能是数组，也可能是 { data: [...] }
-    console.log('区域接口返回原始数据:', res);
     
     // 处理两种情况
     let data = res;
@@ -300,7 +299,6 @@ const fetchRegions = async () => {
 const fetchServiceTags = async () => {
   try {
     const res = await getServiceTagList();
-    console.log('服务类型接口返回原始数据:', res);
     
     let data = res;
     if (res && typeof res === 'object' && 'data' in res && Array.isArray(res.data)) {
