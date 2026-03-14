@@ -29,7 +29,7 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to, from) => {
+router.beforeEach(async (to, _from) => {
   const userStore = useUserStore();
   const token = userStore.token;
 
@@ -43,7 +43,8 @@ router.beforeEach(async (to, from) => {
           return true;
         } catch (error) {
           if (error.response?.status === 401) {
-            return "/login";
+            // 401 统一交由 axios 响应拦截器负责跳转至登录页并弹出提示，这里仅中止当前导航以避免重复导航/重复提示
+            return false;
           } else {
             ElMessage.error("部分用户信息加载失败，请刷新重试");
             return true;
