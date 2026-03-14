@@ -48,10 +48,12 @@
                 placeholder="选择区域"
                 clearable
               >
-                <el-option label="深圳" value="深圳" />
-                <el-option label="华南" value="south" />
-                <el-option label="华北" value="north" />
-                <el-option label="西南" value="west" />
+                <el-option
+                  v-for="region in regionOptions"
+                  :key="region"
+                  :label="region"
+                  :value="region"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -62,10 +64,12 @@
                 placeholder="选择规模"
                 clearable
               >
-                <el-option label="微型企业" value="micro" />
-                <el-option label="小型企业" value="small" />
-                <el-option label="中型企业" value="medium" />
-                <el-option label="大型企业" value="large" />
+                <el-option
+                  v-for="item in scaleOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
               </el-select>
             </el-form-item>
           </el-col>
@@ -226,8 +230,8 @@ import {
   Star,
   TrendCharts,
 } from "@element-plus/icons-vue";
-// 导入原有 API
 import { getManufactureList, getManufactureDetail } from "@/api/manufacture";
+import { getRegions, getScales } from "@/api/common";
 
 // ---------- 统计卡片数据（静态，可改为接口获取） ----------
 // const statistics = ref([
@@ -302,6 +306,27 @@ const fetchList = async () => {
   }
 };
 
+// 选项数据
+const regionOptions = ref([]);
+const scaleOptions = ref([]);
+
+// 获取选项数据
+const fetchOptions = async () => {
+  try {
+    const [regions, scales] = await Promise.all([getRegions(), getScales()]);
+    regionOptions.value = regions;
+    scaleOptions.value = scales;
+  } catch (error) {
+    ElMessage.error("获取选项数据失败");
+    console.error(error);
+  }
+};
+
+onMounted(() => {
+  fetchOptions();
+  fetchList();
+});
+
 const handleSearch = () => {
   pagination.current = 1;
   fetchList();
@@ -326,6 +351,7 @@ const openViewDialog = async (row) => {
     const res = await getManufactureDetail(row.id);
     detailDialog.data = res;
     detailDialog.visible = true;
+    console.log(detailDialog.data.logo);
   } catch (error) {
     ElMessage.error("获取企业详情失败");
     console.log("获取企业详情失败", error);
