@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import java.util.Collection;
+import java.lang.reflect.Method;
 
 //@Author: 周冠杰
 @Tag(name = "标签管理接口")
@@ -29,7 +32,6 @@ import java.util.Collection;
 public class TagController {
 
     private final TagService tagService;
-    private final UserService userService;
 
     /**
      * 从 Authentication 的 principal 中尽可能提取当前登录用户的 userId。
@@ -83,6 +85,11 @@ public class TagController {
         }
         return Long.parseLong(authentication.getName());
     }
+
+    /**
+     * 日志记录器，用于记录标签管理相关的安全与业务日志
+     */
+    private static final Logger log = LoggerFactory.getLogger(TagController.class);
 
     /**
      * 校验当前用户是否为管理员

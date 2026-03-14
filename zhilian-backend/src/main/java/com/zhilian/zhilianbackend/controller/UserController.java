@@ -9,7 +9,6 @@ import com.zhilian.zhilianbackend.dto.response.UserLoginResponse;
 import com.zhilian.zhilianbackend.dto.response.UserRegisterResponse;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.UserService;
-import com.zhilian.zhilianbackend.utils.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,6 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-    private final JwtUtil jwtUtil;
 
     /**
      * 从 SecurityContext 获取当前用户ID

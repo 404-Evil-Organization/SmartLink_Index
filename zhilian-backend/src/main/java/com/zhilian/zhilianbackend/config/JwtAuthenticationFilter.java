@@ -112,7 +112,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 try {
                     // 解析token获取Claims（包含角色信息）
                     Claims claims = jwtUtil.parseToken(token);
-                    Long userId = Long.parseLong(claims.getSubject());
+                    Long userId;
+                    try {
+                        // 从 JWT subject 中解析用户ID，若 subject 非数字将抛出 NumberFormatException
+                        userId = Long.parseLong(claims.getSubject());
+                    } catch (NumberFormatException ex) {
+                        // 将 subject 非法格式转换为 JwtException，统一按 Token 非法处理为 401
+                        throw new JwtException("Token subject 非法，无法解析为用户ID", ex);
+                    }
                     String username = claims.get(JwtUtil.CLAIM_USERNAME, String.class);
                     String role = claims.get(JwtUtil.CLAIM_ROLE, String.class);
 
