@@ -21,8 +21,19 @@ import java.util.Map;
 @Component
 public class JwtUtil {
 
+    /**
+     * JWT claims 中用户名字段的键名常量，避免各处硬编码导致拼写不一致。
+     */
+    public static final String CLAIM_USERNAME = "username";
+
+    /**
+     * JWT claims 中角色字段的键名常量，避免各处硬编码导致拼写不一致。
+     */
+    public static final String CLAIM_ROLE = "role";
+
     private String secret;
     private Long expiration;
+
 
     // 无参构造器，设置默认值（使用32字节以上的密钥）
     public JwtUtil() {
@@ -140,7 +151,23 @@ public class JwtUtil {
     **/
     public String generateToken(Long userId, String username) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("username", username);
+        // 使用统一定义的 CLAIM_USERNAME 常量，避免硬编码字符串
+        claims.put(CLAIM_USERNAME, username);
+        return generateToken(String.valueOf(userId), claims);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 16:34
+     * @Param: userId 用户ID, username 用户名, role 用户角色
+     * @Return: String JWT token字符串
+     * @Description: 生成Token（传用户ID、用户名和角色，用户名和角色会存入claims中）
+    **/
+    public String generateToken(Long userId, String username, String role) {
+        Map<String, Object> claims = new HashMap<>();
+        // 使用统一定义的 CLAIM_USERNAME / CLAIM_ROLE 常量，避免硬编码字符串
+        claims.put(CLAIM_USERNAME, username);
+        claims.put(CLAIM_ROLE, role);
         return generateToken(String.valueOf(userId), claims);
     }
 
