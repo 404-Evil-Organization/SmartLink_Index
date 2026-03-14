@@ -171,7 +171,7 @@ public class CommonController {
     **/
     @GetMapping("/general-tags")
     @Operation(summary = "获取其他类型标签",
-            description = "返回其他类型标签列表，用于通用标签选择，对应 category = 'rests' 的标签")
+            description = "返回其他类型标签列表，用于通用标签选择，对应 category = 'general' 的标签")
     public Result<List<ServiceTagResponse>> getGeneralTags() {
         log.info("接收获取其他类型标签请求");
 

@@ -16,7 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-import com.zhilian.zhilianbackend.common.exception.BusinessException;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 
 /**
  * @Author: 周冠杰

@@ -52,11 +52,6 @@ public enum TagCategory {
 
         String normalized = value.trim().toLowerCase();
 
-        // 兼容旧数据中的 rests，映射到 GENERAL
-        if ("rests".equals(normalized)) {
-            LOGGER.info("兼容处理：将 rests 映射为 general");
-            return GENERAL;
-        }
 
         for (TagCategory category : TagCategory.values()) {
             if (category.getValue().equals(normalized)) {
@@ -78,10 +73,7 @@ public enum TagCategory {
             return true;
         }
         String normalized = value.trim().toLowerCase();
-        // 兼容 rests
-        if ("rests".equals(normalized)) {
-            return true;
-        }
+
         for (TagCategory category : TagCategory.values()) {
             if (category.getValue().equals(normalized)) {
                 return true;
@@ -144,11 +136,6 @@ public enum TagCategory {
         }
 
         String normalized = value.trim().toLowerCase();
-
-        // 兼容 rests
-        if ("rests".equals(normalized)) {
-            return GENERAL.getDescription();
-        }
 
         for (TagCategory category : TagCategory.values()) {
             if (category.getValue().equals(normalized)) {
