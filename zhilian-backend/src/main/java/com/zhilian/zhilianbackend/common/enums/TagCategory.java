@@ -22,11 +22,6 @@ import org.slf4j.LoggerFactory;
 @Getter
 public enum TagCategory {
 
-    /**
-     * 日志对象：用于记录枚举解析过程中的告警信息（如空值或未命中时的回退行为）
-     */
-    private static final Logger LOGGER = LoggerFactory.getLogger(TagCategory.class);
-
     SERVICE("service", "服务类型"),
     CERTIFICATION("certification", "认证类型"),
     PRODUCT("product", "产品类型"),
@@ -34,6 +29,11 @@ public enum TagCategory {
     RESTS("rests", "其他类型"),
     // 为了与数据库 schema.sql 中 tag.category 默认值 general 对齐，引入 GENERAL 枚举常量，作为唯一主值
     GENERAL("general", "其他类型");
+
+    /**
+     * 日志对象：用于记录枚举解析过程中的告警信息（如空值或未命中时的回退行为）
+     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(TagCategory.class);
 
     @EnumValue  // MyBatis-Plus 存储时使用这个值（英文）
     @JsonValue  // JSON 序列化时使用这个值（英文）

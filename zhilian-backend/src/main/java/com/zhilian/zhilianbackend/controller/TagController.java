@@ -10,13 +10,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
+import com.zhilian.zhilianbackend.common.exception.BusinessException;
 
 /**
  * @Author: 周冠杰
@@ -45,7 +45,7 @@ public class TagController {
     private void checkAdmin() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new AccessDeniedException("仅管理员可以执行该操作");
+            throw new BusinessException(403, "仅管理员可以执行该操作");
         }
 
         boolean isAdmin = false;
@@ -58,7 +58,7 @@ public class TagController {
         }
 
         if (!isAdmin) {
-            throw new AccessDeniedException("仅管理员可以执行该操作");
+            throw new BusinessException(403, "仅管理员可以执行该操作");
         }
     }
 
