@@ -37,7 +37,7 @@ public class TagRequest {
      */
     @NotBlank(message = "标签名称不能为空", groups = Create.class)
     @Size(max = 50, message = "标签名称长度不能超过50个字符", groups = {Create.class, Update.class})
-    @Schema(description = "标签名称", required = false, example = "CNAS认证")
+    @Schema(description = "标签名称", required = true, example = "CNAS认证")
     private String name;
 
     /**

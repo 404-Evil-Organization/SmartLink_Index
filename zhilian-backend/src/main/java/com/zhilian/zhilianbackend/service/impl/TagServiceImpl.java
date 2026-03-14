@@ -110,7 +110,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             throw new BusinessException(400, "无效的标签类别，可选值：" +
                     String.join(", ", TagCategory.getAllValues()));
         } else {
-            // 对传入的合法类别做主值归一化，例如将 rests/general 等别名统一映射为 GENERAL
+            // 对传入的合法类别做主值归一化，统一转换为 TagCategory 定义的标准值
             category = TagCategory.fromValue(category).getValue();
         }
 
@@ -232,14 +232,21 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         }
 
         // 调用 MyBatis Plus 的按主键更新方法，并检查是否实际更新到记录
-        boolean updated = this.updateById(tag);
-        if (updated) {
-            log.info("标签修改成功，ID：{}", id);
-        } else {
-            // 这里一般表示在并发删除/修改或逻辑删除等场景下，未能成功更新任何记录
-            log.warn("标签修改失败，未更新任何记录，ID：{}", id);
-            // 使用业务异常返回 500，表示标签更新业务处理失败
-            throw new BusinessException(500, "标签修改失败，可能是标签已被删除或发生并发修改");
+        try {
+            boolean updated = this.updateById(tag);
+            if (updated) {
+                log.info("标签修改成功，ID：{}", id);
+            } else {
+                // 这里一般表示在并发删除/修改或逻辑删除等场景下，未能成功更新任何记录
+                log.warn("标签修改失败，未更新任何记录，ID：{}", id);
+                // 使用业务异常返回 500，表示标签更新业务处理失败
+                throw new BusinessException(500, "标签修改失败，可能是标签已被删除或发生并发修改");
+            }
+        } catch (DuplicateKeyException e) {
+            // 当更新后的 name + category + deleted 组合违反唯一键约束（如 uk_name_category_deleted）时抛出
+            log.warn("标签修改失败，发生唯一键冲突，ID：{}，name：{}，category：{}", id, tag.getName(), tag.getCategory(), e);
+            // 使用 409 冲突状态码，提示前端标签名称已存在，避免返回笼统的 500 系统繁忙
+            throw new BusinessException(409, "标签名称已存在，请更换后重试");
         }
     }
 

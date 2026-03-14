@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * @Author: 周冠杰
@@ -17,10 +18,12 @@ import jakarta.validation.constraints.Min;
 public class PageRequest {
 
     @Schema(description = "页码，默认1")
+    @NotNull(message = "页码不能为空")
     @Min(value = 1, message = "页码最小为1")
     private Integer page = 1;
 
     @Schema(description = "每页条数，默认10")
+    @NotNull(message = "每页条数不能为空")
     @Min(value = 1, message = "每页条数最少为1")
     @Max(value = 100, message = "每页条数最多不超过100")
     private Integer size = 10;
