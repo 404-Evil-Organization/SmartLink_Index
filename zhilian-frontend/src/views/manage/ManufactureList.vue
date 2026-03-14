@@ -151,7 +151,12 @@
           :page-sizes="[5, 10, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="pagination.total"
-          @size-change="handlePageChange"
+          @size-change="
+            (size) => {
+              pagination.current = 1;
+              handlePageChange(size);
+            }
+          "
           @current-change="handlePageChange"
         />
       </div>
