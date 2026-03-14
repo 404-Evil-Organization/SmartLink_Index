@@ -558,6 +558,7 @@
 
 - **URL**: `/api/common/regions`
 - **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
 - **返回数据**:
 
 ```json
@@ -572,6 +573,7 @@
 
 - **URL**: `/api/common/scales`
 - **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
 - **返回数据**:
 
 ```json
@@ -591,6 +593,7 @@
 
 - **URL**: `/api/common/service-tags`
 - **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
 - **返回数据**:
 
 ```json
@@ -646,6 +649,142 @@
   "code": 200,
   "message": "success",
   "data": null
+}
+```
+
+#### 1.5.6 获取认证类型标签
+
+- **URL**: `/api/common/certification-tags`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **请求参数**: 无
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "CNAS认证",
+      "category": "认证类型"
+    },
+    {
+      "id": 2,
+      "name": "CMA认证",
+      "category": "认证类型"
+    },
+    {
+      "id": 3,
+      "name": "ISO9001",
+      "category": "认证类型"
+    }
+  ]
+}
+```
+
+> **说明**：从 `tag` 表中筛选 `category` 为 `'certification'` 的标签返回，`category` 字段在返回时转换为中文描述“认证类型”。示例数据仅为演示，实际返回数据库中所有认证类型标签。
+
+#### 1.5.7 获取产品类型标签
+
+- **URL**: `/api/common/product-tags`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **请求参数**: 无
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 4,
+      "name": "PCB电路板",
+      "category": "产品类型"
+    },
+    {
+      "id": 5,
+      "name": "半导体芯片",
+      "category": "产品类型"
+    },
+    {
+      "id": 6,
+      "name": "消费电子",
+      "category": "产品类型"
+    }
+  ]
+}
+```
+
+> **说明**：从 `tag` 表中筛选 `category` 为 `'product'` 的标签返回，`category` 字段在返回时转换为中文描述“产品类型”。示例数据仅为演示，实际返回数据库中所有产品类型标签。
+
+#### 1.5.8 获取其他类型标签
+
+- **URL**: `/api/common/rests-tags`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **请求参数**: 无
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 7,
+      "name": "热门推荐",
+      "category": "其他类型"
+    },
+    {
+      "id": 8,
+      "name": "新品上市",
+      "category": "其他类型"
+    },
+    {
+      "id": 9,
+      "name": "特惠活动",
+      "category": "其他类型"
+    }
+  ]
+}
+```
+
+> **说明**：从 `tag` 表中筛选 `category` 为 `'rests'` 的标签返回，`category` 字段在返回时转换为中文描述“其他类型”。示例数据仅为演示，实际返回数据库中所有其他类型标签。
+
+#### 1.5.9 获取标签类别选项
+
+- **URL**: `/api/common/tag-categories`
+- **Method**: `GET`
+- **请求头**: 无需认证（公开接口）
+
+- **请求参数**: 无
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "value": "service",
+      "label": "服务类型"
+    },
+    {
+      "value": "certification",
+      "label": "认证类型"
+    },
+    {
+      "value": "product",
+      "label": "产品类型"
+    },
+    {
+      "value": "rests",
+      "label": "其他类型"
+    }
+  ]
 }
 ```
 
