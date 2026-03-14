@@ -9,6 +9,7 @@ import com.zhilian.zhilianbackend.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -63,6 +64,7 @@ public class TagController {
      * @Description: 新增标签，会校验标签名称是否已存在
     **/
     @Operation(summary = "新增标签")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public Result<Long> add(@RequestBody @Valid TagRequest request) {
         return Result.success(tagService.addTag(request));
@@ -76,6 +78,7 @@ public class TagController {
      * @Description: 修改标签信息，如果修改名称会检查新名称是否与其他标签冲突
     **/
     @Operation(summary = "修改标签")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody @Valid TagRequest request) {
         tagService.updateTag(id, request);
@@ -90,6 +93,7 @@ public class TagController {
      * @Description: 逻辑删除标签
     **/
     @Operation(summary = "删除标签")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         tagService.deleteTag(id);

@@ -23,7 +23,9 @@ public enum TagCategory {
     SERVICE("service", "服务类型"),
     CERTIFICATION("certification", "认证类型"),
     PRODUCT("product", "产品类型"),
-    RESTS("rests", "其他类型");
+    RESTS("rests", "其他类型"),
+    // 为了与数据库 schema.sql 中 tag.category 默认值 general 对齐，引入 GENERAL 枚举常量
+    GENERAL("general", "其他类型");
 
     @EnumValue  // MyBatis-Plus 存储时使用这个值（英文）
     @JsonValue  // JSON 序列化时使用这个值（英文）
@@ -39,13 +41,17 @@ public enum TagCategory {
     /**
      * @Author: 6017
      * @Date: 2026/3/14 01:06
-     * @Param: 
-     * @Return: 
-     * @Description: 
-    **/
+     * @Param: value 英文枚举值（如 service / certification / product / general / rests）
+     * @Return: 对应的 TagCategory 枚举
+     * @Description:
+     *  将字符串值安全地转换为 TagCategory：
+     *  - value 为空时，默认返回 GENERAL（与数据库默认值 general 对齐）
+     *  - 支持 existing 值 rests（RESTS）和 general（GENERAL），兼容历史与当前取值
+     */
     public static TagCategory fromValue(String value) {
-        if (value == null) {
-            return RESTS;  // 默认返回其他标签
+        if (value == null || value.trim().isEmpty()) {
+            // 当未显式指定标签类别时，统一视为 GENERAL（其他类型），与 schema.sql 默认值 general 一致
+            return GENERAL;
         }
         for (TagCategory category : TagCategory.values()) {
             if (category.getValue().equals(value)) {

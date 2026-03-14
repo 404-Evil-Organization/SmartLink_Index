@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import com.zhilian.zhilianbackend.common.exception.BusinessException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -80,7 +81,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
 
         // 1. 参数校验
         if (!StringUtils.hasText(request.getName())) {
-            throw new IllegalArgumentException("标签名称不能为空");
+            throw new BusinessException(400, "标签名称不能为空");
         }
 
         // 2. 校验category是否有效
@@ -88,7 +89,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         if (!StringUtils.hasText(category)) {
             category = TagCategory.RESTS.getValue();  // 默认使用"rests"
         } else if (!TagCategory.isValid(category)) {
-            throw new IllegalArgumentException("无效的标签类别，可选值：" +
+            throw new BusinessException(400, "无效的标签类别，可选值：" +
                     String.join(", ", TagCategory.getAllValues()));
         }
 
@@ -99,7 +100,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
 
         long count = this.count(wrapper);
         if (count > 0) {
-            throw new RuntimeException("标签名称已存在");
+            throw new BusinessException(400, "标签名称已存在");
         }
 
         // 4. 转换为实体并保存
@@ -107,7 +108,18 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         BeanUtils.copyProperties(request, tag);
         tag.setCategory(category);
 
-        this.save(tag);
+        // 注意：必须检查 save 返回值，防止插入失败却继续返回 null ID 导致上层误判
+        boolean saved = this.save(tag);
+        if (!saved) {
+            log.error("新增标签持久化失败，name={}，category={}", request.getName(), category);
+            throw new RuntimeException("新增标签失败，请稍后重试");
+        }
+
+        // 再次校验 ID 是否成功回填，避免因主键未生成导致业务误判
+        if (tag.getId() == null) {
+            log.error("新增标签后主键ID未回填，name={}，category={}", request.getName(), category);
+            throw new RuntimeException("新增标签失败（ID 未生成），请联系管理员");
+        }
 
         log.info("标签新增成功，ID：{}，category：{}", tag.getId(), category);
         return tag.getId();
@@ -155,7 +167,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
 
             long count = this.count(wrapper);
             if (count > 0) {
-                throw new RuntimeException("标签名称已存在");
+                throw new IllegalArgumentException("标签名称已存在");
             }
         }
 
@@ -173,8 +185,15 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             tag.setDescription(request.getDescription());
         }
 
-        this.updateById(tag);
-        log.info("标签修改成功，ID：{}", id);
+        // 调用 MyBatis Plus 的按主键更新方法，并检查是否实际更新到记录
+        boolean updated = this.updateById(tag);
+        if (updated) {
+            log.info("标签修改成功，ID：{}", id);
+        } else {
+            // 这里一般表示在并发删除/修改或逻辑删除等场景下，未能成功更新任何记录
+            log.warn("标签修改失败，未更新任何记录，ID：{}", id);
+            throw new RuntimeException("标签修改失败，可能是标签已被删除或发生并发修改");
+        }
     }
 
 
@@ -191,7 +210,8 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
 
         Tag existingTag = this.getById(id);
         if (existingTag == null) {
-            throw new RuntimeException("标签不存在，ID：" + id);
+            // 使用业务异常返回 404 语义，避免被兜底异常处理成 500
+            throw new BusinessException(404, "标签不存在，ID：" + id);
         }
 
         boolean removed = this.removeById(id);
@@ -200,7 +220,8 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             log.info("标签删除成功，ID：{}", id);
         } else {
             log.warn("标签删除失败，ID：{}", id);
-            throw new RuntimeException("标签删除失败");
+            // 删除失败视为服务器内部错误，使用 500 业务码
+            throw new BusinessException(500, "标签删除失败，ID：" + id);
         }
     }
 
@@ -218,7 +239,8 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         // 1. 查询标签
         Tag tag = this.getById(id);
         if (tag == null) {
-            throw new RuntimeException("标签不存在，ID：" + id);
+            // 与删除接口保持一致，使用业务异常表达资源不存在（404）
+            throw new BusinessException(404, "标签不存在，ID：" + id);
         }
 
         // 2. 转换为Response
