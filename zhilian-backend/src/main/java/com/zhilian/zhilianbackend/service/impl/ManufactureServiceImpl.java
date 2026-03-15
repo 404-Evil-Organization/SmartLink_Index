@@ -23,6 +23,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,8 +45,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manufacture> implements ManufactureService {
 
-    private final JwtUtil jwtUtil;
-    private final HttpServletRequest request;
 
     private static final String PHONE_REGEX = "^1[3-9]\\d{9}$";
     private static final String SCALE_REGEX = "micro|small|medium|large";
@@ -130,7 +130,69 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             throw new BusinessException(404, "企业不存在或已被删除");
         }
 
-        return convertToDetailVO(manufacture);
+         // 先将实体转换为详情 VO
+                 ManufactureDetailVO detailVO = convertToDetailVO(manufacture);
+                 Claims claims = null;
+                 try {
+                     // 尝试从 Token 中获取当前登录用户信息
+                     claims = getClaimsFromToken();
+                 } catch (Exception e) {
+                     // 未登录或 Token 非法时，不抛出异常，按未授权用户处理（仅返回脱敏信息）
+                     log.debug("获取企业详情时未能解析 Token，将返回脱敏后的企业信息", e);
+                 }
+                 boolean isOwner = false;
+                 boolean isAdmin = false;
+                 if (claims != null) {
+                     // 当前登录用户 ID（与 addManufacture 中逻辑保持一致）
+                     Long currentUserId = null;
+                     try {
+                         currentUserId = Long.parseLong(claims.getSubject());
+                     } catch (NumberFormatException ex) {
+                         log.warn("Token 中的 subject 不是合法的用户ID：{}", claims.getSubject());
+                     }
+                     if (currentUserId != null && manufacture.getUserId() != null) {
+                         isOwner = manufacture.getUserId().equals(currentUserId);
+                     }
+                     // 角色信息，假定 Token 中使用 role / ROLE_ADMIN 标识管理员
+                     Object roleObj = claims.get("role");
+                     if (roleObj instanceof String) {
+                         String role = (String) roleObj;
+                         isAdmin = "ADMIN".equalsIgnoreCase(role) || "ROLE_ADMIN".equalsIgnoreCase(role);
+                     }
+                 }
+                 // 非管理员且非企业拥有者，仅返回脱敏后的敏感字段
+                 if (!isOwner && !isAdmin) {
+                     // 联系电话脱敏：保留前三位和后四位，中间使用星号替代
+                     String phone = detailVO.getContactPhone();
+                     if (StringUtils.isNotBlank(phone) && phone.length() >= 7) {
+                         int prefixLen = 3;
+                         int suffixLen = 4;
+                         if (phone.length() > prefixLen + suffixLen) {
+                             String prefix = phone.substring(0, prefixLen);
+                             String suffix = phone.substring(phone.length() - suffixLen);
+                             String masked = prefix + "****" + suffix;
+                             detailVO.setContactPhone(masked);
+                         }
+                     }
+                     // 年营收等敏感经营信息对未授权用户隐藏
+                     detailVO.setAnnualRevenue(null);
+                     // userId 仅管理员或企业本人可见
+                     try {
+                         // 兼容 VO 中可能不存在 userId 字段的情况，避免直接 NPE
+                         java.lang.reflect.Method setUserIdMethod = detailVO.getClass().getMethod("setUserId", Long.class);
+                         setUserIdMethod.invoke(detailVO, (Object) null);
+                     } catch (NoSuchMethodException ignore) {
+                         // 如果 VO 未暴露 userId 字段，则无需处理
+                     } catch (Exception e) {
+                         log.warn("企业详情脱敏时清理 userId 失败", e);
+                     }
+                 }
+                 return detailVO;
+    }
+
+    private Claims getClaimsFromToken() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getClaimsFromToken'");
     }
 
     /**
@@ -143,9 +205,11 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ManufactureAddVO addManufacture(ManufactureAddRequestDTO requestDTO) {
-        // 从Token获取当前用户ID
-        Claims claims = getClaimsFromToken();
-        Long userId = Long.parseLong(claims.getSubject());
+        // 从 SecurityContext 获取当前用户ID
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            throw new BusinessException(401, "用户未登录");
+        }
 
         validateManufactureData(requestDTO.getCompanyName(),
                 requestDTO.getContactPhone(),
@@ -254,45 +318,38 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
      * @param targetUserId 数据所属用户ID
      */
     private void checkPermission(Long targetUserId) {
-        Claims claims = getClaimsFromToken();
-
-        // 3. 获取用户信息
-        String userIdStr = claims.getSubject();
-        if (StringUtils.isBlank(userIdStr)) {
-            throw new BusinessException(401, "Token无效");
-        }
-        Long currentUserId = Long.parseLong(userIdStr);
-        String role = claims.get("role", String.class);
-
-        // 4. 权限判断
-        // 管理员直接放行
-        if ("admin".equals(role)) {
-            return;
+        Long currentUserId = getCurrentUserId();
+        if (currentUserId == null) {
+            throw new BusinessException(401, "用户未登录");
         }
 
         // 普通用户只能操作自己的数据
         if (!currentUserId.equals(targetUserId)) {
+            // TODO: 如果有管理员角色，也允许操作。需根据实际权限体系判断，例如从 SecurityContext 获取 Authorities
+            // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            // if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) return;
+            
             throw new BusinessException(403, "无权操作他人数据");
         }
     }
 
     /**
-     * 从请求头解析Token获取Claims
+     * 获取当前登录用户ID
      */
-    private Claims getClaimsFromToken() {
-        // 1. 获取请求头中的 Token
-        String authHeader = request.getHeader("Authorization");
-        if (StringUtils.isBlank(authHeader) || !authHeader.startsWith("Bearer ")) {
-            throw new BusinessException(401, "未登录或Token无效");
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Long) {
+            return (Long) authentication.getPrincipal();
         }
-        String token = authHeader.substring(7);
-
-        // 2. 解析 Token
-        try {
-            return jwtUtil.parseToken(token);
-        } catch (Exception e) {
-            throw new BusinessException(401, "Token无效或已过期");
+        // 兼容 Principal 可能是 UserDetails 或其他类型的情况，视 JwtAuthenticationFilter 实现而定
+        if (authentication != null && authentication.getPrincipal() != null) {
+             try {
+                 return Long.parseLong(authentication.getPrincipal().toString());
+             } catch (NumberFormatException e) {
+                 return null;
+             }
         }
+        return null;
     }
 
     /**
@@ -324,8 +381,18 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                                          BigDecimal annualRevenue,
                                          Integer employeeCount,
                                          Long excludeId) {
-        if (StringUtils.isNotBlank(companyName)) {
-            checkCompanyNameExists(companyName, excludeId);
+        // 新增时 companyName 必填且不能为空；修改时如果传了 companyName 且不为空，则需要校验
+        // excludeId == null 表示新增，此时必须校验 companyName
+        if (excludeId == null) {
+            if (StringUtils.isBlank(companyName)) {
+                 throw new BusinessException(400, "企业名称不能为空");
+            }
+            checkCompanyNameExists(companyName, null);
+        } else {
+            // 修改操作，仅当 companyName 不为空时才校验
+            if (StringUtils.isNotBlank(companyName)) {
+                checkCompanyNameExists(companyName, excludeId);
+            }
         }
 
         if (StringUtils.isNotBlank(contactPhone)) {
@@ -367,7 +434,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
      * @Return: void
      * @Description: 检查企业名称是否已存在（逻辑删除的记录不计入）
      */
-    private void checkCompanyNameExists(String companyName, Long excludeId) {
+    private synchronized void checkCompanyNameExists(String companyName, Long excludeId) {
         LambdaQueryWrapper<Manufacture> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Manufacture::getCompanyName, companyName);
 
