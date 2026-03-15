@@ -332,6 +332,7 @@ const fetchCertList = async (serviceId) => {
     certLoading.value = false
   }
 }
+
 // 刷新证书列表
 const refreshCertList = () => {
   if (detailDialog.data?.id) {
