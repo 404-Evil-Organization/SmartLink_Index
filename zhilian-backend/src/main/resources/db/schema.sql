@@ -1,11 +1,7 @@
 -- 创建数据库
-CREATE
-DATABASE IF NOT EXISTS `smartlink_index`
-DEFAULT CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `smartlink_index` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE
-`smartlink_index`;
+USE `smartlink_index`;
 
 -- =====================================================
 -- 表 `user` 用户表
