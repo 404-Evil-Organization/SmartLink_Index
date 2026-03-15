@@ -6,7 +6,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * @Author: taciturn-hg
@@ -46,17 +46,17 @@ public class ManufactureTag implements Serializable {
      */
     @TableField("deleted")
     @TableLogic
-    private LocalDateTime deleted;
+    private Date deleted;
 
     /**
      * 记录创建时间
      */
     @TableField("create_time")
-    private LocalDateTime createTime;
+    private Date createTime;
 
     /**
      * 最后更新时间
      */
     @TableField("update_time")
-    private LocalDateTime updateTime;
+    private Date updateTime;
 }
