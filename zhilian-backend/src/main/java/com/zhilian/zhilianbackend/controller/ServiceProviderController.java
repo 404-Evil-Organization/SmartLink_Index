@@ -104,7 +104,7 @@ public class ServiceProviderController {
      * @Description: 新增服务商，仅允许服务商角色或管理员调用
      **/
     @PostMapping
-    @PreAuthorize("hasAnyRole('admin','service')")
+    @PreAuthorize("hasAnyRole('admin', 'service')")
     @Operation(summary = "新增服务商", description = "创建新的服务商信息")
     public Result<ServiceProviderAddVO> addServiceProvider(@Valid @RequestBody ServiceProviderAddRequestDTO requestDTO) {
         // 从当前登录用户的认证信息中获取 userId，防止客户端伪造 userId 越权创建服务商
@@ -122,17 +122,19 @@ public class ServiceProviderController {
      * @Param: id 服务商ID
      * @Param: requestDTO 修改服务商请求参数
      * @Return: Result<Void> 修改结果
-     * @Description: 修改服务商信息
+     * @Description: 修改服务商信息，仅允许管理员或服务商自身修改
      **/
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('admin', 'service')")
-    @Operation(summary = "修改服务商", description = "根据ID修改服务商信息，只传需要修改的字段")
+    @Operation(summary = "修改服务商", description = "根据ID修改服务商信息，只传需要修改的字段，仅允许管理员或服务商自身修改")
     public Result<Void> updateServiceProvider(
             @Parameter(description = "服务商ID", required = true, example = "2010")
             @PathVariable("id") Long id,
             @Valid @RequestBody ServiceProviderUpdateRequestDTO requestDTO) {
-        log.info("修改服务商，服务商ID：{}，请求参数：{}", id, requestDTO);
-        serviceProviderService.updateServiceProvider(id, requestDTO);
+        // 获取当前登录用户ID，传递给service层进行权限校验
+        Long currentUserId = getCurrentUserIdFromSecurityContext();
+        log.info("修改服务商，服务商ID：{}，操作人ID：{}", id, currentUserId);
+        serviceProviderService.updateServiceProvider(id, requestDTO, currentUserId);
         return Result.success("修改成功");
     }
 
@@ -141,15 +143,18 @@ public class ServiceProviderController {
      * @Date: 2026-03-13 01:02
      * @Param: id 服务商ID
      * @Return: Result<Void> 删除结果
-     * @Description: 删除服务商（逻辑删除）
+     * @Description: 删除服务商（逻辑删除），仅允许管理员或服务商自身删除
      **/
     @DeleteMapping("/{id}")
-    @Operation(summary = "删除服务商", description = "根据ID删除服务商（逻辑删除）")
+    @PreAuthorize("hasAnyRole('admin', 'service')")
+    @Operation(summary = "删除服务商", description = "根据ID删除服务商（逻辑删除），仅允许管理员或服务商自身删除")
     public Result<Void> deleteServiceProvider(
             @Parameter(description = "服务商ID", required = true, example = "2010")
             @PathVariable("id") Long id) {
-        log.info("删除服务商，服务商ID：{}", id);
-        serviceProviderService.deleteServiceProvider(id);
+        // 获取当前登录用户ID，传递给service层进行权限校验
+        Long currentUserId = getCurrentUserIdFromSecurityContext();
+        log.info("删除服务商，服务商ID：{}，操作人ID：{}", id, currentUserId);
+        serviceProviderService.deleteServiceProvider(id, currentUserId);
         return Result.success("删除成功");
     }
 }

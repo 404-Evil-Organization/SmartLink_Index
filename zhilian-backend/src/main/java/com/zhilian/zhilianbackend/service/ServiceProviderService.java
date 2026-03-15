@@ -51,17 +51,19 @@ public interface ServiceProviderService extends IService<ServiceProvider> {
      * @Date: 2026-03-13 01:00
      * @Param: id 服务商ID
      * @Param: requestDTO 修改服务商请求参数
+     * @Param: currentUserId 当前操作用户ID
      * @Return: void
-     * @Description: 修改服务商信息
+     * @Description: 修改服务商信息，需要校验操作权限
      **/
-    void updateServiceProvider(Long id, ServiceProviderUpdateRequestDTO requestDTO);
+    void updateServiceProvider(Long id, ServiceProviderUpdateRequestDTO requestDTO, Long currentUserId);
 
     /**
      * @Author: xiaodengyou
      * @Date: 2026-03-13 01:00
      * @Param: id 服务商ID
+     * @Param: currentUserId 当前操作用户ID
      * @Return: void
-     * @Description: 删除服务商（逻辑删除）
+     * @Description: 删除服务商（逻辑删除），需要校验操作权限
      **/
-    void deleteServiceProvider(Long id);
+    void deleteServiceProvider(Long id, Long currentUserId);
 }

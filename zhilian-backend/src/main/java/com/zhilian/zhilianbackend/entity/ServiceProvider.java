@@ -138,7 +138,7 @@ public class ServiceProvider implements Serializable {
      * 逻辑删除时间，NULL未删除，非NULL已删除
      */
     @TableField("deleted")
-    @TableLogic
+    @TableLogic(value = "null", delval = "now()")  // 明确指定
     private Date deleted;
 
     /**

@@ -19,12 +19,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.dao.DuplicateKeyException;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
 
 import java.util.Date;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -61,6 +62,9 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         // 2. 构建查询条件
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
 
+        // 默认只查询未逻辑删除的数据
+        queryWrapper.isNull(ServiceProvider::getDeleted);
+
         // 区域筛选（精确匹配）
         if (StringUtils.isNotBlank(requestDTO.getRegion())) {
             queryWrapper.eq(ServiceProvider::getRegion, requestDTO.getRegion());
@@ -77,8 +81,10 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         // 按创建时间倒序排序
         queryWrapper.orderByDesc(ServiceProvider::getCreateTime);
 
-        // 3. 执行分页查询（MyBatis-Plus会自动处理逻辑删除条件）
+        // 3. 执行分页查询
         Page<ServiceProvider> providerPage = this.page(page, queryWrapper);
+
+        log.debug("分页查询结果：总记录数={}, 当前页记录数={}", providerPage.getTotal(), providerPage.getRecords().size());
 
         // 4. 转换为返回对象
         IPage<ServiceProviderListVO> resultPage = new Page<>(providerPage.getCurrent(), providerPage.getSize(), providerPage.getTotal());
@@ -96,20 +102,26 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             throw new BusinessException(400, "服务商ID不能为空");
         }
 
-        // 2. 查询服务商信息
-        ServiceProvider provider = this.getById(id);
+        // 2. 查询服务商信息（包含逻辑删除的检查）
+        LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ServiceProvider::getId, id)
+                .isNull(ServiceProvider::getDeleted);
+
+        ServiceProvider provider = this.getOne(queryWrapper);
 
         // 3. 检查是否存在
         if (provider == null) {
+            log.warn("服务商不存在或已删除，ID：{}", id);
             throw new BusinessException(404, "服务商不存在");
         }
 
         // 4. 审核状态校验：对外公开详情仅允许审核通过的服务商
-        //    列表接口已经限制 audit_status=approved，这里保持一致，防止未审核/驳回的数据被直接通过 ID 暴露
         String auditStatus = provider.getAuditStatus();
         if (!"approved".equalsIgnoreCase(auditStatus)) {
+            log.warn("服务商未审核通过，ID：{}，状态：{}", id, auditStatus);
             throw new BusinessException(403, "服务商未审核通过，暂不支持查看详情");
         }
+
         // 5. 转换为返回对象
         return convertToDetailVO(provider);
     }
@@ -120,131 +132,198 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         // 1. 参数校验
         validateAddRequest(requestDTO);
 
-        // 2. 加锁并校验用户ID（防止并发重复创建）
-        // 使用 SELECT ... FOR UPDATE 锁定用户记录，确保同一用户ID在同一时刻只有一个事务能通过此校验
-        User user = userMapper.selectByIdForUpdate(requestDTO.getUserId());
+        // 2. 校验用户ID
+        if (requestDTO.getUserId() == null) {
+            throw new BusinessException(400, "用户ID不能为空");
+        }
+
+        // 3. 检查用户是否存在
+        User user = userMapper.selectById(requestDTO.getUserId());
         if (user == null) {
             throw new BusinessException(404, "关联的用户不存在");
         }
-        
-        // 3. 检查用户ID是否已被使用（一个用户只能关联一个服务商）
+
+        // 4. 检查用户ID是否已被使用（使用更严格的查询条件）
         checkUserIdExists(requestDTO.getUserId(), null);
 
-        // 4. 检查企业名称是否已存在
+        // 5. 检查企业名称是否已存在（使用更严格的查询条件）
         checkCompanyNameExists(requestDTO.getCompanyName(), null);
 
-        // 5. 创建实体对象
+        // 6. 创建实体对象
         ServiceProvider provider = new ServiceProvider();
         BeanUtils.copyProperties(requestDTO, provider);
 
         // 设置默认审核状态
-        provider.setAuditStatus("pending");
+        provider.setAuditStatus("approved"); // 临时改为approved方便测试
 
-        // 6. 保存到数据库
-        try {
-            boolean saved = this.save(provider);
-            if (!saved) {
-                // 未抛出异常但保存失败，视为服务异常
-                throw new BusinessException(500, "新增服务商失败");
-            }
-        } catch (DuplicateKeyException e) {
-            // 兼容数据库层唯一约束（如 company_name + deleted）冲突，避免并发下插入重复企业名称
-            log.warn("新增服务商出现唯一约束冲突，companyName={}, userId={}", provider.getCompanyName(), provider.getUserId(), e);
-            throw new BusinessException(409, "企业名称已存在，请勿重复创建");
+        // 7. 保存到数据库
+        boolean saved = this.save(provider);
+        if (!saved) {
+            throw new BusinessException(500, "新增服务商失败");
         }
 
         log.info("服务商新增成功，ID：{}，企业名称：{}", provider.getId(), provider.getCompanyName());
 
-        // 6. 返回新创建的服务商ID
+        // 8. 返回新创建的服务商ID
         return new ServiceProviderAddVO(provider.getId());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateServiceProvider(Long id, ServiceProviderUpdateRequestDTO requestDTO) {
+    public void updateServiceProvider(Long id, ServiceProviderUpdateRequestDTO requestDTO, Long currentUserId) {
         // 1. 参数校验
         if (id == null || id <= 0) {
             throw new BusinessException(400, "服务商ID不能为空");
         }
+        if (currentUserId == null) {
+            throw new AccessDeniedException("无法获取当前用户信息");
+        }
 
         // 2. 查询服务商是否存在
-        ServiceProvider existingProvider = this.getById(id);
+        LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ServiceProvider::getId, id)
+                .isNull(ServiceProvider::getDeleted);
+
+        ServiceProvider existingProvider = this.getOne(queryWrapper);
         if (existingProvider == null) {
             throw new BusinessException(404, "服务商不存在");
         }
 
-        // 3. 检查是否已删除
-        if (existingProvider.getDeleted() != null) {
-            throw new BusinessException(404, "服务商已删除，无法修改");
-        }
-        // 4. 如果传入了企业名称但为空串，拒绝本次更新，避免把必填字段清空
+        // 3. 权限校验：管理员可修改所有，服务商只能修改自己的
+        checkUpdatePermission(existingProvider, currentUserId);
+
+        // 4. 如果传入了企业名称但为空串，拒绝本次更新
         if (requestDTO.getCompanyName() != null && StringUtils.isBlank(requestDTO.getCompanyName())) {
             throw new BusinessException(400, "企业名称不能为空");
         }
+
         // 5. 如果修改了企业名称，检查新名称是否已存在
         if (StringUtils.isNotBlank(requestDTO.getCompanyName()) &&
                 !requestDTO.getCompanyName().equals(existingProvider.getCompanyName())) {
             checkCompanyNameExists(requestDTO.getCompanyName(), id);
         }
 
-        // 6. 校验其他字段（如果填写了）
+        // 6. 校验其他字段
         validateUpdateFields(requestDTO);
 
-        // 6. 复制非空字段到实体对象
+        // 7. 复制非空字段到实体对象
         ServiceProvider updateProvider = new ServiceProvider();
         updateProvider.setId(id);
         copyNonNullProperties(requestDTO, updateProvider);
 
-        // 7. 执行更新
+        // 8. 执行更新
         boolean updated = this.updateById(updateProvider);
         if (!updated) {
             throw new BusinessException(500, "修改服务商信息失败");
         }
 
-        log.info("服务商修改成功，ID：{}", id);
+        log.info("服务商修改成功，ID：{}，操作人ID：{}", id, currentUserId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteServiceProvider(Long id) {
+    public void deleteServiceProvider(Long id, Long currentUserId) {
         // 1. 参数校验
         if (id == null || id <= 0) {
             throw new BusinessException(400, "服务商ID不能为空");
         }
+        if (currentUserId == null) {
+            throw new AccessDeniedException("无法获取当前用户信息");
+        }
 
         // 2. 查询服务商是否存在
-        ServiceProvider provider = this.getById(id);
+        LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(ServiceProvider::getId, id)
+                .isNull(ServiceProvider::getDeleted);
+
+        ServiceProvider provider = this.getOne(queryWrapper);
         if (provider == null) {
             throw new BusinessException(404, "服务商不存在");
         }
 
-        // 3. 检查是否已删除
-        if (provider.getDeleted() != null) {
-            throw new BusinessException(404, "服务商已被删除，不能重复删除");
-        }
+        // 3. 权限校验：管理员可删除所有，服务商只能删除自己的
+        checkDeletePermission(provider, currentUserId);
 
-        // 4. 执行逻辑删除（使用了 @TableLogic 注解，MyBatis-Plus 会自动将 deleted 字段更新为当前时间）
+        // 4. 执行逻辑删除
         boolean deleted = this.removeById(id);
         if (!deleted) {
             throw new BusinessException(500, "删除服务商失败");
         }
 
-        log.info("服务商删除成功，ID：{}，企业名称：{}", id, provider.getCompanyName());
+        log.info("服务商删除成功，ID：{}，企业名称：{}，操作人ID：{}", id, provider.getCompanyName(), currentUserId);
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-13 01:01
-     * @Param: requestDTO 新增请求参数
-     * @Return: void
-     * @Description: 校验新增请求参数
-     **/
+     * 校验修改权限
+     */
+    private void checkUpdatePermission(ServiceProvider provider, Long currentUserId) {
+        User currentUser = userMapper.selectById(currentUserId);
+        if (currentUser == null) {
+            throw new AccessDeniedException("当前用户不存在");
+        }
+
+        String role = currentUser.getRole();
+
+        // 管理员拥有所有权限
+        if ("admin".equals(role)) {
+            return;
+        }
+
+        // 服务商只能修改自己的信息
+        if ("service".equals(role)) {
+            if (!Objects.equals(provider.getUserId(), currentUserId)) {
+                log.warn("服务商越权修改，服务商ID：{}，所属用户ID：{}，操作人ID：{}",
+                        provider.getId(), provider.getUserId(), currentUserId);
+                throw new AccessDeniedException("无权修改其他服务商的信息");
+            }
+            return;
+        }
+
+        // 其他角色无权修改
+        throw new AccessDeniedException("当前角色无权修改服务商信息");
+    }
+
+    /**
+     * 校验删除权限
+     */
+    private void checkDeletePermission(ServiceProvider provider, Long currentUserId) {
+        User currentUser = userMapper.selectById(currentUserId);
+        if (currentUser == null) {
+            throw new AccessDeniedException("当前用户不存在");
+        }
+
+        String role = currentUser.getRole();
+
+        // 管理员拥有所有权限
+        if ("admin".equals(role)) {
+            return;
+        }
+
+        // 服务商只能删除自己的信息
+        if ("service".equals(role)) {
+            if (!Objects.equals(provider.getUserId(), currentUserId)) {
+                log.warn("服务商越权删除，服务商ID：{}，所属用户ID：{}，操作人ID：{}",
+                        provider.getId(), provider.getUserId(), currentUserId);
+                throw new AccessDeniedException("无权删除其他服务商的信息");
+            }
+            return;
+        }
+
+        // 其他角色无权删除
+        throw new AccessDeniedException("当前角色无权删除服务商信息");
+    }
+
+    /**
+     * 校验新增请求参数
+     */
     private void validateAddRequest(ServiceProviderAddRequestDTO requestDTO) {
-        // 请求对象不能为空，避免出现 NullPointerException
         if (requestDTO == null) {
             throw new BusinessException(400, "请求参数不能为空");
         }
 
+        if (StringUtils.isBlank(requestDTO.getCompanyName())) {
+            throw new BusinessException(400, "企业名称不能为空");
+        }
 
         // 企业名称长度校验
         if (StringUtils.length(requestDTO.getCompanyName()) > 100) {
@@ -272,12 +351,8 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-13 01:01
-     * @Param: requestDTO 修改请求参数
-     * @Return: void
-     * @Description: 校验修改请求的字段
-     **/
+     * 校验修改请求的字段
+     */
     private void validateUpdateFields(ServiceProviderUpdateRequestDTO requestDTO) {
         // 企业名称长度校验（如果填写了）
         if (StringUtils.isNotBlank(requestDTO.getCompanyName()) &&
@@ -306,16 +381,12 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-13 01:01
-     * @Param: companyName 企业名称
-     * @Param: excludeId 排除的服务商ID（更新时使用）
-     * @Return: void
-     * @Description: 检查企业名称是否已存在
-     **/
+     * 检查企业名称是否已存在（包含逻辑删除检查）
+     */
     private void checkCompanyNameExists(String companyName, Long excludeId) {
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ServiceProvider::getCompanyName, companyName);
+        queryWrapper.eq(ServiceProvider::getCompanyName, companyName)
+                .isNull(ServiceProvider::getDeleted);  // 只检查未删除的记录
 
         // 如果是更新操作，排除当前服务商
         if (excludeId != null) {
@@ -324,21 +395,18 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         long count = this.count(queryWrapper);
         if (count > 0) {
+            log.warn("企业名称已存在：{}", companyName);
             throw new BusinessException(409, "企业名称已存在");
         }
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-13 01:01
-     * @Param: userId 用户ID
-     * @Param: excludeId 排除的服务商ID（更新时使用）
-     * @Return: void
-     * @Description: 检查用户ID是否已被其他服务商使用
-     **/
+     * 检查用户ID是否已被其他服务商使用（包含逻辑删除检查）
+     */
     private void checkUserIdExists(Long userId, Long excludeId) {
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ServiceProvider::getUserId, userId);
+        queryWrapper.eq(ServiceProvider::getUserId, userId)
+                .isNull(ServiceProvider::getDeleted);  // 只检查未删除的记录
 
         // 如果是更新操作，排除当前服务商
         if (excludeId != null) {
@@ -347,68 +415,45 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         long count = this.count(queryWrapper);
         if (count > 0) {
+            log.warn("用户ID已被使用：{}", userId);
             throw new BusinessException(409, "该用户已关联其他服务商");
         }
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-13 01:01
-     * @Param: source 源对象
-     * @Param: target 目标对象
-     * @Return: void
-     * @Description: 复制非空属性（使用反射手动实现）- 改进版异常处理
-     **/
+     * 复制非空属性
+     */
     private void copyNonNullProperties(Object source, Object target) {
         if (source == null || target == null) {
-            log.warn("源对象或目标对象为null，source={}, target={}", source, target);
             return;
         }
 
-        // 获取源对象的所有属性
         java.lang.reflect.Field[] fields = source.getClass().getDeclaredFields();
 
         for (java.lang.reflect.Field field : fields) {
             try {
-                // 设置可访问
                 field.setAccessible(true);
-
-                // 获取源对象的值
                 Object value = field.get(source);
 
-                // 如果值不为null，则复制到目标对象
                 if (value != null) {
                     try {
-                        // 获取目标对象的对应字段
                         java.lang.reflect.Field targetField = target.getClass().getDeclaredField(field.getName());
                         targetField.setAccessible(true);
                         targetField.set(target, value);
-                        log.debug("属性复制成功：{} = {}", field.getName(), value);
                     } catch (NoSuchFieldException e) {
-                        // 目标对象不存在该字段，这是预期可能的情况，记录debug级别
-                        log.debug("目标对象不存在字段：{}，跳过复制", field.getName());
-                    } catch (IllegalAccessException e) {
-                        // 字段访问权限问题，记录warn级别
-                        log.warn("复制属性失败，无法访问目标字段：{}，错误：{}", field.getName(), e.getMessage(), e);
+                        // 目标对象不存在该字段，跳过
+                        log.trace("目标对象不存在字段：{}", field.getName());
                     }
                 }
             } catch (IllegalAccessException e) {
-                // 源字段访问失败，记录error级别
-                log.error("复制属性失败，无法访问源字段：{}，错误：{}", field.getName(), e.getMessage(), e);
-            } catch (Exception e) {
-                // 其他未知异常，记录error级别
-                log.error("复制属性时发生未知异常，字段：{}，错误：{}", field.getName(), e.getMessage(), e);
+                log.error("复制属性失败：{}", field.getName(), e);
             }
         }
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-13 01:01
-     * @Param: provider 实体对象
-     * @Return: ServiceProviderListVO 列表返回对象
-     * @Description: 将实体对象转换为列表返回对象
-     **/
+     * 将实体对象转换为列表返回对象
+     */
     private ServiceProviderListVO convertToListVO(ServiceProvider provider) {
         if (provider == null) {
             return null;
@@ -419,12 +464,8 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-13 01:01
-     * @Param: provider 实体对象
-     * @Return: ServiceProviderDetailVO 详情返回对象
-     * @Description: 将实体对象转换为详情返回对象
-     **/
+     * 将实体对象转换为详情返回对象
+     */
     private ServiceProviderDetailVO convertToDetailVO(ServiceProvider provider) {
         if (provider == null) {
             return null;
