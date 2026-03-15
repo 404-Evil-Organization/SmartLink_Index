@@ -10,7 +10,8 @@ import com.zhilian.zhilianbackend.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,48 +30,7 @@ import java.util.Collection;
 public class TagController {
 
     private final TagService tagService;
-    private final UserService userService;
 
-    /**
-     * 从 Authentication 的 principal 中尽可能提取当前登录用户的 userId。
-     * <p>
-     * 支持以下几种常见情况：
-     * <ul>
-     *     <li>principal 为 Long / Integer：直接作为 userId 使用；</li>
-     *     <li>principal 为 String：尝试解析为 Long；</li>
-     *     <li>principal 为自定义用户对象，且包含 getUserId() 方法：通过反射调用获取。</li>
-     * </ul>
-     * 提取失败时返回 null，由调用方决定是否拒绝访问。
-     */
-    private Long extractUserId(Object principal) {
-        if (principal == null) {
-            return null;
-        }
-        if (principal instanceof Long) {
-            return (Long) principal;
-        }
-        if (principal instanceof Integer) {
-            return ((Integer) principal).longValue();
-        }
-        if (principal instanceof String) {
-            try {
-                return Long.parseLong((String) principal);
-            } catch (NumberFormatException ignored) {
-                return null;
-            }
-        }
-        // 兼容自定义用户对象：优先尝试调用 getUserId() 方法
-        try {
-            Method getUserIdMethod = principal.getClass().getMethod("getUserId");
-            Object userIdValue = getUserIdMethod.invoke(principal);
-            if (userIdValue instanceof Number) {
-                return ((Number) userIdValue).longValue();
-            }
-        } catch (Exception ignored) {
-            // 忽略反射异常，返回 null 由上层处理
-        }
-        return null;
-    }
 
     /**
      * 从 SecurityContext 获取当前用户ID
@@ -85,18 +45,19 @@ public class TagController {
     }
 
     /**
+     * 日志记录器，用于记录标签管理相关的安全与业务日志
+     */
+    private static final Logger log = LoggerFactory.getLogger(TagController.class);
+
+    /**
      * 校验当前用户是否为管理员
      */
     private void checkAdmin() {
+        // 统一复用登录态校验逻辑，避免与 getCurrentUserId 重复
+        getCurrentUserId();
+
+        // 2. 检查权限（此时已保证用户已登录）
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // 1. 检查是否已登录
-        if (authentication == null || !authentication.isAuthenticated() ||
-                "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new BusinessException(401, "请先登录");
-        }
-
-        // 2. 检查权限
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         if (authorities == null || authorities.isEmpty()) {
             throw new BusinessException(403, "权限不足");
