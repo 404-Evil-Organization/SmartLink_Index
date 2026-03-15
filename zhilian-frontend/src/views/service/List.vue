@@ -188,6 +188,47 @@
           <span v-else>-</span>
         </el-descriptions-item>
       </el-descriptions>
+
+      <!-- 证书列表折叠面板（只读，纵向卡片布局） -->
+  <div class="certification-list">
+    <el-collapse v-model="activeCertCollapse" class="cert-collapse">
+      <el-collapse-item>
+        <template #title>
+          <div class="custom-collapse-title">
+            <span>资质证书</span>
+            <el-tooltip content="刷新">
+              <el-button
+                :icon="Refresh"
+                size="small"
+                circle
+                @click.stop="refreshCertList"
+                :loading="certLoading"
+              />
+            </el-tooltip>
+          </div>
+        </template>
+        <div class="cert-card-list">
+          <div v-if="certificateList.length === 0 && !certLoading" class="empty-placeholder">
+            暂无证书
+          </div>
+          <div v-for="cert in certificateList" :key="cert.id" class="cert-item-card">
+            <el-descriptions :column="1" border size="small">
+              <el-descriptions-item label="证书名称">{{ cert.certName || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="证书编号">{{ cert.certNo || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="发证机构">{{ cert.issueAuthority || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="发证日期">{{ cert.issueDate || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="有效期">{{ cert.expireDate || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="证书文件">
+                <el-link v-if="cert.certFileUrl" :href="cert.certFileUrl" target="_blank">查看</el-link>
+                <span v-else>-</span>
+              </el-descriptions-item>
+            </el-descriptions>
+          </div>
+        </div>
+      </el-collapse-item>
+    </el-collapse>
+  </div>
+
       <template #footer>
         <el-button @click="detailDialog.visible = false">关闭</el-button>
       </template>
@@ -202,6 +243,7 @@ import {
   Refresh,
   View
 } from '@element-plus/icons-vue'
+import { getCertList } from '@/api/certification'
 
 // API 接口
 import {
@@ -267,6 +309,33 @@ const fetchList = async () => {
     console.error('获取服务企业列表失败', error)
   } finally {
     loading.value = false
+  }
+}
+
+// 证书列表相关 
+const activeCertCollapse = ref('') // 默认收起
+const certificateList = ref([])
+const certLoading = ref(false)
+
+// 获取证书列表
+const fetchCertList = async (serviceId) => {
+  if (!serviceId) return
+  certLoading.value = true
+  try {
+    const res = await getCertList({ serviceId })
+    // 直接判断 res 是否为数组（因为拦截器已剥除外层）
+    certificateList.value = Array.isArray(res) ? res : []
+  } catch (error) {
+    console.error('获取证书列表失败', error)
+    certificateList.value = []
+  } finally {
+    certLoading.value = false
+  }
+}
+// 刷新证书列表
+const refreshCertList = () => {
+  if (detailDialog.data?.id) {
+    fetchCertList(detailDialog.data.id)
   }
 }
 
@@ -357,8 +426,9 @@ const handleDetail = async (row) => {
     const res = await getServiceProviderDetail(row.id)
     detailDialog.data = res
     detailDialog.visible = true
+    // 获取证书列表
+    fetchCertList(row.id)
   } catch (error) {
-    // 请求错误已由全局响应拦截器统一提示，这里仅记录日志避免重复弹窗
     console.error('获取详情失败', error)
   }
 }
@@ -573,6 +643,46 @@ onMounted(() => {
   word-break: break-word;     /* 内容区域允许换行 */
 }
 
+
+/* 证书卡片列表容器 */
+.cert-card-list {
+  padding: 16px 20px;
+  background-color: #ffffff;
+  border: 1px solid #ebeef5;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* 单个证书卡片 */
+.cert-item-card {
+  margin-bottom: 16px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cert-item-card:last-child {
+  margin-bottom: 0;
+}
+
+/* 卡片内的描述列表样式（与上方企业信息统一） */
+.cert-item-card .el-descriptions {
+  --el-descriptions-item-label-width: 100px;  /* 固定标签宽度 */
+}
+
+.cert-item-card .el-descriptions :deep(.el-descriptions__label) {
+  background-color: #f5f7fa;
+  text-align: right;
+  font-weight: 600;
+  color: #1f2f3d;
+  padding: 12px 16px;
+  width: 100px;
+}
+
+.cert-item-card .el-descriptions :deep(.el-descriptions__content) {
+  padding: 12px 16px;
+  word-break: break-word;
+}
 
 </style>
 
