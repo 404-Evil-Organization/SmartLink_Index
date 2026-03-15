@@ -16,14 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 /**
  * @Author: 6017
  * @Date: 2026/3/10 23:55
@@ -38,55 +31,19 @@ public class UserController {
     private final UserService userService;
 
     /**
-     * 从 SecurityContext 获取当前用户ID；当 SecurityContext 为空（例如开发模式 jwt-mode=0 未填充）
-     * 时，兜底从 Authorization 头中的 JWT 中解析用户ID。
+     * 从 SecurityContext 获取当前用户ID。
+     * 说明：出于安全考虑，这里仅信任经过 Spring Security 过滤器链认证后的身份信息，
+     * 不再通过简单 Base64 解码 JWT 的方式兜底解析用户ID，避免签名校验被绕过。
      */
     private Long getCurrentUserId() {
-        // 1. 优先从 SecurityContext 中获取认证信息（生产环境主路径）
+        // 1. 优先也是唯一路径：从 SecurityContext 中获取认证信息
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getPrincipal())) {
             return Long.parseLong(authentication.getName());
         }
 
-        // 2. 兜底逻辑：当 SecurityContext 为空或为匿名用户时，从 Authorization 头解析 JWT 获取用户ID
-        try {
-            ServletRequestAttributes attributes =
-                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attributes != null) {
-                HttpServletRequest request = attributes.getRequest();
-                if (request != null) {
-                    String authorizationHeader = request.getHeader("Authorization");
-                    if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-                        String token = authorizationHeader.substring(7);
-                        // 简单解析 JWT，不进行签名校验：按 header.payload.signature 分段，解码 payload
-                        String[] parts = token.split("\\.");
-                        if (parts.length >= 2) {
-                            String payload = parts[1];
-                            String payloadJson = new String(
-                                    Base64.getUrlDecoder().decode(payload),
-                                    StandardCharsets.UTF_8
-                            );
-                            ObjectMapper objectMapper = new ObjectMapper();
-                            JsonNode rootNode = objectMapper.readTree(payloadJson);
-                            JsonNode subNode = rootNode.get("sub");
-                            if (subNode != null && !subNode.isNull()) {
-                                if (subNode.isNumber()) {
-                                    return subNode.longValue();
-                                } else {
-                                    return Long.parseLong(subNode.asText());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // 解析失败仅记录告警日志，不暴露具体异常给前端，最终仍返回统一的未登录错误
-            log.warn("从 Authorization 头解析 JWT 获取当前用户ID失败，将返回未登录错误", e);
-        }
-
-        // 3. 两种方式都无法获取用户ID，抛出未登录业务异常
+        // 2. 无法获取用户ID，抛出未登录业务异常
         throw new BusinessException(401, "请先登录");
     }
 
