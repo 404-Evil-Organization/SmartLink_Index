@@ -104,6 +104,8 @@ public class TagController {
     @Operation(summary = "获取标签详情")
     @GetMapping("/{id}")
     public Result<TagResponse> detail(@PathVariable Long id) {
+        // 管理后台接口：同样需要校验当前用户是否为管理员，避免非管理员访问标签详情
+        checkAdmin();
         return Result.success(tagService.getTagDetail(id));
     }
 
