@@ -1,7 +1,11 @@
 package com.zhilian.zhilianbackend.controller;
 
+import com.zhilian.zhilianbackend.common.enums.TagCategory;
 import com.zhilian.zhilianbackend.common.result.Result;
+import com.zhilian.zhilianbackend.dto.response.ScaleResponse;
+import com.zhilian.zhilianbackend.dto.response.ServiceTagResponse;
 import com.zhilian.zhilianbackend.service.OssService;
+import com.zhilian.zhilianbackend.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +36,9 @@ public class CommonController {
     // 注入OssService接口（面向接口编程，避免与具体实现耦合）
     private final OssService ossService;
 
+    // 注入TagService
+    private final TagService tagService;
+
     // 允许的文件扩展名列表（统一小写）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("png", "jpg", "jpeg");
 
@@ -50,6 +57,128 @@ public class CommonController {
     private static final Pattern OSS_URL_PATTERN = Pattern.compile(
             "^https?://[^/]+/uploads/[a-zA-Z0-9/\\-_]+\\.(png|jpg|jpeg)$"
     );
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/12 23:02
+     * @Param: 
+     * @Return: Result<List<String>> 包含区域列表的响应结果
+     * @Description: 获取粤港澳大湾区区域列表，用于前端下拉选择
+    **/
+    @GetMapping("/regions")
+    @Operation(summary = "获取区域列表", description = "返回粤港澳大湾区的区域列表，用于下拉选择")
+    public Result<List<String>> getRegions() {
+        log.info("接收获取区域列表请求");
+
+        List<String> regions = Arrays.asList(
+                "深圳", "东莞", "惠州", "广州", "佛山",
+                "中山", "珠海", "江门", "肇庆"
+        );
+
+        log.info("返回区域列表，共{}个区域", regions.size());
+        return Result.success(regions);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/12 23:02
+     * @Param:
+     * @Return: Result<List<ScaleResponse>> 包含企业规模枚举的响应结果
+     * @Description: 获取企业规模枚举值，用于前端下拉选择
+    **/
+    @GetMapping("/scales")
+    @Operation(summary = "获取企业规模枚举", description = "返回企业规模枚举值，用于下拉选择")
+    public Result<List<ScaleResponse>> getScales() {
+        log.info("接收获取企业规模枚举请求");
+
+        List<ScaleResponse> scales = Arrays.asList(
+                new ScaleResponse("micro", "微型企业"),
+                new ScaleResponse("small", "小型企业"),
+                new ScaleResponse("medium", "中型企业"),
+                new ScaleResponse("large", "大型企业")
+        );
+
+        log.info("返回企业规模枚举，共{}个", scales.size());
+        return Result.success(scales);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/12 23:44
+     * @Param: 
+     * @Return: Result<List<ServiceTagResponse>> 包含服务标签列表的响应结果
+     * @Description: 获取服务类型标签列表，用于服务商的服务类型多选
+    **/
+    @GetMapping("/service-tags")
+    @Operation(summary = "获取服务类型标签", description = "返回服务类型标签列表，用于服务商的服务类型多选")
+    public Result<List<ServiceTagResponse>> getServiceTags() {
+        log.info("接收获取服务标签请求");
+
+        // 直接调用返回 ServiceTagResponse 的方法
+        List<ServiceTagResponse> serviceTags = tagService.getServiceTags();
+
+        log.info("返回服务标签，共{}个", serviceTags.size());
+        return Result.success(serviceTags);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 00:35
+     * @Param:
+     * @Return: Result<List<ServiceTagResponse>> 包含认证类型标签列表的响应结果
+     * @Description: 获取认证类型标签列表，用于服务商的证书类型多选
+    **/
+    @GetMapping("/certification-tags")
+    @Operation(summary = "获取认证类型标签",
+            description = "返回认证类型标签列表，用于服务商的证书类型多选，对应 category = 'certification' 的标签")
+    public Result<List<ServiceTagResponse>> getCertificationTags() {
+        log.info("接收获取认证类型标签请求");
+
+        List<ServiceTagResponse> tags = tagService.getCertificationTags();
+
+        log.info("返回认证类型标签，共{}个", tags.size());
+        return Result.success(tags);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 00:35
+     * @Param:
+     * @Return: Result<List<ServiceTagResponse>> 包含产品类型标签列表的响应结果
+     * @Description: 获取产品类型标签列表，用于制造企业的产品类型多选
+    **/
+    @GetMapping("/product-tags")
+    @Operation(summary = "获取产品类型标签",
+            description = "返回产品类型标签列表，用于制造企业的产品类型多选，对应 category = 'product' 的标签")
+    public Result<List<ServiceTagResponse>> getProductTags() {
+        log.info("接收获取产品类型标签请求");
+
+        List<ServiceTagResponse> tags = tagService.getProductTags();
+
+        log.info("返回产品类型标签，共{}个", tags.size());
+        return Result.success(tags);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 00:35
+     * @Param: 
+     * @Return: Result<List<ServiceTagResponse>> 包含其他类型标签列表的响应结果
+     * @Description: 获取其他类型标签列表，用于通用标签选择
+    **/
+    @GetMapping("/general-tags")
+    @Operation(summary = "获取其他类型标签",
+            description = "返回其他类型标签列表，用于通用标签选择，对应 category = 'general' 的标签")
+    public Result<List<ServiceTagResponse>> getGeneralTags() {
+        log.info("接收获取其他类型标签请求");
+
+        List<ServiceTagResponse> tags = tagService.getGeneralTags();
+
+        log.info("返回其他类型标签，共{}个", tags.size());
+        return Result.success(tags);
+    }
+
+
 
     /**
      * 1.5.4 OSS文件上传
@@ -233,4 +362,24 @@ public class CommonController {
 
         return null;
     }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/14 13:55
+     * @Param: 
+     * @Return: Result<List<Map<String, String>>> 包含标签类别选项的响应结果
+     * @Description: 获取标签类别选项，返回所有可用的标签类别，用于前端下拉选择（如新增/编辑标签时的类别下拉框）
+    **/
+    @GetMapping("/tag-categories")
+    @Operation(summary = "获取标签类别选项", description = "返回所有可用的标签类别，用于前端下拉选择")
+    public Result<List<Map<String, String>>> getTagCategories() {
+        log.info("接收获取标签类别选项请求");
+        // 当前 TagCategory 枚举项较少且 label 不重复，直接返回枚举提供的选项列表，
+        // 如后续明确引入“别名/重复 label”需求，再在此处增加去重与优先级逻辑即可
+        List<Map<String, String>> options = TagCategory.getOptions();
+        log.info("返回标签类别选项，共 {} 个", options != null ? options.size() : 0);
+        return Result.success(options);
+    }
+
+
 }
