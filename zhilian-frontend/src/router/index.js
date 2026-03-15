@@ -3,7 +3,7 @@ import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
 
 import dashboardRoutes from "./models/dashboard";
-import manageRoutes from "./models/manage";
+import adminRoutes from "./models/admin";
 
 const routes = [
   {
@@ -20,7 +20,17 @@ const routes = [
     path: "/",
     component: () => import("@/layouts/BasicLayout.vue"),
     meta: { requiresAuth: true },
-    children: [...dashboardRoutes, ...manageRoutes],
+    children: [
+      ...dashboardRoutes,
+      // 管理端路由统一标记为仅管理员可访问
+      ...adminRoutes.map((route) => ({
+        ...route,
+        meta: {
+          ...(route.meta || {}),
+          adminOnly: true,
+        },
+      })),
+    ],
   },
 ];
 
@@ -42,6 +52,21 @@ router.beforeEach(async (to, from, next) => {
       if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
         try {
           await userStore.fetchUserInfo();
+          // 加载完用户信息后再做管理员路由权限判断
+          const isAdminRoute = to.matched.some(
+            (record) => record.meta && record.meta.adminOnly,
+          );
+          if (isAdminRoute) {
+            const role = userStore.userInfo && userStore.userInfo.role;
+            if (role !== "admin") {
+              ElMessage.error("当前账号无权限访问该页面");
+              return next(
+                from.fullPath && from.fullPath !== to.fullPath
+                  ? from.fullPath
+                  : "/",
+              );
+            }
+          }
           next();
         } catch (error) {
           // 根据错误状态码决定行为
@@ -54,6 +79,21 @@ router.beforeEach(async (to, from, next) => {
           }
         }
       } else {
+        // 已有用户信息，直接做管理员路由权限判断
+        const isAdminRoute = to.matched.some(
+          (record) => record.meta && record.meta.adminOnly,
+        );
+        if (isAdminRoute) {
+          const role = userStore.userInfo && userStore.userInfo.role;
+          if (role !== "admin") {
+            ElMessage.error("当前账号无权限访问该页面");
+            return next(
+              from.fullPath && from.fullPath !== to.fullPath
+                ? from.fullPath
+                : "/",
+            );
+          }
+        }
         next();
       }
     }

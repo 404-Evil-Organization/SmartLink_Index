@@ -16,12 +16,12 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-sub-menu index="1">
+        <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
             <span>管理员</span>
           </template>
-          <el-menu-item index="/manage/tag">
+          <el-menu-item index="/admin/tag">
             <el-icon><Collection /></el-icon>
             <span>标签管理</span>
           </el-menu-item>
@@ -69,6 +69,9 @@ const userStore = useUserStore();
 
 // 计算当前激活菜单
 const activeMenu = computed(() => route.path);
+
+// 判断当前用户是否为管理员
+const isAdmin = computed(() => userStore.userInfo?.role === "admin");
 
 // 退出登录
 const handleLogout = async () => {
