@@ -9,6 +9,7 @@ import com.zhilian.zhilianbackend.dto.request.CertificationUploadRequest;
 import com.zhilian.zhilianbackend.dto.response.CertificationVO;
 import com.zhilian.zhilianbackend.entity.Certification;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.CertificationService;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
@@ -52,14 +53,14 @@ public class CertificationController {
     private String extractToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken == null || bearerToken.isBlank()) {
-            return null;
+            throw new BusinessException(401, "未登录或登录状态已失效");
         }
         if (!bearerToken.startsWith("Bearer ")) {
-            return null;
+            throw new BusinessException(401, "未登录或登录状态已失效");
         }
         String token = bearerToken.substring(7);
         if (token.isBlank()) {
-            return null;
+            throw new BusinessException(401, "未登录或登录状态已失效");
         }
         return token;
     }
@@ -69,14 +70,11 @@ public class CertificationController {
      */
     private Long getCurrentUserId(HttpServletRequest request) {
         String token = extractToken(request);
-        if (token == null) {
-            return null;
-        }
         try {
             return jwtUtil.getUserIdFromToken(token);
         } catch (Exception e) {
             log.warn("解析token获取用户ID失败: {}", e.getMessage());
-            return null;
+            throw new BusinessException(401, "未登录或登录状态已失效");
         }
     }
 
@@ -93,7 +91,7 @@ public class CertificationController {
             return claims.get(JwtUtil.CLAIM_ROLE, String.class);
         } catch (Exception e) {
             log.warn("解析token获取用户角色失败: {}", e.getMessage());
-            return null;
+            throw new BusinessException(401, "未登录或登录状态已失效");
         }
     }
 
@@ -128,14 +126,6 @@ public class CertificationController {
 
         if (serviceProvider == null) {
             log.warn("未找到user_id={}的服务商记录", userId);
-            // 可以尝试查询所有记录（包括已删除的）来诊断
-            LambdaQueryWrapper<ServiceProvider> allWrapper = new LambdaQueryWrapper<>();
-            allWrapper.eq(ServiceProvider::getUserId, userId);
-            List<ServiceProvider> allRecords = serviceProviderService.list(allWrapper);
-            log.info("user_id={}的所有记录（包括已删除）数量: {}", userId, allRecords.size());
-            if (!allRecords.isEmpty()) {
-                log.info("记录详情: {}", allRecords);
-            }
         } else {
             log.info("找到服务商记录: id={}, company_name={}", serviceProvider.getId(), serviceProvider.getCompanyName());
         }

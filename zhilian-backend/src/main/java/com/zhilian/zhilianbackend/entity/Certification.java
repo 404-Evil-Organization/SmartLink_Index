@@ -1,6 +1,11 @@
 package com.zhilian.zhilianbackend.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -78,8 +83,8 @@ public class Certification implements Serializable {
     private Byte status;
 
     /**
-     * 逻辑删除时间，NULL未删除，非NULL已删除
-     * 配合 MybatisPlusConfig 中的自动填充
+     * 逻辑删除时间，NULL 未删除，非 NULL 已删除
+     * 由 MyBatis Plus 的 @TableLogic 逻辑删除机制维护（delval = now()）
      */
     @TableField("deleted")
     @TableLogic(value = "null", delval = "now()")
