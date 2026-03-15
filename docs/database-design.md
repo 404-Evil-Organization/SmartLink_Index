@@ -307,11 +307,12 @@
   - `manufacture`：`uk_user_id_deleted` (`user_id`, `deleted`)
   - `service_provider`：`uk_user_id_deleted` (`user_id`, `deleted`)
   - `tag`：`uk_name_category_deleted` (`name`, `category`, `deleted`)
+  - `manufacture_tag`：`uk_manufacture_tag_deleted` (`manufacture_id`, `tag_id`, `deleted`)
   - `demand_tag`：`uk_demand_tag_deleted` (`demand_id`, `tag_id`, `deleted`)
   - `service_tag`：`uk_service_tag_deleted` (`service_id`, `tag_id`, `deleted`)
   - `region_index`：`uk_region_year_period_deleted` (`region`, `year`, `period_type`, `period_value`, `deleted`)
   - `evaluation`：`uk_coop_evaluator_role_deleted` (`coop_id`, `evaluator_role`, `deleted`)
-- 多对多关系的中间表（`demand_tag`、`service_tag`）使用复合唯一索引（含 `deleted`）保证数据唯一。
+- 多对多关系的中间表（`demand_tag`、`service_tag`、`manufacture_tag`）使用复合唯一索引（含 `deleted`）保证数据唯一。
 
 #### 4.3 ER图关键关系
 
