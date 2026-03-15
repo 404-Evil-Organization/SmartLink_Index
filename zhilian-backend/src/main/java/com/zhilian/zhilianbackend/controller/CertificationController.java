@@ -83,9 +83,6 @@ public class CertificationController {
      */
     private String getCurrentUserRole(HttpServletRequest request) {
         String token = extractToken(request);
-        if (token == null) {
-            return null;
-        }
         try {
             Claims claims = jwtUtil.parseToken(token);
             return claims.get(JwtUtil.CLAIM_ROLE, String.class);
@@ -122,7 +119,8 @@ public class CertificationController {
         wrapper.isNull(ServiceProvider::getDeleted); // 明确指定只查询未删除的
 
         log.info("执行查询: user_id = {}, deleted IS NULL", userId);
-        ServiceProvider serviceProvider = serviceProviderService.getOne(wrapper);
+        // 使用 getOne(wrapper, false) 避免当存在多条记录时抛出运行时异常，防止接口直接返回 500
+        ServiceProvider serviceProvider = serviceProviderService.getOne(wrapper, false);
 
         if (serviceProvider == null) {
             log.warn("未找到user_id={}的服务商记录", userId);
@@ -168,7 +166,7 @@ public class CertificationController {
      **/
     @GetMapping("/list")
     @Operation(summary = "获取证书列表", description = "可按serviceId筛选证书列表")
-    public Result<Map<String, Object>> list(CertificationQueryRequest request) {
+    public Result<Map<String, Object>> list(@Valid CertificationQueryRequest request) {
         log.info("查询证书列表, 请求参数: serviceId={}, page={}, size={}",
                 request.getServiceId(), request.getPage(), request.getSize());
 
