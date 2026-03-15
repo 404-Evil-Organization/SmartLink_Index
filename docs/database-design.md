@@ -332,6 +332,7 @@ service_provider ── credit_score (1:n)
 
 manufacture ── manufacture_tag (n:n) ── tag (1:n)
 demand ── demand_tag (n:n) ── tag (1:n)
+manufacture ── manufacture_tag (n:n) ── tag (1:n)
 service_provider ── service_tag (n:n) ── tag (1:n)
 ```
 
