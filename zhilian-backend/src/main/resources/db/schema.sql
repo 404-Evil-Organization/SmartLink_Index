@@ -178,13 +178,15 @@ CREATE TABLE `manufacture_tag`
     `tag_id`         BIGINT NOT NULL COMMENT '关联tag.id',
     `deleted`        DATETIME DEFAULT NULL COMMENT '逻辑删除时间',
     `create_time`    DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE COMMENT '更新时间',
+    `update_time`    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_manufacture_tag_deleted` (`manufacture_id`, `tag_id`, `deleted`),
     KEY              `idx_manufacture_id` (`manufacture_id`),
     KEY              `idx_tag_id` (`tag_id`),
-    KEY              `idx_deleted` (`deleted`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='制造企业-产品标签关联表';
+    KEY              `idx_deleted` (`deleted`),
+    CONSTRAINT `fk_manufacture_tag_manufacture` FOREIGN KEY (`manufacture_id`) REFERENCES `manufacture` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_manufacture_tag_tag` FOREIGN KEY (`tag_id`) REFERENCES `tag` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='制造企业-产品标签关联表';
 
 -- =====================================================
 -- 表 `service_tag` 服务商能力标签表
