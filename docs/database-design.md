@@ -125,7 +125,7 @@
 | 字段名         | 类型/约束                                    | 说明                                   |
 | :------------- | :------------------------------------------- | :------------------------------------- |
 | id             | BIGINT PK AUTO_INCREMENT                     | 主键                                   |
-| manufacture_id | BIGINT NOT NULL                              | 关联`manufacture_id`                   |
+| manufacture_id | BIGINT NOT NULL                              | 关联`manufacture.id`                   |
 | tag_id         | BIGINT NOT NULL                              | 关联`tag.id`                           |
 | deleted        | DATETIME DEFAULT NULL                        | 逻辑删除时间，NULL未删除，非NULL已删除 |
 | create_time    | DATETIME DEFAULT CURRENT_TIMESTAMP           | 记录创建时间                           |
