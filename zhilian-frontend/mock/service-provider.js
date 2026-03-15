@@ -12,7 +12,7 @@ export default [
       const mockList = [
         {
           id: 1,
-          companyName: '华测检测认证集团',
+          companyName: '宝鸡有一群怀揣着梦想的少年相信在牛大叔的带领下会创造生命的奇迹网络科技有限公司',
           region: '深圳',
           address: '深圳市南山区科技园',
           contactPerson: '王五',
@@ -116,7 +116,7 @@ export default [
       const mockList = [
         {
           id: 1,
-          companyName: '华测检测认证集团',
+          companyName: '宝鸡有一群怀揣着梦想的少年相信在牛大叔的带领下会创造生命的奇迹网络科技有限公司',
           region: '深圳',
           address: '深圳市南山区科技园',
           contactPerson: '王五',

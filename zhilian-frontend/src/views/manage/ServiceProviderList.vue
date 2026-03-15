@@ -165,18 +165,18 @@
 
     <!-- 服务商详情弹窗（只读） -->
     <el-dialog v-model="detailDialog.visible" title="服务企业详情" width="600px">
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="服务企业名称">{{ detailDialog.data.companyName || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="区域">{{ detailDialog.data.region || "-" }}</el-descriptions-item>
+      <el-descriptions :column="2" border class="fixed-label-descriptions">
+        <el-descriptions-item label="服务企业名称" :span="2">{{ detailDialog.data.companyName || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="区域" :span="2" class="region-item-half">{{ detailDialog.data.region || "-" }}</el-descriptions-item>
         <el-descriptions-item label="详细地址" :span="2">{{ detailDialog.data.address || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="联系人">{{ detailDialog.data.contactPerson || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="联系电话">{{ showPhone(detailDialog.data.contactPhone) }}</el-descriptions-item>
+        <el-descriptions-item label="联系人" :span="2">{{ detailDialog.data.contactPerson || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话" :span="2">{{ showPhone(detailDialog.data.contactPhone) }}</el-descriptions-item>
         <el-descriptions-item label="服务类型" :span="2">{{ detailDialog.data.serviceType || "-" }}</el-descriptions-item>
         <el-descriptions-item label="企业简介" :span="2">{{ detailDialog.data.description || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="企业官网">{{ detailDialog.data.website || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="成立日期">{{ detailDialog.data.establishedDate || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="员工人数">{{ detailDialog.data.employeeCount || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="资质概述">{{ detailDialog.data.qualification || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="企业官网" :span="2">{{ detailDialog.data.website || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="成立日期" :span="2">{{ detailDialog.data.establishedDate || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="员工人数" :span="2">{{ detailDialog.data.employeeCount || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="资质概述" :span="2">{{ detailDialog.data.qualification || "-" }}</el-descriptions-item>
         <!-- <el-descriptions-item label="年收入(万元)">{{ detailDialog.data.annualRevenue || "-" }}</el-descriptions-item> -->
         <el-descriptions-item label="企业logo" :span="2">
           <el-image
@@ -557,4 +557,22 @@ onMounted(() => {
   justify-content: flex-end;
   padding: 0 20px 20px;
 }
+
+/* 固定标签宽度的描述列表 */
+.fixed-label-descriptions :deep(.el-descriptions__label) {
+  width: 100px;               /* 与 label-width 保持一致 */
+  min-width: 100px;
+  max-width: 100px;
+  height: 0%;
+  text-align: center;         /* 文字居中 */
+  white-space: nowrap;        /* 强制不换行 */
+}
+
+.fixed-label-descriptions :deep(.el-descriptions__content) {
+  width: 100px;
+  word-break: break-word;     /* 内容区域允许换行 */
+}
+
+
 </style>
+
