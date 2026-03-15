@@ -36,23 +36,16 @@ public class UserServiceImpl implements UserService {
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    // 用于用户名的锁缓存：使用带引用计数的锁对象，避免并发场景下错误移除导致互斥失效
+    // 用于用户名的锁缓存：使用带引用计数的锁对象
     private final ConcurrentHashMap<String, UsernameLock> lockMap = new ConcurrentHashMap<>();
 
     /**
      * 用户名级别锁对象：
      * - mutex 作为 synchronized 的真正锁
-     * - refCount 记录当前持有/等待该锁的线程数量，用于安全地从缓存中移除锁
+     * - refCount 记录当前持有/等待该锁的线程数量
      */
     private static class UsernameLock {
-        /**
-         * 实际用于 synchronized 的锁对象
-         */
         final Object mutex = new Object();
-
-        /**
-         * 引用计数，表示有多少线程正在使用该锁（包含持有和等待）
-         */
         final AtomicInteger refCount = new AtomicInteger(0);
     }
 
@@ -65,32 +58,26 @@ public class UserServiceImpl implements UserService {
      **/
     @Override
     public UserRegisterResponse register(UserRegisterRequest request) {
-        // 1. 校验并设置用户角色，仅允许 manufacture/service/park
+        // 1. 校验角色
         String role = request.getRole();
-        if (!"manufacture".equals(role)
-                && !"service".equals(role)
-                && !"park".equals(role)) {
-            // 禁止通过注册接口创建管理员账号，避免任意用户自注册为 admin
+        if (!"manufacture".equals(role) && !"service".equals(role) && !"park".equals(role)) {
             throw new BusinessException(400, "用户角色不合法");
         }
 
         String username = request.getUsername();
 
-        // 2. 获取用户名锁（避免并发注册相同用户名）
-        // 使用 compute + 引用计数，保证同一个 username 始终复用同一把锁对象
+        // 2. 获取或创建锁，并增加引用计数
         UsernameLock usernameLock = lockMap.compute(username, (k, existing) -> {
             if (existing == null) {
                 existing = new UsernameLock();
             }
-            // 当前线程开始使用该锁（包括后续 synchronized 阻塞等待的场景）
-            existing.refCount.incrementAndGet();
+            existing.refCount.incrementAndGet(); // 引用计数+1
             return existing;
         });
-        Object lock = usernameLock.mutex;
 
         try {
-            synchronized (lock) {
-                // 3. 双检锁：再次检查用户名是否已存在
+            synchronized (usernameLock.mutex) {
+                // 3. 再次检查用户名是否已存在
                 LambdaQueryWrapper<User> checkWrapper = new LambdaQueryWrapper<>();
                 checkWrapper.eq(User::getUsername, username)
                         .isNull(User::getDeleted);
@@ -105,13 +92,13 @@ public class UserServiceImpl implements UserService {
                 user.setRole(role);
                 user.setPhone(request.getPhone());
                 user.setEmail(request.getEmail());
-                user.setStatus(1); // 默认正常
+                user.setStatus(1);
 
                 // 5. 保存到数据库
                 try {
                     userMapper.insert(user);
                 } catch (DuplicateKeyException e) {
-                    // 并发场景下数据库唯一键约束兜底：转换为 409 业务异常，而非 500
+                    // 数据库唯一键约束兜底
                     throw new BusinessException(409, "用户名已存在");
                 }
 
@@ -123,7 +110,7 @@ public class UserServiceImpl implements UserService {
                 return response;
             }
         } finally {
-            // 7. 安全释放锁：仅当引用计数归零时才从缓存中移除，避免并发场景下互斥失效
+            // 7. 减少引用计数，当计数为0时移除锁
             lockMap.computeIfPresent(username, (k, existing) -> {
                 int newCount = existing.refCount.decrementAndGet();
                 return newCount == 0 ? null : existing;
@@ -151,15 +138,13 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(404, "用户不存在");
         }
 
-        // 3. 处理多条记录的情况（数据异常）
+        // 3. 处理多条记录
         User user;
         if (users.size() > 1) {
             log.error("系统数据异常：用户名【{}】存在多条有效记录", request.getUsername());
-            // 按创建时间倒序取最新的用户
             users.sort((u1, u2) -> u2.getCreateTime().compareTo(u1.getCreateTime()));
             user = users.get(0);
-            log.warn("使用最新创建的用户记录: userId={}, createTime={}",
-                    user.getId(), user.getCreateTime());
+            log.warn("使用最新创建的用户记录: userId={}, createTime={}", user.getId(), user.getCreateTime());
         } else {
             user = users.get(0);
         }
