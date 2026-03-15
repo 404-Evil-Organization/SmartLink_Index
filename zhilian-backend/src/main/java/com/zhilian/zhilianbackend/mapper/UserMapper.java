@@ -20,6 +20,6 @@ public interface UserMapper extends BaseMapper<User> {
      * @Return: User 用户信息
      * @Description: 根据ID查询未删除的用户并加锁（悲观锁），仅在事务中用于并发更新控制
      **/
-    @Select("SELECT * FROM user WHERE id = #{id} AND deleted = 0 FOR UPDATE")
+    @Select("SELECT * FROM user WHERE id = #{id} AND deleted IS NULL FOR UPDATE")
     User selectByIdForUpdate(Long id);
 }

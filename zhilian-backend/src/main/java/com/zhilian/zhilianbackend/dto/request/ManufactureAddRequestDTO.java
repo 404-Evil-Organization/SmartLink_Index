@@ -25,11 +25,6 @@ import java.util.Date;
 @Schema(description = "新增制造企业请求参数")
 public class ManufactureAddRequestDTO {
 
-    @NotNull(message = "用户ID不能为空")
-    @Positive(message = "用户ID必须为正数")
-    @Schema(description = "关联的用户ID", required = true, example = "1001")
-    private Long userId;
-
     @NotBlank(message = "企业全称不能为空")
     @Schema(description = "企业全称", required = true, example = "深圳电子科技")
     private String companyName;
