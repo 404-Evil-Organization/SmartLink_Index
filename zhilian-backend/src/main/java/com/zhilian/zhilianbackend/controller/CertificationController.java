@@ -8,10 +8,15 @@ import com.zhilian.zhilianbackend.dto.request.CertificationUpdateRequest;
 import com.zhilian.zhilianbackend.dto.request.CertificationUploadRequest;
 import com.zhilian.zhilianbackend.dto.response.CertificationVO;
 import com.zhilian.zhilianbackend.entity.Certification;
+import com.zhilian.zhilianbackend.entity.ServiceProvider;
 import com.zhilian.zhilianbackend.service.CertificationService;
+import com.zhilian.zhilianbackend.service.ServiceProviderService;
+import com.zhilian.zhilianbackend.utils.JwtUtil;
+import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +43,131 @@ import java.util.stream.Collectors;
 public class CertificationController {
 
     private final CertificationService certificationService;
+    private final ServiceProviderService serviceProviderService;
+    private final JwtUtil jwtUtil;
+
+    /**
+     * 从请求中提取token
+     */
+    private String extractToken(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken == null || bearerToken.isBlank()) {
+            return null;
+        }
+        if (!bearerToken.startsWith("Bearer ")) {
+            return null;
+        }
+        String token = bearerToken.substring(7);
+        if (token.isBlank()) {
+            return null;
+        }
+        return token;
+    }
+
+    /**
+     * 从token中获取当前用户ID
+     */
+    private Long getCurrentUserId(HttpServletRequest request) {
+        String token = extractToken(request);
+        if (token == null) {
+            return null;
+        }
+        try {
+            return jwtUtil.getUserIdFromToken(token);
+        } catch (Exception e) {
+            log.warn("解析token获取用户ID失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 从token中获取当前用户角色
+     */
+    private String getCurrentUserRole(HttpServletRequest request) {
+        String token = extractToken(request);
+        if (token == null) {
+            return null;
+        }
+        try {
+            Claims claims = jwtUtil.parseToken(token);
+            return claims.get(JwtUtil.CLAIM_ROLE, String.class);
+        } catch (Exception e) {
+            log.warn("解析token获取用户角色失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 获取当前登录用户对应的服务商ID
+     * @return 服务商ID，如果不是服务商角色则返回null
+     */
+    private Long getCurrentServiceProviderId(HttpServletRequest request) {
+        Long userId = getCurrentUserId(request);
+        String role = getCurrentUserRole(request);
+
+        log.info("获取服务商ID - 用户ID: {}, 角色: {}", userId, role);
+
+        if (userId == null) {
+            log.warn("用户ID为空");
+            return null;
+        }
+
+        // 只有服务商角色才能获取服务商ID
+        if (!"service".equals(role)) {
+            log.warn("用户角色不是服务商: {}", role);
+            return null;
+        }
+
+        // 根据userId查询服务商信息
+        LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ServiceProvider::getUserId, userId);
+        wrapper.isNull(ServiceProvider::getDeleted); // 明确指定只查询未删除的
+
+        log.info("执行查询: user_id = {}, deleted IS NULL", userId);
+        ServiceProvider serviceProvider = serviceProviderService.getOne(wrapper);
+
+        if (serviceProvider == null) {
+            log.warn("未找到user_id={}的服务商记录", userId);
+            // 可以尝试查询所有记录（包括已删除的）来诊断
+            LambdaQueryWrapper<ServiceProvider> allWrapper = new LambdaQueryWrapper<>();
+            allWrapper.eq(ServiceProvider::getUserId, userId);
+            List<ServiceProvider> allRecords = serviceProviderService.list(allWrapper);
+            log.info("user_id={}的所有记录（包括已删除）数量: {}", userId, allRecords.size());
+            if (!allRecords.isEmpty()) {
+                log.info("记录详情: {}", allRecords);
+            }
+        } else {
+            log.info("找到服务商记录: id={}, company_name={}", serviceProvider.getId(), serviceProvider.getCompanyName());
+        }
+
+        return serviceProvider != null ? serviceProvider.getId() : null;
+    }
+
+    /**
+     * 判断当前用户是否为管理员
+     */
+    private boolean isAdmin(HttpServletRequest request) {
+        String role = getCurrentUserRole(request);
+        return "admin".equals(role);
+    }
+
+    /**
+     * 检查当前用户是否有权限操作指定的证书
+     * @param certification 证书实体
+     * @return true-有权限 false-无权限
+     */
+    private boolean hasPermission(HttpServletRequest request, Certification certification) {
+        if (certification == null) {
+            return false;
+        }
+        // 管理员有所有权限
+        if (isAdmin(request)) {
+            return true;
+        }
+        // 非管理员，检查是否是证书所属的服务商
+        Long currentServiceId = getCurrentServiceProviderId(request);
+        return currentServiceId != null && currentServiceId.equals(certification.getServiceId());
+    }
 
     /**
      * @Author: xiaodengyou
@@ -88,12 +218,22 @@ public class CertificationController {
      **/
     @PostMapping("/upload")
     @Operation(summary = "上传证书", description = "创建证书记录（暂不含文件上传）")
-    public Result<Long> upload(@Valid @RequestBody CertificationUploadRequest request) {
-        log.info("上传证书, 请求参数: {}", request);
+    public Result<Long> upload(HttpServletRequest request, @Valid @RequestBody CertificationUploadRequest uploadRequest) {
+        log.info("上传证书, 请求参数: {}", uploadRequest);
+
+        // 获取当前登录用户对应的服务商ID
+        Long serviceId = getCurrentServiceProviderId(request);
+        if (serviceId == null) {
+            log.warn("上传证书失败：当前用户不是服务商角色或未找到对应的服务商信息");
+            return Result.forbidden("只有服务商才能上传证书");
+        }
 
         // 创建证书实体
         Certification certification = new Certification();
-        BeanUtils.copyProperties(request, certification);
+        BeanUtils.copyProperties(uploadRequest, certification);
+
+        // 设置服务商ID（从认证信息中获取，忽略请求中的serviceId）
+        certification.setServiceId(serviceId);
 
         // 设置默认值
         certification.setStatus((byte) 1); // 默认有效
@@ -102,7 +242,7 @@ public class CertificationController {
         // 保存到数据库
         certificationService.save(certification);
 
-        log.info("证书上传成功, 证书ID: {}", certification.getId());
+        log.info("证书上传成功, 证书ID: {}, 服务商ID: {}", certification.getId(), serviceId);
         return Result.success(certification.getId());
     }
 
@@ -117,9 +257,10 @@ public class CertificationController {
     @PutMapping("/{id}")
     @Operation(summary = "更新证书", description = "修改证书信息")
     public Result<Void> update(
+            HttpServletRequest request,
             @Parameter(description = "证书ID", required = true) @PathVariable Long id,
-            @Valid @RequestBody CertificationUpdateRequest request) {
-        log.info("更新证书, 证书ID: {}, 请求参数: {}", id, request);
+            @Valid @RequestBody CertificationUpdateRequest updateRequest) {
+        log.info("更新证书, 证书ID: {}, 请求参数: {}", id, updateRequest);
 
         // 检查证书是否存在
         Certification existing = certificationService.getById(id);
@@ -128,10 +269,19 @@ public class CertificationController {
             return Result.notFound("证书不存在");
         }
 
+        // 权限检查：只有管理员或证书所属的服务商才能更新
+        if (!hasPermission(request, existing)) {
+            log.warn("更新证书失败：无权限操作此证书, 证书ID: {}, 所属服务商ID: {}, 当前用户ID: {}",
+                    id, existing.getServiceId(), getCurrentUserId(request));
+            return Result.forbidden("无权限操作此证书");
+        }
+
         // 更新字段
         Certification certification = new Certification();
-        BeanUtils.copyProperties(request, certification);
+        BeanUtils.copyProperties(updateRequest, certification);
         certification.setId(id);
+        // 保持原有的serviceId不变
+        certification.setServiceId(existing.getServiceId());
         // updateTime 由自动填充处理
 
         // 更新到数据库
@@ -151,6 +301,7 @@ public class CertificationController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除证书", description = "逻辑删除证书记录")
     public Result<Void> delete(
+            HttpServletRequest request,
             @Parameter(description = "证书ID", required = true) @PathVariable Long id) {
         log.info("删除证书, 证书ID: {}", id);
 
@@ -159,6 +310,13 @@ public class CertificationController {
         if (existing == null) {
             log.warn("证书不存在, 证书ID: {}", id);
             return Result.notFound("证书不存在");
+        }
+
+        // 权限检查：只有管理员或证书所属的服务商才能删除
+        if (!hasPermission(request, existing)) {
+            log.warn("删除证书失败：无权限操作此证书, 证书ID: {}, 所属服务商ID: {}, 当前用户ID: {}",
+                    id, existing.getServiceId(), getCurrentUserId(request));
+            return Result.forbidden("无权限操作此证书");
         }
 
         // 逻辑删除（deleted 字段会自动填充为当前时间）
