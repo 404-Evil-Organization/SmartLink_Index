@@ -722,7 +722,7 @@
 
 #### 1.5.8 获取其他类型标签
 
-- **URL**: `/api/common/rests-tags`
+- **URL**: `/api/common/general-tags`
 - **Method**: `GET`
 - **请求头**: `Authorization: Bearer <token>`
 - **请求参数**: 无
@@ -752,7 +752,7 @@
 }
 ```
 
-> **说明**：从 `tag` 表中筛选 `category` 为 `'rests'` 的标签返回，`category` 字段在返回时转换为中文描述“其他类型”。示例数据仅为演示，实际返回数据库中所有其他类型标签。
+> **说明**：从 `tag` 表中筛选 `category` 为 `'general'` 的标签返回，`category` 字段在返回时转换为中文描述“其他类型”。示例数据仅为演示，实际返回数据库中所有其他类型标签。
 
 #### 1.5.9 获取标签类别选项
 
