@@ -67,9 +67,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/v3/api-docs/**",
             "/swagger-ui.html",
             "/webjars/**",
-            "/common/**",      // 通用接口放行
-            "/tag/list",       // 标签列表放行
-            "/tag/{id}"        // 标签详情放行
     };
 
     /**
