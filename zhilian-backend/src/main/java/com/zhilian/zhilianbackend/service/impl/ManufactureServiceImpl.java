@@ -14,9 +14,6 @@ import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
 import com.zhilian.zhilianbackend.service.ManufactureService;
-import com.zhilian.zhilianbackend.utils.JwtUtil;
-import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -57,8 +54,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
      * @Param: param
      * @Return: java.lang.String
      * @Description: 对进行 SQL LIKE 查询的入参进行通配符转义，避免用户输入 % 或 _ 被数据库当作通配符使用，导致查询结果范围异常放大。
-     * 说明：1. 先将反斜杠进行转义，避免与数据库默认转义字符冲突；
-     *      2. 再对 % 和 _ 进行转义，使其按普通字符匹配。
      */
     private String escapeSqlLike(String param) {
         if (StringUtils.isBlank(param)) {
@@ -74,7 +69,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
      * @Author:
      * @Date: 2026/3/13 20:26
      * @Param: requestDTO
-     * @Return: com.baomidou.mybatisplus.core.metadata.IPage<com.zhilian.zhilianbackend.dto.response.ManufactureListVO>
+     * @Return: ManufactureListVO
      * @Description:
      */
     @Override
@@ -134,10 +129,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         return convertToDetailVO(manufacture);
     }
 
-    private Claims getClaimsFromToken() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getClaimsFromToken'");
-    }
 
     /**
      * @Author:
@@ -206,7 +197,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         checkPermission(existingManufacture.getUserId());
 
         validateManufactureData(
-                requestDTO.getCompanyName() != null ? requestDTO.getCompanyName() : existingManufacture.getCompanyName(),
+                requestDTO.getCompanyName(),
                 requestDTO.getContactPhone(),
                 requestDTO.getScale(),
                 requestDTO.getAnnualRevenue(),
