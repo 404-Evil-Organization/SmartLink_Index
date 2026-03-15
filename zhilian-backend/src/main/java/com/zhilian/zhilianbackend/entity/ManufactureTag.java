@@ -32,7 +32,7 @@ public class ManufactureTag implements Serializable {
     /**
      * 关联manufacture.id
      */
-    @TableField("manufacture.id")
+    @TableField("manufacture_id")
     private Long manufactureId;
 
     /**
