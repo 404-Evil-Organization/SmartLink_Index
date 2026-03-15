@@ -55,21 +55,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * 白名单路径 - 在JWT模式下，这些路径不需要认证
+     * 注意：由于项目配置了 server.servlet.context-path=/api，
+     * 这里统一使用带 /api 前缀的路径以便与 request.getRequestURI() 对齐。
      */
     private static final String[] WHITE_LIST = {
-            "/auth/login",
-            "/auth/register",
-            "/test/public",
-            "/test/status",
-            "/test/info",
-            "/test/generate-token",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/swagger-ui.html",
-            "/webjars/**",
-            "/common/**",      // 通用接口放行
-            "/tag/list",       // 标签列表放行
-            "/tag/{id}"        // 标签详情放行
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/test/public",
+            "/api/test/status",
+            "/api/test/info",
+            "/api/test/generate-token",
+            "/api/swagger-ui/**",
+            "/api/v3/api-docs/**",
+            "/api/swagger-ui.html",
+            "/api/webjars/**",
+            "/api/common/**",  // 通用接口放行
+            "/api/tag/list",   // 标签列表放行
+            "/api/tag/**"      // 标签详情等 /api/tag/xxx 路径放行
     };
 
     /**
