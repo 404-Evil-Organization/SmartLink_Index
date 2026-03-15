@@ -143,6 +143,10 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ManufactureAddVO addManufacture(ManufactureAddRequestDTO requestDTO) {
+        // 从Token获取当前用户ID
+        Claims claims = getClaimsFromToken();
+        Long userId = Long.parseLong(claims.getSubject());
+
         validateManufactureData(requestDTO.getCompanyName(),
                 requestDTO.getContactPhone(),
                 requestDTO.getScale(),
@@ -150,8 +154,12 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 requestDTO.getEmployeeCount(),
                 null);
 
+        // 校验当前用户是否已经创建过制造企业，防止重复创建导致数据冗余
+        checkUserHasManufacture(userId);
+
         Manufacture manufacture = new Manufacture();
         BeanUtils.copyProperties(requestDTO, manufacture);
+        manufacture.setUserId(userId); // 设置当前用户ID
         
         // 设置默认审核状态
         manufacture.setAuditStatus("pending");
@@ -246,20 +254,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
      * @param targetUserId 数据所属用户ID
      */
     private void checkPermission(Long targetUserId) {
-        // 1. 获取请求头中的 Token
-        String authHeader = request.getHeader("Authorization");
-        if (StringUtils.isBlank(authHeader) || !authHeader.startsWith("Bearer ")) {
-            throw new BusinessException(401, "未登录或Token无效");
-        }
-        String token = authHeader.substring(7);
-
-        // 2. 解析 Token
-        Claims claims;
-        try {
-            claims = jwtUtil.parseToken(token);
-        } catch (Exception e) {
-            throw new BusinessException(401, "Token无效或已过期");
-        }
+        Claims claims = getClaimsFromToken();
 
         // 3. 获取用户信息
         String userIdStr = claims.getSubject();
@@ -278,6 +273,25 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         // 普通用户只能操作自己的数据
         if (!currentUserId.equals(targetUserId)) {
             throw new BusinessException(403, "无权操作他人数据");
+        }
+    }
+
+    /**
+     * 从请求头解析Token获取Claims
+     */
+    private Claims getClaimsFromToken() {
+        // 1. 获取请求头中的 Token
+        String authHeader = request.getHeader("Authorization");
+        if (StringUtils.isBlank(authHeader) || !authHeader.startsWith("Bearer ")) {
+            throw new BusinessException(401, "未登录或Token无效");
+        }
+        String token = authHeader.substring(7);
+
+        // 2. 解析 Token
+        try {
+            return jwtUtil.parseToken(token);
+        } catch (Exception e) {
+            throw new BusinessException(401, "Token无效或已过期");
         }
     }
 
