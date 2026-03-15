@@ -182,7 +182,7 @@ CREATE TABLE `manufacture_tag`
     KEY              `idx_deleted` (`deleted`),
     CONSTRAINT `fk_manufacture_tag_manufacture` FOREIGN KEY (`manufacture_id`) REFERENCES `manufacture` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_manufacture_tag_tag` FOREIGN KEY (`tag_id`) REFERENCES `tag` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='制造企业-产品标签关联表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='制造企业能力标签关联表';
 
 -- =====================================================
 -- 表 `service_tag` 服务商能力标签表
