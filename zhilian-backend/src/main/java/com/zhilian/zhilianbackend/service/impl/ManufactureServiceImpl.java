@@ -260,9 +260,9 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
 
         // 普通用户只能操作自己的数据
         if (!currentUserId.equals(targetUserId)) {
-            // TODO: 如果有管理员角色，也允许操作。需根据实际权限体系判断，例如从 SecurityContext 获取 Authorities
-            // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            // if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) return;
+            //TODO: 如果有管理员角色，也允许操作。需根据实际权限体系判断，例如从 SecurityContext 获取 Authorities
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) return;
             
             throw new BusinessException(403, "无权操作他人数据");
         }
