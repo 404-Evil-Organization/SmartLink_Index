@@ -237,10 +237,11 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
             if (updated) {
                 log.info("标签修改成功，ID：{}", id);
             } else {
-                // 这里一般表示在并发删除/修改或逻辑删除等场景下，未能成功更新任何记录
-                log.warn("标签修改失败，未更新任何记录，ID：{}", id);
-                // 使用业务异常返回 500，表示标签更新业务处理失败
-                throw new BusinessException(500, "标签修改失败，可能是标签已被删除或发生并发修改");
+                // 注意：在 MySQL 中，如果提交的字段值与原值一致，UPDATE 可能返回 affectedRows=0，
+                // MyBatis Plus 对应的 updateById 会返回 false。
+                // 在前面已通过主键查询确认标签存在的前提下，这里更合理的语义是“无字段变更”的幂等成功，
+                // 而不是业务失败，因此不再抛出 500 异常，仅记录日志并正常返回。
+                log.info("标签未发生实际变更，未更新任何记录，ID：{}", id);
             }
         } catch (DuplicateKeyException e) {
             // 当更新后的 name + category + deleted 组合违反唯一键约束（如 uk_name_category_deleted）时抛出

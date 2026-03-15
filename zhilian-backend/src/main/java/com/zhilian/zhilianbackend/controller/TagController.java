@@ -10,7 +10,6 @@ import com.zhilian.zhilianbackend.exception.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 import java.util.Collection;
-import java.lang.reflect.Method;
 
 //@Author: 周冠杰
 @Tag(name = "标签管理接口")
@@ -55,15 +53,11 @@ public class TagController {
      * 校验当前用户是否为管理员
      */
     private void checkAdmin() {
+        // 统一复用登录态校验逻辑，避免与 getCurrentUserId 重复
+        getCurrentUserId();
+
+        // 2. 检查权限（此时已保证用户已登录）
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // 1. 检查是否已登录
-        if (authentication == null || !authentication.isAuthenticated() ||
-                "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new BusinessException(401, "请先登录");
-        }
-
-        // 2. 检查权限
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         if (authorities == null || authorities.isEmpty()) {
             throw new BusinessException(403, "权限不足");
