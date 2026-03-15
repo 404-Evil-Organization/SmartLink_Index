@@ -132,7 +132,19 @@
           width="100"
           :formatter="formatScale"
         />
-        <el-table-column prop="productType" label="主营产品" min-width="120" />
+        <el-table-column prop="productType" label="主营产品" min-width="120" >
+          <template #default="{ row }">
+            <el-tag
+              v-for="tag in row.productType.split(',')"
+              :key="tag"
+              size="small"
+              effect="plain"
+              style="margin-right: 5px; margin-bottom: 3px;"
+            >
+              {{ tag.trim() }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="contactPerson" label="联系人" width="100" />
         <el-table-column prop="contactPhone" label="联系电话" width="130">
           <template #default="{ row }">
