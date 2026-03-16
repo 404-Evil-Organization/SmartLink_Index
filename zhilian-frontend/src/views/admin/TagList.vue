@@ -39,7 +39,7 @@
                 <el-option label="认证" value="certification" />
                 <el-option label="服务" value="service" />
                 <el-option label="产品" value="product" />
-                <el-option label="其他" value="other" />
+                <el-option label="其他" value="general" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -132,7 +132,7 @@
             <el-option label="认证" value="certification" />
             <el-option label="服务" value="service" />
             <el-option label="产品" value="product" />
-            <el-option label="其他" value="other" />
+            <el-option label="其他" value="general" />
           </el-select>
         </el-form-item>
         <el-form-item label="描述" prop="description">
@@ -323,7 +323,7 @@ const formatCategory = (row) => {
     certification: "认证",
     service: "服务",
     product: "产品",
-    other: "其他",
+    general: "其他",
   };
   return map[row.category] || row.category;
 };

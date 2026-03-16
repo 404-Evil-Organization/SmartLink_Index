@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
+import { enforceAdminOnly } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
 import adminRoutes from "./models/admin";
@@ -53,19 +54,8 @@ router.beforeEach(async (to, from, next) => {
         try {
           await userStore.fetchUserInfo();
           // 加载完用户信息后再做管理员路由权限判断
-          const isAdminRoute = to.matched.some(
-            (record) => record.meta && record.meta.adminOnly,
-          );
-          if (isAdminRoute) {
-            const role = userStore.userInfo && userStore.userInfo.role;
-            if (role !== "admin") {
-              ElMessage.error("当前账号无权限访问该页面");
-              return next(
-                from.fullPath && from.fullPath !== to.fullPath
-                  ? from.fullPath
-                  : "/",
-              );
-            }
+          if (enforceAdminOnly(to, from, next, userStore)) {
+            return;
           }
           next();
         } catch (error) {
@@ -79,27 +69,15 @@ router.beforeEach(async (to, from, next) => {
           }
         }
       } else {
-        // 已有用户信息，直接做管理员路由权限判断
-        const isAdminRoute = to.matched.some(
-          (record) => record.meta && record.meta.adminOnly,
-        );
-        if (isAdminRoute) {
-          const role = userStore.userInfo && userStore.userInfo.role;
-          if (role !== "admin") {
-            ElMessage.error("当前账号无权限访问该页面");
-            return next(
-              from.fullPath && from.fullPath !== to.fullPath
-                ? from.fullPath
-                : "/",
-            );
-          }
+        if (enforceAdminOnly(to, from, next, userStore)) {
+          return;
         }
         next();
       }
     }
   } else {
     // 未登录用户：需认证页面跳登录，否则放行
-    if (to.meta.requiresAuth) {
+    if (to.matched.some((record) => record.meta.requiresAuth)) {
       next("/login");
     } else {
       next();
