@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -262,17 +263,27 @@ public class CertificationController {
             return Result.forbidden("无权限操作此证书");
         }
 
-        // 如果更换了文件，删除旧文件
-        if (updateRequest.getCertFileUrl() != null &&
-                !updateRequest.getCertFileUrl().equals(existing.getCertFileUrl())) {
+        // 先校验请求中是否提供了空白的 certFileUrl，若提供但为空白则视为非法请求，返回 400
+        String newCertFileUrl = updateRequest.getCertFileUrl();
+        if (newCertFileUrl != null && !StringUtils.hasText(newCertFileUrl)) {
+            log.warn("更新证书失败：提供了空白的 certFileUrl, 证书ID: {}", id);
+            // 全局异常处理器应将 BusinessException 映射为 400 Bad Request
+            throw new BusinessException("certFileUrl 不能为空或全为空白");
+        }
 
-            log.info("证书文件被替换，删除旧文件: {}", existing.getCertFileUrl());
+        // 如果更换了文件，删除旧文件：
+        // 仅当新旧 URL 都“有内容”且不同，才尝试删除旧文件，避免 deleteFile(null) 导致的 NPE
+        String existingCertFileUrl = existing.getCertFileUrl();
+        if (StringUtils.hasText(newCertFileUrl)
+                && StringUtils.hasText(existingCertFileUrl)
+                && !newCertFileUrl.equals(existingCertFileUrl)) {
+            log.info("证书文件被替换，删除旧文件: {}", existingCertFileUrl);
             // 删除旧文件（不阻塞主流程，即使删除失败也继续更新）
             try {
                 // 这里使用注入的ossService实例，不是静态调用
-                ossService.deleteFile(existing.getCertFileUrl());
+                ossService.deleteFile(existingCertFileUrl);
             } catch (Exception e) {
-                log.error("删除旧证书文件失败, URL: {}", existing.getCertFileUrl(), e);
+                log.error("删除旧证书文件失败, URL: {}", existingCertFileUrl, e);
                 // 继续执行，不影响主流程
             }
         }
@@ -320,13 +331,18 @@ public class CertificationController {
         // 先删除OSS上的文件（物理删除）
         if (existing.getCertFileUrl() != null && !existing.getCertFileUrl().isEmpty()) {
             log.info("删除证书关联的OSS文件: {}", existing.getCertFileUrl());
+            boolean deleted = false;
             try {
                 // 这里使用注入的ossService实例，不是静态调用
-                ossService.deleteFile(existing.getCertFileUrl());
+                deleted = ossService.deleteFile(existing.getCertFileUrl());
             } catch (Exception e) {
                 log.error("删除OSS文件失败, URL: {}", existing.getCertFileUrl(), e);
                 // 即使OSS删除失败，也继续逻辑删除数据库记录
                 // 因为OSS文件删除失败可能由网络等原因导致，可以后续通过定时任务清理
+            }
+            if (!deleted) {
+                // OSS 未抛出异常但返回 false，按设计至少记录一个告警日志，便于后续排查
+                log.warn("OSS 文件删除结果为失败(但未抛出异常), URL: {}", existing.getCertFileUrl());
             }
         }
 

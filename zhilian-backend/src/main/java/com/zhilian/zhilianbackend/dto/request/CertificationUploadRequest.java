@@ -37,7 +37,10 @@ public class CertificationUploadRequest {
     private Date expireDate;
 
     @NotBlank(message = "证书文件不能为空")
-    @Schema(description = "证书文件URL（先通过/common/upload接口获取）", requiredMode = Schema.RequiredMode.REQUIRED,
-            example = "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/uploads/xxx.pdf")
+    @Schema(
+            description = "证书文件URL（先通过/common/upload接口获取，目前仅支持图片格式：png/jpg/jpeg）",
+            requiredMode = Schema.RequiredMode.REQUIRED,
+            example = "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/uploads/cert-example.png"
+    )
     private String certFileUrl;
 }

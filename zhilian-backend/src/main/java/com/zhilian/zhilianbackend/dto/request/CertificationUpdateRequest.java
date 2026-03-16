@@ -2,6 +2,7 @@ package com.zhilian.zhilianbackend.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.util.Date;
@@ -34,8 +35,12 @@ public class CertificationUpdateRequest {
     @Schema(description = "有效期至", example = "2026-12-31")
     private Date expireDate;
 
-    @Schema(description = "证书文件URL（如需更换文件，先通过/common/upload接口获取新URL）",
-            example = "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/uploads/xxx.pdf")
+    @Schema(description = "证书文件URL（可选；如需更换文件，先通过/common/upload接口获取新URL，再将该字段设置为平台返回的OSS URL）",
+            example = "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/uploads/xxx.jpg")
+    @Pattern(
+            regexp = "^https://smartlink-index\\.oss-cn-guangzhou\\.aliyuncs\\.com/.+$",
+            message = "证书文件URL格式不合法，必须为平台分配的OSS地址且不能为空字符串"
+    )
     private String certFileUrl;
 
     @Schema(description = "状态：0失效 1有效", example = "1")
