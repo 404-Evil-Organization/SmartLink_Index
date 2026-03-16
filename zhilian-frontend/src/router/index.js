@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
-import { enforceAdminOnly } from "@/router/permission";
+import { checkRoleAccess } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
 import adminRoutes from "./models/admin";
+import diagnosisRoutes from "./models/diagnosis";
+import errorRoutes from "./models/error";
 
 const routes = [
   {
@@ -23,12 +25,14 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       ...dashboardRoutes,
+      ...diagnosisRoutes,
+      ...errorRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,
         meta: {
           ...(route.meta || {}),
-          adminOnly: true,
+          roles: ["admin"],
         },
       })),
     ],
@@ -44,6 +48,10 @@ router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
   const token = userStore.token;
 
+  // 判断当前路由是否需要认证（只要定义了 roles 或 requiresAuth 就需要登录）
+  const requiresAuth =
+    to.matched.some((record) => record.meta.requiresAuth) || !!to.meta.roles;
+
   if (token) {
     // 已登录用户访问登录页，重定向到首页
     if (to.path === "/login") {
@@ -53,18 +61,19 @@ router.beforeEach(async (to, from, next) => {
       if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
         try {
           await userStore.fetchUserInfo();
-          // 加载完用户信息后再做管理员路由权限判断
-          if (enforceAdminOnly(to, from, next, userStore)) {
-            return;
+          // 用户信息加载完成后，进行角色权限检查
+          if (!checkRoleAccess(to, userStore)) {
+            return next("/403"); // 无权限跳转到403页面
           }
           next();
         } catch (error) {
           // 根据错误状态码决定行为
           if (error.response?.status === 401) {
+            // token 失效，跳转登录
             next("/login");
           } else {
-            // 非 401 错误（网络、500等）：管理员路由保持 fail-close，普通路由可继续访问
-            if (to.matched.some((record) => record.meta.adminOnly)) {
+            // 非 401 错误（网络、500等）：如果目标路由有角色限制，则阻止访问；否则放行但提示
+            if (to.meta.roles) {
               ElMessage.error(
                 "用户信息加载失败，暂无法验证访问权限，请稍后重试",
               );
@@ -76,15 +85,16 @@ router.beforeEach(async (to, from, next) => {
           }
         }
       } else {
-        if (enforceAdminOnly(to, from, next, userStore)) {
-          return;
+        // 已有用户信息，直接检查角色权限
+        if (!checkRoleAccess(to, userStore)) {
+          return next("/403");
         }
         next();
       }
     }
   } else {
-    // 未登录用户：需认证页面跳登录，否则放行
-    if (to.matched.some((record) => record.meta.requiresAuth)) {
+    // 未登录用户：如果需要认证（requiresAuth 或 roles），则跳登录，否则放行
+    if (requiresAuth) {
       next("/login");
     } else {
       next();
