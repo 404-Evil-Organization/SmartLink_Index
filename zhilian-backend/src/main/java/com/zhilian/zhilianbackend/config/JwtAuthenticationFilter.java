@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -59,16 +60,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * 这里统一使用带 /api 前缀的路径以便与 request.getRequestURI() 对齐。
      */
     private static final String[] WHITE_LIST = {
-            "/auth/login",
-            "/auth/register",
-            "/test/public",
-            "/test/status",
-            "/test/info",
-            "/test/generate-token",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/swagger-ui.html",
-            "/webjars/**",
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/test/public",
+            "/api/test/status",
+            "/api/test/info",
+            "/api/test/generate-token",
+            "/api/swagger-ui/**",
+            "/api/v3/api-docs/**",
+            "/api/v3/api-docs",
+            "/api/swagger-ui.html",
+            "/api/webjars/**",
     };
 
     /**
