@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
+import { enforceAdminOnly } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
+import adminRoutes from "./models/admin";
 
 const routes = [
   {
@@ -19,7 +21,17 @@ const routes = [
     path: "/",
     component: () => import("@/layouts/BasicLayout.vue"),
     meta: { requiresAuth: true },
-    children: [...dashboardRoutes],
+    children: [
+      ...dashboardRoutes,
+      // 管理端路由统一标记为仅管理员可访问
+      ...adminRoutes.map((route) => ({
+        ...route,
+        meta: {
+          ...(route.meta || {}),
+          adminOnly: true,
+        },
+      })),
+    ],
   },
 ];
 
@@ -41,24 +53,38 @@ router.beforeEach(async (to, from, next) => {
       if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
         try {
           await userStore.fetchUserInfo();
+          // 加载完用户信息后再做管理员路由权限判断
+          if (enforceAdminOnly(to, from, next, userStore)) {
+            return;
+          }
           next();
         } catch (error) {
           // 根据错误状态码决定行为
           if (error.response?.status === 401) {
             next("/login");
           } else {
-            // 非 401 错误（网络、500等）：仍可放行，但提示用户
-            ElMessage.error("部分用户信息加载失败，请刷新重试");
-            next();
+            // 非 401 错误（网络、500等）：管理员路由保持 fail-close，普通路由可继续访问
+            if (to.matched.some((record) => record.meta.adminOnly)) {
+              ElMessage.error(
+                "用户信息加载失败，暂无法验证访问权限，请稍后重试",
+              );
+              next("/");
+            } else {
+              ElMessage.error("部分用户信息加载失败，请刷新重试");
+              next();
+            }
           }
         }
       } else {
+        if (enforceAdminOnly(to, from, next, userStore)) {
+          return;
+        }
         next();
       }
     }
   } else {
     // 未登录用户：需认证页面跳登录，否则放行
-    if (to.meta.requiresAuth) {
+    if (to.matched.some((record) => record.meta.requiresAuth)) {
       next("/login");
     } else {
       next();
