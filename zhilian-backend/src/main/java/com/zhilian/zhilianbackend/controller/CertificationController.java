@@ -173,15 +173,35 @@ public class CertificationController {
         if (!allowedExt.contains(ext)) {
             throw new BusinessException("证书文件类型不支持，只允许上传 PDF 或图片文件");
         }
-        // Content-Type 白名单
+        // Content-Type 白名单 + 归一化 + 扩展名一致性校验
         String contentType = file.getContentType();
+        if (!StringUtils.hasText(contentType)) {
+            throw new BusinessException("证书文件 Content-Type 为空或不合法");
+        }
+        // 统一将 Content-Type 转为小写，避免大小写差异导致合法请求被拒
+        contentType = contentType.toLowerCase();
         List<String> allowedContentTypes = Arrays.asList(
                 MediaType.APPLICATION_PDF_VALUE,
                 MediaType.IMAGE_JPEG_VALUE,
-                MediaType.IMAGE_PNG_VALUE
+                MediaType.IMAGE_PNG_VALUE,
+                "image/jpg"
         );
         if (!allowedContentTypes.contains(contentType)) {
             throw new BusinessException("证书文件 Content-Type 不合法");
+        }
+        // 扩展名与 Content-Type 一致性校验，防止伪造后缀或类型不匹配
+        if ("pdf".equals(ext)) {
+            if (!MediaType.APPLICATION_PDF_VALUE.equals(contentType)) {
+                throw new BusinessException("证书文件扩展名与 Content-Type 不匹配，PDF 文件仅支持 application/pdf");
+            }
+        } else if ("jpg".equals(ext) || "jpeg".equals(ext)) {
+            if (!MediaType.IMAGE_JPEG_VALUE.equals(contentType) && !"image/jpg".equals(contentType)) {
+                throw new BusinessException("证书文件扩展名与 Content-Type 不匹配，JPG 文件仅支持 image/jpeg 或 image/jpg");
+            }
+        } else if ("png".equals(ext)) {
+            if (!MediaType.IMAGE_PNG_VALUE.equals(contentType)) {
+                throw new BusinessException("证书文件扩展名与 Content-Type 不匹配，PNG 文件仅支持 image/png");
+            }
         }
     }
 
