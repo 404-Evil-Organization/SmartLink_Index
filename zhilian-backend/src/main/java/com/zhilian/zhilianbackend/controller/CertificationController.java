@@ -12,6 +12,7 @@ import com.zhilian.zhilianbackend.entity.ServiceProvider;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.CertificationService;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
+import com.zhilian.zhilianbackend.service.OssService;  // 导入OssService
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,6 +47,7 @@ public class CertificationController {
     private final CertificationService certificationService;
     private final ServiceProviderService serviceProviderService;
     private final JwtUtil jwtUtil;
+    private final OssService ossService;  // 注入OssService
 
     /**
      * 从请求中提取token
@@ -200,12 +202,12 @@ public class CertificationController {
     /**
      * @Author: xiaodengyou
      * @Date: 2026/3/14 15:30
-     * @Param: request 证书上传请求
+     * @Param: request 证书上传请求（含文件URL）
      * @Return: Result<Long> 新创建的证书ID
-     * @Description: 上传资质证书（先只保存到数据库，不包含文件上传）
+     * @Description: 上传资质证书（文件URL由前端通过/common/upload接口获取）
      **/
     @PostMapping("/upload")
-    @Operation(summary = "上传证书", description = "创建证书记录（暂不含文件上传）")
+    @Operation(summary = "上传证书", description = "创建证书记录，文件URL需先通过/common/upload接口获取")
     public Result<Long> upload(HttpServletRequest request, @Valid @RequestBody CertificationUploadRequest uploadRequest) {
         log.info("上传证书, 请求参数: {}", uploadRequest);
 
@@ -222,15 +224,12 @@ public class CertificationController {
 
         // 设置服务商ID（从认证信息中获取，忽略请求中的serviceId）
         certification.setServiceId(serviceId);
-
-        // 设置默认值
         certification.setStatus((byte) 1); // 默认有效
-        // createTime 和 updateTime 由自动填充处理
 
         // 保存到数据库
         certificationService.save(certification);
 
-        log.info("证书上传成功, 证书ID: {}, 服务商ID: {}", certification.getId(), serviceId);
+        log.info("证书上传成功, 证书ID: {}, 文件URL: {}", certification.getId(), uploadRequest.getCertFileUrl());
         return Result.success(certification.getId());
     }
 
@@ -238,12 +237,12 @@ public class CertificationController {
      * @Author: xiaodengyou
      * @Date: 2026/3/14 15:30
      * @Param: id 证书ID
-     * @Param: request 证书更新请求
+     * @Param: request 证书更新请求（可选文件URL）
      * @Return: Result<Void>
-     * @Description: 更新证书信息
-     **/
+     * @Description: 更新证书信息（如需更换文件，需先上传新文件获取URL）
+     */
     @PutMapping("/{id}")
-    @Operation(summary = "更新证书", description = "修改证书信息")
+    @Operation(summary = "更新证书", description = "修改证书信息，如需更换文件需先上传新文件获取URL")
     public Result<Void> update(
             HttpServletRequest request,
             @Parameter(description = "证书ID", required = true) @PathVariable Long id,
@@ -257,20 +256,32 @@ public class CertificationController {
             return Result.notFound("证书不存在");
         }
 
-        // 权限检查：只有管理员或证书所属的服务商才能更新
+        // 权限检查
         if (!hasPermission(request, existing)) {
-            log.warn("更新证书失败：无权限操作此证书, 证书ID: {}, 所属服务商ID: {}, 当前用户ID: {}",
-                    id, existing.getServiceId(), getCurrentUserId(request));
+            log.warn("更新证书失败：无权限操作此证书, 证书ID: {}", id);
             return Result.forbidden("无权限操作此证书");
+        }
+
+        // 如果更换了文件，删除旧文件
+        if (updateRequest.getCertFileUrl() != null &&
+                !updateRequest.getCertFileUrl().equals(existing.getCertFileUrl())) {
+
+            log.info("证书文件被替换，删除旧文件: {}", existing.getCertFileUrl());
+            // 删除旧文件（不阻塞主流程，即使删除失败也继续更新）
+            try {
+                // 这里使用注入的ossService实例，不是静态调用
+                ossService.deleteFile(existing.getCertFileUrl());
+            } catch (Exception e) {
+                log.error("删除旧证书文件失败, URL: {}", existing.getCertFileUrl(), e);
+                // 继续执行，不影响主流程
+            }
         }
 
         // 更新字段
         Certification certification = new Certification();
         BeanUtils.copyProperties(updateRequest, certification);
         certification.setId(id);
-        // 保持原有的serviceId不变
-        certification.setServiceId(existing.getServiceId());
-        // updateTime 由自动填充处理
+        certification.setServiceId(existing.getServiceId()); // 保持原有的serviceId不变
 
         // 更新到数据库
         certificationService.updateById(certification);
@@ -284,10 +295,10 @@ public class CertificationController {
      * @Date: 2026/3/14 15:30
      * @Param: id 证书ID
      * @Return: Result<Void>
-     * @Description: 删除证书（逻辑删除）
-     **/
+     * @Description: 删除证书（逻辑删除，同时删除OSS文件）
+     */
     @DeleteMapping("/{id}")
-    @Operation(summary = "删除证书", description = "逻辑删除证书记录")
+    @Operation(summary = "删除证书", description = "逻辑删除证书记录，同时删除OSS上的文件")
     public Result<Void> delete(
             HttpServletRequest request,
             @Parameter(description = "证书ID", required = true) @PathVariable Long id) {
@@ -300,14 +311,26 @@ public class CertificationController {
             return Result.notFound("证书不存在");
         }
 
-        // 权限检查：只有管理员或证书所属的服务商才能删除
+        // 权限检查
         if (!hasPermission(request, existing)) {
-            log.warn("删除证书失败：无权限操作此证书, 证书ID: {}, 所属服务商ID: {}, 当前用户ID: {}",
-                    id, existing.getServiceId(), getCurrentUserId(request));
+            log.warn("删除证书失败：无权限操作此证书, 证书ID: {}", id);
             return Result.forbidden("无权限操作此证书");
         }
 
-        // 逻辑删除（deleted 字段会自动填充为当前时间）
+        // 先删除OSS上的文件（物理删除）
+        if (existing.getCertFileUrl() != null && !existing.getCertFileUrl().isEmpty()) {
+            log.info("删除证书关联的OSS文件: {}", existing.getCertFileUrl());
+            try {
+                // 这里使用注入的ossService实例，不是静态调用
+                ossService.deleteFile(existing.getCertFileUrl());
+            } catch (Exception e) {
+                log.error("删除OSS文件失败, URL: {}", existing.getCertFileUrl(), e);
+                // 即使OSS删除失败，也继续逻辑删除数据库记录
+                // 因为OSS文件删除失败可能由网络等原因导致，可以后续通过定时任务清理
+            }
+        }
+
+        // 逻辑删除数据库记录
         certificationService.removeById(id);
 
         log.info("证书删除成功, 证书ID: {}", id);

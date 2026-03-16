@@ -11,7 +11,7 @@ import java.util.Date;
  * @Date: 2026/3/14 14:13
  * @Param:
  * @Return:
- * @Description: 证书更新请求DTO
+ * @Description: 证书更新请求DTO（可选文件URL）
  **/
 @Data
 @Schema(description = "证书更新请求参数")
@@ -33,6 +33,10 @@ public class CertificationUpdateRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Schema(description = "有效期至", example = "2026-12-31")
     private Date expireDate;
+
+    @Schema(description = "证书文件URL（如需更换文件，先通过/common/upload接口获取新URL）",
+            example = "https://smartlink-index.oss-cn-guangzhou.aliyuncs.com/uploads/xxx.pdf")
+    private String certFileUrl;
 
     @Schema(description = "状态：0失效 1有效", example = "1")
     private Byte status;
