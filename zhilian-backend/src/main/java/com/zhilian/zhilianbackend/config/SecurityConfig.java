@@ -33,8 +33,7 @@ public class SecurityConfig {
      * @Return:
      * @Description: 构造方法注入所需依赖
      **/
-    public SecurityConfig(CorsProperties corsProperties,
-                          JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(CorsProperties corsProperties, JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.corsProperties = corsProperties;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
