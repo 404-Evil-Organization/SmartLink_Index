@@ -16,7 +16,18 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-sub-menu v-if="isAdmin" index="1">
+
+        <el-sub-menu index="1">
+          <template #title>
+            <el-icon><Avatar /></el-icon>
+            <span>数字化诊断</span>
+          </template>
+          <el-menu-item index="/diagnosis/questionnaire">
+            <el-icon><Tickets /></el-icon>
+            <span>诊断问卷</span>
+          </el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu v-if="isAdmin" index="2">
           <template #title>
             <el-icon><Avatar /></el-icon>
             <span>管理员</span>
@@ -60,7 +71,12 @@ import {
   ElMenuItem,
   ElButton,
 } from "element-plus";
-import { HomeFilled, Avatar, Collection } from "@element-plus/icons-vue";
+import {
+  HomeFilled,
+  Avatar,
+  Collection,
+  Tickets,
+} from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
 const route = useRoute();
@@ -72,6 +88,11 @@ const activeMenu = computed(() => route.path);
 
 // 判断当前用户是否为管理员
 const isAdmin = computed(() => userStore.userInfo?.role === "admin");
+
+// 判断当前用户是否为制造企业
+const isManufacture = computed(
+  () => userStore.userInfo?.role === "manufacture",
+);
 
 // 退出登录
 const handleLogout = async () => {

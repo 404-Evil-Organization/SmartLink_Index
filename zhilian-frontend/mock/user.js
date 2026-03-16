@@ -37,7 +37,7 @@ export default [
         data: {
           id: 1001,
           username: "tech_company",
-          role: "admin",
+          role: "manufacture",
           phone: "13800138001",
           email: "test@example.com",
           status: 1,
