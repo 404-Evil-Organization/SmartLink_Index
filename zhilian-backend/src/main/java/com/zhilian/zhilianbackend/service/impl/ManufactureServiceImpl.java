@@ -11,22 +11,30 @@ import com.zhilian.zhilianbackend.dto.response.ManufactureAddVO;
 import com.zhilian.zhilianbackend.dto.response.ManufactureDetailVO;
 import com.zhilian.zhilianbackend.dto.response.ManufactureListVO;
 import com.zhilian.zhilianbackend.entity.Manufacture;
+import com.zhilian.zhilianbackend.entity.ManufactureTag;
+import com.zhilian.zhilianbackend.entity.Tag;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
 import com.zhilian.zhilianbackend.service.ManufactureService;
+import com.zhilian.zhilianbackend.service.ManufactureTagService;
+import com.zhilian.zhilianbackend.service.TagService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,59 +50,54 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manufacture> implements ManufactureService {
 
-
     private static final String PHONE_REGEX = "^1[3-9]\\d{9}$";
     private static final String SCALE_REGEX = "micro|small|medium|large";
-    private static final BigDecimal MAX_ANNUAL_REVENUE = new BigDecimal("1000000"); // 年营收上限（单位：万元），1000000 万元 = 100 亿元
+    private static final BigDecimal MAX_ANNUAL_REVENUE = new BigDecimal("1000000");
     private static final int MAX_EMPLOYEE_COUNT = 100000;
 
+    private final TagService tagService;
+    private final ManufactureTagService manufactureTagService;
+
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: param
-     * @Return: java.lang.String
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: param 需要转义的字符串
+     * @Return: java.lang.String 转义后的字符串
      * @Description: 对进行 SQL LIKE 查询的入参进行通配符转义，避免用户输入 % 或 _ 被数据库当作通配符使用，导致查询结果范围异常放大。
-     */
+     **/
     private String escapeSqlLike(String param) {
         if (StringUtils.isBlank(param)) {
             return param;
         }
-        String escaped = param.replace("\\", "\\\\")
+        return param.replace("\\", "\\\\")
                 .replace("%", "\\%")
                 .replace("_", "\\_");
-        return escaped;
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: requestDTO
-     * @Return: ManufactureListVO
-     * @Description:
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: requestDTO 查询请求参数
+     * @Return: com.baomidou.mybatisplus.core.metadata.IPage<com.zhilian.zhilianbackend.dto.response.ManufactureListVO> 分页结果
+     * @Description: 分页查询制造企业列表
+     **/
     @Override
     public IPage<ManufactureListVO> getManufactureList(ManufactureListRequestDTO requestDTO) {
         Page<Manufacture> page = new Page<>(requestDTO.getPage(), requestDTO.getSize());
 
         LambdaQueryWrapper<Manufacture> queryWrapper = new LambdaQueryWrapper<>();
-
         if (StringUtils.isNotBlank(requestDTO.getRegion())) {
             queryWrapper.eq(Manufacture::getRegion, requestDTO.getRegion());
         }
-
         if (StringUtils.isNotBlank(requestDTO.getScale())) {
             queryWrapper.eq(Manufacture::getScale, requestDTO.getScale());
         }
-
         if (StringUtils.isNotBlank(requestDTO.getProductType())) {
-            String escapedProductType = escapeSqlLike(requestDTO.getProductType());
-            queryWrapper.like(Manufacture::getProductType, escapedProductType);
+            String escaped = escapeSqlLike(requestDTO.getProductType());
+            queryWrapper.like(Manufacture::getProductType, escaped);
         }
-
-        // 仅返回审核通过的企业
-        queryWrapper.eq(Manufacture::getAuditStatus, "approved");
-
-        queryWrapper.orderByDesc(Manufacture::getCreateTime);
+        queryWrapper.eq(Manufacture::getAuditStatus, "approved")
+                .orderByDesc(Manufacture::getCreateTime);
 
         Page<Manufacture> manufacturePage = this.page(page, queryWrapper);
 
@@ -102,45 +105,38 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         resultPage.setRecords(manufacturePage.getRecords().stream()
                 .map(this::convertToListVO)
                 .collect(Collectors.toList()));
-
         return resultPage;
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: id
-     * @Return: com.zhilian.zhilianbackend.dto.response.ManufactureDetailVO
-     * @Description:
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: id 企业ID
+     * @Return: com.zhilian.zhilianbackend.dto.response.ManufactureDetailVO 企业详情
+     * @Description: 根据ID获取制造企业详情
+     **/
     @Override
     public ManufactureDetailVO getManufactureDetail(Long id) {
         if (id == null || id <= 0) {
             throw new BusinessException(400, "企业ID不能为空");
         }
-
         Manufacture manufacture = this.getById(id);
-
         if (manufacture == null) {
             throw new BusinessException(404, "企业不存在或已被删除");
         }
-
-
         return convertToDetailVO(manufacture);
     }
 
-
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: requestDTO
-     * @Return: com.zhilian.zhilianbackend.dto.response.ManufactureAddVO
-     * @Description:
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: requestDTO 新增企业请求参数
+     * @Return: com.zhilian.zhilianbackend.dto.response.ManufactureAddVO 新增结果（返回新ID）
+     * @Description: 新增制造企业
+     **/
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ManufactureAddVO addManufacture(ManufactureAddRequestDTO requestDTO) {
-        // 从 SecurityContext 获取当前用户ID
         Long userId = getCurrentUserId();
         if (userId == null) {
             throw new BusinessException(401, "用户未登录");
@@ -153,14 +149,11 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 requestDTO.getEmployeeCount(),
                 null);
 
-        // 校验当前用户是否已经创建过制造企业，防止重复创建导致数据冗余
         checkUserHasManufacture(userId);
 
         Manufacture manufacture = new Manufacture();
         BeanUtils.copyProperties(requestDTO, manufacture);
-        manufacture.setUserId(userId); // 设置当前用户ID
-        
-        // 设置默认审核状态
+        manufacture.setUserId(userId);
         manufacture.setAuditStatus("pending");
 
         boolean saved = this.save(manufacture);
@@ -168,19 +161,22 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             throw new BusinessException(500, "新增企业失败");
         }
 
-        log.info("企业新增成功，ID：{}，企业名称：{}", manufacture.getId(), manufacture.getCompanyName());
+        // ========== 新增标签关联 ==========
+        if (StringUtils.isNotBlank(requestDTO.getProductType())) {
+            createTagAssociations(requestDTO.getProductType(), manufacture.getId());
+        }
 
+        log.info("企业新增成功，ID：{}，企业名称：{}", manufacture.getId(), manufacture.getCompanyName());
         return new ManufactureAddVO(manufacture.getId());
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: id
-     * @Param: requestDTO
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: id 企业ID, requestDTO 修改企业请求参数
      * @Return: void
-     * @Description:
-     */
+     * @Description: 修改制造企业信息
+     **/
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateManufacture(Long id, ManufactureUpdateRequestDTO requestDTO) {
@@ -193,7 +189,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             throw new BusinessException(404, "企业不存在或已被删除");
         }
 
-        // 权限校验：只能修改自己的企业，或者管理员操作
         checkPermission(existingManufacture.getUserId());
 
         validateManufactureData(
@@ -207,24 +202,36 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
 
         Manufacture updateManufacture = new Manufacture();
         updateManufacture.setId(id);
-
         copyNonNullProperties(requestDTO, updateManufacture);
+
+        // 如果前端传了 productType（包括空串），则更新该字段；否则不更新
+        if (requestDTO.getProductType() != null) {
+            updateManufacture.setProductType(requestDTO.getProductType());
+        }
 
         boolean updated = this.updateById(updateManufacture);
         if (!updated) {
             throw new BusinessException(500, "修改企业信息失败");
         }
 
+        // ========== 处理标签变更 ==========
+        if (requestDTO.getProductType() != null) {
+            // 先删除所有旧关联
+            deleteTagAssociations(id);
+            // 再根据新的 productType 创建关联（可能为空串，此时不会插入任何记录）
+            createTagAssociations(requestDTO.getProductType(), id);
+        }
+
         log.info("企业更新成功，ID：{}", id);
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: id
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: id 企业ID
      * @Return: void
-     * @Description:
-     */
+     * @Description: 删除制造企业（逻辑删除）
+     **/
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteManufacture(Long id) {
@@ -237,9 +244,12 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             throw new BusinessException(404, "企业不存在或已被删除");
         }
 
-        // 权限校验：只能删除自己的企业，或者管理员操作
         checkPermission(manufacture.getUserId());
 
+        // ========== 先逻辑删除标签关联 ==========
+        deleteTagAssociations(id);
+
+        // ========== 再逻辑删除企业自身 ==========
         boolean deleted = this.removeById(id);
         if (!deleted) {
             throw new BusinessException(500, "删除企业失败");
@@ -248,48 +258,155 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         log.info("企业删除成功，ID：{}，企业名称：{}", id, manufacture.getCompanyName());
     }
 
+    // ==================== 标签处理私有方法 ====================
+
     /**
-     * 检查当前用户是否有权限操作目标数据
-     * @param targetUserId 数据所属用户ID
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: manufactureId 制造企业ID
+     * @Return: void
+     * @Description: 逻辑删除指定企业的所有标签关联
+     **/
+    private void deleteTagAssociations(Long manufactureId) {
+        manufactureTagService.lambdaUpdate()
+                .eq(ManufactureTag::getManufactureId, manufactureId)
+                .remove();
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: productType 逗号分隔的标签名, manufactureId 制造企业ID
+     * @Return: void
+     * @Description: 根据逗号分隔的 productType 字符串创建标签关联
+     **/
+    private void createTagAssociations(String productType, Long manufactureId) {
+        if (StringUtils.isBlank(productType)) {
+            return;
+        }
+
+        // 解析标签名（去重、去空格）
+        Set<String> tagNames = Arrays.stream(productType.split(","))
+                .map(String::trim)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
+
+        if (tagNames.isEmpty()) {
+            return;
+        }
+
+        // 获取或创建每个标签的 ID
+        List<Long> tagIds = tagNames.stream()
+                .map(this::getOrCreateTagId)
+                .collect(Collectors.toList());
+
+        // 批量插入 manufacture_tag
+        List<ManufactureTag> manufactureTags = tagIds.stream()
+                .map(tagId -> new ManufactureTag().setManufactureId(manufactureId).setTagId(tagId))
+                .collect(Collectors.toList());
+
+        manufactureTagService.saveBatch(manufactureTags);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: tagName 标签名
+     * @Return: java.lang.Long 标签ID
+     * @Description: 根据标签名获取或创建标签（类别固定为 product），处理并发插入时的唯一键冲突
+     **/
+    private Long getOrCreateTagId(String tagName) {
+        try {
+            // 先查询
+            Tag tag = tagService.lambdaQuery()
+                    .eq(Tag::getName, tagName)
+                    .eq(Tag::getCategory, "product")
+                    .one();
+            if (tag != null) {
+                return tag.getId();
+            }
+
+            // 不存在则创建
+            Tag newTag = new Tag();
+            newTag.setName(tagName);
+            newTag.setCategory("product");
+            // description 可留空
+            tagService.save(newTag);
+            return newTag.getId();
+        } catch (DuplicateKeyException e) {
+            // 并发插入导致冲突，重新查询
+            Tag tag = tagService.lambdaQuery()
+                    .eq(Tag::getName, tagName)
+                    .eq(Tag::getCategory, "product")
+                    .one();
+            if (tag != null) {
+                return tag.getId();
+            }
+            throw new BusinessException(500, "标签处理失败，请稍后重试");
+        }
+    }
+
+    // ==================== 原有私有方法 ====================
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: targetUserId 目标数据所属用户ID
+     * @Return: void
+     * @Description: 检查当前用户是否有权限操作目标数据
+     **/
     private void checkPermission(Long targetUserId) {
         Long currentUserId = getCurrentUserId();
         if (currentUserId == null) {
             throw new BusinessException(401, "用户未登录");
         }
-
-        // 普通用户只能操作自己的数据
         if (!currentUserId.equals(targetUserId)) {
-            //TODO: 如果有管理员角色，也允许操作。需根据实际权限体系判断，例如从 SecurityContext 获取 Authorities
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) return;
-            
+            if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+                return;
+            }
             throw new BusinessException(403, "无权操作他人数据");
         }
     }
 
     /**
-     * 获取当前登录用户ID
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param:
+     * @Return: java.lang.Long 当前登录用户ID
+     * @Description: 获取当前登录用户ID
+     **/
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof Long) {
-            return (Long) authentication.getPrincipal();
-        }
-        // 兼容 Principal 可能是 UserDetails 或其他类型的情况，视 JwtAuthenticationFilter 实现而定
-        if (authentication != null && authentication.getPrincipal() != null) {
-             try {
-                 return Long.parseLong(authentication.getPrincipal().toString());
-             } catch (NumberFormatException e) {
-                 return null;
-             }
+        if (authentication == null) return null;
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Long) {
+            return (Long) principal;
+        } else if (principal instanceof String) {
+            try {
+                return Long.parseLong((String) principal);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        } else if (principal instanceof UserDetails) {
+            String username = ((UserDetails) principal).getUsername();
+            try {
+                return Long.parseLong(username);
+            } catch (NumberFormatException e) {
+                log.error("无法从 UserDetails 的 username 解析 userId: {}", username);
+                return null;
+            }
         }
         return null;
     }
 
     /**
-     * 检查用户是否已创建过企业
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: userId 用户ID
+     * @Return: void
+     * @Description: 检查用户是否已创建过企业
+     **/
     private void checkUserHasManufacture(Long userId) {
         LambdaQueryWrapper<Manufacture> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Manufacture::getUserId, userId);
@@ -299,49 +416,30 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: companyName
-     * @Param: contactPhone
-     * @Param: scale
-     * @Param: annualRevenue
-     * @Param: employeeCount
-     * @Param: excludeId
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: companyName 企业名称, contactPhone 联系电话, scale 规模, annualRevenue 年营收, employeeCount 员工人数, excludeId 排除的企业ID（用于修改）
      * @Return: void
      * @Description: 统一的企业数据校验方法
-     */
-    private void validateManufactureData(String companyName,
-                                         String contactPhone,
-                                         String scale,
-                                         BigDecimal annualRevenue,
-                                         Integer employeeCount,
-                                         Long excludeId) {
-        // 新增时 companyName 必填且不能为空；修改时如果传了 companyName 且不为空，则需要校验
-        // excludeId == null 表示新增，此时必须校验 companyName
+     **/
+    private void validateManufactureData(String companyName, String contactPhone, String scale,
+                                         BigDecimal annualRevenue, Integer employeeCount, Long excludeId) {
         if (excludeId == null) {
             if (StringUtils.isBlank(companyName)) {
-                 throw new BusinessException(400, "企业名称不能为空");
+                throw new BusinessException(400, "企业名称不能为空");
             }
             checkCompanyNameExists(companyName, null);
         } else {
-            // 修改操作，仅当 companyName 不为空时才校验
             if (StringUtils.isNotBlank(companyName)) {
                 checkCompanyNameExists(companyName, excludeId);
             }
         }
-
-        if (StringUtils.isNotBlank(contactPhone)) {
-            if (!contactPhone.matches(PHONE_REGEX)) {
-                throw new BusinessException(400, "联系电话格式不正确，应为11位手机号");
-            }
+        if (StringUtils.isNotBlank(contactPhone) && !contactPhone.matches(PHONE_REGEX)) {
+            throw new BusinessException(400, "联系电话格式不正确，应为11位手机号");
         }
-
-        if (StringUtils.isNotBlank(scale)) {
-            if (!scale.matches(SCALE_REGEX)) {
-                throw new BusinessException(400, "规模值不正确，应为：micro/small/medium/large");
-            }
+        if (StringUtils.isNotBlank(scale) && !scale.matches(SCALE_REGEX)) {
+            throw new BusinessException(400, "规模值不正确，应为：micro/small/medium/large");
         }
-
         if (annualRevenue != null) {
             if (annualRevenue.compareTo(BigDecimal.ZERO) < 0) {
                 throw new BusinessException(400, "年营收不能为负数");
@@ -350,7 +448,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 throw new BusinessException(400, "年营收不能超过100亿元");
             }
         }
-
         if (employeeCount != null) {
             if (employeeCount < 0) {
                 throw new BusinessException(400, "员工人数不能为负数");
@@ -362,21 +459,18 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: companyName
-     * @Param: excludeId
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: companyName 企业名称, excludeId 排除的企业ID
      * @Return: void
      * @Description: 检查企业名称是否已存在（逻辑删除的记录不计入）
-     */
+     **/
     private void checkCompanyNameExists(String companyName, Long excludeId) {
         LambdaQueryWrapper<Manufacture> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Manufacture::getCompanyName, companyName);
-
         if (excludeId != null) {
             queryWrapper.ne(Manufacture::getId, excludeId);
         }
-
         long count = this.count(queryWrapper);
         if (count > 0) {
             throw new BusinessException(409, "企业名称已存在");
@@ -384,32 +478,29 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: source
-     * @Param: target
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: source 源对象, target 目标对象
      * @Return: void
      * @Description: 复制非空属性（支持父类字段）
-     */
+     **/
     private void copyNonNullProperties(Object source, Object target) {
         if (source == null || target == null) {
             return;
         }
-
         BeanUtils.copyProperties(source, target, getNullPropertyNames(source));
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: source
-     * @Return: java.lang.String[]
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: source 源对象
+     * @Return: java.lang.String[] 值为null的属性名数组
      * @Description: 获取对象中值为null的属性名数组
-     */
+     **/
     private String[] getNullPropertyNames(Object source) {
         final BeanWrapper src = new BeanWrapperImpl(source);
         java.beans.PropertyDescriptor[] pds = src.getPropertyDescriptors();
-
         Set<String> emptyNames = new HashSet<>();
         for (java.beans.PropertyDescriptor pd : pds) {
             Object srcValue = src.getPropertyValue(pd.getName());
@@ -417,17 +508,16 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 emptyNames.add(pd.getName());
             }
         }
-
         return emptyNames.toArray(new String[0]);
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: manufacture
-     * @Return: com.zhilian.zhilianbackend.dto.response.ManufactureListVO
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: manufacture 制造企业实体
+     * @Return: com.zhilian.zhilianbackend.dto.response.ManufactureListVO 列表返回对象
      * @Description: 将实体对象转换为列表返回对象
-     */
+     **/
     private ManufactureListVO convertToListVO(Manufacture manufacture) {
         if (manufacture == null) {
             return null;
@@ -438,12 +528,12 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
     }
 
     /**
-     * @Author:
-     * @Date: 2026/3/13 20:26
-     * @Param: manufacture
-     * @Return: com.zhilian.zhilianbackend.dto.response.ManufactureDetailVO
+     * @Author: xiaodengyou
+     * @Date: 2026-03-12 23:32
+     * @Param: manufacture 制造企业实体
+     * @Return: com.zhilian.zhilianbackend.dto.response.ManufactureDetailVO 详情返回对象
      * @Description: 将实体对象转换为详情返回对象
-     */
+     **/
     private ManufactureDetailVO convertToDetailVO(Manufacture manufacture) {
         if (manufacture == null) {
             return null;
