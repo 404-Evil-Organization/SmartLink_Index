@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -144,13 +145,14 @@ public class CertificationController {
     /**
      * 上传证书（包含文件）
      */
-    @PostMapping(value = "/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "上传证书", description = "上传证书文件，后端自动保存到OSS并记录URL")
     public Result<Long> upload(
             HttpServletRequest request,
             @Valid @ModelAttribute CertificationUploadRequest uploadRequest) {
         log.info("上传证书, 证书名称: {}, 文件大小: {}",
-                uploadRequest.getCertName(), uploadRequest.getFile().getSize());
+                uploadRequest.getCertName(),
+                uploadRequest.getFile() == null ? 0L : uploadRequest.getFile().getSize());
 
         Long serviceId = getCurrentServiceProviderId(request);
         if (serviceId == null) {
@@ -158,18 +160,85 @@ public class CertificationController {
             return Result.forbidden("只有服务商才能上传证书");
         }
 
+        // ========= 证书文件安全校验开始 =========
+        MultipartFile file = uploadRequest.getFile();
+        if (file == null || file.isEmpty()) {
+            log.warn("上传证书失败：文件为空，服务商ID: {}", serviceId);
+            throw new BusinessException("上传失败：证书文件不能为空");
+        }
+        // 限制证书文件大小（例如 10MB，可根据业务调整）
+        long maxSize = 10L * 1024 * 1024;
+        if (file.getSize() > maxSize) {
+            log.warn("上传证书失败：文件大小超限，服务商ID: {}, 文件大小: {}", serviceId, file.getSize());
+            throw new BusinessException("上传失败：证书文件大小不能超过10MB");
+        }
+        // 校验文件扩展名白名单
+        String originalFilename = file.getOriginalFilename();
+        String extension = StringUtils.getFilenameExtension(originalFilename);
+        if (extension == null) {
+            log.warn("上传证书失败：无法识别文件扩展名，服务商ID: {}, 文件名: {}", serviceId, originalFilename);
+            throw new BusinessException("上传失败：不支持的证书文件类型");
+        }
+        extension = extension.toLowerCase();
+        boolean allowedExtension = "jpg".equals(extension)
+                || "jpeg".equals(extension)
+                || "png".equals(extension);
+        if (!allowedExtension) {
+            log.warn("上传证书失败：文件扩展名不在白名单内，服务商ID: {}, 扩展名: {}", serviceId, extension);
+            throw new BusinessException("上传失败：仅支持上传 pdf/jpg/jpeg/png 格式的证书文件");
+        }
+        // 校验 Content-Type 白名单，防止伪装后缀
+        String contentType = file.getContentType();
+        boolean allowedContentType = "application/pdf".equalsIgnoreCase(contentType)
+                || "image/jpeg".equalsIgnoreCase(contentType)
+                || "image/png".equalsIgnoreCase(contentType);
+        if (!allowedContentType) {
+            log.warn("上传证书失败：Content-Type 不在白名单内，服务商ID: {}, Content-Type: {}", serviceId, contentType);
+            throw new BusinessException("上传失败：证书文件类型不被支持");
+        }
+        // ========= 证书文件安全校验结束 =========
+
         // 1. 上传文件到OSS
-        String fileUrl = ossService.uploadFile(uploadRequest.getFile());
+        String fileUrl;
+        try {
+            fileUrl = ossService.uploadFile(file);
+        } catch (Exception e) {
+            log.error("OSS文件上传失败，服务商ID: {}, 文件名: {}", serviceId, file.getOriginalFilename(), e);
+            throw new BusinessException("证书文件上传失败，请稍后重试");
+        }
 
         // 2. 创建证书实体
         Certification certification = new Certification();
         BeanUtils.copyProperties(uploadRequest, certification);
         certification.setServiceId(serviceId);
         certification.setCertFileUrl(fileUrl);
-        certification.setStatus((byte) 1); // 默认有效
+        certification.setStatus((byte) 1);
 
         // 3. 保存到数据库
-        certificationService.save(certification);
+        boolean saved;
+        try {
+            saved = certificationService.save(certification);
+        } catch (Exception e) {
+            // 数据库保存异常，补偿删除已上传的OSS文件
+            log.error("证书数据库保存失败，尝试删除已上传的OSS文件: {}", fileUrl, e);
+            try {
+                ossService.deleteFile(fileUrl);
+            } catch (Exception ex) {
+                log.error("补偿删除OSS文件失败，请手动清理孤儿文件: {}", fileUrl, ex);
+            }
+            throw new BusinessException("证书记录保存失败，请稍后重试");
+        }
+
+        if (!saved) {
+            // 理论上 save() 返回 false 很少发生，但安全起见同样处理
+            log.error("证书数据库保存返回 false，删除已上传的OSS文件: {}", fileUrl);
+            try {
+                ossService.deleteFile(fileUrl);
+            } catch (Exception ex) {
+                log.error("补偿删除OSS文件失败，请手动清理孤儿文件: {}", fileUrl, ex);
+            }
+            throw new BusinessException("证书记录保存失败，请稍后重试");
+        }
 
         log.info("证书上传成功, 证书ID: {}, 文件URL: {}", certification.getId(), fileUrl);
         return Result.success(certification.getId());
@@ -252,7 +321,19 @@ public class CertificationController {
             return Result.forbidden("无权限操作此证书");
         }
 
-        // 删除OSS文件
+        // 先逻辑删除数据库记录，避免出现“记录仍在但文件已被删”的不一致
+        try {
+            boolean removed = certificationService.removeById(id);
+            if (!removed) {
+                log.error("删除证书数据库记录失败, 证书ID: {}", id);
+                // 抛出业务异常，由全局异常处理器统一返回错误响应
+                throw new BusinessException("证书删除失败，请稍后重试");
+            }
+        } catch (Exception e) {
+            log.error("删除证书数据库记录异常, 证书ID: {}", id, e);
+            throw new BusinessException("证书删除失败，请稍后重试");
+        }
+        // 数据库记录删除成功后，再尝试删除 OSS 文件（失败仅记录日志，不影响业务结果）
         if (StringUtils.hasText(existing.getCertFileUrl())) {
             log.info("删除证书关联的OSS文件: {}", existing.getCertFileUrl());
             try {
@@ -265,8 +346,6 @@ public class CertificationController {
             }
         }
 
-        // 逻辑删除数据库记录
-        certificationService.removeById(id);
 
         log.info("证书删除成功, 证书ID: {}", id);
         return Result.success();
