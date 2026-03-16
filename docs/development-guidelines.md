@@ -211,28 +211,73 @@ zhilian-backend/
 zhilian-frontend/
 ├── public/                     # 公共静态资源（favicon、index.html模板等）
 ├── src/                        # 源代码主目录
-│   ├── api/                    # API 接口封装（按模块划分）
+│   ├── api/                    # API 接口封装（按模块划分，如 auth.js、manufacture.js 等）
 │   ├── assets/                 # 静态资源（图片、字体、样式等）
+│   │   ├── images/
+│   │   ├── styles/
+│   │   └── fonts/
 │   ├── components/             # 公共组件
-│   ├── composables/            # 组合式函数（逻辑复用）
+│   │   ├── Chart/              # 图表封装组件（柱状图、折线图、雷达图等）
+│   │   ├── Table/              # 表格相关组件（操作按钮、状态标签等）
+│   │   ├── Form/               # 表单相关组件（多选下拉、图片上传等）
+│   │   └── Layout/             # 布局组件（侧边栏、头部等）
+│   ├── composables/            # 组合式函数（逻辑复用，如分页、字典、权限等）
 │   ├── layouts/                # 布局组件
+│   │   └── BasicLayout.vue     # 基础布局（侧边栏、顶部导航）
 │   ├── router/                 # 路由配置
+│   │   ├── index.js
+│   │   ├── models              # 路由文件（按模块拆分）
+│   │   └── permission.js       # 路由守卫（权限控制）
 │   ├── stores/                 # Pinia 状态存储
-│   ├── utils/                  # 工具函数（日期格式化、文件下载等）
+│   │   ├── user.js
+│   │   ├── demand.js
+│   │   ├── dict.js             # 字典数据缓存
+│   │   └── app.js
+│   ├── utils/                  # 工具函数（日期格式化、脱敏、请求封装等）
+│   │   ├── request.js
+│   │   ├── desensitize.js
+│   │   └── format.js
 │   ├── views/                  # 页面组件（按业务模块划分）
+│   │   ├── auth/               # 认证相关
+│   │   │   ├── Login.vue                   # 用户登录页面
+│   │   │   └── Register.vue                # 用户注册页面
 │   │   ├── dashboard/          # 可视化看板
+│   │   │   ├── index.vue                   # 看板主页面（整合统计卡片、热力图、网络关系等）
+│   │   │   └── RegionIndex.vue             # 区域指数看板（展示各区域指数柱状图、趋势图）
 │   │   ├── diagnosis/          # 数字化诊断
+│   │   │   ├── Questionnaire.vue           # 诊断问卷填写页面
+│   │   │   └── Report.vue                  # 诊断报告展示页面（含雷达图、总分、建议）
 │   │   ├── match/              # 智能匹配
+│   │   │   ├── DemandPublish.vue           # 需求发布页面
+│   │   │   └── Recommendation.vue          # 匹配结果页面（展示推荐服务商列表）
 │   │   ├── credit/             # 信用评价
+│   │   │   └── service/                    # 服务商详情相关
+│   │   │       └── Detail.vue              # 服务商详情页（含信用分、评价列表、评价提交）
 │   │   ├── abroad/             # 出海服务
-│   │   └── manage/             # 企业管理
+│   │   │   ├── ServiceList.vue             # 出海服务列表页（分类展示服务商）
+│   │   │   ├── CountryGuide.vue            # 国家准入指南页面
+│   │   │   └── Cases.vue                   # 成功案例页面（案例卡片、筛选）
+│   │   ├── manufacture/        # 制造企业公共列表
+│   │   │   └── List.vue                    # 制造企业列表页（供所有用户浏览）
+│   │   ├── service/            # 服务商公共列表
+│   │   │   └── List.vue                    # 服务商列表页（供所有用户浏览）
+│   │   ├── enterprise/         # 个人企业管理
+│   │   │   └── index.vue                   # 我的企业页面（制造企业/服务商选项卡，含审核状态）
+│   │   └── admin/              # 管理员后台
+│   │       ├── TagList.vue                 # 标签管理（增删改查标签）
+│   │       ├── UserManage.vue              # 用户管理（启用/禁用、重置密码）
+│   │       ├── DemandAudit.vue             # 需求审核（通过/驳回需求）
+│   │       ├── EnterpriseAudit.vue         # 企业审核（制造企业/服务商入驻审核）
+│   │       ├── RegionIndexManage.vue       # 区域指数管理（发布/编辑区域指数）
+│   │       ├── AbroadCaseManage.vue        # 出海案例管理（增删改查出海案例）
+│   │       └── LogList.vue                 # 操作日志查看
 │   ├── App.vue                 # 根组件
 │   └── main.js                 # 入口文件
 ├── index.html                  # 项目入口 HTML
 ├── package.json                # 项目依赖
 ├── vite.config.js              # Vite 配置文件
 ├── .env.example                # 环境变量模板
-└── ...                         # 其他配置文件
+└── ...                         # 其他配置文件（ESLint、Prettier 等）
 ```
 
 ### 4.3 编码规范

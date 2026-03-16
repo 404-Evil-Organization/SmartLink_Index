@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.config;
 
 import com.zhilian.zhilianbackend.utils.JwtUtil;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -9,7 +10,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -19,13 +23,11 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * @Author: xiaodengyou
  * @Date: 2026/3/13 18:15
- * @Param:
- * @Return:
  * @Description: JWT认证过滤器，拦截请求并验证Token
  **/
 @Component
@@ -53,27 +55,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /**
      * 白名单路径 - 在JWT模式下，这些路径不需要认证
+     * 注意：由于项目配置了 server.servlet.context-path=/api，
+     * 这里统一使用带 /api 前缀的路径以便与 request.getRequestURI() 对齐。
      */
     private static final String[] WHITE_LIST = {
-            "/auth/login",
-            "/auth/register",
-            "/test/public",
-            "/test/status",
-            "/test/info",
-            "/test/generate-token",
-            "/swagger-ui/**",      // Swagger UI相关资源
-            "/v3/api-docs/**",     // OpenAPI文档
-            "/swagger-ui.html",    // Swagger首页
-            "/webjars/**"          // Swagger依赖的静态资源
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/swagger-ui/",
+            "/api/v3/api-docs/",
+            "/api/v3/api-docs",
+            "/api/swagger-ui.html",
+            "/api/webjars/",
     };
 
     /**
      * @Author: xiaodengyou
      * @Date: 2026/3/13 18:16
-     * @Param: request HTTP请求
-     * @Param: response HTTP响应
-     * @Param: filterChain 过滤器链
-     * @Return:
      * @Description: 过滤器核心逻辑，根据jwt-mode配置决定是否进行JWT验证
      **/
     @Override
@@ -109,13 +106,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 验证token
             if (StringUtils.hasText(token)) {
                 try {
-                    // 解析token获取用户ID
-                    Long userId = jwtUtil.getUserIdFromToken(token);
+                    // 解析token获取Claims（包含角色信息）
+                    Claims claims = jwtUtil.parseToken(token);
+                    Long userId;
+                    try {
+                        // 从 JWT subject 中解析用户ID，若 subject 非数字将抛出 NumberFormatException
+                        userId = Long.parseLong(claims.getSubject());
+                    } catch (NumberFormatException ex) {
+                        // 将 subject 非法格式转换为 JwtException，统一按 Token 非法处理为 401
+                        throw new JwtException("Token subject 非法，无法解析为用户ID", ex);
+                    }
+                    String username = claims.get(JwtUtil.CLAIM_USERNAME, String.class);
+                    String role = claims.get(JwtUtil.CLAIM_ROLE, String.class);
 
                     if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+                        // 构建角色（Spring Security 需要 ROLE_ 前缀）
+                        String springRole = role != null ? "ROLE_" + role.toUpperCase() : "ROLE_USER";
+                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(springRole);
+
+                        // 创建 UserDetails
+                        UserDetails userDetails = User.builder()
+                                .username(String.valueOf(userId))
+                                .password("")
+                                .authorities(Collections.singletonList(authority))
+                                .build();
+
                         // 创建认证对象
                         UsernamePasswordAuthenticationToken authentication =
-                                new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
+                                new UsernamePasswordAuthenticationToken(
+                                        userDetails, null, userDetails.getAuthorities());
 
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
@@ -123,8 +143,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         SecurityContextHolder.getContext().setAuthentication(authentication);
 
                         if (log.isDebugEnabled()) {
-                            log.debug("JWT模式(1) - Token验证成功, userId: {}, 请求: {} {}",
-                                    userId, request.getMethod(), requestURI);
+                            log.debug("JWT模式(1) - Token验证成功, userId: {}, role: {}, 请求: {} {}",
+                                    userId, springRole, request.getMethod(), requestURI);
                         }
                     }
                     filterChain.doFilter(request, response);
@@ -158,7 +178,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /**
      * @Author: xiaodengyou
      * @Date: 2026/3/13 18:17
-     * @Param:
      * @Return: boolean 是否为JWT模式
      * @Description: 判断是否开启JWT认证模式
      **/
@@ -178,8 +197,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return false;
         }
         for (String whitePath : WHITE_LIST) {
-            if (requestURI.contains(whitePath)) {
+            if (whitePath.endsWith("/**")) {
+                String prefix = whitePath.substring(0, whitePath.length() - 3);
+                if (requestURI.startsWith(prefix)) {
+                    return true;
+                }
+            } else if (requestURI.equals(whitePath)) {
                 return true;
+            } else if (whitePath.contains("{id}")) {
+                // 处理路径参数，如 /tag/{id}
+                String pattern = whitePath.replace("{id}", "[^/]+");
+                if (requestURI.matches(pattern)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -205,7 +235,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * @Date: 2026/3/13 18:03
      * @Param: response HTTP响应
      * @Param: message 错误信息
-     * @Return:
      * @Description: 发送401未授权响应
      **/
     private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {

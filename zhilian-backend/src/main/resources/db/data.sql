@@ -4,21 +4,21 @@
 -- =====================================================
 
 USE
-`zhilian_db`;
+`smartlink_index`;
 
 -- =====================================================
 -- 1. 用户表 (user)
 -- =====================================================
 INSERT INTO `user` (`username`, `password`, `role`, `phone`, `email`, `status`, `deleted`, `create_time`, `update_time`)
-VALUES ('tech_company', '$2a$10$X7VYx/h1s2v3c4d5e6f7g8', 'manufacture', '13800138001', 'tech@example.com', 1, NULL,
+VALUES ('tech_company', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'manufacture', '13800138001', 'tech@example.com', 1, NULL,
         NOW(), NOW()),
-       ('dg_machinery', '$2a$10$X7VYx/h1s2v3c4d5e6f7g9', 'manufacture', '13900139002', 'dg@example.com', 1, NULL, NOW(),
+       ('dg_machinery', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'manufacture', '13900139002', 'dg@example.com', 1, NULL, NOW(),
         NOW()),
-       ('huace_test', '$2a$10$X7VYx/h1s2v3c4d5e6f8g0', 'service', '13700137003', 'huace@example.com', 1, NULL, NOW(),
+       ('huace_test', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'service', '13700137003', 'huace@example.com', 1, NULL, NOW(),
         NOW()),
-       ('shenzhen_logistics', '$2a$10$X7VYx/h1s2v3c4d5e6f8g1', 'service', '13600136004', 'szlog@example.com', 1, NULL,
+       ('shenzhen_logistics', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'service', '13600136004', 'szlog@example.com', 1, NULL,
         NOW(), NOW()),
-       ('admin_user', '$2a$10$X7VYx/h1s2v3c4d5e6f8g2', 'admin', '18800188005', 'admin@zhilian.com', 1, NULL, NOW(),
+       ('admin_user', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'admin', '18800188005', 'admin@zhilian.com', 1, NULL, NOW(),
         NOW());
 
 -- =====================================================
