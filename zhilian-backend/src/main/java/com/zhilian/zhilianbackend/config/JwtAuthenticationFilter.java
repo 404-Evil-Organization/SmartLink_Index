@@ -59,16 +59,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * 这里统一使用带 /api 前缀的路径以便与 request.getRequestURI() 对齐。
      */
     private static final String[] WHITE_LIST = {
-            "/auth/login",
-            "/auth/register",
-            "/test/public",
-            "/test/status",
-            "/test/info",
-            "/test/generate-token",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/swagger-ui.html",
-            "/webjars/**",
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/swagger-ui/",
+            "/api/v3/api-docs/",
+            "/api/v3/api-docs",
+            "/api/swagger-ui.html",
+            "/api/webjars/",
     };
 
     /**

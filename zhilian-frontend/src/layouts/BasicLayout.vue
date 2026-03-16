@@ -16,10 +16,20 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-menu-item index="/manage/manufacture">
+        <el-menu-item index="/manufacture/List">
           <el-icon><OfficeBuilding /></el-icon>
           <span>制造企业列表</span>
         </el-menu-item>
+        <el-sub-menu v-if="isAdmin" index="1">
+          <template #title>
+            <el-icon><Avatar /></el-icon>
+            <span>管理员</span>
+          </template>
+          <el-menu-item index="/admin/tag">
+            <el-icon><Collection /></el-icon>
+            <span>标签管理</span>
+          </el-menu-item>
+        </el-sub-menu>
         <!-- 后续可继续添加其他菜单项 -->
       </el-menu>
     </el-aside>
@@ -54,7 +64,12 @@ import {
   ElMenuItem,
   ElButton,
 } from "element-plus";
-import { HomeFilled, OfficeBuilding } from "@element-plus/icons-vue";
+import {
+  HomeFilled,
+  Avatar,
+  Collection,
+  OfficeBuilding,
+} from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
 const route = useRoute();
@@ -63,6 +78,9 @@ const userStore = useUserStore();
 
 // 计算当前激活菜单
 const activeMenu = computed(() => route.path);
+
+// 判断当前用户是否为管理员
+const isAdmin = computed(() => userStore.userInfo?.role === "admin");
 
 // 退出登录
 const handleLogout = async () => {
