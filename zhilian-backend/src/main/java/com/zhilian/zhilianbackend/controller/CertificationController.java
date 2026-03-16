@@ -12,7 +12,7 @@ import com.zhilian.zhilianbackend.entity.ServiceProvider;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.CertificationService;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
-import com.zhilian.zhilianbackend.service.OssService;  // 导入OssService
+import com.zhilian.zhilianbackend.service.OssService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,19 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * @Author: xiaodengyou
- * @Date: 2026/3/14 14:13
- * @Param:
- * @Return:
- * @Description: 资质证书管理控制器，提供证书的增删改查接口
- **/
 @Slf4j
 @RestController
 @RequestMapping("/certification")
@@ -48,11 +42,9 @@ public class CertificationController {
     private final CertificationService certificationService;
     private final ServiceProviderService serviceProviderService;
     private final JwtUtil jwtUtil;
-    private final OssService ossService;  // 注入OssService
+    private final OssService ossService;
 
-    /**
-     * 从请求中提取token
-     */
+    // ---------- 辅助方法（保持不变） ----------
     private String extractToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken == null || bearerToken.isBlank()) {
@@ -68,9 +60,6 @@ public class CertificationController {
         return token;
     }
 
-    /**
-     * 从token中获取当前用户ID
-     */
     private Long getCurrentUserId(HttpServletRequest request) {
         String token = extractToken(request);
         try {
@@ -81,9 +70,6 @@ public class CertificationController {
         }
     }
 
-    /**
-     * 从token中获取当前用户角色
-     */
     private String getCurrentUserRole(HttpServletRequest request) {
         String token = extractToken(request);
         try {
@@ -95,101 +81,56 @@ public class CertificationController {
         }
     }
 
-    /**
-     * 获取当前登录用户对应的服务商ID
-     * @return 服务商ID，如果不是服务商角色则返回null
-     */
     private Long getCurrentServiceProviderId(HttpServletRequest request) {
         Long userId = getCurrentUserId(request);
         String role = getCurrentUserRole(request);
 
         log.info("获取服务商ID - 用户ID: {}, 角色: {}", userId, role);
 
-        if (userId == null) {
-            log.warn("用户ID为空");
+        if (userId == null || !"service".equals(role)) {
             return null;
         }
 
-        // 只有服务商角色才能获取服务商ID
-        if (!"service".equals(role)) {
-            log.warn("用户角色不是服务商: {}", role);
-            return null;
-        }
-
-        // 根据userId查询服务商信息
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ServiceProvider::getUserId, userId);
-        wrapper.isNull(ServiceProvider::getDeleted); // 明确指定只查询未删除的
-
-        log.info("执行查询: user_id = {}, deleted IS NULL", userId);
-        // 使用 getOne(wrapper, false) 避免当存在多条记录时抛出运行时异常，防止接口直接返回 500
         ServiceProvider serviceProvider = serviceProviderService.getOne(wrapper, false);
-
-        if (serviceProvider == null) {
-            log.warn("未找到user_id={}的服务商记录", userId);
-        } else {
-            log.info("找到服务商记录: id={}, company_name={}", serviceProvider.getId(), serviceProvider.getCompanyName());
-        }
 
         return serviceProvider != null ? serviceProvider.getId() : null;
     }
 
-    /**
-     * 判断当前用户是否为管理员
-     */
     private boolean isAdmin(HttpServletRequest request) {
         String role = getCurrentUserRole(request);
         return "admin".equals(role);
     }
 
-    /**
-     * 检查当前用户是否有权限操作指定的证书
-     * @param certification 证书实体
-     * @return true-有权限 false-无权限
-     */
     private boolean hasPermission(HttpServletRequest request, Certification certification) {
-        if (certification == null) {
-            return false;
-        }
-        // 管理员有所有权限
-        if (isAdmin(request)) {
-            return true;
-        }
-        // 非管理员，检查是否是证书所属的服务商
+        if (certification == null) return false;
+        if (isAdmin(request)) return true;
         Long currentServiceId = getCurrentServiceProviderId(request);
         return currentServiceId != null && currentServiceId.equals(certification.getServiceId());
     }
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/14 15:30
-     * @Param: request 证书查询请求（含serviceId筛选）
-     * @Return: Result<Map<String, Object>> 证书列表（带分页信息）
-     * @Description: 获取资质证书列表（可按serviceId筛选）
-     **/
+    // ---------- 接口方法 ----------
+
     @GetMapping("/list")
     @Operation(summary = "获取证书列表", description = "可按serviceId筛选证书列表")
     public Result<Map<String, Object>> list(@Valid CertificationQueryRequest request) {
         log.info("查询证书列表, 请求参数: serviceId={}, page={}, size={}",
                 request.getServiceId(), request.getPage(), request.getSize());
 
-        // 构建查询条件
         LambdaQueryWrapper<Certification> wrapper = new LambdaQueryWrapper<>();
         if (request.getServiceId() != null) {
             wrapper.eq(Certification::getServiceId, request.getServiceId());
         }
         wrapper.orderByDesc(Certification::getCreateTime);
 
-        // 分页查询
         Page<Certification> page = new Page<>(request.getPage(), request.getSize());
         Page<Certification> pageResult = certificationService.page(page, wrapper);
 
-        // 转换为VO
         List<CertificationVO> records = pageResult.getRecords().stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
 
-        // 封装分页数据到Map中
         Map<String, Object> data = new HashMap<>();
         data.put("total", pageResult.getTotal());
         data.put("records", records);
@@ -201,54 +142,49 @@ public class CertificationController {
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/14 15:30
-     * @Param: request 证书上传请求（含文件URL）
-     * @Return: Result<Long> 新创建的证书ID
-     * @Description: 上传资质证书（文件URL由前端通过/common/upload接口获取）
-     **/
-    @PostMapping("/upload")
-    @Operation(summary = "上传证书", description = "创建证书记录，文件URL需先通过/common/upload接口获取")
-    public Result<Long> upload(HttpServletRequest request, @Valid @RequestBody CertificationUploadRequest uploadRequest) {
-        log.info("上传证书, 请求参数: {}", uploadRequest);
+     * 上传证书（包含文件）
+     */
+    @PostMapping(value = "/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "上传证书", description = "上传证书文件，后端自动保存到OSS并记录URL")
+    public Result<Long> upload(
+            HttpServletRequest request,
+            @Valid @ModelAttribute CertificationUploadRequest uploadRequest) {
+        log.info("上传证书, 证书名称: {}, 文件大小: {}",
+                uploadRequest.getCertName(), uploadRequest.getFile().getSize());
 
-        // 获取当前登录用户对应的服务商ID
         Long serviceId = getCurrentServiceProviderId(request);
         if (serviceId == null) {
             log.warn("上传证书失败：当前用户不是服务商角色或未找到对应的服务商信息");
             return Result.forbidden("只有服务商才能上传证书");
         }
 
-        // 创建证书实体
+        // 1. 上传文件到OSS
+        String fileUrl = ossService.uploadFile(uploadRequest.getFile());
+
+        // 2. 创建证书实体
         Certification certification = new Certification();
         BeanUtils.copyProperties(uploadRequest, certification);
-
-        // 设置服务商ID（从认证信息中获取，忽略请求中的serviceId）
         certification.setServiceId(serviceId);
+        certification.setCertFileUrl(fileUrl);
         certification.setStatus((byte) 1); // 默认有效
 
-        // 保存到数据库
+        // 3. 保存到数据库
         certificationService.save(certification);
 
-        log.info("证书上传成功, 证书ID: {}, 文件URL: {}", certification.getId(), uploadRequest.getCertFileUrl());
+        log.info("证书上传成功, 证书ID: {}, 文件URL: {}", certification.getId(), fileUrl);
         return Result.success(certification.getId());
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/14 15:30
-     * @Param: id 证书ID
-     * @Param: request 证书更新请求（可选文件URL）
-     * @Return: Result<Void>
-     * @Description: 更新证书信息（如需更换文件，需先上传新文件获取URL）
+     * 更新证书（可替换文件）
      */
-    @PutMapping("/{id}")
-    @Operation(summary = "更新证书", description = "修改证书信息，如需更换文件需先上传新文件获取URL")
+    @PutMapping(value = "/{id}", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "更新证书", description = "修改证书信息，可选择替换文件")
     public Result<Void> update(
             HttpServletRequest request,
             @Parameter(description = "证书ID", required = true) @PathVariable Long id,
-            @Valid @RequestBody CertificationUpdateRequest updateRequest) {
-        log.info("更新证书, 证书ID: {}, 请求参数: {}", id, updateRequest);
+            @Valid @ModelAttribute CertificationUpdateRequest updateRequest) {
+        log.info("更新证书, 证书ID: {}", id);
 
         // 检查证书是否存在
         Certification existing = certificationService.getById(id);
@@ -263,28 +199,19 @@ public class CertificationController {
             return Result.forbidden("无权限操作此证书");
         }
 
-        // 先校验请求中是否提供了空白的 certFileUrl，若提供但为空白则视为非法请求，返回 400
-        String newCertFileUrl = updateRequest.getCertFileUrl();
-        if (newCertFileUrl != null && !StringUtils.hasText(newCertFileUrl)) {
-            log.warn("更新证书失败：提供了空白的 certFileUrl, 证书ID: {}", id);
-            // 全局异常处理器应将 BusinessException 映射为 400 Bad Request
-            throw new BusinessException("certFileUrl 不能为空或全为空白");
-        }
-
-        // 如果更换了文件，删除旧文件：
-        // 仅当新旧 URL 都“有内容”且不同，才尝试删除旧文件，避免 deleteFile(null) 导致的 NPE
-        String existingCertFileUrl = existing.getCertFileUrl();
-        if (StringUtils.hasText(newCertFileUrl)
-                && StringUtils.hasText(existingCertFileUrl)
-                && !newCertFileUrl.equals(existingCertFileUrl)) {
-            log.info("证书文件被替换，删除旧文件: {}", existingCertFileUrl);
-            // 删除旧文件（不阻塞主流程，即使删除失败也继续更新）
-            try {
-                // 这里使用注入的ossService实例，不是静态调用
-                ossService.deleteFile(existingCertFileUrl);
-            } catch (Exception e) {
-                log.error("删除旧证书文件失败, URL: {}", existingCertFileUrl, e);
-                // 继续执行，不影响主流程
+        // 处理文件替换
+        MultipartFile newFile = updateRequest.getFile();
+        String newFileUrl = null;
+        if (newFile != null && !newFile.isEmpty()) {
+            // 上传新文件
+            newFileUrl = ossService.uploadFile(newFile);
+            // 删除旧文件（不阻塞主流程）
+            if (StringUtils.hasText(existing.getCertFileUrl())) {
+                try {
+                    ossService.deleteFile(existing.getCertFileUrl());
+                } catch (Exception e) {
+                    log.error("删除旧证书文件失败, URL: {}", existing.getCertFileUrl(), e);
+                }
             }
         }
 
@@ -292,7 +219,10 @@ public class CertificationController {
         Certification certification = new Certification();
         BeanUtils.copyProperties(updateRequest, certification);
         certification.setId(id);
-        certification.setServiceId(existing.getServiceId()); // 保持原有的serviceId不变
+        certification.setServiceId(existing.getServiceId()); // 保持原有服务商ID
+        if (newFileUrl != null) {
+            certification.setCertFileUrl(newFileUrl);
+        }
 
         // 更新到数据库
         certificationService.updateById(certification);
@@ -302,11 +232,7 @@ public class CertificationController {
     }
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/14 15:30
-     * @Param: id 证书ID
-     * @Return: Result<Void>
-     * @Description: 删除证书（逻辑删除，同时删除OSS文件）
+     * 删除证书（逻辑删除，同时删除OSS文件）
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "删除证书", description = "逻辑删除证书记录，同时删除OSS上的文件")
@@ -315,34 +241,27 @@ public class CertificationController {
             @Parameter(description = "证书ID", required = true) @PathVariable Long id) {
         log.info("删除证书, 证书ID: {}", id);
 
-        // 检查证书是否存在
         Certification existing = certificationService.getById(id);
         if (existing == null) {
             log.warn("证书不存在, 证书ID: {}", id);
             return Result.notFound("证书不存在");
         }
 
-        // 权限检查
         if (!hasPermission(request, existing)) {
             log.warn("删除证书失败：无权限操作此证书, 证书ID: {}", id);
             return Result.forbidden("无权限操作此证书");
         }
 
-        // 先删除OSS上的文件（物理删除）
-        if (existing.getCertFileUrl() != null && !existing.getCertFileUrl().isEmpty()) {
+        // 删除OSS文件
+        if (StringUtils.hasText(existing.getCertFileUrl())) {
             log.info("删除证书关联的OSS文件: {}", existing.getCertFileUrl());
-            boolean deleted = false;
             try {
-                // 这里使用注入的ossService实例，不是静态调用
-                deleted = ossService.deleteFile(existing.getCertFileUrl());
+                boolean deleted = ossService.deleteFile(existing.getCertFileUrl());
+                if (!deleted) {
+                    log.warn("OSS文件删除失败(未抛出异常), URL: {}", existing.getCertFileUrl());
+                }
             } catch (Exception e) {
-                log.error("删除OSS文件失败, URL: {}", existing.getCertFileUrl(), e);
-                // 即使OSS删除失败，也继续逻辑删除数据库记录
-                // 因为OSS文件删除失败可能由网络等原因导致，可以后续通过定时任务清理
-            }
-            if (!deleted) {
-                // OSS 未抛出异常但返回 false，按设计至少记录一个告警日志，便于后续排查
-                log.warn("OSS 文件删除结果为失败(但未抛出异常), URL: {}", existing.getCertFileUrl());
+                log.error("删除OSS文件异常, URL: {}", existing.getCertFileUrl(), e);
             }
         }
 
@@ -353,17 +272,8 @@ public class CertificationController {
         return Result.success();
     }
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/14 15:30
-     * @Param: certification 证书实体
-     * @Return: CertificationVO 证书VO对象
-     * @Description: 将证书实体转换为VO对象
-     **/
     private CertificationVO convertToVO(Certification certification) {
-        if (certification == null) {
-            return null;
-        }
+        if (certification == null) return null;
         CertificationVO vo = new CertificationVO();
         BeanUtils.copyProperties(certification, vo);
         return vo;
