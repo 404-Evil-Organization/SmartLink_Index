@@ -96,7 +96,7 @@ public class ManufactureController {
             @Parameter(description = "企业ID", required = true, example = "83")
             @PathVariable("id") Long id,
             @Valid @RequestBody ManufactureUpdateRequestDTO requestDTO) {
-        log.info("修改制造企业，企业ID：{}，请求参数：{}", id, requestDTO);
+        log.info("修改制造企业接口被调用，企业ID：{}", id);
         manufactureService.updateManufacture(id, requestDTO);
         return Result.success("修改成功");
     }

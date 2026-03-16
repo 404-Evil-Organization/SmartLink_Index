@@ -24,7 +24,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -237,6 +236,8 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             updateManufacture.setProductType(requestDTO.getProductType());
         }
 
+        updateManufacture.setAuditStatus("pending");
+
         boolean updated = this.updateById(updateManufacture);
         if (!updated) {
             throw new BusinessException(500, "修改企业信息失败");
@@ -337,7 +338,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         // 2. 计算还不存在的标签名
         Set<String> missingNames = new HashSet<>(tagNames);
         missingNames.removeAll(nameToId.keySet());
-        // 3. 对不存在的标签批量插入，处理并发下的唯一键冲突
+        // 3. 对不存在的标签批量插入，避免在事务中依赖 DuplicateKeyException 恢复
         if (!missingNames.isEmpty()) {
             List<Tag> newTags = new ArrayList<>(missingNames.size());
             for (String name : missingNames) {
@@ -347,25 +348,12 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 // description 可留空
                 newTags.add(newTag);
             }
-            try {
-                tagService.saveBatch(newTags);
-                // 插入成功后，将新标签放入 name -> id 映射
-                for (Tag newTag : newTags) {
-                    if (newTag.getId() != null) {
-                        nameToId.put(newTag.getName(), newTag.getId());
-                    }
-                }
-            } catch (DuplicateKeyException e) {
-                // 并发插入导致部分标签已被其他事务创建，重新批量查询一次兜底
-                List<Tag> allTags = tagService.lambdaQuery()
-                        .in(Tag::getName, tagNames)
-                        .eq(Tag::getCategory, "product")
-                        .list();
-                nameToId.clear();
-                if (allTags != null && !allTags.isEmpty()) {
-                    for (Tag tag : allTags) {
-                        nameToId.put(tag.getName(), tag.getId());
-                    }
+            // 直接批量插入新标签，如遇唯一键冲突由上层事务统一回滚
+            tagService.saveBatch(newTags);
+            // 插入成功后，将新标签放入 name -> id 映射
+            for (Tag newTag : newTags) {
+                if (newTag.getId() != null) {
+                    nameToId.put(newTag.getName(), newTag.getId());
                 }
             }
         }
