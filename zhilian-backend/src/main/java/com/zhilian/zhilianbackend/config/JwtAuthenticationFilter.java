@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -66,11 +65,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/test/status",
             "/api/test/info",
             "/api/test/generate-token",
-            "/api/swagger-ui/**",
-            "/api/v3/api-docs/**",
+            "/api/swagger-ui/",
+            "/api/v3/api-docs/",
             "/api/v3/api-docs",
             "/api/swagger-ui.html",
-            "/api/webjars/**",
+            "/api/webjars/",
     };
 
     /**
