@@ -23,7 +23,8 @@ const routes = [
     component: () => import("@/layouts/BasicLayout.vue"),
     meta: { requiresAuth: true },
     children: [
-      ...dashboardRoutes,...serviceProviderRoutes,
+      ...dashboardRoutes,
+      ...serviceProviderRoutes, 
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,
@@ -41,13 +42,13 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to, _from) => {
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
   const token = userStore.token;
 
   if (token) {
     if (to.path === "/login") {
-      return "/";
+      next("/"); 
     } else {
       if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
         try {
@@ -86,7 +87,7 @@ router.beforeEach(async (to, _from) => {
     if (to.matched.some((record) => record.meta.requiresAuth)) {
       next("/login");
     } else {
-      return true;
+      next(); // 注意这里用 next() 而不是 return true
     }
   }
 });
