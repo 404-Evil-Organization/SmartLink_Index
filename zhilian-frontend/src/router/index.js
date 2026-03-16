@@ -61,7 +61,7 @@ router.beforeEach(async (to, from, next) => {
         } catch (error) {
           if (error.response?.status === 401) {
             // 401 统一交由 axios 响应拦截器负责跳转至登录页并弹出提示，这里仅中止当前导航以避免重复导航/重复提示
-            return false;
+            next(false);
           } else {
             // 非 401 错误（网络、500等）：管理员路由保持 fail-close，普通路由可继续访问
             if (to.matched.some((record) => record.meta.adminOnly)) {
