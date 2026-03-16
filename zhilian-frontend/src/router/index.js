@@ -64,8 +64,13 @@ router.beforeEach(async (to, from, next) => {
             next("/login");
           } else {
             // 非 401 错误（网络、500等）：仍可放行，但提示用户
-            ElMessage.error("部分用户信息加载失败，请刷新重试");
-            next();
+            if (to.matched.some((record) => record.meta.adminOnly)) {
+               ElMessage.error("当前账号暂无权限访问该页面");
+               next("/");
+             } else {
+               ElMessage.error("部分用户信息加载失败，请刷新重试");
+               next();
+             }
           }
         }
       } else {
