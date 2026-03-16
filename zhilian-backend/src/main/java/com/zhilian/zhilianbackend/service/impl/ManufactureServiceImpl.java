@@ -388,44 +388,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         manufactureTagService.saveBatch(manufactureTags);
     }
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-12 23:32
-     * @Param: tagName 标签名
-     * @Return: java.lang.Long 标签ID
-     * @Description: 根据标签名获取或创建标签（类别固定为 product），处理并发插入时的唯一键冲突
-     **/
-    private Long getOrCreateTagId(String tagName) {
-        try {
-            // 先查询
-            Tag tag = tagService.lambdaQuery()
-                    .eq(Tag::getName, tagName)
-                    .eq(Tag::getCategory, "product")
-                    .one();
-            if (tag != null) {
-                return tag.getId();
-            }
-
-            // 不存在则创建
-            Tag newTag = new Tag();
-            newTag.setName(tagName);
-            newTag.setCategory("product");
-            // description 可留空
-            tagService.save(newTag);
-            return newTag.getId();
-        } catch (DuplicateKeyException e) {
-            // 并发插入导致冲突，重新查询
-            Tag tag = tagService.lambdaQuery()
-                    .eq(Tag::getName, tagName)
-                    .eq(Tag::getCategory, "product")
-                    .one();
-            if (tag != null) {
-                return tag.getId();
-            }
-            throw new BusinessException(500, "标签处理失败，请稍后重试");
-        }
-    }
-
     // ==================== 原有私有方法 ====================
 
     /**
@@ -442,7 +404,8 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         }
         if (!currentUserId.equals(targetUserId)) {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            if (auth != null && auth.getAuthorities() != null &&
+                    auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
                 return;
             }
             throw new BusinessException(403, "无权操作他人数据");

@@ -77,7 +77,7 @@ public class ManufactureController {
     @PostMapping
     @Operation(summary = "新增制造企业", description = "创建新的制造企业信息")
     public Result<ManufactureAddVO> addManufacture(@Valid @RequestBody ManufactureAddRequestDTO requestDTO) {
-        log.info("新增制造企业，请求参数：{}", requestDTO);
+        log.info("新增制造企业接口被调用");
         ManufactureAddVO result = manufactureService.addManufacture(requestDTO);
         return Result.success("新增成功", result);
     }
