@@ -63,14 +63,16 @@ router.beforeEach(async (to, from, next) => {
           if (error.response?.status === 401) {
             next("/login");
           } else {
-            // 非 401 错误（网络、500等）：仍可放行，但提示用户
+            // 非 401 错误（网络、500等）：管理员路由保持 fail-close，普通路由可继续访问
             if (to.matched.some((record) => record.meta.adminOnly)) {
-               ElMessage.error("当前账号暂无权限访问该页面");
-               next("/");
-             } else {
-               ElMessage.error("部分用户信息加载失败，请刷新重试");
-               next();
-             }
+              ElMessage.error(
+                "用户信息加载失败，暂无法验证访问权限，请稍后重试",
+              );
+              next("/");
+            } else {
+              ElMessage.error("部分用户信息加载失败，请刷新重试");
+              next();
+            }
           }
         }
       } else {
