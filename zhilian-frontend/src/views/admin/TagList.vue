@@ -72,7 +72,6 @@
         style="width: 100%"
         row-key="id"
       >
-        <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="name" label="标签名称" min-width="150" />
         <el-table-column
           prop="category"

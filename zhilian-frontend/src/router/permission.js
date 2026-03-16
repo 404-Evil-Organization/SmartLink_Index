@@ -7,6 +7,7 @@
  * @param {ReturnType<typeof useUserStore>} userStore 用户状态仓库
  * @returns {boolean} 是否已在本函数内部处理了导航（包括重定向）
  */
+import { ElMessage } from "element-plus";
 export function enforceAdminOnly(to, from, next, userStore) {
   const isAdminRoute = to.matched.some(
     (record) => record.meta && record.meta.adminOnly,
