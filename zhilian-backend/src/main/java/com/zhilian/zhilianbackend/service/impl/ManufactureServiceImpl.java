@@ -24,10 +24,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -335,7 +333,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         // 2. 计算还不存在的标签名
         Set<String> missingNames = new HashSet<>(tagNames);
         missingNames.removeAll(nameToId.keySet());
-        // 3. 对不存在的标签批量插入，并在并发场景下通过捕获 DuplicateKeyException 实现幂等
+        // 3. 对不存在的标签批量插入
         if (!missingNames.isEmpty()) {
             List<Tag> newTags = new ArrayList<>(missingNames.size());
             for (String name : missingNames) {
@@ -345,12 +343,13 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 // description 可留空
                 newTags.add(newTag);
             }
-            try {
-                // 直接批量插入新标签；如遇唯一键冲突，说明有并发请求已插入相同标签
-                tagService.saveBatch(newTags);
-            } catch (DuplicateKeyException e) {
-                // 并发下的唯一键竞争视为正常业务场景，记录告警日志后继续流程
-                log.warn("并发插入标签时出现唯一键冲突，将忽略本次冲突并重新查询标签。tagNames={}", missingNames, e);
+            // 直接批量插入新标签；如遇唯一键冲突，将抛出 DuplicateKeyException，导致事务回滚
+            tagService.saveBatch(newTags);
+            // 插入成功后，将新标签放入 name -> id 映射
+            for (Tag newTag : newTags) {
+                if (newTag.getId() != null) {
+                    nameToId.put(newTag.getName(), newTag.getId());
+                }
             }
         }
         // 3.1 为了应对并发下的唯一键竞争，这里统一重新查询一次所有标签，确保拿到最新的 ID
@@ -398,9 +397,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             throw new BusinessException(401, "用户未登录");
         }
         if (!currentUserId.equals(targetUserId)) {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getAuthorities() != null &&
-                    auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()))) {
+            if (isAdmin()) {
                 return;
             }
             throw new BusinessException(403, "无权操作他人数据");
@@ -424,14 +421,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             try {
                 return Long.parseLong((String) principal);
             } catch (NumberFormatException e) {
-                return null;
-            }
-        } else if (principal instanceof UserDetails) {
-            String username = ((UserDetails) principal).getUsername();
-            try {
-                return Long.parseLong(username);
-            } catch (NumberFormatException e) {
-                log.error("无法从 UserDetails 的 username 解析 userId: {}", username);
                 return null;
             }
         }
