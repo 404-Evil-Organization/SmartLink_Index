@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/manufacture")
 @RequiredArgsConstructor
 @Tag(name = "制造企业管理", description = "制造企业相关接口")
+@Validated
 public class ManufactureController {
 
     private final ManufactureService manufactureService;

@@ -27,12 +27,21 @@ public class PageResult<T> {
     @Schema(description = "数据列表")
     private List<T> records;
 
+    @Schema(description = "当前页码，从 1 开始")
+    private Long page;
+
+    @Schema(description = "每页条数")
+    private Long size;
+
+
     public PageResult() {
     }
 
-    public PageResult(Long total, List<T> records) {
+    public PageResult(Long total, List<T> records, Long page, Long size) {
         this.total = total;
         this.records = records;
+        this.page = page;
+        this.size = size;
     }
 
     /**
@@ -43,6 +52,12 @@ public class PageResult<T> {
      * @Description: 从 MyBatis Plus 的 IPage 对象构建分页结果
      **/
     public static <T> PageResult<T> from(IPage<T> page) {
-        return new PageResult<>(page.getTotal(), page.getRecords());
+
+        return new PageResult<>(
+                page.getTotal(),
+                page.getRecords(),
+                page.getCurrent(),
+                page.getSize()
+        );
     }
 }

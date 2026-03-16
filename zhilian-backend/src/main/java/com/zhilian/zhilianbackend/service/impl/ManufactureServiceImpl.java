@@ -32,10 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -124,7 +121,38 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         if (manufacture == null) {
             throw new BusinessException(404, "企业不存在或已被删除");
         }
+        // ========== 权限与审核状态校验 ==========
+        // 当前登录用户ID（可能为 null，表示未登录）
+        Long currentUserId = null;
+        try {
+            currentUserId = getCurrentUserId();
+        } catch (Exception ex) {
+            // 这里不抛出异常，未登录用户也可以访问已审核通过的企业
+            log.debug("获取当前用户ID失败，视为未登录访问企业详情", ex);
+        }
+        String auditStatus = manufacture.getAuditStatus();
+        boolean approved = StringUtils.equalsIgnoreCase("approved", auditStatus);
+        boolean isOwner = currentUserId != null && currentUserId.equals(manufacture.getUserId());
+        boolean admin = isAdmin();
+        // 非本企业用户且非管理员时，仅允许访问审核通过的企业详情
+        if (!approved && !isOwner && !admin) {
+            throw new BusinessException(403, "暂无权限查看该企业详情");
+        }
+
         return convertToDetailVO(manufacture);
+    }
+    /**
+     * 判断当前登录用户是否为管理员
+     *
+     * @return true 表示管理员，false 表示非管理员或未登录
+     */
+    private boolean isAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> "ROLE_ADMIN".equals(grantedAuthority.getAuthority()));
     }
 
     /**
@@ -278,7 +306,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
      * @Date: 2026-03-12 23:32
      * @Param: productType 逗号分隔的标签名, manufactureId 制造企业ID
      * @Return: void
-     * @Description: 根据逗号分隔的 productType 字符串创建标签关联
+     * @Description: 根据逗号分隔的 productType 字符串创建标签关联（批量查询/批量插入，避免 N+1 查询）
      **/
     private void createTagAssociations(String productType, Long manufactureId) {
         if (StringUtils.isBlank(productType)) {
@@ -295,12 +323,64 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             return;
         }
 
-        // 获取或创建每个标签的 ID
+        // 1. 一次性批量查询已存在的标签（category 固定为 product）
+        List<Tag> existingTags = tagService.lambdaQuery()
+                .in(Tag::getName, tagNames)
+                .eq(Tag::getCategory, "product")
+                .list();
+        Map<String, Long> nameToId = new HashMap<>();
+        if (existingTags != null && !existingTags.isEmpty()) {
+            for (Tag tag : existingTags) {
+                nameToId.put(tag.getName(), tag.getId());
+            }
+        }
+        // 2. 计算还不存在的标签名
+        Set<String> missingNames = new HashSet<>(tagNames);
+        missingNames.removeAll(nameToId.keySet());
+        // 3. 对不存在的标签批量插入，处理并发下的唯一键冲突
+        if (!missingNames.isEmpty()) {
+            List<Tag> newTags = new ArrayList<>(missingNames.size());
+            for (String name : missingNames) {
+                Tag newTag = new Tag();
+                newTag.setName(name);
+                newTag.setCategory("product");
+                // description 可留空
+                newTags.add(newTag);
+            }
+            try {
+                tagService.saveBatch(newTags);
+                // 插入成功后，将新标签放入 name -> id 映射
+                for (Tag newTag : newTags) {
+                    if (newTag.getId() != null) {
+                        nameToId.put(newTag.getName(), newTag.getId());
+                    }
+                }
+            } catch (DuplicateKeyException e) {
+                // 并发插入导致部分标签已被其他事务创建，重新批量查询一次兜底
+                List<Tag> allTags = tagService.lambdaQuery()
+                        .in(Tag::getName, tagNames)
+                        .eq(Tag::getCategory, "product")
+                        .list();
+                nameToId.clear();
+                if (allTags != null && !allTags.isEmpty()) {
+                    for (Tag tag : allTags) {
+                        nameToId.put(tag.getName(), tag.getId());
+                    }
+                }
+            }
+        }
+        // 4. 构造最终的 tagId 列表，如果有标签仍未获取到 ID，则认为处理失败
         List<Long> tagIds = tagNames.stream()
-                .map(this::getOrCreateTagId)
+                .map(name -> {
+                    Long id = nameToId.get(name);
+                    if (id == null) {
+                        throw new BusinessException(500, "标签处理失败，请稍后重试");
+                    }
+                    return id;
+                })
                 .collect(Collectors.toList());
 
-        // 批量插入 manufacture_tag
+        // 5.批量插入 manufacture_tag
         List<ManufactureTag> manufactureTags = tagIds.stream()
                 .map(tagId -> new ManufactureTag().setManufactureId(manufactureId).setTagId(tagId))
                 .collect(Collectors.toList());
