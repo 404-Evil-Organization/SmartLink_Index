@@ -24,6 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -90,7 +91,8 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         }
         if (StringUtils.isNotBlank(requestDTO.getProductType())) {
             String escaped = escapeSqlLike(requestDTO.getProductType());
-            queryWrapper.like(Manufacture::getProductType, escaped);
+            // 使用 ESCAPE '\\' 显式指定反斜杠为 LIKE 转义字符，提升跨数据库兼容性
+            queryWrapper.apply("product_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
         }
         queryWrapper.eq(Manufacture::getAuditStatus, "approved")
                 .orderByDesc(Manufacture::getCreateTime);
@@ -231,11 +233,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         updateManufacture.setId(id);
         copyNonNullProperties(requestDTO, updateManufacture);
 
-        // 如果前端传了 productType（包括空串），则更新该字段；否则不更新
-        if (requestDTO.getProductType() != null) {
-            updateManufacture.setProductType(requestDTO.getProductType());
-        }
-
         updateManufacture.setAuditStatus("pending");
 
         boolean updated = this.updateById(updateManufacture);
@@ -338,7 +335,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         // 2. 计算还不存在的标签名
         Set<String> missingNames = new HashSet<>(tagNames);
         missingNames.removeAll(nameToId.keySet());
-        // 3. 对不存在的标签批量插入，避免在事务中依赖 DuplicateKeyException 恢复
+        // 3. 对不存在的标签批量插入，并在并发场景下通过捕获 DuplicateKeyException 实现幂等
         if (!missingNames.isEmpty()) {
             List<Tag> newTags = new ArrayList<>(missingNames.size());
             for (String name : missingNames) {
@@ -348,13 +345,23 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 // description 可留空
                 newTags.add(newTag);
             }
-            // 直接批量插入新标签，如遇唯一键冲突由上层事务统一回滚
-            tagService.saveBatch(newTags);
-            // 插入成功后，将新标签放入 name -> id 映射
-            for (Tag newTag : newTags) {
-                if (newTag.getId() != null) {
-                    nameToId.put(newTag.getName(), newTag.getId());
-                }
+            try {
+                // 直接批量插入新标签；如遇唯一键冲突，说明有并发请求已插入相同标签
+                tagService.saveBatch(newTags);
+            } catch (DuplicateKeyException e) {
+                // 并发下的唯一键竞争视为正常业务场景，记录告警日志后继续流程
+                log.warn("并发插入标签时出现唯一键冲突，将忽略本次冲突并重新查询标签。tagNames={}", missingNames, e);
+            }
+        }
+        // 3.1 为了应对并发下的唯一键竞争，这里统一重新查询一次所有标签，确保拿到最新的 ID
+        List<Tag> finalTags = tagService.list(
+                new LambdaQueryWrapper<Tag>()
+                        .in(Tag::getName, tagNames)
+        );
+        nameToId.clear();
+        if (finalTags != null && !finalTags.isEmpty()) {
+            for (Tag tag : finalTags) {
+                nameToId.put(tag.getName(), tag.getId());
             }
         }
         // 4. 构造最终的 tagId 列表，如果有标签仍未获取到 ID，则认为处理失败
