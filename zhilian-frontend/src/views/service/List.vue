@@ -105,7 +105,9 @@
       </div>
 
       <el-table :data="tableData" v-loading="loading" border stripe style="width: 100%">
-        <el-table-column prop="id" label="ID" width="70" />
+        <!-- <el-table-column prop="id" label="ID" width="70" /> -->
+         <!-- 加入序号列 -->
+        <el-table-column type="index" label="序号" width="70" align="center" />
         <el-table-column prop="companyName" label="服务企业名称" min-width="150" />
         <el-table-column prop="region" label="区域" width="90" />
         <el-table-column prop="serviceType" label="服务类型" min-width="180">
