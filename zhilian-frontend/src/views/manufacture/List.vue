@@ -234,7 +234,7 @@
           <span v-else>-</span>
         </el-descriptions-item>
         <el-descriptions-item label="成立日期">{{
-          detailDialog.data.establishedDate || "-"
+          formatEstablishedDate(detailDialog.data.establishedDate)
         }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
@@ -261,6 +261,7 @@ import {
 } from "@element-plus/icons-vue";
 import { getManufactureList, getManufactureDetail } from "@/api/manufacture";
 import { getRegions, getScales, getProductTags } from "@/api/common";
+import { formatEstablishedDate } from "@/composables/date";
 
 // ---------- 统计卡片数据（静态，可改为接口获取） ----------
 // const statistics = ref([
