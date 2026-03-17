@@ -28,8 +28,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -46,6 +48,9 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     private final UserMapper userMapper;
     private final TagMapper tagMapper;
     private final ServiceTagMapper serviceTagMapper;
+
+    // 未删除标识的固定值（与 application.yml 中 logic-not-delete-value 保持一致）
+    private static final Timestamp NOT_DELETED = Timestamp.valueOf("1970-01-01 00:00:00");
 
     /**
      * @Author: xiaodengyou
@@ -70,8 +75,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         Page<ServiceProvider> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
-
-        // 删除手动添加的 .isNull(ServiceProvider::getDeleted)，MP 会自动处理
 
         if (StringUtils.isNotBlank(requestDTO.getRegion())) {
             queryWrapper.eq(ServiceProvider::getRegion, requestDTO.getRegion());
@@ -109,7 +112,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ServiceProvider::getId, id);
-        // 删除手动 isNull
 
         ServiceProvider provider = this.getOne(queryWrapper);
         if (provider == null) {
@@ -131,7 +133,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
      * @Date: 2026-03-13 01:00
      * @Param: requestDTO 新增服务商请求参数
      * @Return: ServiceProviderAddVO 新增结果（返回新ID）
-     * @Description: 新增服务商
+     * @Description: 新增服务商（审核状态默认为 pending）
      **/
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -152,9 +154,8 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         ServiceProvider provider = new ServiceProvider();
         BeanUtils.copyProperties(requestDTO, provider);
-        provider.setAuditStatus("approved");
-        // 设置未删除标识
-        provider.setDeleted(Date.from(Instant.EPOCH));
+        provider.setAuditStatus("pending"); // 默认待审核
+        provider.setDeleted(NOT_DELETED);    // 固定未删除标识
 
         boolean saved = this.save(provider);
         if (!saved) {
@@ -163,7 +164,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         updateServiceTags(provider.getId(), requestDTO.getServiceType());
 
-        log.info("服务商新增成功，ID：{}，企业名称：{}", provider.getId(), provider.getCompanyName());
+        log.info("服务商新增成功，ID：{}，企业名称：{}，审核状态：pending", provider.getId(), provider.getCompanyName());
         return new ServiceProviderAddVO(provider.getId());
     }
 
@@ -188,7 +189,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ServiceProvider::getId, id);
-        // 删除手动 isNull
 
         ServiceProvider existingProvider = this.getOne(queryWrapper);
         if (existingProvider == null) {
@@ -244,7 +244,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ServiceProvider::getId, id);
-        // 删除手动 isNull
 
         ServiceProvider provider = this.getOne(queryWrapper);
         if (provider == null) {
@@ -253,7 +252,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         checkDeletePermission(provider, currentUserId);
 
-        // 删除关联标签（逻辑删除）
+        // 逻辑删除关联标签
         LambdaQueryWrapper<ServiceTag> deleteTagRelWrapper = new LambdaQueryWrapper<>();
         deleteTagRelWrapper.eq(ServiceTag::getServiceId, id);
         serviceTagMapper.delete(deleteTagRelWrapper);
@@ -269,15 +268,11 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     // ==================== 处理服务类型标签 ====================
 
     /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/17
-     * @Param: serviceId 服务商ID
-     * @Param: serviceType 服务类型字符串（多个用逗号分隔）
-     * @Return: void
-     * @Description: 根据服务类型字符串更新服务商与标签的关联关系
-     **/
+     * 根据服务类型字符串更新服务商与标签的关联关系
+     * 先逻辑删除所有现有关联，再将新的标签列表批量插入（使用 ON DUPLICATE KEY UPDATE）
+     */
     private void updateServiceTags(Long serviceId, String serviceType) {
-        // 逻辑删除现有所有关联
+        // 1. 逻辑删除当前所有关联
         LambdaQueryWrapper<ServiceTag> deleteWrapper = new LambdaQueryWrapper<>();
         deleteWrapper.eq(ServiceTag::getServiceId, serviceId);
         serviceTagMapper.delete(deleteWrapper);
@@ -286,7 +281,10 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             return;
         }
 
+        // 2. 解析标签名称，获取或创建对应的标签ID
         String[] tagNames = serviceType.split("\\s*,\\s*");
+        List<ServiceTag> tagList = new ArrayList<>();
+
         for (String tagName : tagNames) {
             if (StringUtils.isBlank(tagName)) {
                 continue;
@@ -296,9 +294,13 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             ServiceTag serviceTag = new ServiceTag();
             serviceTag.setServiceId(serviceId);
             serviceTag.setTagId(tagId);
-            // 设置未删除标识
-            serviceTag.setDeleted(Date.from(Instant.EPOCH));
-            serviceTagMapper.insert(serviceTag);
+            serviceTag.setDeleted(NOT_DELETED); // 固定未删除标识
+            tagList.add(serviceTag);
+        }
+
+        // 3. 批量插入/更新（存在则更新时间，不存在则插入）
+        if (!tagList.isEmpty()) {
+            serviceTagMapper.insertOrUpdateBatch(tagList);
         }
     }
 
@@ -314,7 +316,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         LambdaQueryWrapper<Tag> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Tag::getName, tagName)
                 .eq(Tag::getCategory, category);
-        // 删除手动 isNull
 
         Tag existingTag = tagMapper.selectOne(queryWrapper);
         if (existingTag != null) {
@@ -324,8 +325,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         Tag newTag = new Tag();
         newTag.setName(tagName);
         newTag.setCategory(category);
-        // 设置未删除标识
-        newTag.setDeleted(Date.from(Instant.EPOCH));
+        newTag.setDeleted(NOT_DELETED); // 固定未删除标识
 
         try {
             tagMapper.insert(newTag);
@@ -339,7 +339,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         return newTag.getId();
     }
 
-    // ==================== 原有私有方法（保持不变，但需移除手动 isNull）====================
+    // ==================== 原有私有方法（保持不变）====================
 
     private void checkUpdatePermission(ServiceProvider provider, Long currentUserId) {
         User currentUser = userMapper.selectById(currentUserId);
@@ -442,18 +442,9 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
     }
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/17
-     * @Param: companyName 待检查的企业名称
-     * @Param: excludeId 需要排除的服务商ID（更新时使用）
-     * @Return: void
-     * @Description: 检查企业名称是否已被其他未删除的服务商使用
-     **/
     private void checkCompanyNameExists(String companyName, Long excludeId) {
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ServiceProvider::getCompanyName, companyName);
-        // 删除手动 isNull
 
         if (excludeId != null) {
             queryWrapper.ne(ServiceProvider::getId, excludeId);
@@ -466,18 +457,9 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
     }
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/17
-     * @Param: userId 待检查的用户ID
-     * @Param: excludeId 需要排除的服务商ID（更新时使用）
-     * @Return: void
-     * @Description: 检查用户ID是否已被其他未删除的服务商使用
-     **/
     private void checkUserIdExists(Long userId, Long excludeId) {
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ServiceProvider::getUserId, userId);
-        // 删除手动 isNull
 
         if (excludeId != null) {
             queryWrapper.ne(ServiceProvider::getId, excludeId);
