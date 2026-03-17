@@ -33,7 +33,7 @@ public class CertificationUploadRequest {
     @Schema(description = "有效期至", example = "2026-12-31")
     private Date expireDate;
 
-    @NotNull(message = "证书文件不能为空")
+    @NotBlank(message = "证书文件不能为空")
     @Schema(description = "证书文件", requiredMode = Schema.RequiredMode.REQUIRED)
     private MultipartFile file;
 }

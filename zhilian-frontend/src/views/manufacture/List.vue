@@ -234,7 +234,8 @@
           <span v-else>-</span>
         </el-descriptions-item>
         <el-descriptions-item label="成立日期">{{
-          detailDialog.data.establishedDate || "-"
+          createTimeConverter(detailDialog.data.establishedDate).toLocalYMD() ||
+          "-"
         }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
@@ -261,6 +262,8 @@ import {
 } from "@element-plus/icons-vue";
 import { getManufactureList, getManufactureDetail } from "@/api/manufacture";
 import { getRegions, getScales, getProductTags } from "@/api/common";
+import { createTimeConverter } from "@/composables/date";
+const TimeConverter = createTimeConverter();
 
 // ---------- 统计卡片数据（静态，可改为接口获取） ----------
 // const statistics = ref([
