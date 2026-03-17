@@ -157,11 +157,6 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
 
         log.info("获取诊断报告 - 诊断ID: {}, 用户ID: {}", id, userId);
 
-        // 登录校验：userId 为空视为未登录
-        if (userId == null) {
-            throw new BusinessException(401, "请先登录");
-        }
-
         // 1. 查询诊断记录
         Diagnosis diagnosis = this.getById(id);
         if (diagnosis == null) {
@@ -272,6 +267,9 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
                 log.error("解析诊断建议JSON失败，diagnosisId={}, suggestions={}", diagnosis.getId(), diagnosis.getSuggestions(), e);
                 vo.setSuggestions(Collections.emptyList());
             }
+        } else {
+            // 当历史数据中建议字段为 null 时，同样返回空列表，保证响应结构稳定
+            vo.setSuggestions(Collections.emptyList());
         }
 
         // 获取雷达图数据
