@@ -38,66 +38,74 @@
       </el-col>
     </el-row> -->
 
-    <div class="search-bar">
-      <el-form :model="searchForm" label-width="80px" class="search-form">
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-form-item label="区域">
-              <el-select
-                v-model="searchForm.region"
-                placeholder="选择区域"
-                clearable
-              >
-                <el-option
-                  v-for="region in regionOptions"
-                  :key="region"
-                  :label="region"
-                  :value="region"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="规模">
-              <el-select
-                v-model="searchForm.scale"
-                placeholder="选择规模"
-                clearable
-              >
-                <el-option
-                  v-for="item in scaleOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="主营产品">
-              <el-select
-                v-model="searchForm.productType"
-                placeholder="选择主营产品"
-                clearable
-              >
-                <el-option
-                  v-for="item in productTagsOptions"
-                  :key="item.name"
-                  :label="item.name"
-                  :value="item.name"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6" style="text-align: right">
-            <el-form-item label-width="0">
-              <el-button type="primary" @click="handleSearch">查询</el-button>
-              <el-button @click="resetSearch">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-    </div>
+    <!-- 搜索卡片 -->
+    <el-card class="search-card" shadow="hover">
+      <el-collapse-transition>
+        <div v-show="searchExpanded">
+          <el-form :model="searchForm" label-width="100px" class="search-form">
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-form-item label="区域">
+                  <el-select
+                    v-model="searchForm.region"
+                    placeholder="选择区域"
+                    clearable
+                    filterable
+                  >
+                    <el-option
+                      v-for="region in regionOptions"
+                      :key="region"
+                      :label="region"
+                      :value="region"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="规模">
+                  <el-select
+                    v-model="searchForm.scale"
+                    placeholder="选择规模"
+                    clearable
+                    filterable
+                  >
+                    <el-option
+                      v-for="item in scaleOptions"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
+                <el-form-item label="主营产品">
+                  <el-select
+                    v-model="searchForm.productType"
+                    placeholder="选择主营产品"
+                    clearable
+                    filterable
+                  >
+                    <el-option
+                      v-for="item in productTagsOptions"
+                      :key="item.name"
+                      :label="item.name"
+                      :value="item.name"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20">
+              <el-col :span="24" class="search-actions">
+                <el-button type="primary" @click="handleSearch">查询</el-button>
+                <el-button @click="resetSearch">重置</el-button>
+              </el-col>
+            </el-row>
+          </el-form>
+        </div>
+      </el-collapse-transition>
+    </el-card>
 
     <!-- 表格卡片 -->
     <el-card class="table-card" shadow="hover">
@@ -132,14 +140,14 @@
           width="100"
           :formatter="formatScale"
         />
-        <el-table-column prop="productType" label="主营产品" min-width="120" >
+        <el-table-column prop="productType" label="主营产品" min-width="120">
           <template #default="{ row }">
             <el-tag
               v-for="tag in row.productType.split(',')"
               :key="tag"
               size="small"
               effect="plain"
-              style="margin-right: 5px; margin-bottom: 3px;"
+              style="margin-right: 5px; margin-bottom: 3px"
             >
               {{ tag.trim() }}
             </el-tag>
@@ -393,6 +401,8 @@ const formatScale = (row) => {
   const map = { micro: "微型", small: "小型", medium: "中型", large: "大型" };
   return map[row.scale] || row.scale;
 };
+
+const searchExpanded = ref(true);
 
 onMounted(() => {
   fetchOptions();
