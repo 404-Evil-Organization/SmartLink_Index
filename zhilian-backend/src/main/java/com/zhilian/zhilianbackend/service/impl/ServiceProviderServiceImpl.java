@@ -24,6 +24,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +49,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
     private final TagMapper tagMapper;
     private final ServiceTagMapper serviceTagMapper;
-    private final UserService userService;  // 注入 UserService
+    private final UserService userService;
 
     // 未删除标识的固定值（与 application.yml 中 logic-not-delete-value 保持一致）
     private static final Timestamp NOT_DELETED = Timestamp.valueOf("1970-01-01 00:00:00");
@@ -151,8 +154,8 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         ServiceProvider provider = new ServiceProvider();
         BeanUtils.copyProperties(requestDTO, provider);
-        provider.setAuditStatus("pending"); // 默认待审核
-        provider.setDeleted(NOT_DELETED);    // 固定未删除标识
+        provider.setAuditStatus("pending");
+        provider.setDeleted(NOT_DELETED);
 
         boolean saved = this.save(provider);
         if (!saved) {
@@ -281,7 +284,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         // 2. 解析标签名称，获取或创建对应的标签ID
         String[] tagNames = serviceType.split("\\s*,\\s*");
         List<ServiceTag> tagList = new ArrayList<>();
-        // 使用 Set 按 tagId 去重，避免同一批次 insert 出现 Duplicate entry
         Set<Long> handledTagIds = new HashSet<>();
 
         for (String tagName : tagNames) {
@@ -289,7 +291,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
                 continue;
             }
             Long tagId = getOrCreateTag(tagName.trim(), "service");
-            // 如果同一个 tagId 已经处理过，则跳过，防止构造重复 (serviceId, tagId, deleted)
             if (handledTagIds.contains(tagId)) {
                 continue;
             }
@@ -298,7 +299,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             ServiceTag serviceTag = new ServiceTag();
             serviceTag.setServiceId(serviceId);
             serviceTag.setTagId(tagId);
-            serviceTag.setDeleted(NOT_DELETED); // 固定未删除标识
+            serviceTag.setDeleted(NOT_DELETED);
             tagList.add(serviceTag);
         }
 
@@ -313,7 +314,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
      * @Date: 2026-03-17 01:00
      * @Param: tagName 标签名称, category 标签类别（如 "service"）
      * @Return: Long 标签ID
-     * @Description: 根据标签名称和类别获取标签ID，若标签不存在则插入新标签
+     * @Description: 根据标签名称和类别获取标签ID，若标签不存在则插入新标签，处理并发冲突
      **/
     private Long getOrCreateTag(String tagName, String category) {
         LambdaQueryWrapper<Tag> queryWrapper = new LambdaQueryWrapper<>();
@@ -328,21 +329,64 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         Tag newTag = new Tag();
         newTag.setName(tagName);
         newTag.setCategory(category);
-        newTag.setDeleted(NOT_DELETED); // 固定未删除标识
+        newTag.setDeleted(NOT_DELETED);
 
         try {
             tagMapper.insert(newTag);
-        } catch (Exception e) {
+        } catch (DuplicateKeyException e) {
+            // 并发冲突：其他线程已插入相同标签，重新查询并返回ID
+            log.debug("并发插入标签 {} 冲突，重新查询", tagName);
             Tag conflictTag = tagMapper.selectOne(queryWrapper);
             if (conflictTag != null) {
                 return conflictTag.getId();
             }
-            throw new BusinessException(500, "创建标签失败，标签名称：" + tagName);
+            // 理论上不应进入此分支，若进入说明严重异常
+            throw new BusinessException(500, "标签处理失败，请稍后重试");
+        } catch (Exception e) {
+            // 其他数据库异常，记录日志并抛出
+            log.error("插入标签失败，tagName={}, category={}", tagName, category, e);
+            throw new BusinessException(500, "标签创建失败，请稍后重试");
         }
         return newTag.getId();
     }
 
-    // ==================== 原有私有方法（权限检查等）====================
+    // ==================== 工具方法 ====================
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: source 源对象
+     * @Return: String[] 值为null的属性名数组
+     * @Description: 获取对象中值为null的属性名数组（支持父类字段）
+     **/
+    private String[] getNullPropertyNames(Object source) {
+        final BeanWrapper src = new BeanWrapperImpl(source);
+        java.beans.PropertyDescriptor[] pds = src.getPropertyDescriptors();
+        Set<String> emptyNames = new HashSet<>();
+        for (java.beans.PropertyDescriptor pd : pds) {
+            Object srcValue = src.getPropertyValue(pd.getName());
+            if (srcValue == null) {
+                emptyNames.add(pd.getName());
+            }
+        }
+        return emptyNames.toArray(new String[0]);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: source 源对象, target 目标对象
+     * @Return: void
+     * @Description: 复制非空属性（支持父类字段），使用 Spring BeanUtils 实现
+     **/
+    private void copyNonNullProperties(Object source, Object target) {
+        if (source == null || target == null) {
+            return;
+        }
+        BeanUtils.copyProperties(source, target, getNullPropertyNames(source));
+    }
+
+    // ==================== 权限检查 ====================
 
     /**
      * @Author: xiaodengyou
@@ -352,7 +396,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
      * @Description: 检查当前用户是否有权限修改服务商信息
      **/
     private void checkUpdatePermission(ServiceProvider provider, Long currentUserId) {
-        // 使用 UserService 获取当前用户信息
         UserInfoResponse currentUser = userService.getCurrentUser(currentUserId);
         String role = currentUser.getRole();
 
@@ -380,7 +423,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
      * @Description: 检查当前用户是否有权限删除服务商信息
      **/
     private void checkDeletePermission(ServiceProvider provider, Long currentUserId) {
-        // 使用 UserService 获取当前用户信息
         UserInfoResponse currentUser = userService.getCurrentUser(currentUserId);
         String role = currentUser.getRole();
 
@@ -399,6 +441,8 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
         throw new AccessDeniedException("当前角色无权删除服务商信息");
     }
+
+    // ==================== 参数校验 ====================
 
     /**
      * @Author: xiaodengyou
@@ -511,39 +555,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
     }
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-17 01:00
-     * @Param: source 源对象, target 目标对象
-     * @Return: void
-     * @Description: 复制非空属性（支持父类字段）
-     **/
-    private void copyNonNullProperties(Object source, Object target) {
-        if (source == null || target == null) {
-            return;
-        }
-
-        java.lang.reflect.Field[] fields = source.getClass().getDeclaredFields();
-
-        for (java.lang.reflect.Field field : fields) {
-            try {
-                field.setAccessible(true);
-                Object value = field.get(source);
-
-                if (value != null) {
-                    try {
-                        java.lang.reflect.Field targetField = target.getClass().getDeclaredField(field.getName());
-                        targetField.setAccessible(true);
-                        targetField.set(target, value);
-                    } catch (NoSuchFieldException e) {
-                        log.trace("目标对象不存在字段：{}", field.getName());
-                    }
-                }
-            } catch (IllegalAccessException e) {
-                log.error("复制属性失败：{}", field.getName(), e);
-            }
-        }
-    }
+    // ==================== 对象转换 ====================
 
     /**
      * @Author: xiaodengyou

@@ -108,6 +108,19 @@ public class ServiceProviderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
     @Operation(summary = "新增服务商", description = "创建新的服务商信息")
     public Result<ServiceProviderAddVO> addServiceProvider(@Valid @RequestBody ServiceProviderAddRequestDTO requestDTO) {
+        // 由于当前项目未启用方法级安全，这里在方法内部显式做一次角色校验，防止越权调用
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            log.warn("新增服务商失败：未认证用户尝试访问");
+            throw new AccessDeniedException("当前用户未认证，无法新增服务商");
+        }
+        boolean hasRequiredRole = authentication.getAuthorities().stream().anyMatch(
+                authority -> "ROLE_ADMIN".equals(authority.getAuthority()) || "ROLE_SERVICE".equals(authority.getAuthority())
+        );
+        if (!hasRequiredRole) {
+            log.warn("新增服务商失败：用户无权限，username={}", authentication.getName());
+            throw new AccessDeniedException("当前用户无权限新增服务商");
+        }
         // 从当前登录用户的认证信息中获取 userId，防止客户端伪造 userId 越权创建服务商
         Long currentUserId = getCurrentUserIdFromSecurityContext();
         requestDTO.setUserId(currentUserId);
