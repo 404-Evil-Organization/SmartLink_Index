@@ -15,6 +15,7 @@ import com.zhilian.zhilianbackend.entity.ManufactureTag;
 import com.zhilian.zhilianbackend.entity.Tag;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
+import com.zhilian.zhilianbackend.mapper.ManufactureTagMapper;
 import com.zhilian.zhilianbackend.service.ManufactureService;
 import com.zhilian.zhilianbackend.service.ManufactureTagService;
 import com.zhilian.zhilianbackend.service.TagService;
@@ -52,6 +53,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
 
     private final TagService tagService;
     private final ManufactureTagService manufactureTagService;
+    private final ManufactureTagMapper manufactureTagMapper;
 
     /**
      * @Author: xiaodengyou
@@ -322,50 +324,34 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             return;
         }
 
-        // 使用 ON DUPLICATE KEY UPDATE 批量插入标签
-        // 组装成 List<Tag> 一次性插入
-        List<Tag> tagList = tagNames.stream()
-                .map(name -> {
-                    Tag tag = new Tag();
-                    tag.setName(name);
-                    tag.setCategory("product");
-                    // description 留空
-                    return tag;
-                })
-                .collect(Collectors.toList());
-
-        // 批量插入，遇到重复键时更新（此处实际上无字段需要更新，仅用于触发存在性检测）
-        // Mybatis-Plus 的 saveOrUpdateBatch 在遇到唯一键冲突时会执行更新操作
-        // 但由于我们不需要更新任何字段，实际效果等同于忽略冲突
-        tagService.saveOrUpdateBatch(tagList);
-
-        // 重新查询所有标签的ID（确保拿到最新的ID，包括已存在的和刚插入的）
-        List<Tag> allTags = tagService.lambdaQuery()
+        // 查询 tag 表中存在的标签（类别为 product）
+        List<Tag> existingTags = tagService.lambdaQuery()
                 .in(Tag::getName, tagNames)
                 .eq(Tag::getCategory, "product")
                 .list();
 
-        Map<String, Long> nameToId = allTags.stream()
-                .collect(Collectors.toMap(Tag::getName, Tag::getId));
+        if (existingTags.isEmpty()) {
+            log.warn("未找到任何匹配的标签，productType={}", productType);
+            return;
+        }
 
-        // 构造最终的 tagId 列表，如果有标签仍未获取到 ID，则认为处理失败
-        List<Long> tagIds = tagNames.stream()
-                .map(name -> {
-                    Long id = nameToId.get(name);
-                    if (id == null) {
-                        throw new BusinessException(500, "标签处理失败，请稍后重试");
-                    }
-                    return id;
-                })
+        // 提取标签 ID
+        List<Long> tagIds = existingTags.stream()
+                .map(Tag::getId)
                 .collect(Collectors.toList());
 
-        // 批量插入 manufacture_tag
+        // 构造 ManufactureTag 对象列表
         List<ManufactureTag> manufactureTags = tagIds.stream()
-                .map(tagId -> new ManufactureTag().setManufactureId(manufactureId).setTagId(tagId))
+                .map(tagId -> new ManufactureTag()
+                        .setManufactureId(manufactureId)
+                        .setTagId(tagId))
                 .collect(Collectors.toList());
 
-        manufactureTagService.saveBatch(manufactureTags);
+        // 批量插入/更新 manufacture_tag
+        // 使用自定义 Mapper 方法，执行 INSERT ... ON DUPLICATE KEY UPDATE
+        manufactureTagMapper.insertOrUpdateBatch(manufactureTags);
     }
+
 
     // ==================== 原有私有方法 ====================
 
