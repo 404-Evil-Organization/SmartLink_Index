@@ -956,7 +956,22 @@
         "contactPerson": "张三",
         "contactPhone": "13800138001",
         "auditStatus": "approved",
+        "auditRemark": null,                // 审核通过时无意见
+        "auditTime": "2026-03-17 15:44:52",
         "createTime": "2026-03-01 10:00:00"
+      },
+      {
+        "id": 1002,
+        "companyName": "东莞精密制造",
+        "region": "东莞",
+        "scale": "small",
+        "productType": "精密零部件",
+        "contactPerson": "李四",
+        "contactPhone": "13900139002",
+        "auditStatus": "rejected",
+        "auditRemark": "营业执照不清晰，请重新上传", // 驳回时填写意见
+        "auditTime": "2026-03-18 09:30:00",
+        "createTime": "2026-03-02 14:20:00"
       }
     ]
   }
@@ -994,7 +1009,21 @@
         "contactPerson": "王五",
         "contactPhone": "13700137003",
         "auditStatus": "pending",
+        "auditRemark": null,
+        "auditTime": null,
         "createTime": "2026-03-02 14:00:00"
+      },
+      {
+        "id": 2002,
+        "companyName": "SGS通标",
+        "region": "广州",
+        "serviceType": "国际认证",
+        "contactPerson": "赵六",
+        "contactPhone": "13600136004",
+        "auditStatus": "rejected",
+        "auditRemark": "资质证书过期，请更新后重新提交",
+        "auditTime": "2026-03-17 11:20:00",
+        "createTime": "2026-03-03 09:15:00"
       }
     ]
   }
