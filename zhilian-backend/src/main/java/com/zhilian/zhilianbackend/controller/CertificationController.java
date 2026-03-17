@@ -55,7 +55,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: request HttpServletRequest
+     * @Return: String
      * @Description: 从请求头中提取 JWT token
      */
     private String extractToken(HttpServletRequest request) {
@@ -75,7 +77,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: request HttpServletRequest
+     * @Return: Long
      * @Description: 从 token 中获取当前用户ID
      */
     private Long getCurrentUserId(HttpServletRequest request) {
@@ -90,7 +94,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: request HttpServletRequest
+     * @Return: String
      * @Description: 从 token 中获取当前用户角色
      */
     private String getCurrentUserRole(HttpServletRequest request) {
@@ -106,7 +112,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: request HttpServletRequest
+     * @Return: Long
      * @Description: 获取当前登录用户对应的服务商ID
      */
     private Long getCurrentServiceProviderId(HttpServletRequest request) {
@@ -128,7 +136,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: request HttpServletRequest
+     * @Return: boolean
      * @Description: 判断当前用户是否为管理员
      */
     private boolean isAdmin(HttpServletRequest request) {
@@ -138,7 +148,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: request HttpServletRequest, certification Certification
+     * @Return: boolean
      * @Description: 检查当前用户是否有权限操作指定的证书
      */
     private boolean hasPermission(HttpServletRequest request, Certification certification) {
@@ -150,7 +162,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: file MultipartFile
+     * @Return: void
      * @Description: 校验证书文件（大小、扩展名、Content-Type）
      */
     private void validateCertificationFile(MultipartFile file) {
@@ -207,7 +221,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: file MultipartFile
+     * @Return: String
      * @Description: 上传文件到 OSS，失败时抛出业务异常
      */
     private String uploadFileWithException(MultipartFile file) {
@@ -221,7 +237,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: fileUrl String, operationDesc String
+     * @Return: void
      * @Description: 静默删除 OSS 文件，只记录日志，不抛出异常
      */
     private void deleteFileQuietly(String fileUrl, String operationDesc) {
@@ -242,7 +260,9 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
+     * @Date: 2026/3/17 8:28
+     * @Param: certification Certification
+     * @Return: CertificationVO
      * @Description: 将证书实体转换为VO对象
      */
     private CertificationVO convertToVO(Certification certification) {
@@ -256,8 +276,8 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
-     * @Param: request 证书查询请求
+     * @Date: 2026/3/17 8:28
+     * @Param: request CertificationQueryRequest
      * @Return: Result<Map<String, Object>> 分页证书列表
      * @Description: 获取证书列表，可按serviceId筛选
      */
@@ -292,8 +312,8 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
-     * @Param: request Http请求, uploadRequest 包含证书信息及文件
+     * @Date: 2026/3/17 8:28
+     * @Param: request HttpServletRequest, uploadRequest CertificationUploadRequest
      * @Return: Result<Long> 新创建的证书ID
      * @Description: 上传证书，包含文件上传
      */
@@ -348,8 +368,8 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
-     * @Param: id 证书ID, updateRequest 证书更新信息
+     * @Date: 2026/3/17 8:28
+     * @Param: request HttpServletRequest, id Long, updateRequest CertificationUpdateRequest
      * @Return: Result<Void>
      * @Description: 更新证书信息，可选择替换文件
      */
@@ -426,8 +446,8 @@ public class CertificationController {
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/16
-     * @Param: id 证书ID
+     * @Date: 2026/3/17 8:28
+     * @Param: request HttpServletRequest, id Long
      * @Return: Result<Void>
      * @Description: 逻辑删除证书，同时删除OSS上的文件
      */
