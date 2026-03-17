@@ -426,7 +426,7 @@ public class CertificationController {
                 deleteFileQuietly(newFileUrl, "补偿删除新上传的文件（数据库异常）");
             }
             log.error("更新证书数据库异常, 证书ID: {}", id, e);
-            throw new BusinessException("证书更新失败，请稍后重试");
+            throw new BusinessException(500, "证书更新失败，请稍后重试");
         }
 
         if (!updated) {
@@ -435,7 +435,7 @@ public class CertificationController {
                 deleteFileQuietly(newFileUrl, "补偿删除新上传的文件（更新失败）");
             }
             log.error("更新证书数据库返回false, 证书ID: {}", id);
-            throw new BusinessException("证书更新失败，请稍后重试");
+            throw new BusinessException(500, "证书更新失败，请稍后重试");
         }
 
         // 6. 数据库更新成功，此时才删除旧文件（如果有替换）
@@ -475,15 +475,15 @@ public class CertificationController {
         // 先逻辑删除数据库记录
         boolean removed;
         try{
-        removed = certificationService.removeById(id);
+            removed = certificationService.removeById(id);
         } catch (Exception e) {
             log.error("删除证书数据库记录异常, 证书ID: {}", id, e);
             throw new BusinessException("证书删除失败，请稍后重试");
         }
-          if (!removed) {
-        log.error("删除证书数据库记录失败, 证书ID: {}", id);
-        throw new BusinessException("证书删除失败，请稍后重试");
-    }
+        if (!removed) {
+             log.error("删除证书数据库记录失败, 证书ID: {}", id);
+             throw new BusinessException("证书删除失败，请稍后重试");
+      }
 
         // 数据库记录删除成功后，再尝试删除 OSS 文件（失败仅记录日志）
         if (StringUtils.hasText(existing.getCertFileUrl())) {
