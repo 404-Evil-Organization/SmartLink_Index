@@ -151,7 +151,10 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             return false;
         }
         return authentication.getAuthorities().stream()
-                .anyMatch(grantedAuthority -> "ROLE_ADMIN".equals(grantedAuthority.getAuthority()));
+                .map(grantedAuthority -> grantedAuthority.getAuthority())
+                .filter(Objects::nonNull)
+                .map(authority -> authority.toUpperCase(Locale.ROOT))
+                .anyMatch(role -> "ROLE_ADMIN".equals(role) || "ADMIN".equals(role));
     }
 
     /**
@@ -302,7 +305,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
      * @Date: 2026-03-12 23:32
      * @Param: productType 逗号分隔的标签名, manufactureId 制造企业ID
      * @Return: void
-     * @Description: 根据逗号分隔的 productType 字符串创建标签关联（批量查询/批量插入，避免 N+1 查询）
+     * @Description: 根据逗号分隔的 productType 字符串创建标签关联
      **/
     private void createTagAssociations(String productType, Long manufactureId) {
         if (StringUtils.isBlank(productType)) {
@@ -319,51 +322,33 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             return;
         }
 
-        // 1. 一次性批量查询已存在的标签（category 固定为 product）
-        List<Tag> existingTags = tagService.lambdaQuery()
+        // 使用 ON DUPLICATE KEY UPDATE 批量插入标签
+        // 组装成 List<Tag> 一次性插入
+        List<Tag> tagList = tagNames.stream()
+                .map(name -> {
+                    Tag tag = new Tag();
+                    tag.setName(name);
+                    tag.setCategory("product");
+                    // description 留空
+                    return tag;
+                })
+                .collect(Collectors.toList());
+
+        // 批量插入，遇到重复键时更新（此处实际上无字段需要更新，仅用于触发存在性检测）
+        // Mybatis-Plus 的 saveOrUpdateBatch 在遇到唯一键冲突时会执行更新操作
+        // 但由于我们不需要更新任何字段，实际效果等同于忽略冲突
+        tagService.saveOrUpdateBatch(tagList);
+
+        // 重新查询所有标签的ID（确保拿到最新的ID，包括已存在的和刚插入的）
+        List<Tag> allTags = tagService.lambdaQuery()
                 .in(Tag::getName, tagNames)
                 .eq(Tag::getCategory, "product")
                 .list();
-        Map<String, Long> nameToId = new HashMap<>();
-        if (existingTags != null && !existingTags.isEmpty()) {
-            for (Tag tag : existingTags) {
-                nameToId.put(tag.getName(), tag.getId());
-            }
-        }
-        // 2. 计算还不存在的标签名
-        Set<String> missingNames = new HashSet<>(tagNames);
-        missingNames.removeAll(nameToId.keySet());
-        // 3. 对不存在的标签批量插入
-        if (!missingNames.isEmpty()) {
-            List<Tag> newTags = new ArrayList<>(missingNames.size());
-            for (String name : missingNames) {
-                Tag newTag = new Tag();
-                newTag.setName(name);
-                newTag.setCategory("product");
-                // description 可留空
-                newTags.add(newTag);
-            }
-            // 直接批量插入新标签；如遇唯一键冲突，将抛出 DuplicateKeyException，导致事务回滚
-            tagService.saveBatch(newTags);
-            // 插入成功后，将新标签放入 name -> id 映射
-            for (Tag newTag : newTags) {
-                if (newTag.getId() != null) {
-                    nameToId.put(newTag.getName(), newTag.getId());
-                }
-            }
-        }
-        // 3.1 为了应对并发下的唯一键竞争，这里统一重新查询一次所有标签，确保拿到最新的 ID
-        List<Tag> finalTags = tagService.list(
-                new LambdaQueryWrapper<Tag>()
-                        .in(Tag::getName, tagNames)
-        );
-        nameToId.clear();
-        if (finalTags != null && !finalTags.isEmpty()) {
-            for (Tag tag : finalTags) {
-                nameToId.put(tag.getName(), tag.getId());
-            }
-        }
-        // 4. 构造最终的 tagId 列表，如果有标签仍未获取到 ID，则认为处理失败
+
+        Map<String, Long> nameToId = allTags.stream()
+                .collect(Collectors.toMap(Tag::getName, Tag::getId));
+
+        // 构造最终的 tagId 列表，如果有标签仍未获取到 ID，则认为处理失败
         List<Long> tagIds = tagNames.stream()
                 .map(name -> {
                     Long id = nameToId.get(name);
@@ -374,7 +359,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 })
                 .collect(Collectors.toList());
 
-        // 5.批量插入 manufacture_tag
+        // 批量插入 manufacture_tag
         List<ManufactureTag> manufactureTags = tagIds.stream()
                 .map(tagId -> new ManufactureTag().setManufactureId(manufactureId).setTagId(tagId))
                 .collect(Collectors.toList());
@@ -413,18 +398,21 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
      **/
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) return null;
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof Long) {
-            return (Long) principal;
-        } else if (principal instanceof String) {
-            try {
-                return Long.parseLong((String) principal);
-            } catch (NumberFormatException e) {
-                return null;
-            }
+        // 未获取到认证信息，视为未登录
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
         }
-        return null;
+        // 统一使用 authentication.getName() 获取当前登录用户标识
+        String userIdStr = authentication.getName();
+        if (StringUtils.isBlank(userIdStr)) {
+            return null;
+        }
+        try {
+            return Long.parseLong(userIdStr);
+        } catch (NumberFormatException e) {
+            // 当 name 不是合法的 Long 时，返回 null，由上层判断并抛出“用户未登录”异常
+            return null;
+        }
     }
 
     /**
