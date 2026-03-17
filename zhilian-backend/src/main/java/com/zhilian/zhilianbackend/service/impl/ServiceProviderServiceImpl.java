@@ -29,10 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -147,7 +144,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
 
         // 使用 UserService 检查用户是否存在（不存在时会抛出 BusinessException）
-        UserInfoResponse user = userService.getCurrentUser(requestDTO.getUserId());
+        userService.getCurrentUser(requestDTO.getUserId());
 
         checkUserIdExists(requestDTO.getUserId(), null);
         checkCompanyNameExists(requestDTO.getCompanyName(), null);
@@ -284,12 +281,19 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         // 2. 解析标签名称，获取或创建对应的标签ID
         String[] tagNames = serviceType.split("\\s*,\\s*");
         List<ServiceTag> tagList = new ArrayList<>();
+        // 使用 Set 按 tagId 去重，避免同一批次 insert 出现 Duplicate entry
+        Set<Long> handledTagIds = new HashSet<>();
 
         for (String tagName : tagNames) {
             if (StringUtils.isBlank(tagName)) {
                 continue;
             }
             Long tagId = getOrCreateTag(tagName.trim(), "service");
+            // 如果同一个 tagId 已经处理过，则跳过，防止构造重复 (serviceId, tagId, deleted)
+            if (handledTagIds.contains(tagId)) {
+                continue;
+            }
+            handledTagIds.add(tagId);
 
             ServiceTag serviceTag = new ServiceTag();
             serviceTag.setServiceId(serviceId);
