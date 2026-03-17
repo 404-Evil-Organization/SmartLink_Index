@@ -16,7 +16,6 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-
         <el-sub-menu v-if="isAdmin || isManufacture" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
@@ -27,7 +26,11 @@
             <span>诊断问卷</span>
           </el-menu-item>
         </el-sub-menu>
-        <el-sub-menu v-if="isAdmin" index="2">
+        <el-menu-item index="/manufacture/list">
+          <el-icon><OfficeBuilding /></el-icon>
+          <span>制造企业列表</span>
+        </el-menu-item>
+        <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
             <span>管理员</span>
@@ -76,6 +79,7 @@ import {
   Avatar,
   Collection,
   Tickets,
+  OfficeBuilding,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 

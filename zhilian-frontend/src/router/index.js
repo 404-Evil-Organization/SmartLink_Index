@@ -4,6 +4,7 @@ import { ElMessage } from "element-plus";
 import { checkRoleAccess } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
+import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
 import diagnosisRoutes from "./models/diagnosis";
 import errorRoutes from "./models/error";
@@ -27,6 +28,7 @@ const routes = [
     children: [
       ...dashboardRoutes,
       ...diagnosisRoutes,
+      ...manufactureRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,
