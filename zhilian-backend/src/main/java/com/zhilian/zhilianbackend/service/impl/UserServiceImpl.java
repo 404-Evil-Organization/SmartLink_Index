@@ -79,8 +79,7 @@ public class UserServiceImpl implements UserService {
             synchronized (usernameLock.mutex) {
                 // 3. 再次检查用户名是否已存在
                 LambdaQueryWrapper<User> checkWrapper = new LambdaQueryWrapper<>();
-                checkWrapper.eq(User::getUsername, username)
-                        .isNull(User::getDeleted);
+                checkWrapper.eq(User::getUsername, username);
                 if (userMapper.selectCount(checkWrapper) > 0) {
                     throw new BusinessException(409, "用户名已存在");
                 }
@@ -129,8 +128,7 @@ public class UserServiceImpl implements UserService {
     public UserLoginResponse login(UserLoginRequest request) {
         // 1. 查询用户
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUsername, request.getUsername())
-                .isNull(User::getDeleted);
+        wrapper.eq(User::getUsername, request.getUsername());
         List<User> users = userMapper.selectList(wrapper);
 
         // 2. 用户不存在
@@ -177,7 +175,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserInfoResponse getCurrentUser(Long userId) {
         User user = userMapper.selectById(userId);
-        if (user == null || user.getDeleted() != null) {
+        if (user == null) {
             throw new BusinessException(404, "用户不存在");
         }
 
@@ -203,7 +201,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void changePassword(Long userId, UserChangePasswordRequest request) {
         User user = userMapper.selectById(userId);
-        if (user == null || user.getDeleted() != null) {
+        if (user == null) {
             throw new BusinessException(404, "用户不存在");
         }
 
