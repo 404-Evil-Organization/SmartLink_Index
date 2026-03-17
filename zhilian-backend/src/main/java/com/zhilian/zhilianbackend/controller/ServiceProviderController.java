@@ -70,6 +70,7 @@ public class ServiceProviderController {
      * @Return: Result<IPage<ServiceProviderListVO>> 分页列表结果
      * @Description: 获取服务商列表
      **/
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/list")
     @Operation(summary = "获取服务商列表", description = "分页查询服务商列表，支持区域、服务大类筛选")
     public Result<IPage<ServiceProviderListVO>> getServiceProviderList(ServiceProviderListRequestDTO requestDTO) {
