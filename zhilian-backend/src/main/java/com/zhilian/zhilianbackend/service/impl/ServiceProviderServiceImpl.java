@@ -182,7 +182,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             throw new BusinessException(400, "服务商ID不能为空");
         }
         if (currentUserId == null) {
-            throw new AccessDeniedException("无法获取当前用户信息");
+            throw new BusinessException(403, "无法识别当前用户身份，禁止访问该接口");
         }
 
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();

@@ -8,6 +8,7 @@ import com.zhilian.zhilianbackend.dto.request.ServiceProviderUpdateRequestDTO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderAddVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderDetailVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderListVO;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -47,7 +48,7 @@ public class ServiceProviderController {
     private Long getCurrentUserIdFromSecurityContext() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new AccessDeniedException("未登录或登录状态已失效，禁止访问该接口");
+            throw new BusinessException(401, "未登录或登录状态已失效，禁止访问该接口");
         }
         Object principal = authentication.getPrincipal();
         String identifier;
@@ -60,7 +61,7 @@ public class ServiceProviderController {
             return Long.parseLong(identifier);
         } catch (NumberFormatException ex) {
             log.error("无法从认证信息中解析当前用户ID，identifier={}", identifier, ex);
-            throw new AccessDeniedException("无法识别当前用户身份，禁止访问该接口");
+            throw new BusinessException(403, "无法识别当前用户身份，禁止访问该接口");
         }
     }
     /**
