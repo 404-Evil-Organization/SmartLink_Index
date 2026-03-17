@@ -129,6 +129,9 @@ public class CertificationController {
 
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ServiceProvider::getUserId, userId);
+
+        log.info("执行查询: user_id = {}", userId);
+        // 使用 getOne(wrapper, false) 避免当存在多条记录时抛出运行时异常，防止接口直接返回 500
         ServiceProvider serviceProvider = serviceProviderService.getOne(wrapper, false);
 
         return serviceProvider != null ? serviceProvider.getId() : null;
