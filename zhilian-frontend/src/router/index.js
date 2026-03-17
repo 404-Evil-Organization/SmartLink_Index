@@ -19,6 +19,7 @@ const routes = [
     name: "Register",
     component: () => import("@/views/auth/Register.vue"),
   },
+  ...errorRoutes,
   {
     path: "/",
     component: () => import("@/layouts/BasicLayout.vue"),
@@ -26,7 +27,6 @@ const routes = [
     children: [
       ...dashboardRoutes,
       ...diagnosisRoutes,
-      ...errorRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,

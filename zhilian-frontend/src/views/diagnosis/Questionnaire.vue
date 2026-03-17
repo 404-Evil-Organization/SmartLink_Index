@@ -18,7 +18,12 @@
         <div class="form-title">企业数字化水平评估</div>
         <div class="form-actions">
           <el-tooltip content="刷新企业列表">
-            <el-button :icon="Refresh" circle @click="fetchEnterprises" />
+            <el-button
+              :icon="Refresh"
+              :loading="loadingEnterprises"
+              circle
+              @click="fetchEnterprises"
+            />
           </el-tooltip>
         </div>
       </div>

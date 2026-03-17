@@ -263,7 +263,7 @@ zhilian-frontend/
 │   │   │   └── List.vue                    # 服务商列表页（供所有用户浏览）
 │   │   ├── enterprise/         # 个人企业管理
 │   │   │   └── index.vue                   # 我的企业页面（制造企业/服务商选项卡，含审核状态）
-│   │   └── admin/              # 管理员后台
+│   │   ├── admin/              # 管理员后台
 │   │   │   ├── TagList.vue                 # 标签管理（增删改查标签）
 │   │   │   ├── UserManage.vue              # 用户管理（启用/禁用、重置密码）
 │   │   │   ├── DemandAudit.vue             # 需求审核（通过/驳回需求）
