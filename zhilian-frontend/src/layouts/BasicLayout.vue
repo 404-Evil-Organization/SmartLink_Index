@@ -16,7 +16,7 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-menu-item index="/manufacture/List">
+        <el-menu-item index="/manufacture/list">
           <el-icon><OfficeBuilding /></el-icon>
           <span>制造企业列表</span>
         </el-menu-item>

@@ -143,7 +143,9 @@
         <el-table-column prop="productType" label="主营产品" min-width="120">
           <template #default="{ row }">
             <el-tag
-              v-for="tag in row.productType.split(',')"
+              v-for="tag in row.productType
+                ? String(row.productType).split(',')
+                : []"
               :key="tag"
               size="small"
               effect="plain"
