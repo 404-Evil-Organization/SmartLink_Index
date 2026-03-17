@@ -1,8 +1,5 @@
 // mock/diagnosis.js
 // 数字化诊断模块模拟数据
-
-import Mock from "mockjs";
-
 const diagnosisRecords = [
   {
     id: 5001,

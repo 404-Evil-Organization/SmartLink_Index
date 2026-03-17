@@ -49,10 +49,6 @@
               :value="item.id"
             />
           </el-select>
-          <div class="form-tip" v-if="enterpriseOptions.length === 0">
-            您还没有创建任何制造企业，请先
-            <router-link to="/enterprise">创建企业</router-link>
-          </div>
         </el-form-item>
 
         <!-- 隐藏的企业ID（当只有一家企业时自动填充） -->
@@ -69,98 +65,101 @@
         </el-form-item>
 
         <!-- 无企业提示 -->
-        <el-alert
-          v-else
-          title="您尚未创建制造企业，请先创建企业后再进行诊断"
-          type="warning"
-          show-icon
-          :closable="false"
-          style="margin-bottom: 20px"
-        />
+        <div class="form-tip" v-else-if="enterpriseOptions.length === 0">
+          <el-alert
+            title="您尚未创建制造企业，请先创建企业后再进行诊断"
+            type="warning"
+            show-icon
+            :closable="false"
+            style="margin-bottom: 20px"
+          />
+        </div>
 
-        <!-- 四个评分维度 -->
-        <el-form-item
-          label="信息化水平"
-          prop="infoScore"
-          required
-          class="score-item"
-        >
-          <div class="score-slider">
-            <el-slider
-              v-model="form.infoScore"
-              :min="1"
-              :max="5"
-              :step="1"
-              :marks="scoreMarks"
-            />
-          </div>
-          <div class="score-desc">评估企业信息系统建设、数据采集等能力</div>
-        </el-form-item>
-
-        <el-form-item
-          label="自动化水平"
-          prop="autoScore"
-          required
-          class="score-item"
-        >
-          <div class="score-slider">
-            <el-slider
-              v-model="form.autoScore"
-              :min="1"
-              :max="5"
-              :step="1"
-              :marks="scoreMarks"
-            />
-          </div>
-          <div class="score-desc">评估生产线自动化、设备联网等能力</div>
-        </el-form-item>
-
-        <el-form-item
-          label="数据应用"
-          prop="dataScore"
-          required
-          class="score-item"
-        >
-          <div class="score-slider">
-            <el-slider
-              v-model="form.dataScore"
-              :min="1"
-              :max="5"
-              :step="1"
-              :marks="scoreMarks"
-            />
-          </div>
-          <div class="score-desc">评估数据分析、决策支持等能力</div>
-        </el-form-item>
-
-        <el-form-item
-          label="服务协同"
-          prop="serviceScore"
-          required
-          class="score-item"
-        >
-          <div class="score-slider">
-            <el-slider
-              v-model="form.serviceScore"
-              :min="1"
-              :max="5"
-              :step="1"
-              :marks="scoreMarks"
-            />
-          </div>
-          <div class="score-desc">评估与外部服务商协同、供应链整合能力</div>
-        </el-form-item>
-
-        <div class="form-actions-bottom">
-          <el-button
-            type="primary"
-            size="large"
-            @click="submitForm"
-            :loading="submitting"
+        <div v-if="enterpriseOptions.length >= 1">
+          <!-- 四个评分维度 -->
+          <el-form-item
+            label="信息化水平"
+            prop="infoScore"
+            required
+            class="score-item"
           >
-            提交诊断
-          </el-button>
-          <el-button size="large" @click="resetForm">重置</el-button>
+            <div class="score-slider">
+              <el-slider
+                v-model="form.infoScore"
+                :min="1"
+                :max="5"
+                :step="1"
+                :marks="scoreMarks"
+              />
+            </div>
+            <div class="score-desc">评估企业信息系统建设、数据采集等能力</div>
+          </el-form-item>
+
+          <el-form-item
+            label="自动化水平"
+            prop="autoScore"
+            required
+            class="score-item"
+          >
+            <div class="score-slider">
+              <el-slider
+                v-model="form.autoScore"
+                :min="1"
+                :max="5"
+                :step="1"
+                :marks="scoreMarks"
+              />
+            </div>
+            <div class="score-desc">评估生产线自动化、设备联网等能力</div>
+          </el-form-item>
+
+          <el-form-item
+            label="数据应用"
+            prop="dataScore"
+            required
+            class="score-item"
+          >
+            <div class="score-slider">
+              <el-slider
+                v-model="form.dataScore"
+                :min="1"
+                :max="5"
+                :step="1"
+                :marks="scoreMarks"
+              />
+            </div>
+            <div class="score-desc">评估数据分析、决策支持等能力</div>
+          </el-form-item>
+
+          <el-form-item
+            label="服务协同"
+            prop="serviceScore"
+            required
+            class="score-item"
+          >
+            <div class="score-slider">
+              <el-slider
+                v-model="form.serviceScore"
+                :min="1"
+                :max="5"
+                :step="1"
+                :marks="scoreMarks"
+              />
+            </div>
+            <div class="score-desc">评估与外部服务商协同、供应链整合能力</div>
+          </el-form-item>
+
+          <div class="form-actions-bottom">
+            <el-button
+              type="primary"
+              size="large"
+              @click="submitForm"
+              :loading="submitting"
+            >
+              提交诊断
+            </el-button>
+            <el-button size="large" @click="resetForm">重置</el-button>
+          </div>
         </div>
       </el-form>
     </el-card>
@@ -175,7 +174,6 @@ import { useRouter } from "vue-router";
 // import { getPersonalManufactureList } from "@/api/enterprise"; //day12实现接口，暂用普通接口代替
 import { getManufactureList } from "@/api/manufacture";
 import { submitDiagnosis } from "@/api/diagnosis";
-import { useUserStore } from "@/stores/user";
 
 const router = useRouter();
 
@@ -186,7 +184,7 @@ const loadingEnterprises = ref(false);
 const fetchEnterprises = async () => {
   loadingEnterprises.value = true;
   try {
-    const res = await getManufactureList({ page: 1, size: 100 });
+    const res = await getManufactureList({ page: 1, size: 100 }); // 个人企业获取接口暂未实现，先用全体企业获取接口占位
     enterprises.value = res.records || [];
   } catch (error) {
     console.error("获取企业列表失败", error);
@@ -278,17 +276,17 @@ const rules = {
 
 // 提交
 const submitForm = async () => {
+  if (enterpriseOptions.value.length === 0) {
+    ElMessage.warning("请先创建制造企业");
+    // router.push("/enterprise"); //后续补上
+    return;
+  }
+
   if (!formRef.value) return;
   try {
     await formRef.value.validate();
   } catch (err) {
     console.log("表单校验失败", err);
-    return;
-  }
-
-  if (enterpriseOptions.value.length === 0) {
-    ElMessage.warning("请先创建制造企业");
-    // router.push("/enterprise"); //后续补上
     return;
   }
 
@@ -301,9 +299,13 @@ const submitForm = async () => {
       dataScore: form.dataScore,
       serviceScore: form.serviceScore,
     });
-    ElMessage.success("诊断提交成功，正在生成报告...");
-    // 跳转到报告页，传递诊断ID
-    router.push(`/diagnosis/report/${res.diagnosisId}`);
+    // 当前路由表尚未提供诊断报告页（/diagnosis/report/:id），因此仅在本页提示成功，避免跳转到不存在的页面
+    ElMessage.success(
+      "诊断提交成功，报告正在后台生成，请稍后在诊断记录中查看。",
+    );
+    // TODO: 后续若补齐诊断报告页与路由（/diagnosis/report/:id），可在此根据 res.diagnosisId 进行跳转
+    // router.push(`/diagnosis/report/${res.diagnosisId}`);
+    router.push("/");
   } catch (error) {
     console.error("提交失败", error);
   } finally {
@@ -321,8 +323,6 @@ const resetForm = () => {
   form.serviceScore = 3;
   formRef.value?.clearValidate();
 };
-
-// 权限检查：只有 manufacture 可访问，已在路由守卫中处理，此处可加提示
 </script>
 
 <style scoped>
