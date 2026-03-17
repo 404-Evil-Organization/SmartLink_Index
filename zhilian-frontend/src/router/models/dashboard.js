@@ -1,7 +1,7 @@
 export default [
   {
-    path: "", // 空路径表示父路径 '/' 时默认显示该子路由
-    name: "Dashboard",
+    path: "dashboard/index",
+    name: "dashboard",
     component: () => import("@/views/dashboard/index.vue"),
   },
 ];

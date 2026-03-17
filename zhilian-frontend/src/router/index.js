@@ -17,11 +17,17 @@ const routes = [
     name: "Register",
     component: () => import("@/views/auth/Register.vue"),
   },
+
   {
     path: "/",
     component: () => import("@/layouts/BasicLayout.vue"),
     meta: { requiresAuth: true },
     children: [
+      {
+        path: "",
+        name: "home",
+        component: () => import("@/views/home.vue"),
+      },
       ...dashboardRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({

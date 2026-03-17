@@ -16,6 +16,16 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
+        <el-sub-menu index="3">
+          <template #title>
+            <el-icon><DataBoard /></el-icon>
+            <span>可视化看板</span>
+          </template>
+          <el-menu-item index="/dashboard/index">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>数据看板</span>
+          </el-menu-item>
+        </el-sub-menu>
         <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
@@ -60,7 +70,13 @@ import {
   ElMenuItem,
   ElButton,
 } from "element-plus";
-import { HomeFilled, Avatar, Collection } from "@element-plus/icons-vue";
+import {
+  HomeFilled,
+  Avatar,
+  Collection,
+  DataBoard,
+  DataAnalysis,
+} from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
 const route = useRoute();
