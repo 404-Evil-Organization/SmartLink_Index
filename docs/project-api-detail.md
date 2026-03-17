@@ -1046,8 +1046,40 @@
 
 - **URL**: `/api/diagnosis/result/{id}`
 - **Method**: `GET`
-- **请求头**: `Authorization: Bearer <token>`
+- **请求头**: `Authorization: Bearer <token>`（需制造企业角色）
 - **路径参数**: `id` (诊断记录ID)
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "diagnosisId": 5001,
+    "manuId": 1001,
+    "infoScore": 4,
+    "autoScore": 3,
+    "dataScore": 2,
+    "serviceScore": 3,
+    "totalScore": 65,
+    "level": "成熟期",
+    "suggestions": ["..."],
+    "diagnosisDate": "2026-03-07 14:30:00"
+  }
+}
+```
+
+### 2.3 获取企业最新诊断报告
+
+- **URL**: `/api/diagnosis/latest`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需制造企业角色）
+- **请求参数**（Query）:
+
+| 参数名 | 类型 | 必填 | 描述       |
+| :----- | :--- | :--- | :--------- |
+| manuId | long | 是   | 制造企业ID |
+
 - **返回数据**:
 
 ```json
