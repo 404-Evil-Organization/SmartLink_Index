@@ -174,8 +174,11 @@ import { useRouter } from "vue-router";
 // import { getPersonalManufactureList } from "@/api/enterprise"; //day12实现接口，暂用普通接口代替
 import { getManufactureList } from "@/api/manufacture";
 import { submitDiagnosis } from "@/api/diagnosis";
+import { useUserStore } from "@/stores/user";
 
 const router = useRouter();
+const userStore = useUserStore();
+const userRole = userStore.userInfo?.role;
 
 // ---------- 企业列表 ----------
 const enterprises = ref([]);
@@ -184,7 +187,12 @@ const loadingEnterprises = ref(false);
 const fetchEnterprises = async () => {
   loadingEnterprises.value = true;
   try {
-    const res = await getManufactureList({ page: 1, size: 100 }); // 个人企业获取接口暂未实现，先用全体企业获取接口占位
+    let res = {};
+    if (userRole === "admin") {
+      res = await getManufactureList({ page: 1, size: 100 });
+    } else {
+      res = await getManufactureList({ page: 1, size: 100 }); // 个人企业获取接口暂未实现，先用全体企业获取接口占位
+    }
     enterprises.value = res.records || [];
   } catch (error) {
     console.error("获取企业列表失败", error);
