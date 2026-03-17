@@ -234,7 +234,7 @@ public class CertificationController {
             return ossService.uploadFile(file);
         } catch (Exception e) {
             log.error("OSS文件上传失败: {}", file.getOriginalFilename(), e);
-            throw new BusinessException("证书文件上传失败，请稍后重试");
+            throw new BusinessException(500, "证书文件上传失败，请稍后重试");
         }
     }
 
@@ -356,13 +356,13 @@ public class CertificationController {
         } catch (Exception e) {
             log.error("证书数据库保存失败，尝试删除已上传的OSS文件: {}", fileUrl, e);
             deleteFileQuietly(fileUrl, "补偿删除上传失败的文件");
-            throw new BusinessException("证书记录保存失败，请稍后重试");
+            throw new BusinessException(500, "证书记录保存失败，请稍后重试");
         }
 
         if (!saved) {
             log.error("证书数据库保存返回 false，删除已上传的OSS文件: {}", fileUrl);
             deleteFileQuietly(fileUrl, "补偿删除上传失败的文件");
-            throw new BusinessException("证书记录保存失败，请稍后重试");
+            throw new BusinessException(500, "证书记录保存失败，请稍后重试");
         }
 
         log.info("证书上传成功, 证书ID: {}, 文件URL: {}", certification.getId(), fileUrl);
@@ -473,16 +473,17 @@ public class CertificationController {
         }
 
         // 先逻辑删除数据库记录
-        try {
-            boolean removed = certificationService.removeById(id);
-            if (!removed) {
-                log.error("删除证书数据库记录失败, 证书ID: {}", id);
-                throw new BusinessException("证书删除失败，请稍后重试");
-            }
+        boolean removed;
+        try{
+        removed = certificationService.removeById(id);
         } catch (Exception e) {
             log.error("删除证书数据库记录异常, 证书ID: {}", id, e);
             throw new BusinessException("证书删除失败，请稍后重试");
         }
+          if (!removed) {
+        log.error("删除证书数据库记录失败, 证书ID: {}", id);
+        throw new BusinessException("证书删除失败，请稍后重试");
+    }
 
         // 数据库记录删除成功后，再尝试删除 OSS 文件（失败仅记录日志）
         if (StringUtils.hasText(existing.getCertFileUrl())) {
