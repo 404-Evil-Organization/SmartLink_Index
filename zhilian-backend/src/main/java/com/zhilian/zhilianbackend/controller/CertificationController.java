@@ -116,9 +116,8 @@ public class CertificationController {
         // 根据userId查询服务商信息
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ServiceProvider::getUserId, userId);
-        wrapper.isNull(ServiceProvider::getDeleted); // 明确指定只查询未删除的
 
-        log.info("执行查询: user_id = {}, deleted IS NULL", userId);
+        log.info("执行查询: user_id = {}", userId);
         // 使用 getOne(wrapper, false) 避免当存在多条记录时抛出运行时异常，防止接口直接返回 500
         ServiceProvider serviceProvider = serviceProviderService.getOne(wrapper, false);
 
