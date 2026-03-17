@@ -47,3 +47,23 @@ export function createTimeConverter(utcDateStr) {
     },
   };
 }
+
+/**
+ * 格式化日期为本地年月日字符串。
+ * 统一处理空值和异常格式，避免在模板中编写复杂表达式。
+ *
+ * @param {string | number | Date | null | undefined} date 原始日期值
+ * @returns {string} 格式化后的日期字符串或占位符 "-"
+ */
+export function formatEstablishedDate(date) {
+  if (!date) {
+    return "-";
+  }
+  try {
+    const result = createTimeConverter(date).toLocalYMD();
+    return result || "-";
+  } catch (e) {
+    // 若日期格式异常或转换失败，统一返回占位符，避免打断页面渲染
+    return "-";
+  }
+}

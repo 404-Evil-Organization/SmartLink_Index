@@ -2,6 +2,7 @@ package com.zhilian.zhilianbackend.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,7 +34,7 @@ public class CertificationUploadRequest {
     @Schema(description = "有效期至", example = "2026-12-31")
     private Date expireDate;
 
-    @NotBlank(message = "证书文件不能为空")
+    @NotNull(message = "证书文件不能为空")
     @Schema(description = "证书文件", requiredMode = Schema.RequiredMode.REQUIRED)
     private MultipartFile file;
 }
