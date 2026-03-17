@@ -52,10 +52,10 @@ public class Tag implements Serializable {
     private String description;
 
     /**
-     * 逻辑删除时间，NULL未删除，非NULL已删除
+     * 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除
      */
     @TableField("deleted")
-    @TableLogic(value = "null", delval = "now()")
+    @TableLogic
     private Date deleted;
 
     /**

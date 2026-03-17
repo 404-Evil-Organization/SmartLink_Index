@@ -53,7 +53,7 @@ mybatis-plus:
       # 逻辑删除字段
       logic-delete-field: deleted
       logic-delete-value: now()
-      logic-not-delete-value: null
+      logic-not-delete-value: "'1970-01-01 00:00:00'"
     # 是否打印banner
     banner: false
   # 原生配置
