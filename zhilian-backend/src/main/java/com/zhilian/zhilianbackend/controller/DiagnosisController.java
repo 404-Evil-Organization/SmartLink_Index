@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import com.zhilian.zhilianbackend.common.exception.BusinessException;
 
 /**
  * @Author: 6017
@@ -29,36 +30,28 @@ public class DiagnosisController {
     /**
      * 从 Spring Security 的 SecurityContext 中获取当前登录用户 ID。
      * 说明：需与全局认证逻辑保持一致，避免与 JwtAuthenticationFilter 行为不一致。
+     * 当认证信息缺失、为匿名用户或无法解析出合法用户 ID 时，统一抛出 401 业务异常。
      */
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
-            log.warn("当前请求未找到认证信息，无法获取用户ID");
-            return null;
+            log.warn("当前请求未找到认证信息或未通过认证，拒绝访问诊断接口");
+            throw new BusinessException(401, "请先登录");
         }
         Object principal = authentication.getPrincipal();
-        if (principal instanceof Long) {
-            return (Long) principal;
+        // 与全局安全配置保持一致：anonymousUser 视为未登录
+        if (principal instanceof String && "anonymousUser".equals(principal)) {
+            log.warn("当前请求为匿名用户访问诊断接口，拒绝访问");
+            throw new BusinessException(401, "请先登录");
         }
-        if (principal instanceof UserDetails) {
-            String username = ((UserDetails) principal).getUsername();
-            try {
-                return Long.valueOf(username);
-            } catch (NumberFormatException e) {
-                log.warn("无法从 UserDetails.username 解析为用户ID: {}", username);
-                return null;
-            }
+        // 统一使用 authentication.getName() 解析当前登录用户标识
+        String userIdStr = authentication.getName();
+        try {
+            return Long.valueOf(userIdStr);
+        } catch (NumberFormatException e) {
+            log.warn("无法从 authentication.getName() 解析用户ID，name={}", userIdStr, e);
+            throw new BusinessException(401, "请先登录");
         }
-        if (principal instanceof String) {
-            try {
-                return Long.valueOf((String) principal);
-            } catch (NumberFormatException e) {
-                log.warn("无法从 String principal 解析为用户ID: {}", principal);
-                return null;
-            }
-        }
-        log.warn("未知类型的 principal: {}", principal);
-        return null;
     }
 
     /**

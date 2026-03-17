@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Date;
+import java.util.Collections;
 
 /**
  * @Author: 6017
@@ -53,6 +54,11 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     @Override
     @Transactional(rollbackFor = Exception.class)
     public DiagnosisReportVO submitDiagnosis(DiagnosisSubmitRequest request, Long userId) {
+        // 未登录时直接返回 401，避免后续 selectById(null) 导致错误的 404/403 或底层异常
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+
         log.info("提交诊断问卷 - 用户ID: {}, 企业ID: {}", userId, request.getManuId());
 
         // 1. 验证制造企业是否存在
@@ -144,7 +150,17 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     **/
     @Override
     public DiagnosisReportVO getDiagnosisById(Long id, Long userId) {
+        // 未登录用户不允许访问诊断报告，避免 userId 为 null 导致底层异常或错误状态码
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+
         log.info("获取诊断报告 - 诊断ID: {}, 用户ID: {}", id, userId);
+
+        // 登录校验：userId 为空视为未登录
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
 
         // 1. 查询诊断记录
         Diagnosis diagnosis = this.getById(id);
@@ -186,6 +202,11 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     @Override
     public DiagnosisReportVO getLatestDiagnosis(Long manuId, Long userId) {
         log.info("获取企业最新诊断报告 - 企业ID: {}, 用户ID: {}", manuId, userId);
+
+        // 登录校验：userId 为空视为未登录
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
 
         // 1. 验证制造企业是否存在
         Manufacture manufacture = manufactureMapper.selectById(manuId);
@@ -241,10 +262,16 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         vo.setTotalScore(diagnosis.getTotalScore() != null ? diagnosis.getTotalScore().intValue() : null);
         vo.setLevel(diagnosis.getLevel());
 
-        // 解析JSON格式的建议列表
+        // 解析JSON格式的建议列表，防御历史脏数据/非法JSON，避免因单条坏数据导致接口整体500
         if (diagnosis.getSuggestions() != null) {
-            List<String> suggestions = JSONUtil.toList(diagnosis.getSuggestions(), String.class);
-            vo.setSuggestions(suggestions);
+            try {
+                List<String> suggestions = JSONUtil.toList(diagnosis.getSuggestions(), String.class);
+                vo.setSuggestions(suggestions);
+            } catch (Exception e) {
+                // 不中断整体诊断报告查询，仅记录错误并降级为空列表，后续可根据日志排查并修复脏数据
+                log.error("解析诊断建议JSON失败，diagnosisId={}, suggestions={}", diagnosis.getId(), diagnosis.getSuggestions(), e);
+                vo.setSuggestions(Collections.emptyList());
+            }
         }
 
         // 获取雷达图数据

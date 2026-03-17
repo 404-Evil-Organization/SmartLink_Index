@@ -94,14 +94,34 @@ public class DiagnosisAlgorithmTempImpl implements DiagnosisAlgorithm {
         return suggestions;
     }
 
+    /**
+     * 将单项诊断得分裁剪到 1-5 区间。
+     * 说明：为防止历史脏数据或算法调整导致得分越界，这里做一次防御性裁剪，
+     * 确保后续雷达图百分比转换始终落在 20%-100% 之间。
+     */
+    private int clampScore(int score) {
+        if (score < 1) {
+            return 1;
+        }
+        if (score > 5) {
+            return 5;
+        }
+        return score;
+    }
+
     @Override
     public Map<String, Integer> getRadarData(int infoScore, int autoScore, int dataScore, int serviceScore) {
         Map<String, Integer> radarData = new HashMap<>();
+        // 对输入得分做边界裁剪，确保在 1-5 分区间内
+        int clampedInfoScore = clampScore(infoScore);
+        int clampedAutoScore = clampScore(autoScore);
+        int clampedDataScore = clampScore(dataScore);
+        int clampedServiceScore = clampScore(serviceScore);
         // 转换为百分比显示（1-5分对应20%-100%）
-        radarData.put("信息化", infoScore * 20);
-        radarData.put("自动化", autoScore * 20);
-        radarData.put("数据应用", dataScore * 20);
-        radarData.put("服务协同", serviceScore * 20);
+        radarData.put("信息化", clampedInfoScore * 20);
+        radarData.put("自动化", clampedAutoScore * 20);
+        radarData.put("数据应用", clampedDataScore * 20);
+        radarData.put("服务协同", clampedServiceScore * 20);
         return radarData;
     }
 }
