@@ -1,0 +1,88 @@
+package com.zhilian.zhilianbackend.service.algorithm.impl;
+
+import com.zhilian.zhilianbackend.service.algorithm.DiagnosisAlgorithm;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @Author: 6017
+ * @Date: 2026/3/17 21:13
+ * @Param:
+ * @Return:
+ * @Description:
+ **/
+@Component
+public class DiagnosisAlgorithmTempImpl implements DiagnosisAlgorithm {
+
+    @Override
+    public int calculateTotalScore(int infoScore, int autoScore, int dataScore, int serviceScore) {
+        // 简单算法：各维度得分转换为百分比后加权平均
+        // 信息化30%、自动化30%、数据应用20%、服务协同20%
+        double total = infoScore * 6.0 + autoScore * 6.0 + dataScore * 5.0 + serviceScore * 5.0;
+        return (int) Math.round(total);
+    }
+
+    @Override
+    public String getLevel(int totalScore) {
+        if (totalScore < 40) {
+            return "起步期";
+        } else if (totalScore < 60) {
+            return "成长期";
+        } else if (totalScore < 80) {
+            return "成熟期";
+        } else {
+            return "引领期";
+        }
+    }
+
+    @Override
+    public List<String> generateSuggestions(int infoScore, int autoScore, int dataScore, int serviceScore) {
+        List<String> suggestions = new ArrayList<>();
+
+        if (infoScore <= 2) {
+            suggestions.add("建议引入ERP、MES等信息化系统，提升生产管理效率");
+        } else if (infoScore <= 4) {
+            suggestions.add("可考虑打通各业务系统数据，实现信息互联互通");
+        }
+
+        if (autoScore <= 2) {
+            suggestions.add("建议引入自动化设备，减少人工操作环节");
+        } else if (autoScore <= 4) {
+            suggestions.add("可考虑建设自动化产线，进一步提升生产效率");
+        }
+
+        if (dataScore <= 2) {
+            suggestions.add("建议建立数据采集体系，开始积累生产数据");
+        } else if (dataScore <= 4) {
+            suggestions.add("可引入数据分析工具，挖掘数据价值辅助决策");
+        }
+
+        if (serviceScore <= 2) {
+            suggestions.add("建议加强与外部服务商的合作，拓展业务渠道");
+        } else if (serviceScore <= 4) {
+            suggestions.add("可考虑将非核心业务外包，聚焦核心能力建设");
+        }
+
+        // 如果建议太少，添加通用建议
+        if (suggestions.isEmpty()) {
+            suggestions.add("继续保持数字化建设，探索更多创新应用场景");
+        }
+
+        return suggestions;
+    }
+
+    @Override
+    public Map<String, Integer> getRadarData(int infoScore, int autoScore, int dataScore, int serviceScore) {
+        Map<String, Integer> radarData = new HashMap<>();
+        // 转换为百分比显示（1-5分对应20%-100%）
+        radarData.put("信息化", infoScore * 20);
+        radarData.put("自动化", autoScore * 20);
+        radarData.put("数据应用", dataScore * 20);
+        radarData.put("服务协同", serviceScore * 20);
+        return radarData;
+    }
+}
