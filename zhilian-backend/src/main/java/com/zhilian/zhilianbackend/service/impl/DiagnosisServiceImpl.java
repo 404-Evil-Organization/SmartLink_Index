@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import cn.hutool.json.JSONUtil;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataAccessException;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -91,7 +92,16 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
                 request.getServiceScore()
         );
 
-        // 4. 保存诊断记录
+        // 4. 校验总分范围，避免违反数据库 total_score 0-100 CHECK 约束
+        // 说明：如果算法或输入异常导致总分超出 [0,100]，这里抛出明确的业务异常，
+        // 而不是让底层数据库约束异常冒泡为通用 500，便于前端提示和问题排查。
+        if (totalScore < 0 || totalScore > 100) {
+            log.error("诊断总分超出合法范围[0,100] - 计算结果: {}, 用户ID: {}, 企业ID: {}",
+                    totalScore, userId, request.getManuId());
+            throw new BusinessException(400, "诊断总分计算异常，请检查各项评分是否在合法范围内（0-100）");
+        }
+
+        // 5. 保存诊断记录
         Diagnosis diagnosis = new Diagnosis();
         diagnosis.setManuId(request.getManuId())
                 .setInfoScore(request.getInfoScore().byteValue())
@@ -103,10 +113,25 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
                 .setSuggestions(JSONUtil.toJsonStr(suggestions))
                 .setDiagnosisDate(new Date());
 
-        this.save(diagnosis);
-        log.info("诊断记录保存成功 - 诊断ID: {}, 总分: {}, 等级: {}", diagnosis.getId(), totalScore, level);
+        try {
+            boolean saved = this.save(diagnosis);
+            if (!saved) {
+                // MyBatis Plus save 返回 false 说明未成功插入任何记录，此时不应继续后续逻辑
+                log.error("诊断记录保存失败（save 返回 false）- 企业ID: {}, 总分: {}, 等级: {}",
+                        request.getManuId(), totalScore, level);
+                throw new BusinessException(500, "诊断记录保存失败，请稍后重试");
+            }
+        } catch (DataAccessException e) {
+            // 捕获底层数据库访问异常（如 CHECK 约束、外键约束、连接异常等），统一转换为业务异常
+            log.error("诊断记录持久化异常 - 企业ID: {}, 总分: {}, 等级: {}",
+                    request.getManuId(), totalScore, level, e);
+            throw new BusinessException(500, "诊断记录保存异常，请稍后重试");
+        }
 
-        // 5. 构建返回结果
+        log.info("诊断记录保存成功 - 诊断ID: {}, 企业ID: {}, 总分: {}, 等级: {}",
+                diagnosis.getId(), request.getManuId(), totalScore, level);
+
+        // 6. 构建返回结果
         return buildDiagnosisReportVO(diagnosis);
     }
 

@@ -122,10 +122,10 @@
 			<version>3.17.4</version>
 		</dependency>
 
-		<!-- Hutool 工具类 -->
+		<!-- Hutool JSON 工具（精简依赖，仅保留 JSON 功能） -->
 		<dependency>
 			<groupId>cn.hutool</groupId>
-			<artifactId>hutool-all</artifactId>
+			<artifactId>hutool-json</artifactId>
 			<version>5.8.25</version>
 		</dependency>
 
