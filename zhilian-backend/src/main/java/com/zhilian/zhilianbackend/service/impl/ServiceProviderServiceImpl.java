@@ -10,16 +10,16 @@ import com.zhilian.zhilianbackend.dto.request.ServiceProviderUpdateRequestDTO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderAddVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderDetailVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderListVO;
+import com.zhilian.zhilianbackend.dto.response.UserInfoResponse;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
 import com.zhilian.zhilianbackend.entity.ServiceTag;
 import com.zhilian.zhilianbackend.entity.Tag;
-import com.zhilian.zhilianbackend.entity.User;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.ServiceProviderMapper;
 import com.zhilian.zhilianbackend.mapper.ServiceTagMapper;
 import com.zhilian.zhilianbackend.mapper.TagMapper;
-import com.zhilian.zhilianbackend.mapper.UserMapper;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
+import com.zhilian.zhilianbackend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -38,6 +38,8 @@ import java.util.stream.Collectors;
 /**
  * @Author: xiaodengyou
  * @Date: 2026-03-13 01:01
+ * @Param:
+ * @Return:
  * @Description: 服务商 Service 实现类
  **/
 @Slf4j
@@ -45,9 +47,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMapper, ServiceProvider> implements ServiceProviderService {
 
-    private final UserMapper userMapper;
     private final TagMapper tagMapper;
     private final ServiceTagMapper serviceTagMapper;
+    private final UserService userService;  // 注入 UserService
 
     // 未删除标识的固定值（与 application.yml 中 logic-not-delete-value 保持一致）
     private static final Timestamp NOT_DELETED = Timestamp.valueOf("1970-01-01 00:00:00");
@@ -144,10 +146,8 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             throw new BusinessException(400, "用户ID不能为空");
         }
 
-        User user = userMapper.selectById(requestDTO.getUserId());
-        if (user == null) {
-            throw new BusinessException(404, "关联的用户不存在");
-        }
+        // 使用 UserService 检查用户是否存在（不存在时会抛出 BusinessException）
+        UserInfoResponse user = userService.getCurrentUser(requestDTO.getUserId());
 
         checkUserIdExists(requestDTO.getUserId(), null);
         checkCompanyNameExists(requestDTO.getCompanyName(), null);
@@ -171,9 +171,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     /**
      * @Author: xiaodengyou
      * @Date: 2026-03-13 01:00
-     * @Param: id 服务商ID
-     * @Param: requestDTO 修改服务商请求参数
-     * @Param: currentUserId 当前操作用户ID
+     * @Param: id 服务商ID, requestDTO 修改服务商请求参数, currentUserId 当前操作用户ID
      * @Return: void
      * @Description: 修改服务商信息，需要校验操作权限
      **/
@@ -227,8 +225,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     /**
      * @Author: xiaodengyou
      * @Date: 2026-03-13 01:00
-     * @Param: id 服务商ID
-     * @Param: currentUserId 当前操作用户ID
+     * @Param: id 服务商ID, currentUserId 当前操作用户ID
      * @Return: void
      * @Description: 删除服务商（逻辑删除），需要校验操作权限
      **/
@@ -268,9 +265,12 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     // ==================== 处理服务类型标签 ====================
 
     /**
-     * 根据服务类型字符串更新服务商与标签的关联关系
-     * 先逻辑删除所有现有关联，再将新的标签列表批量插入（使用 ON DUPLICATE KEY UPDATE）
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: serviceId 服务商ID, serviceType 服务类型字符串（逗号分隔）
+     * @Return: void
+     * @Description: 根据服务类型字符串更新服务商与标签的关联关系，先逻辑删除所有现有关联，再将新的标签列表批量插入（使用 ON DUPLICATE KEY UPDATE）
+     **/
     private void updateServiceTags(Long serviceId, String serviceType) {
         // 1. 逻辑删除当前所有关联
         LambdaQueryWrapper<ServiceTag> deleteWrapper = new LambdaQueryWrapper<>();
@@ -306,9 +306,8 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
 
     /**
      * @Author: xiaodengyou
-     * @Date: 2026/3/17
-     * @Param: tagName 标签名称
-     * @Param: category 标签类别（如 "service"）
+     * @Date: 2026-03-17 01:00
+     * @Param: tagName 标签名称, category 标签类别（如 "service"）
      * @Return: Long 标签ID
      * @Description: 根据标签名称和类别获取标签ID，若标签不存在则插入新标签
      **/
@@ -339,14 +338,18 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         return newTag.getId();
     }
 
-    // ==================== 原有私有方法（保持不变）====================
+    // ==================== 原有私有方法（权限检查等）====================
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: provider 服务商对象, currentUserId 当前操作用户ID
+     * @Return: void
+     * @Description: 检查当前用户是否有权限修改服务商信息
+     **/
     private void checkUpdatePermission(ServiceProvider provider, Long currentUserId) {
-        User currentUser = userMapper.selectById(currentUserId);
-        if (currentUser == null) {
-            throw new AccessDeniedException("当前用户不存在");
-        }
-
+        // 使用 UserService 获取当前用户信息
+        UserInfoResponse currentUser = userService.getCurrentUser(currentUserId);
         String role = currentUser.getRole();
 
         if ("admin".equals(role)) {
@@ -365,12 +368,16 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         throw new AccessDeniedException("当前角色无权修改服务商信息");
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: provider 服务商对象, currentUserId 当前操作用户ID
+     * @Return: void
+     * @Description: 检查当前用户是否有权限删除服务商信息
+     **/
     private void checkDeletePermission(ServiceProvider provider, Long currentUserId) {
-        User currentUser = userMapper.selectById(currentUserId);
-        if (currentUser == null) {
-            throw new AccessDeniedException("当前用户不存在");
-        }
-
+        // 使用 UserService 获取当前用户信息
+        UserInfoResponse currentUser = userService.getCurrentUser(currentUserId);
         String role = currentUser.getRole();
 
         if ("admin".equals(role)) {
@@ -389,6 +396,13 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         throw new AccessDeniedException("当前角色无权删除服务商信息");
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: requestDTO 新增服务商请求参数
+     * @Return: void
+     * @Description: 校验新增服务商请求参数
+     **/
     private void validateAddRequest(ServiceProviderAddRequestDTO requestDTO) {
         if (requestDTO == null) {
             throw new BusinessException(400, "请求参数不能为空");
@@ -419,6 +433,13 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: requestDTO 修改服务商请求参数
+     * @Return: void
+     * @Description: 校验修改服务商请求参数
+     **/
     private void validateUpdateFields(ServiceProviderUpdateRequestDTO requestDTO) {
         if (StringUtils.isNotBlank(requestDTO.getCompanyName()) &&
                 StringUtils.length(requestDTO.getCompanyName()) > 100) {
@@ -442,6 +463,13 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: companyName 企业名称, excludeId 排除的服务商ID
+     * @Return: void
+     * @Description: 检查企业名称是否已存在
+     **/
     private void checkCompanyNameExists(String companyName, Long excludeId) {
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ServiceProvider::getCompanyName, companyName);
@@ -457,6 +485,13 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: userId 用户ID, excludeId 排除的服务商ID
+     * @Return: void
+     * @Description: 检查用户ID是否已被其他服务商关联
+     **/
     private void checkUserIdExists(Long userId, Long excludeId) {
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ServiceProvider::getUserId, userId);
@@ -472,6 +507,13 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-17 01:00
+     * @Param: source 源对象, target 目标对象
+     * @Return: void
+     * @Description: 复制非空属性（支持父类字段）
+     **/
     private void copyNonNullProperties(Object source, Object target) {
         if (source == null || target == null) {
             return;
@@ -499,6 +541,13 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-13 01:00
+     * @Param: provider 服务商实体
+     * @Return: ServiceProviderListVO 列表返回对象
+     * @Description: 将实体对象转换为列表返回对象
+     **/
     private ServiceProviderListVO convertToListVO(ServiceProvider provider) {
         if (provider == null) {
             return null;
@@ -508,6 +557,13 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         return vo;
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026-03-13 01:00
+     * @Param: provider 服务商实体
+     * @Return: ServiceProviderDetailVO 详情返回对象
+     * @Description: 将实体对象转换为详情返回对象
+     **/
     private ServiceProviderDetailVO convertToDetailVO(ServiceProvider provider) {
         if (provider == null) {
             return null;
