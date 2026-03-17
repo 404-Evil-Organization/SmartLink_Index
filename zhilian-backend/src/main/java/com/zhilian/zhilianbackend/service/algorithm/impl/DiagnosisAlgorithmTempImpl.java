@@ -21,13 +21,13 @@ public class DiagnosisAlgorithmTempImpl implements DiagnosisAlgorithm {
     @Override
     public int calculateTotalScore(int infoScore, int autoScore, int dataScore, int serviceScore) {
         // 简单算法：各维度得分转换为百分比后加权平均
-        // 1. 约定各维度原始得分范围为 0-5，先进行边界裁剪，防止异常值影响计算
-        int infoClamped = Math.max(0, Math.min(5, infoScore));
-        int autoClamped = Math.max(0, Math.min(5, autoScore));
-        int dataClamped = Math.max(0, Math.min(5, dataScore));
-        int serviceClamped = Math.max(0, Math.min(5, serviceScore));
+        // 1. 约定各维度原始得分范围为 1-5（与 DTO 校验和数据库 CHECK 约束保持一致），先进行边界裁剪，防止异常值影响计算
+        int infoClamped = Math.max(1, Math.min(5, infoScore));
+        int autoClamped = Math.max(1, Math.min(5, autoScore));
+        int dataClamped = Math.max(1, Math.min(5, dataScore));
+        int serviceClamped = Math.max(1, Math.min(5, serviceScore));
 
-        // 2. 将 0-5 映射到 0-100 百分比
+        // 2. 将 1-5 映射到 0-100 百分比（1 分约等于 20 分，5 分为 100 分）
         double infoPercent = infoClamped / 5.0 * 100.0;
         double autoPercent = autoClamped / 5.0 * 100.0;
         double dataPercent = dataClamped / 5.0 * 100.0;
