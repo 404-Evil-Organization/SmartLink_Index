@@ -318,8 +318,8 @@
 #### 4.3 ER图关键关系
 
 ```text
-user ──┬── manufacture (1:1)
-       ├── service_provider (1:1)
+user ──┬── manufacture (1:n)
+       ├── service_provider (1:n)
 
 manufacture ── demand (1:n)
 manufacture ── diagnosis (1:n)
