@@ -82,11 +82,20 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         if (userId == null) {
             throw new BusinessException(401, "请先登录");
         }
+        // 先对请求对象做空校验，避免在访问字段前触发 NPE
+        if (request == null) {
+            throw new BusinessException(400, "诊断提交参数不能为空");
+        }
+        // 提前获取并校验制造企业ID，缺失时返回 400，而不是伪装成 404
+        Long manuId = request.getManuId();
+        if (manuId == null) {
+            throw new BusinessException(400, "制造企业ID不能为空");
+        }
 
-        log.info("提交诊断问卷 - 用户ID: {}, 企业ID: {}", userId, request.getManuId());
+        log.info("提交诊断问卷 - 用户ID: {}, 企业ID: {}", userId, manuId);
 
         // 1. 验证制造企业是否存在
-        Manufacture manufacture = manufactureMapper.selectById(request.getManuId());
+        Manufacture manufacture = manufactureMapper.selectById(manuId);
         if (manufacture == null) {
             throw new BusinessException(404, "制造企业不存在");
         }
