@@ -26,6 +26,10 @@
             <span>数据看板</span>
           </el-menu-item>
         </el-sub-menu>
+        <el-menu-item index="/manufacture/list">
+          <el-icon><OfficeBuilding /></el-icon>
+          <span>制造企业列表</span>
+        </el-menu-item>
         <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
@@ -76,6 +80,7 @@ import {
   Collection,
   DataBoard,
   DataAnalysis,
+  OfficeBuilding,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
