@@ -107,7 +107,7 @@ const isAdmin = computed(() => userStore.userInfo?.role === "admin");
 const goToLatestReport = () => {
   const latestId = localStorage.getItem('latestDiagnosisId')
   if (latestId) {
-    router.push(`/diagnosis/report/${latestId}`)
+    router.push(`/diagnosis/report?id=${latestId}`);
   } else {
     ElMessage.warning('暂无诊断报告，请先提交问卷')
   }
