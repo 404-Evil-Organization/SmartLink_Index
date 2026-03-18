@@ -60,6 +60,12 @@ public class DiagnosisAlgorithmTempImpl implements DiagnosisAlgorithm {
 
     @Override
     public List<String> generateSuggestions(int infoScore, int autoScore, int dataScore, int serviceScore) {
+        // 为保证与 calculateTotalScore/getRadarData 一致，这里也先对各维度分数进行裁剪
+        infoScore = clampScore(infoScore);
+        autoScore = clampScore(autoScore);
+        dataScore = clampScore(dataScore);
+        serviceScore = clampScore(serviceScore);
+
         List<String> suggestions = new ArrayList<>();
 
         if (infoScore <= 2) {

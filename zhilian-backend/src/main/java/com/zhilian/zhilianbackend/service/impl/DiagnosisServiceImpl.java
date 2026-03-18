@@ -45,6 +45,30 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     private final DiagnosisAlgorithm diagnosisAlgorithm;
 
     /**
+     * 校验单个诊断维度得分是否合法（1-5 分），并安全转换为 byte。
+     * 说明：即使 Controller 已做校验，这里仍在 Service 层进行兜底校验，
+     * 防止其他调用方绕过 Controller 直接调用 Service 时写入脏数据。
+     *
+     * @param score   维度得分（来自请求）
+     * @param field   维度字段名（用于日志打印）
+     * @param manuId  企业ID（用于日志打印）
+     * @param userId  当前用户ID（用于日志打印）
+     * @return        合法的 byte 值（1-5）
+     */
+    private byte validateDimensionScore(Integer score, String field, Long manuId, Long userId) {
+        if (score == null) {
+            log.error("诊断维度得分为空 - 字段: {}, 用户ID: {}, 企业ID: {}", field, userId, manuId);
+            throw new BusinessException(400, "诊断问卷各维度得分不能为空，请填写完整后重试");
+        }
+        if (score < 1 || score > 5) {
+            log.error("诊断维度得分超出合法范围[1,5] - 字段: {}, 得分: {}, 用户ID: {}, 企业ID: {}",
+                    field, score, userId, manuId);
+            throw new BusinessException(400, "诊断问卷各维度得分必须在 1-5 分之间，请检查后重试");
+        }
+        return score.byteValue();
+    }
+
+    /**
      * @Author: 6017
      * @Date: 2026/3/17 22:47
      * @Param: request 诊断提交请求参数（包含企业ID和各维度得分）userId 当前操作用户ID
@@ -110,10 +134,15 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         // 5. 保存诊断记录
         Diagnosis diagnosis = new Diagnosis();
         diagnosis.setManuId(request.getManuId())
-                .setInfoScore(request.getInfoScore().byteValue())
-                .setAutoScore(request.getAutoScore().byteValue())
-                .setDataScore(request.getDataScore().byteValue())
-                .setServiceScore(request.getServiceScore().byteValue())
+                // 在 Service 层对各维度得分做 1-5 范围校验后再转换为 byte，避免 Integer 溢出为 Byte 及数据库 CHECK 异常
+                .setInfoScore(validateDimensionScore(request.getInfoScore(), "infoScore",
+                        request.getManuId(), userId))
+                .setAutoScore(validateDimensionScore(request.getAutoScore(), "autoScore",
+                        request.getManuId(), userId))
+                .setDataScore(validateDimensionScore(request.getDataScore(), "dataScore",
+                        request.getManuId(), userId))
+                .setServiceScore(validateDimensionScore(request.getServiceScore(), "serviceScore",
+                        request.getManuId(), userId))
                 .setTotalScore((byte) totalScore)
                 .setLevel(level)
                 .setSuggestions(JSONUtil.toJsonStr(suggestions))
