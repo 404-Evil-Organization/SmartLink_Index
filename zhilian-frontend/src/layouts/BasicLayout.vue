@@ -16,10 +16,29 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
+
+        <el-sub-menu index="1">
+          <template #title>
+            <el-icon><Avatar /></el-icon>
+            <span>数字化诊断</span>
+          </template>
+          <el-menu-item index="/diagnosis/questionnaire">
+            <el-icon><Tickets /></el-icon>
+            <span>诊断问卷</span>
+          </el-menu-item>
+
+          <el-menu-item index="/diagnosis/report" @click="goToLatestReport">
+          <el-icon><DataLine /></el-icon>
+          <span>诊断报告</span>
+        </el-menu-item>
+
+        </el-sub-menu>
+        <el-sub-menu v-if="isAdmin" index="2">
         <el-menu-item index="/manufacture/list">
           <el-icon><OfficeBuilding /></el-icon>
           <span>制造企业列表</span>
         </el-menu-item>
+        </el-sub-menu>
         <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
@@ -68,7 +87,9 @@ import {
   HomeFilled,
   Avatar,
   Collection,
+  Tickets,
   OfficeBuilding,
+  DataLine ,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
@@ -81,6 +102,20 @@ const activeMenu = computed(() => route.path);
 
 // 判断当前用户是否为管理员
 const isAdmin = computed(() => userStore.userInfo?.role === "admin");
+
+// 跳转到最新诊断报告
+const goToLatestReport = () => {
+  const latestId = localStorage.getItem('latestDiagnosisId')
+  if (latestId) {
+    router.push(`/diagnosis/report/${latestId}`)
+  } else {
+    ElMessage.warning('暂无诊断报告，请先提交问卷')
+  }
+}
+// 判断当前用户是否为制造企业
+const isManufacture = computed(
+  () => userStore.userInfo?.role === "manufacture",
+);
 
 // 退出登录
 const handleLogout = async () => {
