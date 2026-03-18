@@ -115,13 +115,7 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
             throw new BusinessException(403, "无权为此企业提交诊断");
         }
 
-        // 3. 调用算法计算各项指标前的兜底校验，避免 Integer 自动拆箱导致 NPE
-        if (request == null) {
-            log.error("提交诊断请求对象为空 - 用户ID: {}", userId);
-            throw new BusinessException(400, "诊断提交参数不能为空");
-        }
-
-        // 先对四个维度得分做非空及 1-5 范围校验，再将校验通过的结果传给算法和持久化层
+        // 3. 先对四个维度得分做非空及 1-5 范围校验，再将校验通过的结果传给算法和持久化层
         byte infoScore = validateDimensionScore(request.getInfoScore(), "infoScore",
                 request.getManuId(), userId);
         byte autoScore = validateDimensionScore(request.getAutoScore(), "autoScore",
@@ -250,6 +244,11 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         // 登录校验：userId 为空视为未登录
         if (userId == null) {
             throw new BusinessException(401, "请先登录");
+        }
+
+        // 参数校验：制造企业ID 不能为空，防止出现 selectById(null) 等不确定行为
+        if (manuId == null) {
+            throw new BusinessException(400, "制造企业ID不能为空");
         }
 
         // 1. 验证制造企业是否存在
