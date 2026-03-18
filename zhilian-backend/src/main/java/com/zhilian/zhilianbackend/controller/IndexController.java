@@ -31,8 +31,14 @@ public class IndexController {
     private final RegionIndexService regionIndexService;
 
     /**
-     * 校验整数型时间参数（用于 RegionDetailQuery）
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: year 年份
+     * @Param: month 月份
+     * @Param: quarter 季度
+     * @Return: 错误信息字符串，无错误则返回null
+     * @Description: 校验整数型时间参数（用于 RegionDetailQuery）
+     **/
     private String validateIntegerTimeParams(Integer year, Integer month, Integer quarter) {
         // 当指定了 month 或 quarter 时，必须同时指定 year，避免 Service 默认取最新一期导致语义偏差
         if ((month != null || quarter != null) && year == null) {
@@ -55,8 +61,12 @@ public class IndexController {
     }
 
     /**
-     * 校验 RegionListQuery 的字符串季度参数
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: query 区域列表查询参数
+     * @Return: 错误信息字符串，无错误则返回null
+     * @Description: 校验 RegionListQuery 的字符串季度参数
+     **/
     private String validateRegionListQuery(RegionListQuery query) {
         // 先对 quarter 做 trim 并回写，保证与 Service 层处理逻辑一致
         String rawQuarter = query.getQuarter();
@@ -78,7 +88,8 @@ public class IndexController {
                 QuarterMonthUtils.parseQuarter(query.getQuarter());
                 // 可选：校验年份范围（例如不能为负数）
             } catch (BusinessException e) {
-                return "季度格式错误，应为 '2025Q1' 格式";
+                // 直接返回具体的业务异常提示，避免用统一文案覆盖掉更详细的错误原因
+                return e.getMessage();
             }
         } else if (query.getYear() != null || query.getMonth() != null) {
             // 如果提供了 year 或 month，必须同时提供两者
@@ -95,6 +106,13 @@ public class IndexController {
     }
 
     @Operation(summary = "获取所有区域指标", description = "支持按季度或年月筛选，不传时间参数则返回各区域最新一期")
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: query 查询参数
+     * @Return: 区域指标列表结果
+     * @Description: 获取所有区域指标，支持按季度或年月筛选，不传时间参数则返回各区域最新一期
+     **/
     @GetMapping("/region/list")
     public Result<List<RegionListItemVO>> listRegions(RegionListQuery query) {
         String error = validateRegionListQuery(query);
@@ -106,6 +124,14 @@ public class IndexController {
     }
 
     @Operation(summary = "获取特定区域指数", description = "可指定年份季度或年月，不传时间参数则返回该区域最新一期")
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: region 区域名称
+     * @Param: query 查询参数（时间过滤）
+     * @Return: 区域详情结果
+     * @Description: 获取特定区域指数，可指定年份季度或年月，不传时间参数则返回该区域最新一期
+     **/
     @GetMapping("/region/{region}")
     public Result<RegionDetailVO> getRegionDetail(
             @Parameter(description = "区域名称", required = true, example = "深圳")
@@ -123,6 +149,13 @@ public class IndexController {
     }
 
     @Operation(summary = "获取趋势数据", description = "返回指定区域在时间范围内的趋势数据（按周期升序）")
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: query 查询参数
+     * @Return: 趋势数据列表结果
+     * @Description: 获取趋势数据，返回指定区域在时间范围内的趋势数据（按周期升序）
+     **/
     @GetMapping("/trend")
     public Result<List<TrendItemVO>> getTrend(TrendQuery query) {
         if (!StringUtils.hasText(query.getRegion())) {

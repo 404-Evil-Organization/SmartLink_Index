@@ -29,6 +29,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, RegionIndex> implements RegionIndexService {
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: query 查询参数
+     * @Return: 区域指标列表
+     * @Description: 获取所有区域指标（列表），根据查询条件过滤
+     **/
     @Override
     public List<RegionListItemVO> getRegionList(RegionListQuery query) {
         QueryWrapper<RegionIndex> wrapper = new QueryWrapper<>();
@@ -73,6 +80,14 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         }).collect(Collectors.toList());
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: region 区域名称
+     * @Param: query 查询参数
+     * @Return: 区域详情
+     * @Description: 获取特定区域指数，根据时间参数过滤
+     **/
     @Override
     public RegionDetailVO getRegionDetail(String region, RegionDetailQuery query) {
         QueryWrapper<RegionIndex> wrapper = new QueryWrapper<>();
@@ -105,6 +120,13 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         return vo;
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: query 查询参数
+     * @Return: 趋势数据列表
+     * @Description: 获取趋势数据，按时间范围过滤并排序
+     **/
     @Override
     public List<TrendItemVO> getTrend(TrendQuery query) {
         QueryWrapper<RegionIndex> wrapper = new QueryWrapper<>();

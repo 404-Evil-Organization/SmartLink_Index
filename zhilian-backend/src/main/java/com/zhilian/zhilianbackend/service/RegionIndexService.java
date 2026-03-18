@@ -14,24 +14,30 @@ import java.util.List;
 public interface RegionIndexService extends IService<RegionIndex> {
 
     /**
-     * 获取所有区域指标（列表）
-     * @param query 查询参数
-     * @return 区域指标列表
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: query 查询参数
+     * @Return: 区域指标列表
+     * @Description: 获取所有区域指标（列表）
+     **/
     List<RegionListItemVO> getRegionList(RegionListQuery query);
 
     /**
-     * 获取特定区域指数
-     * @param region 区域名称
-     * @param query 查询参数（时间过滤）
-     * @return 区域详情
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: region 区域名称
+     * @Param: query 查询参数（时间过滤）
+     * @Return: 区域详情
+     * @Description: 获取特定区域指数
+     **/
     RegionDetailVO getRegionDetail(String region, RegionDetailQuery query);
 
     /**
-     * 获取趋势数据
-     * @param query 查询参数（区域、起止时间）
-     * @return 趋势数据列表
-     */
+     * @Author: xiaodengyou
+     * @Date: 2026/3/9 21:32
+     * @Param: query 查询参数（区域、起止时间）
+     * @Return: 趋势数据列表
+     * @Description: 获取趋势数据
+     **/
     List<TrendItemVO> getTrend(TrendQuery query);
 }
