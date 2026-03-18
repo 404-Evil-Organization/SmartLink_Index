@@ -30,6 +30,10 @@ public class IndexController {
      * 校验整数型时间参数（用于 RegionDetailQuery）
      */
     private String validateIntegerTimeParams(Integer year, Integer month, Integer quarter) {
+        // 当指定了 month 或 quarter 时，必须同时指定 year，避免 Service 默认取最新一期导致语义偏差
+        if ((month != null || quarter != null) && year == null) {
+            return "时间参数不合法，当指定 month 或 quarter 时，year 不能为空";
+        }
         if (month != null && (month < 1 || month > 12)) {
             return "月份参数不合法，month 必须在 1-12 之间";
         }

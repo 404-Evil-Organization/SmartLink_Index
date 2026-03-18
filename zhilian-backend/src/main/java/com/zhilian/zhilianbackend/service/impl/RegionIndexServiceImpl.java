@@ -32,8 +32,6 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
     @Override
     public List<RegionListItemVO> getRegionList(RegionListQuery query) {
         QueryWrapper<RegionIndex> wrapper = new QueryWrapper<>();
-        // 是否需要在内存中按区域取最新一条记录（未传任何时间参数的场景）
-        boolean latestPerRegion = false;
 
         // 处理时间过滤
         if (query.getQuarter() != null && !query.getQuarter().isEmpty()) {
@@ -53,32 +51,25 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                     .eq("period_type", "month")
                     .eq("period_value", query.getMonth());
         } else {
-            // 未传任何时间参数：需要获取每个区域最新一期记录
-            // 为避免 N+1 查询，这里通过单次查询按 region 升序、calc_time 降序排序，
-            // 然后在内存中为每个 region 只保留第一条记录（即最新记录）。
-            latestPerRegion = true;
+            // 为避免全表排序+内存去重，改为在数据库侧通过子查询一次性取出每个 region 的最新记录
             wrapper.isNotNull("region")
-                    .orderByAsc("region")
-                    .orderByDesc("calc_time");
+                    .inSql("id",
+                            "SELECT t.id " +
+                                    "FROM region_index t " +
+                                    "JOIN ( " +
+                                    "  SELECT region, MAX(calc_time) AS max_calc_time " +
+                                    "  FROM region_index " +
+                                    "  WHERE region IS NOT NULL " +
+                                    "  GROUP BY region " +
+                                    ") latest " +
+                                    "ON t.region = latest.region " +
+                                    "AND t.calc_time = latest.max_calc_time")
+                    .orderByAsc("region");
         }
 
-        // 查询所有符合条件的记录
+        // 查询所有符合条件的记录（已在数据库层完成“每个 region 取最新一条”的过滤）
         List<RegionIndex> list = list(wrapper);
 
-        // 未传时间参数：按区域在内存中取最新一条记录
-        if (latestPerRegion) {
-            // 使用 LinkedHashMap 保证遍历顺序稳定：先遇到的即该区域 calc_time 最大的记录
-            java.util.Map<String, RegionIndex> latestMap = new java.util.LinkedHashMap<>();
-            for (RegionIndex entity : list) {
-                String region = entity.getRegion();
-                if (!StringUtils.hasText(region)) {
-                    continue;
-                }
-                // 列表已按 region 升序、calc_time 降序排序，第一次出现即为该区域最新记录
-                latestMap.putIfAbsent(region, entity);
-            }
-            list = latestMap.values().stream().collect(Collectors.toList());
-        }
         return list.stream().map(entity -> {
             RegionListItemVO vo = new RegionListItemVO();
             BeanUtils.copyProperties(entity, vo);
@@ -125,26 +116,38 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                 // 使用 calc_time 作为统一时间轴排序，避免 month/quarter 按字符串字典序导致乱序
                 .orderByAsc("calc_time");
 
-        // 使用 LocalDate / LocalDateTime 进行时间边界过滤，避免字符串拼接导致的隐式类型转换问题
+        // 使用 LocalDate / LocalDateTime 进行时间边界过滤，并对日期格式与区间合法性做显式校验
         DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
+        LocalDate startDate = null;
+        LocalDate endDate = null;
 
         if (StringUtils.hasText(query.getStart())) {
             try {
-                LocalDate startDate = LocalDate.parse(query.getStart(), dateFormatter);
-                LocalDateTime startDateTime = startDate.atStartOfDay();
-                wrapper.ge("calc_time", startDateTime);
+                startDate = LocalDate.parse(query.getStart(), dateFormatter);
             } catch (DateTimeParseException e) {
-                // 非法 start 日期时忽略该条件，避免向数据库下发不可控的时间字符串
+                // start 日期格式不合法时直接抛出业务异常，避免静默忽略导致误解为过滤生效
+                throw new BusinessException(400, "start 日期格式不合法，正确格式为 yyyy-MM-dd");
             }
         }
         if (StringUtils.hasText(query.getEnd())) {
             try {
-                LocalDate endDate = LocalDate.parse(query.getEnd(), dateFormatter);
-                LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
-                wrapper.le("calc_time", endDateTime);
+                endDate = LocalDate.parse(query.getEnd(), dateFormatter);
             } catch (DateTimeParseException e) {
-                // 非法 end 日期时同样忽略该条件
+                // end 日期格式不合法时直接抛出业务异常
+                throw new BusinessException(400, "end 日期格式不合法，正确格式为 yyyy-MM-dd");
             }
+        }
+        // 当同时传入 start 和 end 时，校验区间合法性（start <= end）
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new BusinessException(400, "start 日期不能晚于 end 日期");
+        }
+        if (startDate != null) {
+            LocalDateTime startDateTime = startDate.atStartOfDay();
+            wrapper.ge("calc_time", startDateTime);
+        }
+        if (endDate != null) {
+            LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
+            wrapper.le("calc_time", endDateTime);
         }
 
         List<RegionIndex> list = list(wrapper);
