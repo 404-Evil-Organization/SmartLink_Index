@@ -1,15 +1,12 @@
 package com.zhilian.zhilianbackend.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
-import java.io.Serializable;
-import java.util.Date;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  * @Author: 6017
@@ -135,7 +132,7 @@ public class ServiceProvider implements Serializable {
     private Long auditUserId;
 
     /**
-     * 逻辑删除时间，NULL未删除，非NULL已删除
+     * 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除
      */
     @TableField("deleted")
     @TableLogic

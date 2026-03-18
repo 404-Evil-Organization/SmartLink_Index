@@ -956,7 +956,22 @@
         "contactPerson": "张三",
         "contactPhone": "13800138001",
         "auditStatus": "approved",
+        "auditRemark": null,                // 审核通过时无意见
+        "auditTime": "2026-03-17 15:44:52",
         "createTime": "2026-03-01 10:00:00"
+      },
+      {
+        "id": 1002,
+        "companyName": "东莞精密制造",
+        "region": "东莞",
+        "scale": "small",
+        "productType": "精密零部件",
+        "contactPerson": "李四",
+        "contactPhone": "13900139002",
+        "auditStatus": "rejected",
+        "auditRemark": "营业执照不清晰，请重新上传", // 驳回时填写意见
+        "auditTime": "2026-03-18 09:30:00",
+        "createTime": "2026-03-02 14:20:00"
       }
     ]
   }
@@ -994,7 +1009,21 @@
         "contactPerson": "王五",
         "contactPhone": "13700137003",
         "auditStatus": "pending",
+        "auditRemark": null,
+        "auditTime": null,
         "createTime": "2026-03-02 14:00:00"
+      },
+      {
+        "id": 2002,
+        "companyName": "SGS通标",
+        "region": "广州",
+        "serviceType": "国际认证",
+        "contactPerson": "赵六",
+        "contactPhone": "13600136004",
+        "auditStatus": "rejected",
+        "auditRemark": "资质证书过期，请更新后重新提交",
+        "auditTime": "2026-03-17 11:20:00",
+        "createTime": "2026-03-03 09:15:00"
       }
     ]
   }
@@ -1046,8 +1075,40 @@
 
 - **URL**: `/api/diagnosis/result/{id}`
 - **Method**: `GET`
-- **请求头**: `Authorization: Bearer <token>`
+- **请求头**: `Authorization: Bearer <token>`（需制造企业角色）
 - **路径参数**: `id` (诊断记录ID)
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "diagnosisId": 5001,
+    "manuId": 1001,
+    "infoScore": 4,
+    "autoScore": 3,
+    "dataScore": 2,
+    "serviceScore": 3,
+    "totalScore": 65,
+    "level": "成熟期",
+    "suggestions": ["..."],
+    "diagnosisDate": "2026-03-07 14:30:00"
+  }
+}
+```
+
+### 2.3 获取企业最新诊断报告
+
+- **URL**: `/api/diagnosis/latest`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需制造企业角色）
+- **请求参数**（Query）:
+
+| 参数名 | 类型 | 必填 | 描述       |
+| :----- | :--- | :--- | :--------- |
+| manuId | long | 是   | 制造企业ID |
+
 - **返回数据**:
 
 ```json
