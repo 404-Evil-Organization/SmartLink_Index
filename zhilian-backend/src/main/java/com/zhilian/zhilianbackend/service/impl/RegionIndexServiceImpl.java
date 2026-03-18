@@ -54,12 +54,12 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                                     "JOIN ( " +
                                     "  SELECT region, MAX(calc_time) AS max_calc_time " +
                                     "  FROM region_index " +
-                                    "  WHERE region IS NOT NULL AND deleted = 0 " +
+                                    "  WHERE region IS NOT NULL AND deleted = '1970-01-01 00:00:00' " +
                                     "  GROUP BY region " +
                                     ") latest " +
                                     "ON t.region = latest.region " +
                                     "AND t.calc_time = latest.max_calc_time " +
-                                    "AND t.deleted = 0")
+                                    "AND t.deleted = '1970-01-01 00:00:00'")
                     .orderByAsc("region");
         }
 
