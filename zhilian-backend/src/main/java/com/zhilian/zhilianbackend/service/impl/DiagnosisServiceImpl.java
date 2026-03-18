@@ -106,20 +106,35 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
             throw new BusinessException(403, "无权为此企业提交诊断");
         }
 
-        // 3. 调用算法计算各项指标
+        // 3. 调用算法计算各项指标前的兜底校验，避免 Integer 自动拆箱导致 NPE
+        if (request == null) {
+            log.error("提交诊断请求对象为空 - 用户ID: {}", userId);
+            throw new BusinessException(400, "诊断提交参数不能为空");
+        }
+
+        // 先对四个维度得分做非空及 1-5 范围校验，再将校验通过的结果传给算法和持久化层
+        byte infoScore = validateDimensionScore(request.getInfoScore(), "infoScore",
+                request.getManuId(), userId);
+        byte autoScore = validateDimensionScore(request.getAutoScore(), "autoScore",
+                request.getManuId(), userId);
+        byte dataScore = validateDimensionScore(request.getDataScore(), "dataScore",
+                request.getManuId(), userId);
+        byte serviceScore = validateDimensionScore(request.getServiceScore(), "serviceScore",
+                request.getManuId(), userId);
+
         int totalScore = diagnosisAlgorithm.calculateTotalScore(
-                request.getInfoScore(),
-                request.getAutoScore(),
-                request.getDataScore(),
-                request.getServiceScore()
+                infoScore,
+                autoScore,
+                dataScore,
+                serviceScore
         );
 
         String level = diagnosisAlgorithm.getLevel(totalScore);
         List<String> suggestions = diagnosisAlgorithm.generateSuggestions(
-                request.getInfoScore(),
-                request.getAutoScore(),
-                request.getDataScore(),
-                request.getServiceScore()
+                infoScore,
+                autoScore,
+                dataScore,
+                serviceScore
         );
 
         // 4. 校验总分范围，避免违反数据库 total_score 0-100 CHECK 约束
@@ -135,14 +150,10 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         Diagnosis diagnosis = new Diagnosis();
         diagnosis.setManuId(request.getManuId())
                 // 在 Service 层对各维度得分做 1-5 范围校验后再转换为 byte，避免 Integer 溢出为 Byte 及数据库 CHECK 异常
-                .setInfoScore(validateDimensionScore(request.getInfoScore(), "infoScore",
-                        request.getManuId(), userId))
-                .setAutoScore(validateDimensionScore(request.getAutoScore(), "autoScore",
-                        request.getManuId(), userId))
-                .setDataScore(validateDimensionScore(request.getDataScore(), "dataScore",
-                        request.getManuId(), userId))
-                .setServiceScore(validateDimensionScore(request.getServiceScore(), "serviceScore",
-                        request.getManuId(), userId))
+                .setInfoScore(infoScore)
+                .setAutoScore(autoScore)
+                .setDataScore(dataScore)
+                .setServiceScore(serviceScore)
                 .setTotalScore((byte) totalScore)
                 .setLevel(level)
                 .setSuggestions(JSONUtil.toJsonStr(suggestions))
