@@ -49,11 +49,11 @@
         <div v-show="searchExpanded">
           <el-form :model="searchForm" label-width="100px" class="search-form">
             <el-row :gutter="20">
-              <el-col :span="8">
+              <!-- <el-col :span="8">
                 <el-form-item label="服务企业名称">
                   <el-input v-model="searchForm.companyName" placeholder="请输入" clearable />
                 </el-form-item>
-              </el-col>
+              </el-col> -->
               <el-col :span="8">
                 <el-form-item label="所在区域">
                   <el-select v-model="searchForm.region" placeholder="全部" clearable filterable>
@@ -78,13 +78,17 @@
                   </el-select>
                 </el-form-item>
               </el-col>
-            </el-row>
-            <el-row :gutter="20">
-              <el-col :span="24" class="search-actions">
+              <el-col :span="8" class="search-actions">
                 <el-button type="primary" @click="handleSearch">查询</el-button>
                 <el-button @click="resetSearch">重置</el-button>
               </el-col>
             </el-row>
+            <!-- <el-row :gutter="20">
+              <el-col :span="24" class="search-actions">
+                <el-button type="primary" @click="handleSearch">查询</el-button>
+                <el-button @click="resetSearch">重置</el-button>
+              </el-col>
+            </el-row> -->
           </el-form>
         </div>
       </el-collapse-transition>
@@ -252,7 +256,7 @@ import {
   getServiceProviderList,
   getServiceProviderDetail
 } from '@/api/service-provider'
-import { getRegionList, getServiceTagList } from '@/api/common'
+import { getRegions, getServiceTags } from '@/api/common'
 import { maskPhone } from '@/utils/desensitize'
 import { useUserStore } from '@/stores/user'
 
@@ -355,7 +359,7 @@ const regionOptions = ref([]);
 // 获取区域列表
 const fetchRegions = async () => {
   try {
-    const res = await getRegionList(); 
+    const res = await getRegions();
     
     if (Array.isArray(res)) {
       regionOptions.value = res;
@@ -384,7 +388,7 @@ const serviceTypeOptions = ref([]);
 // 获取服务类型标签
 const fetchServiceTags = async () => {
   try {
-    const res = await getServiceTagList();
+    const res = await getServiceTags();
     
     if (Array.isArray(res)) {
       serviceTypeOptions.value = res;
