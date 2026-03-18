@@ -21,7 +21,6 @@
           placeholder="请选择企业"
           style="width: 300px"
           :loading="loadingEnterprises"
-          @change="handleEnterpriseChange"
         >
           <el-option
             v-for="item in enterpriseOptions"
@@ -124,12 +123,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import { ref, onMounted, nextTick, computed, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getDiagnosisResult, getLatestDiagnosis } from '@/api/diagnosis'
-// TODO: 后续替换为个人制造企业列表接口
+// TODO: 后续替换为真实接口，当前假设存在 getManufactureList
 import { getManufactureList } from '@/api/manufacture'
 
 const route = useRoute()
@@ -145,12 +144,12 @@ const enterprises = ref([])
 const loadingEnterprises = ref(false)
 const selectedManuId = ref(null)
 
-// 获取企业列表（占位用公共接口）
+// 获取企业列表（当前用户关联的制造企业）
 const fetchEnterprises = async () => {
   loadingEnterprises.value = true
   try {
-    // TODO: 替换为 getMyManufactureList()
-    const res = await getManufactureList({ page: 1, size: 100 })
+    // 使用个人企业列表接口，避免暴露其他企业
+    const res = await getManufactureList()
     enterprises.value = (res.records || []).filter(item => item.auditStatus === 'approved')
     if (enterprises.value.length === 1 && !selectedManuId.value) {
       selectedManuId.value = enterprises.value[0].id
@@ -163,11 +162,6 @@ const fetchEnterprises = async () => {
 }
 
 const enterpriseOptions = computed(() => enterprises.value)
-
-// 切换企业时的处理（用户手动选择）
-const handleEnterpriseChange = (manuId) => {
-  // 只更新选中值，不自动加载报告
-}
 
 // ---------- 报告详情 ----------
 const dimensions = [
@@ -187,11 +181,13 @@ const getLevelType = (level) => {
   return map[level] || 'info'
 }
 
-// 处理报告错误
+// 处理报告错误（兼容不同错误格式）
 const handleReportError = (error) => {
-  if (error.response?.status === 403) {
+  // 尝试从 error 对象中提取状态码
+  const status = error?.response?.status || error?.code
+  if (status === 403) {
     router.push('/403')
-  } else if (error.response?.status === 404) {
+  } else if (status === 404) {
     reportData.value = null
     showNoReport.value = true
   } else {
@@ -240,10 +236,10 @@ const fetchLatestReportByManuId = async (manuId) => {
   }
 }
 
-// 根据路由加载报告（统一使用 query 参数）
+// 根据路由加载报告（兼容 query 和 params）
 const loadReport = () => {
-  const id = route.query.id
-  const manuId = route.query.manuId
+  const id = route.query.id || route.params.id
+  const manuId = route.query.manuId || route.params.manuId
 
   if (id) {
     fetchReportById(id)
@@ -272,7 +268,8 @@ const handleViewReport = async () => {
       showNoReport.value = true
     }
   } catch (error) {
-    if (error.response?.status === 404) {
+    const status = error?.response?.status || error?.code
+    if (status === 404) {
       // 无最新报告，显示空状态
       reportData.value = null
       showNoReport.value = true
@@ -300,10 +297,25 @@ const goToEnterpriseManage = () => {
   // router.push('/enterprise')
 }
 
+// ---------- 雷达图实例管理 ----------
+let radarChartInstance = null
+const handleRadarResize = () => {
+  radarChartInstance?.resize()
+}
+
 // 渲染雷达图
 const renderRadarChart = () => {
   if (!radarChartRef.value || !reportData.value) return
-  const chart = echarts.init(radarChartRef.value)
+
+  // 销毁旧实例（如果有）
+  if (radarChartInstance) {
+    radarChartInstance.dispose()
+    radarChartInstance = null
+  }
+
+  // 创建新实例
+  radarChartInstance = echarts.init(radarChartRef.value)
+
   const indicator = dimensions.map(d => ({ name: d.label, max: 5 }))
   const value = dimensions.map(d => reportData.value[d.field] || 0)
   const option = {
@@ -316,17 +328,33 @@ const renderRadarChart = () => {
       itemStyle: { color: '#409EFF' },
     }],
   }
-  chart.setOption(option)
-  window.addEventListener('resize', () => chart.resize())
+  radarChartInstance.setOption(option)
+
+  // 确保不会重复注册同一个 resize 监听器
+  window.removeEventListener('resize', handleRadarResize)
+  window.addEventListener('resize', handleRadarResize)
 }
 
-// 监听路由参数变化（只监听 query 参数）
-watch(() => [route.query.id, route.query.manuId], () => {
-  loadReport()
-}, { immediate: true })
+// 监听路由参数变化（兼容 query 和 params）
+watch(
+  () => [route.query.id, route.query.manuId, route.params.id, route.params.manuId],
+  () => {
+    loadReport()
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   fetchEnterprises()
+})
+
+onBeforeUnmount(() => {
+  // 移除 resize 监听，销毁图表实例
+  window.removeEventListener('resize', handleRadarResize)
+  if (radarChartInstance) {
+    radarChartInstance.dispose()
+    radarChartInstance = null
+  }
 })
 </script>
 
