@@ -25,6 +25,10 @@
             <el-icon><DataAnalysis /></el-icon>
             <span>数据看板</span>
           </el-menu-item>
+          <el-menu-item index="/dashboard/region">
+            <el-icon><DataLine /></el-icon>
+            <span>区域协同指数看板</span>
+          </el-menu-item>
         </el-sub-menu>
         <el-menu-item index="/manufacture/list">
           <el-icon><OfficeBuilding /></el-icon>
@@ -81,6 +85,7 @@ import {
   DataBoard,
   DataAnalysis,
   OfficeBuilding,
+  DataLine,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
