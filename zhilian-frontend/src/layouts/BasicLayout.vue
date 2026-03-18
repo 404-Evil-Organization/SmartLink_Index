@@ -32,6 +32,7 @@
           <el-icon><OfficeBuilding /></el-icon>
           <span>制造企业列表</span>
         </el-menu-item>
+        </el-sub-menu>
         <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
