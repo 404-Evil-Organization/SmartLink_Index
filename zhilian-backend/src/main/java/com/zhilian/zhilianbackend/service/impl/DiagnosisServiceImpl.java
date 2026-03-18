@@ -17,8 +17,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-
-import cn.hutool.json.JSONUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataAccessException;
 
@@ -149,7 +149,19 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
             throw new BusinessException(400, "诊断总分计算异常，请检查各维度评分是否在合法范围内（1-5 分）");
         }
 
-        // 5. 保存诊断记录
+        // 5. 使用 Jackson 将诊断建议列表序列化为 JSON 字符串
+        ObjectMapper objectMapper = new ObjectMapper();
+        String suggestionsJson;
+        try {
+            suggestionsJson = objectMapper.writeValueAsString(suggestions);
+        } catch (JsonProcessingException e) {
+            // 序列化失败视为服务异常，记录详细日志便于排查
+            log.error("诊断建议序列化为 JSON 失败 - 用户ID: {}, 企业ID: {}, 建议列表: {}",
+                    userId, request.getManuId(), suggestions, e);
+            throw new BusinessException(500, "诊断建议序列化异常，请稍后重试");
+        }
+
+        // 6. 保存诊断记录
         Diagnosis diagnosis = new Diagnosis();
         diagnosis.setManuId(request.getManuId())
                 // 在 Service 层对各维度得分做 1-5 范围校验后再转换为 byte，避免 Integer 溢出为 Byte 及数据库 CHECK 异常
@@ -159,7 +171,7 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
                 .setServiceScore(serviceScore)
                 .setTotalScore((byte) totalScore)
                 .setLevel(level)
-                .setSuggestions(JSONUtil.toJsonStr(suggestions))
+                .setSuggestions(suggestionsJson)
                 .setDiagnosisDate(new Date());
 
         try {
