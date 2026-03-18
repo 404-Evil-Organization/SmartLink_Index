@@ -18,6 +18,15 @@ const routes = [
     name: "Register",
     component: () => import("@/views/auth/Register.vue"),
   },
+
+  // 测试文件后期删除为了验证chart实现与否
+  {
+    path: "/chart-test",
+    name: "ChartTest",
+    component: () => import("@/views/test/ChartTest.vue"),
+    // 不加 meta.requiresAuth，这样未登录也能访问
+  },
+
   {
     path: "/",
     component: () => import("@/layouts/BasicLayout.vue"),
@@ -92,6 +101,7 @@ router.beforeEach(async (to, from, next) => {
       next();
     }
   }
+  
 });
 
 export default router;
