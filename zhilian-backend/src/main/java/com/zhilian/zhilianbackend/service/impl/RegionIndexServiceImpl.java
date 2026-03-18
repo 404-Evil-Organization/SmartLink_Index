@@ -48,26 +48,18 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                     .eq("period_type", "month")
                     .eq("period_value", query.getMonth());
         } else {
-            // 为避免全表排序+内存去重，改为在数据库侧通过子查询一次性取出每个 region 的最新记录
+            // 为避免全表排序+内存去重，改为在数据库侧通过窗口函数一次性取出每个 region 的最新记录
             wrapper.isNotNull("region")
                     .inSql("id",
                             "SELECT t.id " +
-                                    "FROM region_index t " +
-                                    "JOIN ( " +
-                                    "  SELECT region, MAX(calc_time) AS max_calc_time " +
+                                    "FROM ( " +
+                                    "  SELECT id, region, calc_time, " +
+                                    "         ROW_NUMBER() OVER (PARTITION BY region ORDER BY calc_time DESC, id DESC) AS rn " +
                                     "  FROM region_index " +
-                                    "  WHERE region IS NOT NULL AND deleted = '1970-01-01 00:00:00' " +
-                                    "  GROUP BY region " +
-                                    ") latest " +
-                                    "ON t.region = latest.region " +
-                                    "AND t.calc_time = latest.max_calc_time " +
-                                    "AND t.id = ( " +
-                                    "  SELECT MAX(id) " +
-                                    "  FROM region_index " +
-                                    "  WHERE region = t.region " +
-                                    "    AND calc_time = t.calc_time " +
+                                    "  WHERE region IS NOT NULL " +
                                     "    AND deleted = '1970-01-01 00:00:00' " +
-                                    ")")
+                                    ") t " +
+                                    "WHERE t.rn = 1")
                     .orderByAsc("region");
         }
 

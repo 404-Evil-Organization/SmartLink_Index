@@ -58,6 +58,13 @@ public class IndexController {
      * 校验 RegionListQuery 的字符串季度参数
      */
     private String validateRegionListQuery(RegionListQuery query) {
+        // 先对 quarter 做 trim 并回写，保证与 Service 层处理逻辑一致
+        String rawQuarter = query.getQuarter();
+        if (rawQuarter != null) {
+            String trimmedQuarter = rawQuarter.trim();
+            query.setQuarter(trimmedQuarter);
+        }
+
         // quarter 与 year/month 互斥
         boolean hasQuarter = StringUtils.hasText(query.getQuarter());
         boolean hasYearMonth = query.getYear() != null && query.getMonth() != null;
