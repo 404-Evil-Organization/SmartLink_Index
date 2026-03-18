@@ -104,7 +104,7 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         if (totalScore < 0 || totalScore > 100) {
             log.error("诊断总分超出合法范围[0,100] - 计算结果: {}, 用户ID: {}, 企业ID: {}",
                     totalScore, userId, request.getManuId());
-            throw new BusinessException(400, "诊断总分计算异常，请检查各项评分是否在合法范围内（0-100）");
+            throw new BusinessException(400, "诊断总分计算异常，请检查各维度评分是否在合法范围内（1-5 分）");
         }
 
         // 5. 保存诊断记录
