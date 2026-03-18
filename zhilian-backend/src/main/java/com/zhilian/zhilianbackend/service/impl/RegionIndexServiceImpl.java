@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, RegionIndex> implements RegionIndexService {
+    private static final String LOGIC_NOT_DELETED_DATETIME = "1970-01-01 00:00:00";
 
     /**
      * @Author: xiaodengyou
@@ -64,8 +65,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                                     "         ROW_NUMBER() OVER (PARTITION BY region ORDER BY calc_time DESC, id DESC) AS rn " +
                                     "  FROM region_index " +
                                     "  WHERE region IS NOT NULL " +
-                                    "    AND deleted = '1970-01-01 00:00:00' " +
-                                    ") t " +
+                                    "    AND deleted = '" + LOGIC_NOT_DELETED_DATETIME + "' " +
                                     "WHERE t.rn = 1")
                     .orderByAsc("region");
         }

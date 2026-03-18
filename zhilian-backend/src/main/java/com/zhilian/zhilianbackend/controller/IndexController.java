@@ -86,7 +86,7 @@ public class IndexController {
             try {
                 QuarterMonthUtils.parseQuarter(query.getQuarter());
                 // 可选：校验年份范围（例如不能为负数）
-            } catch (IllegalArgumentException e) {
+            } catch (RuntimeException e) {
                 // 直接返回具体的参数错误提示，避免被全局异常处理器包装成 500
                 return e.getMessage();
             }
