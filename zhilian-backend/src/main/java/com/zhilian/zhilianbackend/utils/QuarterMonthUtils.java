@@ -3,7 +3,9 @@ package com.zhilian.zhilianbackend.utils;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class QuarterMonthUtils {
 
     @Data
@@ -35,7 +37,7 @@ public class QuarterMonthUtils {
             }
             return new QuarterInfo(year, quarter);
         } catch (NumberFormatException e) {
-            // 数字解析失败，维持为参数格式错误，保留原始异常便于排查
+            log.error("季度字符串解析失败，原始入参: {}", quarterStr, e);
             throw new BusinessException(400, "季度格式错误，应为 '2025Q1' 格式");
         }
     }

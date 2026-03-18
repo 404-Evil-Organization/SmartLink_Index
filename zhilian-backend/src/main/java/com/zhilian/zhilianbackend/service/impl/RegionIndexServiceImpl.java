@@ -36,15 +36,10 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         // 处理时间过滤
         if (query.getQuarter() != null && !query.getQuarter().isEmpty()) {
             // 解析 quarter 字符串，如 "2025Q1"
-            try {
-                QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(query.getQuarter());
-                wrapper.eq("year", quarterInfo.getYear())
-                        .eq("period_type", "quarter")
-                        .eq("period_value", quarterInfo.getQuarter());
-            } catch (IllegalArgumentException e) {
-                // 将非法季度格式转换为业务异常，返回 400，而不是 500
-                throw new BusinessException(400, "季度参数格式不正确，应为例如 2025Q1");
-            }
+            QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(query.getQuarter());
+            wrapper.eq("year", quarterInfo.getYear())
+                    .eq("period_type", "quarter")
+                    .eq("period_value", quarterInfo.getQuarter());
         } else if (query.getYear() != null && query.getMonth() != null) {
             // 按年月查询
             wrapper.eq("year", query.getYear())
@@ -59,11 +54,12 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                                     "JOIN ( " +
                                     "  SELECT region, MAX(calc_time) AS max_calc_time " +
                                     "  FROM region_index " +
-                                    "  WHERE region IS NOT NULL " +
+                                    "  WHERE region IS NOT NULL AND deleted = 0 " +
                                     "  GROUP BY region " +
                                     ") latest " +
                                     "ON t.region = latest.region " +
-                                    "AND t.calc_time = latest.max_calc_time")
+                                    "AND t.calc_time = latest.max_calc_time " +
+                                    "AND t.deleted = 0")
                     .orderByAsc("region");
         }
 

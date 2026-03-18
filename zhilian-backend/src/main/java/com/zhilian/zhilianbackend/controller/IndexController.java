@@ -7,6 +7,7 @@ import com.zhilian.zhilianbackend.dto.request.TrendQuery;
 import com.zhilian.zhilianbackend.dto.response.RegionDetailVO;
 import com.zhilian.zhilianbackend.dto.response.RegionListItemVO;
 import com.zhilian.zhilianbackend.dto.response.TrendItemVO;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.RegionIndexService;
 import com.zhilian.zhilianbackend.utils.QuarterMonthUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,7 +15,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -33,6 +37,10 @@ public class IndexController {
         // 当指定了 month 或 quarter 时，必须同时指定 year，避免 Service 默认取最新一期导致语义偏差
         if ((month != null || quarter != null) && year == null) {
             return "时间参数不合法，当指定 month 或 quarter 时，year 不能为空";
+        }
+        // 仅传 year 而未指定 month 或 quarter 也视为非法，避免 year 被 Service 层忽略导致语义与结果不一致
+        if (year != null && month == null && quarter == null) {
+            return "时间参数不合法，不能仅指定 year，必须配合 month 或 quarter，或完全不传时间参数";
         }
         if (month != null && (month < 1 || month > 12)) {
             return "月份参数不合法，month 必须在 1-12 之间";
@@ -60,9 +68,9 @@ public class IndexController {
         if (hasQuarter) {
             // 校验 quarter 格式
             try {
-                QuarterMonthUtils.QuarterInfo info = QuarterMonthUtils.parseQuarter(query.getQuarter());
+                QuarterMonthUtils.parseQuarter(query.getQuarter());
                 // 可选：校验年份范围（例如不能为负数）
-            } catch (IllegalArgumentException e) {
+            } catch (BusinessException e) {
                 return "季度格式错误，应为 '2025Q1' 格式";
             }
         } else if (query.getYear() != null || query.getMonth() != null) {
