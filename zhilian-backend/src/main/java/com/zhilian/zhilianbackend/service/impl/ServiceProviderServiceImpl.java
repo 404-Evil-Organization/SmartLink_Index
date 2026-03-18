@@ -278,6 +278,8 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             return;
         }
 
+        // 标签分类：当前为服务商标签，后续如引入 TagCategory 枚举，可统一替换此常量来源
+        final String tagCategory = "service";
         // 2. 解析标签名称，获取或创建对应的标签ID
         String[] tagNames = serviceType.split("\\s*,\\s*");
         List<ServiceTag> tagList = new ArrayList<>();
@@ -287,7 +289,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             if (StringUtils.isBlank(tagName)) {
                 continue;
             }
-            Long tagId = getOrCreateTag(tagName.trim(), "service");
+            Long tagId = getOrCreateTag(tagName.trim(), tagCategory);
             if (handledTagIds.contains(tagId)) {
                 continue;
             }
