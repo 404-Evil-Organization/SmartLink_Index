@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataAccessException;
 
@@ -150,12 +151,12 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
             throw new BusinessException(400, "诊断总分计算异常，请检查各维度评分是否在合法范围内（1-5 分）");
         }
 
-        // 5. 使用 Jackson 将诊断建议列表序列化为 JSON 字符串
-        ObjectMapper objectMapper = new ObjectMapper();
+        // 5. 使用 Hutool JSONUtil 将诊断建议列表序列化为 JSON 字符串
         String suggestionsJson;
         try {
-            suggestionsJson = objectMapper.writeValueAsString(suggestions);
-        } catch (JsonProcessingException e) {
+            // 使用已引入的 Hutool JSON 工具进行序列化，避免每次 new ObjectMapper 带来的性能与配置问题
+            suggestionsJson = JSONUtil.toJsonStr(suggestions);
+        } catch (Exception e) {
             // 序列化失败视为服务异常，记录详细日志便于排查
             log.error("诊断建议序列化为 JSON 失败 - 用户ID: {}, 企业ID: {}, 建议列表: {}",
                     userId, request.getManuId(), suggestions, e);
@@ -321,7 +322,11 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         // 解析JSON格式的建议列表，防御历史脏数据/非法JSON，避免因单条坏数据导致接口整体500
         if (diagnosis.getSuggestions() != null) {
             try {
-                List<String> suggestions = JSONUtil.toList(diagnosis.getSuggestions(), String.class);
+                // 使用 Jackson ObjectMapper 反序列化 JSON 字符串为 List<String>
+                List<String> suggestions = objectMapper.readValue(
+                        diagnosis.getSuggestions(),
+                        new TypeReference<List<String>>() {}
+                );
                 vo.setSuggestions(suggestions);
             } catch (Exception e) {
                 // 不中断整体诊断报告查询，仅记录错误并降级为空列表，后续可根据日志排查并修复脏数据
