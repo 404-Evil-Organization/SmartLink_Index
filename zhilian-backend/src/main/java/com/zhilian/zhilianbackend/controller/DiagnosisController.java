@@ -62,7 +62,13 @@ public class DiagnosisController {
     **/
     @PostMapping("/submit")
     public Result<DiagnosisReportVO> submitDiagnosis(
-            @Valid @RequestBody DiagnosisSubmitRequest request) {
+            @Valid @RequestBody(required = false) DiagnosisSubmitRequest request) {
+
+        // 空 body 时 request 会为 null，这里主动抛出业务异常映射为 400，避免返回 500
+        if (request == null) {
+            log.warn("诊断问卷提交请求体为空");
+            throw new BusinessException(400, "诊断提交请求体不能为空");
+        }
 
         log.info("接收到诊断问卷提交请求: manuId={}", request.getManuId());
 
@@ -103,7 +109,13 @@ public class DiagnosisController {
     **/
     @GetMapping("/latest")
     public Result<DiagnosisReportVO> getLatestDiagnosis(
-            @RequestParam("manuId") Long manuId) {
+            @RequestParam(name = "manuId", required = false) Long manuId) {
+
+        // 参数为空时避免抛出 MissingServletRequestParameterException，由业务异常统一处理返回 4xx
+        if (manuId == null) {
+            log.warn("获取企业最新诊断报告缺少必填参数：manuId");
+            throw new BusinessException("缺少必填参数：manuId");
+        }
 
         log.info("接收到获取企业最新诊断报告请求: manuId={}", manuId);
 
