@@ -402,7 +402,7 @@ const resetForm = () => {
   margin-bottom: 25px;
 }
 
-.score-item ::v-deep .el-form-item__label {
+.score-item :deep(.el-form-item__label) {
   font-size: 18px;
 }
 
