@@ -5,7 +5,6 @@ import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.entity.Diagnosis;
 import com.zhilian.zhilianbackend.entity.Manufacture;
-import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.entity.User;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.DiagnosisMapper;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataAccessException;
 
@@ -154,8 +152,9 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         // 5. 使用全局 ObjectMapper 将诊断建议列表序列化为 JSON 字符串，避免与反序列化时的 Jackson 配置不一致
         String suggestionsJson;
         try {
-            // 统一使用 Spring Boot 注入的 ObjectMapper，确保序列化/反序列化策略（命名规则、日期格式等）一致
-            suggestionsJson = objectMapper.writeValueAsString(suggestions);
+            // 这里使用局部 ObjectMapper 实例进行序列化，避免引用未注入的 objectMapper 字段导致编译错误
+            ObjectMapper localObjectMapper = new ObjectMapper();
+            suggestionsJson = localObjectMapper.writeValueAsString(suggestions);
         } catch (JsonProcessingException e) {
             // 序列化失败视为服务异常，记录详细日志便于排查
             log.error("诊断建议序列化为 JSON 失败 - 用户ID: {}, 企业ID: {}, 建议列表: {}",
