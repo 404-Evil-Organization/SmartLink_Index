@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import com.zhilian.zhilianbackend.exception.BusinessException;
 
 /**
  * @Author: 6017
@@ -103,15 +102,9 @@ public class DiagnosisController {
     **/
     @GetMapping("/latest")
     public Result<DiagnosisReportVO> getLatestDiagnosis(
-            @RequestParam(value = "manuId", required = false) Long manuId) {
+            @RequestParam("manuId") Long manuId) {
 
         log.info("接收到获取企业最新诊断报告请求: manuId={}", manuId);
-
-        // 参数判空，避免 MissingServletRequestParameterException 被全局异常处理成 500
-        if (manuId == null) {
-            log.warn("获取企业最新诊断报告失败: manuId 参数缺失");
-            throw new BusinessException(400, "参数 manuId 缺失");
-        }
 
         Long userId = getCurrentUserId();
 
