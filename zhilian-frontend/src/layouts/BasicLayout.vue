@@ -26,6 +26,12 @@
             <el-icon><Tickets /></el-icon>
             <span>诊断问卷</span>
           </el-menu-item>
+
+          <el-menu-item index="/diagnosis/report" @click="goToLatestReport">
+          <el-icon><DataLine /></el-icon>
+          <span>诊断报告</span>
+        </el-menu-item>
+
         </el-sub-menu>
         <el-sub-menu v-if="isAdmin" index="2">
         <el-menu-item index="/manufacture/list">
@@ -83,6 +89,7 @@ import {
   Collection,
   Tickets,
   OfficeBuilding,
+  DataLine ,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
@@ -96,6 +103,15 @@ const activeMenu = computed(() => route.path);
 // 判断当前用户是否为管理员
 const isAdmin = computed(() => userStore.userInfo?.role === "admin");
 
+// 跳转到最新诊断报告
+const goToLatestReport = () => {
+  const latestId = localStorage.getItem('latestDiagnosisId')
+  if (latestId) {
+    router.push(`/diagnosis/report/${latestId}`)
+  } else {
+    ElMessage.warning('暂无诊断报告，请先提交问卷')
+  }
+}
 // 判断当前用户是否为制造企业
 const isManufacture = computed(
   () => userStore.userInfo?.role === "manufacture",

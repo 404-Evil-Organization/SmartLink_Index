@@ -46,3 +46,17 @@ export function getDiagnosisResult(id) {
     method: "get",
   });
 }
+
+/**
+ * 获取企业最新诊断报告
+ * @param {number} manuId 制造企业ID
+ * @returns {Promise<{ diagnosisId: number, manuId: number, ... }>}
+ */
+export function getLatestDiagnosis(manuId) {
+  return request({
+    url: '/diagnostics/latest',
+    method: 'get',
+    params: { manuId }
+  })
+}
+
