@@ -7,6 +7,7 @@ import dashboardRoutes from "./models/dashboard";
 import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
 import diagnosisRoutes from "./models/diagnosis";
+import errorRoutes from "./models/error";
 
 const routes = [
   {
@@ -26,6 +27,7 @@ const routes = [
     children: [
       ...dashboardRoutes,
       ...diagnosisRoutes,
+      ...errorRoutes,
       ...manufactureRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
