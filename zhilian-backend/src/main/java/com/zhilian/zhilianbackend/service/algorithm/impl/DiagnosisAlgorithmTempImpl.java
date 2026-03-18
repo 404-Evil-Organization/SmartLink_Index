@@ -13,7 +13,7 @@ import java.util.Map;
  * @Date: 2026/3/17 21:13
  * @Param:
  * @Return:
- * @Description:
+ * @Description: 诊断算法临时实现类（供测试用），实现DiagnosisAlgorithm接口，提供总分计算、等级判断、改进建议生成和雷达图数据转换的临时实现。
  **/
 @Component
 public class DiagnosisAlgorithmTempImpl implements DiagnosisAlgorithm {
