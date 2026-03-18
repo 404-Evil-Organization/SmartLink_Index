@@ -34,9 +34,11 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         QueryWrapper<RegionIndex> wrapper = new QueryWrapper<>();
 
         // 处理时间过滤
-        if (query.getQuarter() != null && !query.getQuarter().isEmpty()) {
-            // 解析 quarter 字符串，如 "2025Q1"
-            QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(query.getQuarter());
+        String quarter = query.getQuarter();
+        if (StringUtils.hasText(quarter)) {
+            // 解析 quarter 字符串，如 "2025Q1"；先去除首尾空白，避免空白字符导致解析异常
+            quarter = quarter.trim();
+            QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(quarter);
             wrapper.eq("year", quarterInfo.getYear())
                     .eq("period_type", "quarter")
                     .eq("period_value", quarterInfo.getQuarter());
@@ -59,7 +61,13 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                                     ") latest " +
                                     "ON t.region = latest.region " +
                                     "AND t.calc_time = latest.max_calc_time " +
-                                    "AND t.deleted = '1970-01-01 00:00:00'")
+                                    "AND t.id = ( " +
+                                    "  SELECT MAX(id) " +
+                                    "  FROM region_index " +
+                                    "  WHERE region = t.region " +
+                                    "    AND calc_time = t.calc_time " +
+                                    "    AND deleted = '1970-01-01 00:00:00' " +
+                                    ")")
                     .orderByAsc("region");
         }
 

@@ -37,9 +37,6 @@ public class QuarterMonthUtils {
             }
             return new QuarterInfo(year, quarter);
         } catch (NumberFormatException e) {
-            // 解析失败属于客户端参数错误，这类 4xx 错误不应打 ERROR+堆栈，避免造成日志噪音
-            log.warn("季度字符串解析失败，原始入参: {}", quarterStr);
-            // 如需排查问题，可在 debug 级别打开堆栈日志
             if (log.isDebugEnabled()) {
                 log.debug("季度字符串解析失败（debug 堆栈），原始入参: {}", quarterStr, e);
             }
