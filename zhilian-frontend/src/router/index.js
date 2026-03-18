@@ -5,6 +5,7 @@ import { enforceAdminOnly } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
 import serviceProviderRoutes from "./models/manage";
+import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
 
 const routes = [
@@ -25,6 +26,7 @@ const routes = [
     children: [
       ...dashboardRoutes,
       ...serviceProviderRoutes, 
+      ...manufactureRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,
