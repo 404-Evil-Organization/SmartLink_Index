@@ -7,6 +7,7 @@ import com.zhilian.zhilianbackend.dto.request.TrendQuery;
 import com.zhilian.zhilianbackend.dto.response.RegionDetailVO;
 import com.zhilian.zhilianbackend.dto.response.RegionListItemVO;
 import com.zhilian.zhilianbackend.dto.response.TrendItemVO;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.RegionIndexService;
 import com.zhilian.zhilianbackend.utils.QuarterMonthUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -86,8 +87,8 @@ public class IndexController {
             try {
                 QuarterMonthUtils.parseQuarter(query.getQuarter());
                 // 可选：校验年份范围（例如不能为负数）
-            } catch (RuntimeException e) {
-                // 直接返回具体的参数错误提示，避免被全局异常处理器包装成 500
+            } catch (BusinessException e) {
+                // 仅捕获业务异常，直接返回具体的参数错误提示
                 return e.getMessage();
             }
         } else if (query.getYear() != null || query.getMonth() != null) {

@@ -63,12 +63,15 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(quarter);
             wrapper.eq("year", quarterInfo.getYear())
                     .eq("period_type", "quarter")
-                    .eq("period_value", quarterInfo.getQuarter());
+                    .eq("period_value", quarterInfo.getQuarter())
+                    // 显式按 region 升序排序，避免依赖数据库默认顺序导致列表顺序不稳定
+                    .orderByAsc("region");
         } else if (query.getYear() != null && query.getMonth() != null) {
-            // 按年月查询
+            // 按年月查询，显式按 region 升序排序，保证返回顺序稳定
             wrapper.eq("year", query.getYear())
                     .eq("period_type", "month")
-                    .eq("period_value", query.getMonth());
+                    .eq("period_value", query.getMonth())
+                    .orderByAsc("region");
         } else {
             // 为避免全表排序+内存去重，改为在数据库侧通过窗口函数一次性取出每个 region 的最新记录
             // 使用 apply 方法，{0} 占位符会被替换为清理后的参数值，并由 JDBC 自动处理类型
@@ -116,13 +119,16 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                     .eq("period_type", "month")
                     .eq("period_value", query.getMonth());
         } else {
-            // 未传时间参数：取最新一期
-            wrapper.orderByDesc("calc_time").last("LIMIT 1");
+            // 未传时间参数：取最新一期；当 calc_time 相同时按 id 倒序保证结果稳定
+            wrapper.orderByDesc("calc_time")
+                    .orderByDesc("id")
+                    .last("LIMIT 1");
         }
 
         RegionIndex entity = getOne(wrapper);
         if (entity == null) {
-            return null;  // 由 Controller 处理 404
+            // 查无数据时抛出业务异常，由全局异常处理器统一转换为 404 响应，避免调用方出现 NPE
+            throw new BusinessException(404, "未找到地区【" + region + "】的指数数据");
         }
 
         RegionDetailVO vo = new RegionDetailVO();
