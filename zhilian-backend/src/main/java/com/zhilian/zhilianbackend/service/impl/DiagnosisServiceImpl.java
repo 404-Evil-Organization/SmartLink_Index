@@ -1,10 +1,10 @@
 package com.zhilian.zhilianbackend.service.impl;
 
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.entity.Diagnosis;
+import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.entity.User;
 import com.zhilian.zhilianbackend.exception.BusinessException;
@@ -151,12 +151,12 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
             throw new BusinessException(400, "诊断总分计算异常，请检查各维度评分是否在合法范围内（1-5 分）");
         }
 
-        // 5. 使用 Hutool JSONUtil 将诊断建议列表序列化为 JSON 字符串
+        // 5. 使用全局 ObjectMapper 将诊断建议列表序列化为 JSON 字符串，避免与反序列化时的 Jackson 配置不一致
         String suggestionsJson;
         try {
-            // 使用已引入的 Hutool JSON 工具进行序列化，避免每次 new ObjectMapper 带来的性能与配置问题
-            suggestionsJson = JSONUtil.toJsonStr(suggestions);
-        } catch (Exception e) {
+            // 统一使用 Spring Boot 注入的 ObjectMapper，确保序列化/反序列化策略（命名规则、日期格式等）一致
+            suggestionsJson = objectMapper.writeValueAsString(suggestions);
+        } catch (JsonProcessingException e) {
             // 序列化失败视为服务异常，记录详细日志便于排查
             log.error("诊断建议序列化为 JSON 失败 - 用户ID: {}, 企业ID: {}, 建议列表: {}",
                     userId, request.getManuId(), suggestions, e);
@@ -322,10 +322,10 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         // 解析JSON格式的建议列表，防御历史脏数据/非法JSON，避免因单条坏数据导致接口整体500
         if (diagnosis.getSuggestions() != null) {
             try {
-                // 使用 Jackson ObjectMapper 反序列化 JSON 字符串为 List<String>
-                List<String> suggestions = objectMapper.readValue(
+                // 使用 Hutool JSON 工具反序列化 JSON 字符串为 List<String>
+                List<String> suggestions = JSONUtil.toList(
                         diagnosis.getSuggestions(),
-                        new TypeReference<List<String>>() {}
+                        String.class
                 );
                 vo.setSuggestions(suggestions);
             } catch (Exception e) {
