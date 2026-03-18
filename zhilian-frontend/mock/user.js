@@ -22,7 +22,7 @@ export default [
         data: {
           userId: 1001,
           username: "tech_company",
-          role: "manufacture",
+          role: "admin",
         },
       };
     },
