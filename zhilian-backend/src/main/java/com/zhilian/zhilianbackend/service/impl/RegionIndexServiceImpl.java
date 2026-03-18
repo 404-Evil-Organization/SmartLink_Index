@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,7 +29,20 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, RegionIndex> implements RegionIndexService {
-    private static final String LOGIC_NOT_DELETED_DATETIME = "1970-01-01 00:00:00";
+    @Value("${mybatis-plus.global-config.db-config.logic-not-delete-value:1970-01-01 00:00:00}")
+    private String logicNotDeletedDatetime;
+
+    /**
+     * 清理逻辑未删除值，去除可能存在的首尾单引号
+     * @param raw 原始值
+     * @return 清理后的值
+     */
+    private String cleanLogicNotDeletedDatetime(String raw) {
+        if (raw != null && raw.length() >= 2 && raw.startsWith("'") && raw.endsWith("'")) {
+            return raw.substring(1, raw.length() - 1);
+        }
+        return raw;
+    }
 
     /**
      * @Author: xiaodengyou
@@ -57,16 +71,15 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                     .eq("period_value", query.getMonth());
         } else {
             // 为避免全表排序+内存去重，改为在数据库侧通过窗口函数一次性取出每个 region 的最新记录
+            // 使用 apply 方法，{0} 占位符会被替换为清理后的参数值，并由 JDBC 自动处理类型
+            String cleanValue = cleanLogicNotDeletedDatetime(logicNotDeletedDatetime);
             wrapper.isNotNull("region")
-                    .inSql("id",
-                            "SELECT t.id " +
-                                    "FROM ( " +
-                                    "  SELECT id, region, calc_time, " +
-                                    "         ROW_NUMBER() OVER (PARTITION BY region ORDER BY calc_time DESC, id DESC) AS rn " +
-                                    "  FROM region_index " +
-                                    "  WHERE region IS NOT NULL " +
-                                    "    AND deleted = '" + LOGIC_NOT_DELETED_DATETIME + "' " +
-                                    "WHERE t.rn = 1")
+                    .apply("id IN (SELECT t.id FROM (" +
+                            "  SELECT id, region, calc_time, " +
+                            "         ROW_NUMBER() OVER (PARTITION BY region ORDER BY calc_time DESC, id DESC) AS rn " +
+                            "  FROM region_index " +
+                            "  WHERE region IS NOT NULL AND deleted = {0}" +
+                            ") t WHERE t.rn = 1)", cleanValue)
                     .orderByAsc("region");
         }
 
