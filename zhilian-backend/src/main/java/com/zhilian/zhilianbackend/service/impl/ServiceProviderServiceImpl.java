@@ -27,7 +27,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,8 +49,6 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     private final TagMapper tagMapper;
     private final ServiceTagMapper serviceTagMapper;
     private final UserService userService;
-
-    // 未删除标识的固定值（与 application.yml 中 logic-not-delete-value 保持一致）
     private static final Timestamp NOT_DELETED = Timestamp.valueOf("1970-01-01 00:00:00");
 
     /**
@@ -236,7 +233,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             throw new BusinessException(400, "服务商ID不能为空");
         }
         if (currentUserId == null) {
-            throw new AccessDeniedException("无法获取当前用户信息");
+            throw new BusinessException(403, "无法识别当前用户身份，禁止访问该接口");
         }
 
         LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
@@ -407,12 +404,12 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             if (!Objects.equals(provider.getUserId(), currentUserId)) {
                 log.warn("服务商越权修改，服务商ID：{}，所属用户ID：{}，操作人ID：{}",
                         provider.getId(), provider.getUserId(), currentUserId);
-                throw new AccessDeniedException("无权修改其他服务商的信息");
+                throw new BusinessException(403, "无权修改其他服务商的信息");
             }
             return;
         }
 
-        throw new AccessDeniedException("当前角色无权修改服务商信息");
+        throw new BusinessException(403, "当前角色无权修改服务商信息");
     }
 
     /**
@@ -434,12 +431,12 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             if (!Objects.equals(provider.getUserId(), currentUserId)) {
                 log.warn("服务商越权删除，服务商ID：{}，所属用户ID：{}，操作人ID：{}",
                         provider.getId(), provider.getUserId(), currentUserId);
-                throw new AccessDeniedException("无权删除其他服务商的信息");
+                throw new BusinessException(403, "无权删除其他服务商的信息");
             }
             return;
         }
 
-        throw new AccessDeniedException("当前角色无权删除服务商信息");
+        throw new BusinessException(403, "当前角色无权删除服务商信息");
     }
 
     // ==================== 参数校验 ====================

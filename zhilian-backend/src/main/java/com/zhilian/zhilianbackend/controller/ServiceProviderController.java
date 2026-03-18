@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -56,6 +55,10 @@ public class ServiceProviderController {
             identifier = userDetails.getUsername();
         } else {
             identifier = authentication.getName();
+        }
+        if ("anonymousUser".equals(identifier)) {
+            log.warn("检测到匿名用户访问受保护接口，authentication={}", authentication);
+            throw new BusinessException(401, "未登录或登录状态已失效，禁止访问该接口");
         }
         try {
             return Long.parseLong(identifier);
@@ -113,14 +116,14 @@ public class ServiceProviderController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             log.warn("新增服务商失败：未认证用户尝试访问");
-            throw new AccessDeniedException("当前用户未认证，无法新增服务商");
+            throw new BusinessException(401, "当前用户未认证，无法新增服务商");
         }
         boolean hasRequiredRole = authentication.getAuthorities().stream().anyMatch(
                 authority -> "ROLE_ADMIN".equals(authority.getAuthority()) || "ROLE_SERVICE".equals(authority.getAuthority())
         );
         if (!hasRequiredRole) {
             log.warn("新增服务商失败：用户无权限，username={}", authentication.getName());
-            throw new AccessDeniedException("当前用户无权限新增服务商");
+            throw new BusinessException(403, "当前用户无权限新增服务商");
         }
         // 从当前登录用户的认证信息中获取 userId，防止客户端伪造 userId 越权创建服务商
         Long currentUserId = getCurrentUserIdFromSecurityContext();
