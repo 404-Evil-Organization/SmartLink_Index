@@ -118,8 +118,12 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                     this.save(index);
                     log.info("区域 {} 季度指数计算完成: {}", region, index.getTotalIndex());
                 }
+            } catch (BusinessException e) {
+                // 业务异常直接透传，由全局异常处理器返回 400，避免被包装成系统异常
+                log.warn("区域 {} 季度指数计算发生业务异常: {}", region, e.getMessage(), e);
+                throw e;
             } catch (Exception e) {
-                // 记录异常日志，并重新抛出运行时异常以触发事务回滚，避免只删除不插入导致数据缺失
+                // 系统异常：记录异常日志，并重新抛出运行时异常以触发事务回滚，避免只删除不插入导致数据缺失
                 log.error("区域 {} 季度指数计算失败", region, e);
                 throw new RuntimeException(String.format("区域 %s 季度指数计算失败，事务已回滚", region), e);
             }
@@ -239,24 +243,9 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         }
 
         // 懒加载 ServiceProvider 区域缓存：仅在首次调用或缓存为空时，从数据库一次性载入所有数据
-        // 为避免在 scheduledCalculateQuarter 与 manualCalculate 并发触发时多个线程同时写入 HashMap，
-        // 这里使用双重检查锁定（DCL）并以缓存本身作为锁对象，确保初始化过程仅执行一次且线程安全。
-        if (serviceProviderRegionCache.isEmpty()) {
-            synchronized (serviceProviderRegionCache) {
-                if (serviceProviderRegionCache.isEmpty()) {
-                    List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(null);
-                    if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
-                        serviceProviderRegionCache.clear();
-                        for (ServiceProvider sp : allServiceProviders) {
-                            if (sp != null && sp.getId() != null && sp.getRegion() != null) {
-                                // 仅缓存区域非空的服务商，避免后续判断出现 NPE
-                                serviceProviderRegionCache.put(sp.getId(), sp.getRegion());
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // 为避免在 scheduledCalculateQuarter 与 manualCalculate 并发触发时多个线程同时写入 / 读取 HashMap，
+        // 这里统一在同一把锁（serviceProviderRegionCache）下完成“空检查 + 初始化 + 读取”，
+        // 确保整个访问过程线程安全，避免出现一个线程写入、另一个线程未加锁读取的并发风险。
 
         // 将 coop 中的 serviceId 转为 Long 类型作为缓存 key（兼容 Integer/Long 主键场景）
         Long serviceIdKey;
@@ -268,7 +257,22 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             return false;
         }
 
-        String serviceRegion = serviceProviderRegionCache.get(serviceIdKey);
+        String serviceRegion;
+        synchronized (serviceProviderRegionCache) {
+            if (serviceProviderRegionCache.isEmpty()) {
+                List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(null);
+                if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
+                    serviceProviderRegionCache.clear();
+                    for (ServiceProvider sp : allServiceProviders) {
+                        if (sp != null && sp.getId() != null && sp.getRegion() != null) {
+                            // 仅缓存区域非空的服务商，避免后续判断出现 NPE
+                            serviceProviderRegionCache.put(sp.getId(), sp.getRegion());
+                        }
+                    }
+                }
+            }
+            serviceRegion = serviceProviderRegionCache.get(serviceIdKey);
+        }
         if (serviceRegion == null) {
             // 若缓存中不存在对应服务商区域（例如数据库中已删除或区域为空），保持原行为：不算跨区域
             return false;
