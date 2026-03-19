@@ -45,10 +45,6 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * - 若未来有服务商区域数据变动场景，可在相关更新逻辑中主动清空该缓存或重建。
      */
     private final Map<Long, String> serviceProviderRegionCache = new HashMap<>();
-@Slf4j
-@Service
-@RequiredArgsConstructor
-public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, RegionIndex> implements RegionIndexService {
 
     private final ManufactureMapper manufactureMapper;
     private final ServiceProviderMapper serviceProviderMapper;
@@ -192,7 +188,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             if (region.equals(manuRegion)) {
                 totalCoopCount++;
 
-                if (isCrossRegionCooperation(coop, region)) {
+                if (isCrossRegionCooperation(coop, manuRegion)) {
                     crossRegionCoopCount++;
                 }
 
@@ -243,14 +239,20 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         }
 
         // 懒加载 ServiceProvider 区域缓存：仅在首次调用或缓存为空时，从数据库一次性载入所有数据
+        // 为避免在 scheduledCalculateQuarter 与 manualCalculate 并发触发时多个线程同时写入 HashMap，
+        // 这里使用双重检查锁定（DCL）并以缓存本身作为锁对象，确保初始化过程仅执行一次且线程安全。
         if (serviceProviderRegionCache.isEmpty()) {
-            List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(null);
-            if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
-                serviceProviderRegionCache.clear();
-                for (ServiceProvider sp : allServiceProviders) {
-                    if (sp != null && sp.getId() != null && sp.getRegion() != null) {
-                        // 仅缓存区域非空的服务商，避免后续判断出现 NPE
-                        serviceProviderRegionCache.put(sp.getId(), sp.getRegion());
+            synchronized (serviceProviderRegionCache) {
+                if (serviceProviderRegionCache.isEmpty()) {
+                    List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(null);
+                    if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
+                        serviceProviderRegionCache.clear();
+                        for (ServiceProvider sp : allServiceProviders) {
+                            if (sp != null && sp.getId() != null && sp.getRegion() != null) {
+                                // 仅缓存区域非空的服务商，避免后续判断出现 NPE
+                                serviceProviderRegionCache.put(sp.getId(), sp.getRegion());
+                            }
+                        }
                     }
                 }
             }
