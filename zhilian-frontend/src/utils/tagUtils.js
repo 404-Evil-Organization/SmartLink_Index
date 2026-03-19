@@ -5,7 +5,10 @@
  */
 export const normalizeTags = (value) => {
   if (Array.isArray(value)) {
-    return value;
+    // 对数组中每一项执行 String().trim() 并过滤空值，确保返回规范的 string[]
+    return value
+      .map((item) => String(item).trim())
+      .filter((item) => item !== "");
   }
 
   if (value == null || value === "") {

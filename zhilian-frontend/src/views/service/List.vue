@@ -276,16 +276,24 @@
                     cert.expireDate || "-"
                   }}</el-descriptions-item>
                   <el-descriptions-item label="证书文件">
-                    <el-button @click="showPreview = true"> 查看 </el-button>
-                    <el-image-viewer
-                      v-if="showPreview"
-                      :url-list="[cert.certFileUrl]"
-                      show-progress
-                      @close="showPreview = false"
-                    />
+                    <el-button
+                      v-if="cert.certFileUrl"
+                      @click="
+                        ((showPreview = true), (certImage = cert.certFileUrl))
+                      "
+                    >
+                      查看
+                    </el-button>
+                    <span v-else> - </span>
                   </el-descriptions-item>
                 </el-descriptions>
               </div>
+              <el-image-viewer
+                v-if="showPreview"
+                :url-list="[certImage]"
+                show-progress
+                @close="showPreview = false"
+              />
             </div>
           </el-collapse-item>
         </el-collapse>
@@ -300,7 +308,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ElMessage, ElImageViewer } from "element-plus";
+import { ElImageViewer } from "element-plus";
 import { Refresh, View } from "@element-plus/icons-vue";
 import { formatEstablishedDate } from "@/composables/date";
 import { normalizeTags } from "@/utils/tagUtils";
@@ -320,6 +328,7 @@ const userStore = useUserStore();
 const showPhone = (phone) => {
   return maskPhone(phone, userStore.userInfo?.role);
 };
+let certImage = null;
 
 // 统计卡片（注释保留）
 // const statistics = ref([
