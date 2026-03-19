@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.dto.request.EvaluationSubmitRequest;
 import com.zhilian.zhilianbackend.entity.Cooperation;
 import com.zhilian.zhilianbackend.entity.Evaluation;
@@ -8,7 +9,6 @@ import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.CooperationMapper;
 import com.zhilian.zhilianbackend.mapper.EvaluationMapper;
 import com.zhilian.zhilianbackend.service.EvaluationService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +54,7 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
         evaluation.setEvaluatorRole(evaluatorRole);
         evaluation.setScore(request.getScore().byteValue());
         evaluation.setContent(request.getContent());
-        evaluation.setIsAnonymous(request.getIsAnonymous() ? (byte)1 : (byte)0);
+        evaluation.setIsAnonymous(Boolean.TRUE.equals(request.getIsAnonymous()) ? (byte) 1 : (byte) 0);
 
         this.save(evaluation);
         return evaluation.getId();

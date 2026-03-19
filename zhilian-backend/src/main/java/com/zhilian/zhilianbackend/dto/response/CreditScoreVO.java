@@ -21,16 +21,16 @@ public class CreditScoreVO {
     private Long serviceId;
 
     @Schema(description = "综合信用分")
-    private Integer score;
+    private Byte score;
 
     @Schema(description = "资质分")
-    private Integer qualScore;
+    private Byte qualScore;
 
     @Schema(description = "案例分")
-    private Integer caseScore;
+    private Byte caseScore;
 
     @Schema(description = "评价分")
-    private Integer evalScore;
+    private Byte evalScore;
 
     @Schema(description = "计算时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
