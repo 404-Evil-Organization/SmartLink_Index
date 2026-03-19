@@ -56,7 +56,12 @@
               </el-col> -->
               <el-col :span="8">
                 <el-form-item label="所在区域">
-                  <el-select v-model="searchForm.region" placeholder="全部" clearable filterable>
+                  <el-select
+                    v-model="searchForm.region"
+                    placeholder="全部"
+                    clearable
+                    filterable
+                  >
                     <el-option
                       v-for="item in regionOptions"
                       :key="item"
@@ -68,7 +73,12 @@
               </el-col>
               <el-col :span="8">
                 <el-form-item label="服务类型">
-                  <el-select v-model="searchForm.serviceType" placeholder="全部" clearable filterable>
+                  <el-select
+                    v-model="searchForm.serviceType"
+                    placeholder="全部"
+                    clearable
+                    filterable
+                  >
                     <el-option
                       v-for="item in serviceTypeOptions"
                       :key="item.id"
@@ -108,32 +118,30 @@
         </div>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" border stripe style="width: 100%">
+      <el-table
+        :data="tableData"
+        v-loading="loading"
+        border
+        stripe
+        style="width: 100%"
+      >
         <!-- <el-table-column prop="id" label="ID" width="70" /> -->
-         <!-- 加入序号列 -->
+        <!-- 加入序号列 -->
         <el-table-column type="index" label="序号" width="70" align="center" />
-        <el-table-column prop="companyName" label="服务企业名称" min-width="150" />
+        <el-table-column
+          prop="companyName"
+          label="服务企业名称"
+          min-width="150"
+        />
         <el-table-column prop="region" label="区域" width="90" />
         <el-table-column prop="serviceType" label="服务类型" min-width="180">
           <template #default="{ row }">
             <el-tag
-              v-for="(tag, index) in (
-                Array.isArray(row.serviceType)
-                  ? row.serviceType
-                  : (row.serviceType == null || row.serviceType === ''
-                      ? []
-                      : (typeof row.serviceType === 'string'
-                          ? row.serviceType.split(',')
-                          : String(row.serviceType).split(',')
-                        )
-                    )
-              )
-                .map(item => (item == null ? '' : String(item).trim()))
-                .filter(item => item !== '')"
+              v-for="(tag, index) in normalizeTags(row.serviceType)"
               :key="tag + '-' + index"
               size="small"
               effect="plain"
-              style="margin-right: 5px; margin-bottom: 3px;"
+              style="margin-right: 5px; margin-bottom: 3px"
             >
               {{ tag }}
             </el-tag>
@@ -170,19 +178,45 @@
     </el-card>
 
     <!-- 服务商详情弹窗（只读） -->
-    <el-dialog v-model="detailDialog.visible" title="服务企业详情" width="600px">
+    <el-dialog
+      v-model="detailDialog.visible"
+      title="服务企业详情"
+      width="600px"
+    >
       <el-descriptions :column="2" border class="fixed-label-descriptions">
-        <el-descriptions-item label="服务企业名称" :span="2">{{ detailDialog.data.companyName || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="区域" :span="2" class="region-item-half">{{ detailDialog.data.region || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="详细地址" :span="2">{{ detailDialog.data.address || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="联系人" :span="2">{{ detailDialog.data.contactPerson || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="联系电话" :span="2">{{ showPhone(detailDialog.data.contactPhone) }}</el-descriptions-item>
-        <el-descriptions-item label="服务类型" :span="2">{{ detailDialog.data.serviceType || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="企业简介" :span="2">{{ detailDialog.data.description || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="企业官网" :span="2">{{ detailDialog.data.website || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="成立日期" :span="2">{{ detailDialog.data.establishedDate || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="员工人数" :span="2">{{ detailDialog.data.employeeCount || "-" }}</el-descriptions-item>
-        <el-descriptions-item label="资质概述" :span="2">{{ detailDialog.data.qualification || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="服务企业名称" :span="2">{{
+          detailDialog.data.companyName || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="区域" :span="2" class="region-item-half">{{
+          detailDialog.data.region || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="详细地址" :span="2">{{
+          detailDialog.data.address || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="联系人" :span="2">{{
+          detailDialog.data.contactPerson || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话" :span="2">{{
+          showPhone(detailDialog.data.contactPhone)
+        }}</el-descriptions-item>
+        <el-descriptions-item label="服务类型" :span="2">{{
+          detailDialog.data.serviceType || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="企业简介" :span="2">{{
+          detailDialog.data.description || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="企业官网" :span="2">{{
+          detailDialog.data.website || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="成立日期" :span="2">{{
+          formatEstablishedDate(detailDialog.data.establishedDate)
+        }}</el-descriptions-item>
+        <el-descriptions-item label="员工人数" :span="2">{{
+          detailDialog.data.employeeCount || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="资质概述" :span="2">{{
+          detailDialog.data.qualification || "-"
+        }}</el-descriptions-item>
         <!-- <el-descriptions-item label="年收入(万元)">{{ detailDialog.data.annualRevenue || "-" }}</el-descriptions-item> -->
         <el-descriptions-item label="企业logo" :span="2">
           <el-image
@@ -196,44 +230,74 @@
       </el-descriptions>
 
       <!-- 证书列表折叠面板（只读，纵向卡片布局） -->
-  <div class="certification-list">
-    <el-collapse v-model="activeCertCollapse" class="cert-collapse">
-      <el-collapse-item>
-        <template #title>
-          <div class="custom-collapse-title">
-            <span>资质证书</span>
-            <el-tooltip content="刷新">
-              <el-button
-                :icon="Refresh"
-                size="small"
-                circle
-                @click.stop="refreshCertList"
-                :loading="certLoading"
+      <div class="certification-list">
+        <el-collapse v-model="activeCertCollapse" class="cert-collapse">
+          <el-collapse-item>
+            <template #title>
+              <div class="custom-collapse-title">
+                <span>资质证书</span>
+                <el-tooltip content="刷新">
+                  <el-button
+                    :icon="Refresh"
+                    size="small"
+                    circle
+                    @click.stop="refreshCertList"
+                    :loading="certLoading"
+                  />
+                </el-tooltip>
+              </div>
+            </template>
+            <div class="cert-card-list">
+              <div
+                v-if="certificateList.length === 0 && !certLoading"
+                class="empty-placeholder"
+              >
+                暂无证书
+              </div>
+              <div
+                v-for="cert in certificateList"
+                :key="cert.id"
+                class="cert-item-card"
+              >
+                <el-descriptions :column="1" border size="small">
+                  <el-descriptions-item label="证书名称">{{
+                    cert.certName || "-"
+                  }}</el-descriptions-item>
+                  <el-descriptions-item label="证书编号">{{
+                    cert.certNo || "-"
+                  }}</el-descriptions-item>
+                  <el-descriptions-item label="发证机构">{{
+                    cert.issueAuthority || "-"
+                  }}</el-descriptions-item>
+                  <el-descriptions-item label="发证日期">{{
+                    cert.issueDate || "-"
+                  }}</el-descriptions-item>
+                  <el-descriptions-item label="有效期">{{
+                    cert.expireDate || "-"
+                  }}</el-descriptions-item>
+                  <el-descriptions-item label="证书文件">
+                    <el-button
+                      v-if="cert.certFileUrl"
+                      @click="
+                        ((showPreview = true), (certImage = cert.certFileUrl))
+                      "
+                    >
+                      查看
+                    </el-button>
+                    <span v-else> - </span>
+                  </el-descriptions-item>
+                </el-descriptions>
+              </div>
+              <el-image-viewer
+                v-if="showPreview"
+                :url-list="[certImage]"
+                show-progress
+                @close="showPreview = false"
               />
-            </el-tooltip>
-          </div>
-        </template>
-        <div class="cert-card-list">
-          <div v-if="certificateList.length === 0 && !certLoading" class="empty-placeholder">
-            暂无证书
-          </div>
-          <div v-for="cert in certificateList" :key="cert.id" class="cert-item-card">
-            <el-descriptions :column="1" border size="small">
-              <el-descriptions-item label="证书名称">{{ cert.certName || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="证书编号">{{ cert.certNo || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="发证机构">{{ cert.issueAuthority || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="发证日期">{{ cert.issueDate || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="有效期">{{ cert.expireDate || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="证书文件">
-                <el-link v-if="cert.certFileUrl" :href="cert.certFileUrl" target="_blank">查看</el-link>
-                <span v-else>-</span>
-              </el-descriptions-item>
-            </el-descriptions>
-          </div>
-        </div>
-      </el-collapse-item>
-    </el-collapse>
-  </div>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
+      </div>
 
       <template #footer>
         <el-button @click="detailDialog.visible = false">关闭</el-button>
@@ -243,28 +307,27 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import {
-  Refresh,
-  View
-} from '@element-plus/icons-vue'
-import { getCertList } from '@/api/certification'
+import { ref, reactive, onMounted } from "vue";
+import { ElImageViewer } from "element-plus";
+import { Refresh, View } from "@element-plus/icons-vue";
+import { formatEstablishedDate } from "@/composables/date";
+import { normalizeTags } from "@/utils/tagUtils";
 
 // API 接口
 import {
   getServiceProviderList,
-  getServiceProviderDetail
-} from '@/api/service-provider'
-import { getRegions, getServiceTags } from '@/api/common'
-import { maskPhone } from '@/utils/desensitize'
-import { useUserStore } from '@/stores/user'
+  getServiceProviderDetail,
+} from "@/api/service-provider";
+import { getRegions, getServiceTags } from "@/api/common";
+import { getCertList } from "@/api/certification";
+import { maskPhone } from "@/utils/desensitize";
+import { useUserStore } from "@/stores/user";
 
 // 获取用户角色
-const userStore = useUserStore()
+const userStore = useUserStore();
 const showPhone = (phone) => {
-  return maskPhone(phone, userStore.userInfo?.role)
-}
+  return maskPhone(phone, userStore.userInfo?.role);
+};
 
 // 统计卡片（注释保留）
 // const statistics = ref([
@@ -275,84 +338,79 @@ const showPhone = (phone) => {
 // ])
 
 // 搜索表单
-const searchExpanded = ref(true)
+const searchExpanded = ref(true);
 const searchForm = reactive({
-  companyName: '',
-  region: '',
-  serviceType: ''
-})
+  companyName: "",
+  region: "",
+  serviceType: "",
+});
 
 // 表格数据
-const tableData = ref([])
-const loading = ref(false)
+const tableData = ref([]);
+const loading = ref(false);
 
 // 分页
 const pagination = reactive({
   current: 1,
   size: 10,
-  total: 0
-})
+  total: 0,
+});
 
 // 详情弹窗
-const detailDialog = reactive({ visible: false, data: {} })
+const detailDialog = reactive({ visible: false, data: {} });
 
 // 获取列表
 const fetchList = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const params = {
       page: pagination.current,
       size: pagination.size,
       ...(searchForm.companyName && { companyName: searchForm.companyName }),
       ...(searchForm.region && { region: searchForm.region }),
-      ...(searchForm.serviceType && { serviceType: searchForm.serviceType })
-    }
-    const res = await getServiceProviderList(params)
-    tableData.value = res.records || []
-    pagination.total = res.total || 0
+      ...(searchForm.serviceType && { serviceType: searchForm.serviceType }),
+    };
+    const res = await getServiceProviderList(params);
+    tableData.value = res.records || [];
+    pagination.total = res.total || 0;
   } catch (error) {
     // 统一错误提示已在 request 响应拦截器中处理，这里仅记录日志和恢复状态
-    console.error('获取服务企业列表失败', error)
+    console.error("获取服务企业列表失败", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
-// 证书列表相关 
-const activeCertCollapse = ref('') // 默认收起
-const certificateList = ref([])
-const certLoading = ref(false)
+// 证书列表相关
+const activeCertCollapse = ref(""); // 默认收起
+const certificateList = ref([]);
+const certLoading = ref(false);
 
 // 获取证书列表
 const fetchCertList = async (serviceId) => {
-  if (!serviceId) return
-  certLoading.value = true
+  if (!serviceId) return;
+  certLoading.value = true;
   try {
-    const res = await getCertList({ serviceId })
-    // 直接判断 res 是否为数组（因为拦截器已剥除外层）
-    certificateList.value = Array.isArray(res) ? res : []
+    const res = await getCertList({ serviceId });
+
+    certificateList.value = Array.isArray(res.records) ? res.records : [];
   } catch (error) {
-    console.error('获取证书列表失败', error)
-    certificateList.value = []
+    console.error("获取证书列表失败", error);
+    certificateList.value = [];
   } finally {
-    certLoading.value = false
+    certLoading.value = false;
   }
-}
+};
 
 // 刷新证书列表
 const refreshCertList = () => {
   if (detailDialog.data?.id) {
-    fetchCertList(detailDialog.data.id)
+    fetchCertList(detailDialog.data.id);
   }
-}
+};
 
 // 区域下拉静态兜底选项（当接口异常或返回格式错误时使用）
-const DEFAULT_REGION_OPTIONS = [
-  '全国',
-  '华北地区',
-  '华东地区',
-  '华南地区'
-];
+const DEFAULT_REGION_OPTIONS = ["全国", "华北地区", "华东地区", "华南地区"];
 
 const regionOptions = ref([]);
 
@@ -360,27 +418,27 @@ const regionOptions = ref([]);
 const fetchRegions = async () => {
   try {
     const res = await getRegions();
-    
+
     if (Array.isArray(res)) {
       regionOptions.value = res;
     } else {
-      console.warn('区域接口返回格式异常，使用默认值');
+      console.warn("区域接口返回格式异常，使用默认值");
       // 接口返回非数组时使用静态兜底列表，避免下拉框无选项
       regionOptions.value = DEFAULT_REGION_OPTIONS;
     }
   } catch (error) {
-    console.error('获取区域列表失败，使用默认选项', error);
+    console.error("获取区域列表失败，使用默认选项", error);
     // 接口请求失败时同样使用静态兜底列表
     regionOptions.value = DEFAULT_REGION_OPTIONS;
   }
-}
+};
 
 // 服务类型下拉静态兜底选项（当接口异常或返回格式错误时使用）
 // 注意：结构需与模板中使用的 { id, name } 保持一致，避免渲染告警
 const DEFAULT_SERVICE_TYPE_OPTIONS = [
-  { id: 'tech_consult', name: '技术咨询' },
-  { id: 'system_integration', name: '系统集成' },
-  { id: 'operation_maintenance', name: '运维服务' }
+  { id: "tech_consult", name: "技术咨询" },
+  { id: "system_integration", name: "系统集成" },
+  { id: "operation_maintenance", name: "运维服务" },
 ];
 
 const serviceTypeOptions = ref([]);
@@ -389,63 +447,65 @@ const serviceTypeOptions = ref([]);
 const fetchServiceTags = async () => {
   try {
     const res = await getServiceTags();
-    
+
     if (Array.isArray(res)) {
       serviceTypeOptions.value = res;
     } else {
-      console.warn('服务类型接口返回格式异常，使用默认值');
+      console.warn("服务类型接口返回格式异常，使用默认值");
       // 接口返回非数组时使用静态兜底列表，保证筛选可用
       serviceTypeOptions.value = DEFAULT_SERVICE_TYPE_OPTIONS;
     }
   } catch (error) {
-    console.error('获取服务类型标签失败，使用默认选项', error);
+    console.error("获取服务类型标签失败，使用默认选项", error);
     // 接口请求失败时同样使用静态兜底列表
     serviceTypeOptions.value = DEFAULT_SERVICE_TYPE_OPTIONS;
   }
-}
+};
 
 // 搜索与重置
 const handleSearch = () => {
-  pagination.current = 1
-  fetchList()
-}
+  pagination.current = 1;
+  fetchList();
+};
 
 const resetSearch = () => {
-  searchForm.companyName = ''
-  searchForm.region = ''
-  searchForm.serviceType = ''
-  handleSearch()
-}
+  searchForm.companyName = "";
+  searchForm.region = "";
+  searchForm.serviceType = "";
+  handleSearch();
+};
 
 // 分页
 const handleSizeChange = (val) => {
-  pagination.size = val
-  fetchList()
-}
+  pagination.size = val;
+  fetchList();
+};
 const handleCurrentChange = (val) => {
-  pagination.current = val
-  fetchList()
-}
+  pagination.current = val;
+  fetchList();
+};
 
 // 查看详情
 const handleDetail = async (row) => {
   try {
-    const res = await getServiceProviderDetail(row.id)
-    detailDialog.data = res
-    detailDialog.visible = true
+    const res = await getServiceProviderDetail(row.id);
+    detailDialog.data = res;
+    detailDialog.visible = true;
     // 获取证书列表
-    fetchCertList(row.id)
+    fetchCertList(row.id);
   } catch (error) {
-    console.error('获取详情失败', error)
+    console.error("获取详情失败", error);
   }
-}
+};
+const certImage = ref(null);
+const showPreview = ref(false);
 
 onMounted(() => {
   // 尝试从接口获取，失败时保持静态默认值
-  fetchRegions()
-  fetchServiceTags()
-  fetchList()
-})
+  fetchRegions();
+  fetchServiceTags();
+  fetchList();
+});
 </script>
 
 <style scoped>
@@ -494,7 +554,9 @@ onMounted(() => {
 
 .stat-card {
   border-radius: 12px;
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
 }
 
 .stat-card:hover {
@@ -637,19 +699,18 @@ onMounted(() => {
 
 /* 固定标签宽度的描述列表 */
 .fixed-label-descriptions :deep(.el-descriptions__label) {
-  width: 100px;               /* 与 label-width 保持一致 */
+  width: 100px; /* 与 label-width 保持一致 */
   min-width: 100px;
   max-width: 100px;
   height: 0%;
-  text-align: center;         /* 文字居中 */
-  white-space: nowrap;        /* 强制不换行 */
+  text-align: center; /* 文字居中 */
+  white-space: nowrap; /* 强制不换行 */
 }
 
 .fixed-label-descriptions :deep(.el-descriptions__content) {
   width: 100px;
-  word-break: break-word;     /* 内容区域允许换行 */
+  word-break: break-word; /* 内容区域允许换行 */
 }
-
 
 /* 证书卡片列表容器 */
 .cert-card-list {
@@ -674,7 +735,7 @@ onMounted(() => {
 
 /* 卡片内的描述列表样式（与上方企业信息统一） */
 .cert-item-card .el-descriptions {
-  --el-descriptions-item-label-width: 100px;  /* 固定标签宽度 */
+  --el-descriptions-item-label-width: 100px; /* 固定标签宽度 */
 }
 
 .cert-item-card .el-descriptions :deep(.el-descriptions__label) {
@@ -690,6 +751,4 @@ onMounted(() => {
   padding: 12px 16px;
   word-break: break-word;
 }
-
 </style>
-
