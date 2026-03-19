@@ -7,7 +7,7 @@ export const normalizeTags = (value) => {
   if (Array.isArray(value)) {
     // 对数组中每一项执行 String().trim() 并过滤空值，确保返回规范的 string[]
     return value
-      .map((item) => String(item).trim())
+      .map((item) => (item == null ? "" : String(item).trim()))
       .filter((item) => item !== "");
   }
 
@@ -39,7 +39,7 @@ export const joinTags = (tags) => {
   }
 
   return tags
-    .map((item) => String(item).trim())
+    .map((item) => (item == null ? "" : String(item).trim()))
     .filter((item) => item !== "")
     .join(",");
 };

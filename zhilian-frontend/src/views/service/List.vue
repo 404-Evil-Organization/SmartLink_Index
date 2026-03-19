@@ -328,7 +328,6 @@ const userStore = useUserStore();
 const showPhone = (phone) => {
   return maskPhone(phone, userStore.userInfo?.role);
 };
-let certImage = null;
 
 // 统计卡片（注释保留）
 // const statistics = ref([
@@ -498,6 +497,7 @@ const handleDetail = async (row) => {
     console.error("获取详情失败", error);
   }
 };
+const certImage = ref(null);
 const showPreview = ref(false);
 
 onMounted(() => {
