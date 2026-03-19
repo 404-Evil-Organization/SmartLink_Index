@@ -242,10 +242,11 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             return false;
         }
 
-        // 懒加载 ServiceProvider 区域缓存：仅在首次调用或缓存为空时，从数据库一次性载入所有数据
+        // 懒加载 ServiceProvider 区域缓存：仅在首次调用或缓存未标记“已加载”时，从数据库一次性载入所有数据
         // 为避免在 scheduledCalculateQuarter 与 manualCalculate 并发触发时多个线程同时写入 / 读取 HashMap，
-        // 这里统一在同一把锁（serviceProviderRegionCache）下完成“空检查 + 初始化 + 读取”，
+        // 这里统一在同一把锁（serviceProviderRegionCache）下完成“检查 + 初始化 + 读取”，
         // 确保整个访问过程线程安全，避免出现一个线程写入、另一个线程未加锁读取的并发风险。
+        // 注意：不能再简单以 isEmpty() 判断“是否已初始化”，否则当 service_provider 表为空时会导致每次都打 DB。
 
         // 将 coop 中的 serviceId 转为 Long 类型作为缓存 key（兼容 Integer/Long 主键场景）
         Long serviceIdKey;
@@ -259,10 +260,12 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
 
         String serviceRegion;
         synchronized (serviceProviderRegionCache) {
-            if (serviceProviderRegionCache.isEmpty()) {
+            // 使用哨兵 key（-1L）标记“缓存是否已加载”，避免以 isEmpty() 作为初始化判断导致 DB 反复全表查询
+            if (!serviceProviderRegionCache.containsKey(-1L)) {
                 List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(null);
+                // 先清空旧缓存（若有），再重新填充，确保数据一致
+                serviceProviderRegionCache.clear();
                 if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
-                    serviceProviderRegionCache.clear();
                     for (ServiceProvider sp : allServiceProviders) {
                         if (sp != null && sp.getId() != null && sp.getRegion() != null) {
                             // 仅缓存区域非空的服务商，避免后续判断出现 NPE
@@ -270,6 +273,8 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                         }
                     }
                 }
+                // 无论查询结果是否为空，都写入哨兵 key 表示“已加载”，避免后续重复访问数据库
+                serviceProviderRegionCache.put(-1L, "LOADED");
             }
             serviceRegion = serviceProviderRegionCache.get(serviceIdKey);
         }
@@ -290,23 +295,30 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Description: 获取所有区域列表（从数据库中动态查询 DISTINCT region，避免硬编码）
     **/
     private List<String> getAllRegions() {
-        // 从制造企业表查询区域
+        // 从制造企业表查询去重后的区域，仅投影 region 字段，避免整行实体回表
         LambdaQueryWrapper<Manufacture> manuWrapper = new LambdaQueryWrapper<>();
-        manuWrapper.isNotNull(Manufacture::getRegion);
-        List<Manufacture> manuList = manufactureMapper.selectList(manuWrapper);
+        manuWrapper
+                .select(Manufacture::getRegion)
+                .isNotNull(Manufacture::getRegion)
+                .groupBy(Manufacture::getRegion);
+        List<Object> manuRegionObjs = manufactureMapper.selectObjs(manuWrapper);
 
-        // 从服务商表查询区域
+        // 从服务商表查询去重后的区域，仅投影 region 字段，避免整行实体回表
         LambdaQueryWrapper<ServiceProvider> spWrapper = new LambdaQueryWrapper<>();
-        spWrapper.isNotNull(ServiceProvider::getRegion);
-        List<ServiceProvider> spList = serviceProviderMapper.selectList(spWrapper);
+        spWrapper
+                .select(ServiceProvider::getRegion)
+                .isNotNull(ServiceProvider::getRegion)
+                .groupBy(ServiceProvider::getRegion);
+        List<Object> spRegionObjs = serviceProviderMapper.selectObjs(spWrapper);
 
         // 使用 Set 去重，避免重复区域；使用 LinkedHashSet 保持插入顺序
         Set<String> regionSet = new LinkedHashSet<>();
 
-        if (manuList != null) {
+        if (manuRegionObjs != null) {
             regionSet.addAll(
-                    manuList.stream()
-                            .map(Manufacture::getRegion)
+                    manuRegionObjs.stream()
+                            .filter(Objects::nonNull)
+                            .map(obj -> Objects.toString(obj, null))
                             .filter(Objects::nonNull)
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())
@@ -314,10 +326,11 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             );
         }
 
-        if (spList != null) {
+        if (spRegionObjs != null) {
             regionSet.addAll(
-                    spList.stream()
-                            .map(ServiceProvider::getRegion)
+                    spRegionObjs.stream()
+                            .filter(Objects::nonNull)
+                            .map(obj -> Objects.toString(obj, null))
                             .filter(Objects::nonNull)
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())
