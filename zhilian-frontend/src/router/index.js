@@ -4,7 +4,7 @@ import { ElMessage } from "element-plus";
 import { enforceAdminOnly } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
-import serviceProviderRoutes from "./models/manage";
+import serviceListRoutes from "./models/service";
 import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
 
@@ -25,7 +25,7 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       ...dashboardRoutes,
-      ...serviceProviderRoutes, 
+      ...serviceListRoutes, 
       ...manufactureRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({

@@ -23,7 +23,7 @@
         </el-menu-item>
 
         <!-- 新增服务企业列表菜单项 -->
-        <el-menu-item index="/manage/service-provider">
+        <el-menu-item index="/service/list">
           <el-icon><OfficeBuilding /></el-icon>
           <span>服务企业列表</span>
         </el-menu-item>
