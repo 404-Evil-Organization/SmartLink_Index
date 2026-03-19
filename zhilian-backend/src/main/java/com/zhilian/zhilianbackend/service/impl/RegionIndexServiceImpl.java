@@ -6,6 +6,7 @@ import com.zhilian.zhilianbackend.entity.Cooperation;
 import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.entity.RegionIndex;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.CooperationMapper;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
 import com.zhilian.zhilianbackend.mapper.RegionIndexMapper;
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @Author: 6017
@@ -30,6 +32,19 @@ import java.util.*;
  * @Return:
  * @Description: 区域指数服务实现类，实现区域指数相关的业务方法
 **/
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, RegionIndex> implements RegionIndexService {
+
+    /**
+     * 本地缓存 ServiceProvider 的区域映射，key 为服务商主键 ID，value 为其所属区域 region。
+     * 说明：
+     * - 季度定时任务在单线程环境执行，一次性加载所有服务商区域信息到内存，可以有效避免
+     *   isCrossRegionCooperation 在循环中对每条合作记录都执行一次 selectById 造成的 N+1 查询问题。
+     * - 若未来有服务商区域数据变动场景，可在相关更新逻辑中主动清空该缓存或重建。
+     */
+    private final Map<Long, String> serviceProviderRegionCache = new HashMap<>();
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -108,7 +123,9 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                     log.info("区域 {} 季度指数计算完成: {}", region, index.getTotalIndex());
                 }
             } catch (Exception e) {
+                // 记录异常日志，并重新抛出运行时异常以触发事务回滚，避免只删除不插入导致数据缺失
                 log.error("区域 {} 季度指数计算失败", region, e);
+                throw new RuntimeException(String.format("区域 %s 季度指数计算失败，事务已回滚", region), e);
             }
         }
     }
@@ -212,13 +229,51 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Param: coop 合作记录  manuRegion 制造企业区域
      * @Return: boolean 是否跨区域
      * @Description: 判断是否是跨区域合作
+     *
+     * 性能说明：
+     *  - 为避免在循环中对每条合作记录都执行一次 serviceProviderMapper.selectById 造成 N+1 查询，
+     *    本方法不再直接访问数据库，而是依赖预先构建的 serviceProviderRegionCache 本地缓存。
+     *  - 缓存采用懒加载策略：首次调用时一次性加载所有 ServiceProvider 的区域信息到内存，
+     *    后续调用直接从 Map 中获取，不再触发 DB 访问，从而显著降低季度任务的数据库压力。
     **/
     private boolean isCrossRegionCooperation(Cooperation coop, String manuRegion) {
-        ServiceProvider serviceProvider = serviceProviderMapper.selectById(coop.getServiceId());
-        if (serviceProvider != null) {
-            return !manuRegion.equals(serviceProvider.getRegion());
+        if (coop == null || coop.getServiceId() == null || manuRegion == null) {
+            // 参数异常时不认为是跨区域，保持原逻辑的保守性
+            return false;
         }
-        return false;
+
+        // 懒加载 ServiceProvider 区域缓存：仅在首次调用或缓存为空时，从数据库一次性载入所有数据
+        if (serviceProviderRegionCache.isEmpty()) {
+            List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(null);
+            if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
+                serviceProviderRegionCache.clear();
+                for (ServiceProvider sp : allServiceProviders) {
+                    if (sp != null && sp.getId() != null && sp.getRegion() != null) {
+                        // 仅缓存区域非空的服务商，避免后续判断出现 NPE
+                        serviceProviderRegionCache.put(sp.getId(), sp.getRegion());
+                    }
+                }
+            }
+        }
+
+        // 将 coop 中的 serviceId 转为 Long 类型作为缓存 key（兼容 Integer/Long 主键场景）
+        Long serviceIdKey;
+        try {
+            serviceIdKey = Long.valueOf(String.valueOf(coop.getServiceId()));
+        } catch (NumberFormatException ex) {
+            // serviceId 格式异常时，视为无法获取服务商区域，不算作跨区域
+            log.warn("服务商 ID 解析失败，serviceId={}, coopId={}", coop.getServiceId(), coop.getId(), ex);
+            return false;
+        }
+
+        String serviceRegion = serviceProviderRegionCache.get(serviceIdKey);
+        if (serviceRegion == null) {
+            // 若缓存中不存在对应服务商区域（例如数据库中已删除或区域为空），保持原行为：不算跨区域
+            return false;
+        }
+
+        // 区域不相等即为跨区域合作
+        return !manuRegion.equals(serviceRegion);
     }
 
     /**

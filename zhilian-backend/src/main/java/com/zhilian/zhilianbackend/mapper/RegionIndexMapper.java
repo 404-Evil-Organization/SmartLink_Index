@@ -51,12 +51,13 @@ public interface RegionIndexMapper extends BaseMapper<RegionIndex> {
 
     /**
      * 查询指定区域的时间范围趋势
+     * 使用“起点不早于 start（年+季度）、终点不晚于 end（年+季度）”的组合条件，
+     * 兼容同一年与跨年场景，避免 startYear == endYear 时误查所有季度。
      */
     @Select("SELECT * FROM region_index WHERE region = #{region} " +
             "AND period_type = 'quarter' AND deleted = '1970-01-01 00:00:00' " +
-            "AND ((year = #{startYear} AND period_value >= #{startQuarter}) " +
-            "OR (year > #{startYear} AND year < #{endYear}) " +
-            "OR (year = #{endYear} AND period_value <= #{endQuarter})) " +
+            "AND ((year > #{startYear} OR (year = #{startYear} AND period_value >= #{startQuarter})) " +
+            "AND (year < #{endYear} OR (year = #{endYear} AND period_value <= #{endQuarter}))) " +
             "ORDER BY year ASC, period_value ASC")
     List<RegionIndex> selectTrend(@Param("region") String region,
                                   @Param("startYear") Short startYear,
