@@ -1,11 +1,7 @@
 package com.zhilian.zhilianbackend.service;
 
-import com.zhilian.zhilianbackend.dto.response.RegionIndexVO;
-import com.zhilian.zhilianbackend.dto.response.RegionTrendVO;
 import com.zhilian.zhilianbackend.entity.RegionIndex;
 import com.baomidou.mybatisplus.extension.service.IService;
-
-import java.util.List;
 
 /**
  * @Author: 6017
@@ -25,7 +21,7 @@ public interface RegionIndexService extends IService<RegionIndex> {
      * @Param: year 年份  quarter 季度
      * @Return:
      * @Description: 计算并保存季度区域指数
-    **/
+     **/
     void calculateAndSaveQuarterIndex(Short year, Byte quarter);
 
     /**
@@ -34,6 +30,6 @@ public interface RegionIndexService extends IService<RegionIndex> {
      * @Param: year 年份  quarter 季度
      * @Return: 
      * @Description: 手动触发计算（用于测试）
-    **/
+     **/
     void manualCalculate(Short year, Byte quarter);
 }

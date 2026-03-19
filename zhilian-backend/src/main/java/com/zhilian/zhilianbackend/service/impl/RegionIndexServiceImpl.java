@@ -2,13 +2,10 @@ package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.zhilian.zhilianbackend.dto.response.RegionIndexVO;
-import com.zhilian.zhilianbackend.dto.response.RegionTrendVO;
 import com.zhilian.zhilianbackend.entity.Cooperation;
 import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.entity.RegionIndex;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
-import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.CooperationMapper;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
 import com.zhilian.zhilianbackend.mapper.RegionIndexMapper;
@@ -25,7 +22,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @Author: 6017
@@ -98,6 +94,16 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             try {
                 RegionIndex index = calculateQuarterIndex(region, year, quarter);
                 if (index != null) {
+                    // 为保证定时任务幂等性，先删除同一 region/year/periodType/periodValue 的旧记录
+                    // 使用 MyBatis Plus 的逻辑删除能力，避免物理删除历史数据
+                    LambdaQueryWrapper<RegionIndex> removeWrapper = new LambdaQueryWrapper<>();
+                    removeWrapper.eq(RegionIndex::getRegion, index.getRegion())
+                            .eq(RegionIndex::getYear, index.getYear())
+                            .eq(RegionIndex::getPeriodType, index.getPeriodType())
+                            .eq(RegionIndex::getPeriodValue, index.getPeriodValue());
+                    this.remove(removeWrapper);
+
+                    // 插入最新计算的季度指数记录
                     this.save(index);
                     log.info("区域 {} 季度指数计算完成: {}", region, index.getTotalIndex());
                 }
@@ -115,6 +121,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Description: 手动触发计算（用于测试）
     **/
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void manualCalculate(Short year, Byte quarter) {
         log.info("手动触发季度计算 - 年份: {}, 季度: {}", year, quarter);
         calculateAndSaveQuarterIndex(year, quarter);
@@ -219,10 +226,45 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Date: 2026/3/18 23:15
      * @Param:
      * @Return: List<String> 区域列表
-     * @Description: 获取所有区域列表
+     * @Description: 获取所有区域列表（从数据库中动态查询 DISTINCT region，避免硬编码）
     **/
     private List<String> getAllRegions() {
-        return Arrays.asList("深圳", "东莞", "惠州", "广州", "佛山", "中山", "珠海", "江门", "肇庆");
+        // 从制造企业表查询区域
+        LambdaQueryWrapper<Manufacture> manuWrapper = new LambdaQueryWrapper<>();
+        manuWrapper.isNotNull(Manufacture::getRegion);
+        List<Manufacture> manuList = manufactureMapper.selectList(manuWrapper);
+
+        // 从服务商表查询区域
+        LambdaQueryWrapper<ServiceProvider> spWrapper = new LambdaQueryWrapper<>();
+        spWrapper.isNotNull(ServiceProvider::getRegion);
+        List<ServiceProvider> spList = serviceProviderMapper.selectList(spWrapper);
+
+        // 使用 Set 去重，避免重复区域；使用 LinkedHashSet 保持插入顺序
+        Set<String> regionSet = new LinkedHashSet<>();
+
+        if (manuList != null) {
+            regionSet.addAll(
+                    manuList.stream()
+                            .map(Manufacture::getRegion)
+                            .filter(Objects::nonNull)
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.toList())
+            );
+        }
+
+        if (spList != null) {
+            regionSet.addAll(
+                    spList.stream()
+                            .map(ServiceProvider::getRegion)
+                            .filter(Objects::nonNull)
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.toList())
+            );
+        }
+
+        return new ArrayList<>(regionSet);
     }
 
     /**
@@ -254,7 +296,8 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                 endDate = LocalDate.of(year, 12, 31);
                 break;
             default:
-                throw new IllegalArgumentException("无效的季度: " + quarter);
+                // 季度参数非法时抛出业务异常，方便全局异常处理返回 400 而非 500
+                throw new BusinessException("季度参数不合法，必须为 1-4，实际值为: " + quarter);
         }
 
         return new LocalDate[]{startDate, endDate};

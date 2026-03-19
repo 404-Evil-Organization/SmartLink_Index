@@ -74,8 +74,11 @@ public interface RegionIndexMapper extends BaseMapper<RegionIndex> {
 
     /**
      * 删除指定年份和季度的数据（用于重新计算）
+     * 仅对当前未删除记录（deleted = '1970-01-01 00:00:00'）进行逻辑删除，
+     * 避免覆盖历史删除时间，确保 deleted 字段可作为审计时间使用。
      */
     @Update("UPDATE region_index SET deleted = NOW() WHERE year = #{year} " +
-            "AND period_type = 'quarter' AND period_value = #{quarter}")
+            "AND period_type = 'quarter' AND period_value = #{quarter} " +
+            "AND deleted = '1970-01-01 00:00:00'")
     void deleteByYearAndQuarter(@Param("year") Short year, @Param("quarter") Byte quarter);
 }
