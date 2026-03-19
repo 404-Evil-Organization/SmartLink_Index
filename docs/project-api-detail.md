@@ -1406,6 +1406,51 @@
 }
 ```
 
+#### 5.4 获取我的合作记录列表
+
+- **URL**: `/api/cooperation/my-list`
+
+- **Method**: `GET`
+
+- **请求头**: `Authorization: Bearer <token>`（需登录）
+
+- **请求参数**（Query）:
+
+  | 参数名 | 类型   | 必填 | 描述                                                         |
+  | :----- | :----- | :--- | :----------------------------------------------------------- |
+  | status | string | 否   | 合作状态筛选：`ongoing`/`completed`/`cancelled`，默认返回所有 |
+  | page   | int    | 否   | 页码，默认1                                                  |
+  | size   | int    | 否   | 每页条数，默认10                                             |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 20,
+    "records": [
+      {
+        "id": 5001,
+        "manuId": 1001,
+        "manuName": "深圳电子科技",
+        "serviceId": 2001,
+        "serviceName": "华测检测",
+        "demandId": 3001,
+        "demandTitle": "寻求PCB设计服务",
+        "startDate": "2026-03-01",
+        "endDate": "2026-06-30",
+        "amount": 10.00,
+        "status": "ongoing",
+        "createTime": "2026-03-01 10:00:00",
+        "hasEvaluated": false
+      }
+    ]
+  }
+}
+```
+
 ------
 
 ## 六、出海服务专区模块
