@@ -285,9 +285,10 @@ const handleEnterpriseChange = () => {
   fetchList();
 };
 
-// 分页变化
-const handlePageChange = () => {
-  pagination.current = 1;
+// 分页变化（页码切换时触发）
+const handlePageChange = (page) => {
+  // 使用分页组件回调的页码更新当前页码，避免每次都重置为 1
+  pagination.current = page && page > 0 ? page : 1;
   fetchList();
 };
 
