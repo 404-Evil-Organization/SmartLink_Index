@@ -7,9 +7,6 @@ export default [
       const serviceId = parseInt(params?.serviceId || query?.serviceId);
       const { page = 1, size = 10 } = query;
 
-      // 调试日志（终端输出）
-      console.log(`[mock] 评价请求 serviceId=${serviceId}, page=${page}, size=${size}`);
-
       const allEvals = [
         {
           id: 4001,
