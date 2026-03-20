@@ -30,7 +30,7 @@
 
         <el-menu-item index="/cooperation/my">
           <el-icon><List /></el-icon>
-          <span>我的合作记录</span>
+          <span>我的合作</span>
         </el-menu-item>
 
         <el-sub-menu v-if="isAdmin" index="1">

@@ -87,61 +87,88 @@ const submitting = ref(false);
 
 // 表单数据
 const form = reactive({
-  score: 0,
+  score: null,
   content: "",
   isAnonymous: false,
 });
 
 // 合作信息（用于页面展示）
 const coopInfo = ref(null);
+let coopId = null; // 存储有效的数字ID
+
+// 校验 coopId 是否为有效正整数
+const isValidCoopId = (id) => {
+  const num = Number(id);
+  return Number.isFinite(num) && num > 0 && id.toString() === num.toString();
+};
 
 // 获取合作详情（通过 coopId）
-const coopId = route.query.coopId;
 const fetchCoopDetail = async () => {
-  if (!coopId) {
-    ElMessage.error("缺少合作记录ID");
+  const rawCoopId = route.query.coopId;
+  if (!rawCoopId || !isValidCoopId(rawCoopId)) {
+    ElMessage.error("无效的合作记录ID");
     router.push("/cooperation/my");
     return;
   }
+  coopId = Number(rawCoopId);
   try {
     const res = await getCooperationDetail(coopId);
     coopInfo.value = res;
   } catch (error) {
     console.error("获取合作详情失败", error);
     ElMessage.error("获取合作信息失败");
+    router.push("/cooperation/my");
   }
 };
 
 // 表单校验规则
 const rules = {
-  score: [{ required: true, message: "请选择评分", trigger: "change" }],
+  score: [
+    { required: true, message: "请选择评分", trigger: "change" },
+    {
+      type: "number",
+      min: 1,
+      max: 5,
+      message: "评分范围为 1~5 星",
+      trigger: "change",
+    },
+  ],
   content: [{ max: 500, message: "评价内容不能超过500字", trigger: "blur" }],
 };
 
 // 提交评价
 const handleSubmit = async () => {
-  if (!formRef.value) return;
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return;
-    submitting.value = true;
-    try {
-      await submitEvaluation({
-        coopId: Number(coopId),
-        score: form.score,
-        content: form.content,
-        isAnonymous: form.isAnonymous,
-      });
-      ElMessage.success("评价提交成功");
-      router.push("/cooperation/my");
-    } catch (error) {
-      console.error("提交评价失败", error);
-      ElMessage.error("提交失败，请稍后重试");
-    } finally {
-      submitting.value = false;
-    }
-  });
-};
+  if (!coopId) {
+    ElMessage.error("合作记录ID无效，请重新选择");
+    router.push("/cooperation/my");
+    return;
+  }
 
+  try {
+    // 等待校验结果，如果失败会抛出异常
+    await formRef.value.validate();
+  } catch (error) {
+    // 校验失败，无需额外处理，用户会看到表单项错误提示
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    await submitEvaluation({
+      coopId,
+      score: form.score,
+      content: form.content,
+      isAnonymous: form.isAnonymous,
+    });
+    ElMessage.success("评价提交成功");
+    router.push("/cooperation/my");
+  } catch (error) {
+    console.error("提交评价失败", error);
+    ElMessage.error("提交失败，请稍后重试");
+  } finally {
+    submitting.value = false;
+  }
+};
 const goBack = () => {
   router.back();
 };

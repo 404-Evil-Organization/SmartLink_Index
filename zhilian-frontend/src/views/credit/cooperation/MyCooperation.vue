@@ -17,13 +17,14 @@
     </div>
 
     <!-- 搜索卡片 -->
+    <!-- 搜索卡片 -->
     <el-card class="search-card" shadow="hover">
-      <div class="search-form">
+      <el-form :model="searchForm" label-width="100px" class="search-form">
         <el-row :gutter="20">
           <el-col :span="8">
-            <el-form-item label="我的企业">
+            <el-form-item label="合作企业">
               <el-select
-                v-model="selectedEnterpriseId"
+                v-model="searchForm.enterpriseId"
                 placeholder="请选择企业"
                 clearable
                 filterable
@@ -41,7 +42,7 @@
           <el-col :span="8">
             <el-form-item label="合作状态">
               <el-select
-                v-model="searchStatus"
+                v-model="searchForm.status"
                 placeholder="请选择状态"
                 clearable
                 @change="handleSearch"
@@ -57,7 +58,7 @@
             <el-button @click="resetSearch">重置</el-button>
           </el-col>
         </el-row>
-      </div>
+      </el-form>
     </el-card>
 
     <!-- 表格卡片 -->
@@ -191,12 +192,14 @@ const router = useRouter();
 const userStore = useUserStore();
 const userRole = computed(() => userStore.userInfo?.role);
 
-// 企业选择
-const enterpriseOptions = ref([]);
-const selectedEnterpriseId = ref(null);
+// 搜索表单
+const searchForm = reactive({
+  enterpriseId: null,
+  status: "",
+});
 
-// 搜索状态
-const searchStatus = ref("");
+// 企业列表（用于下拉选择）
+const enterpriseOptions = ref([]);
 
 // 表格数据
 const loading = ref(false);
@@ -229,8 +232,10 @@ const fetchMyEnterprises = async () => {
       type: "service",
     }));
     enterpriseOptions.value = [...manufactureList, ...serviceList];
-    if (enterpriseOptions.value.length > 0 && !selectedEnterpriseId.value) {
-      selectedEnterpriseId.value = enterpriseOptions.value[0].id;
+    // 默认选中第一个企业
+    if (enterpriseOptions.value.length > 0 && !searchForm.enterpriseId) {
+      searchForm.enterpriseId = enterpriseOptions.value[0].id;
+      fetchList(); // 自动加载列表
     }
   } catch (error) {
     console.error("获取个人企业列表失败", error);
@@ -240,7 +245,7 @@ const fetchMyEnterprises = async () => {
 
 // 获取合作列表
 const fetchList = async () => {
-  if (!selectedEnterpriseId.value) {
+  if (!searchForm.enterpriseId) {
     ElMessage.warning("请先选择企业");
     return;
   }
@@ -249,8 +254,8 @@ const fetchList = async () => {
     const params = {
       page: pagination.current,
       size: pagination.size,
-      enterpriseId: selectedEnterpriseId.value,
-      status: searchStatus.value || undefined,
+      enterpriseId: searchForm.enterpriseId,
+      status: searchForm.status || undefined,
     };
     const res = await getMyCooperationList(params);
     tableData.value = res.records || [];
@@ -271,7 +276,7 @@ const handleSearch = () => {
 
 // 重置
 const resetSearch = () => {
-  searchStatus.value = "";
+  searchForm.status = "";
   pagination.current = 1;
   fetchList();
 };
@@ -302,7 +307,7 @@ const openDetailDialog = async (coopId) => {
 // 跳转评价页面
 const goToEvaluation = (coopId) => {
   router.push({
-    path: "/evaluation/EvaluationAdd",
+    path: "/evaluation/add",
     query: { coopId },
   });
 };
