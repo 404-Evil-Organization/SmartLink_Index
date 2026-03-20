@@ -36,18 +36,20 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
             throw new BusinessException(404, "合作记录不存在");
         }
 
-        // 2. 管理员跳过权限校验
-        if (!securityUtils.isAdmin()) {
-            // 非管理员：必须校验当前用户是合作的制造企业方
-            LambdaQueryWrapper<Manufacture> manuQuery = new LambdaQueryWrapper<>();
-            manuQuery.eq(Manufacture::getUserId, evaluatorId);
-            Manufacture manufacture = manufactureMapper.selectOne(manuQuery);
-            if (manufacture == null) {
-                throw new BusinessException(403, "您不是制造企业，无法评价");
-            }
-            if (!manufacture.getId().equals(cooperation.getManuId())) {
-                throw new BusinessException(403, "无权评价该合作");
-            }
+        // 2. 权限校验：禁止管理员评价，且必须是合作制造企业方
+        if (securityUtils.isAdmin()) {
+            // 管理员不允许以普通评价身份写入，避免占用真实企业评价名额
+            throw new BusinessException(403, "管理员不允许提交评价");
+        }
+        // 非管理员：必须校验当前用户是合作的制造企业方
+        LambdaQueryWrapper<Manufacture> manuQuery = new LambdaQueryWrapper<>();
+        manuQuery.eq(Manufacture::getUserId, evaluatorId);
+        Manufacture manufacture = manufactureMapper.selectOne(manuQuery);
+        if (manufacture == null) {
+            throw new BusinessException(403, "您不是制造企业，无法评价");
+        }
+        if (!manufacture.getId().equals(cooperation.getManuId())) {
+            throw new BusinessException(403, "无权评价该合作");
         }
 
         // 3. 检查是否已评价（同一合作、同一角色只能评价一次）

@@ -59,7 +59,7 @@ public class SecurityUtils {
      * @Param:
      * @Return: String 角色名称（小写，不带 ROLE_ 前缀）
      * @Description: 获取当前登录用户的角色，支持多角色场景下返回第一个有效角色。
-     *              若未找到有效角色则抛出 403 异常。
+     * 若未找到有效角色则抛出 403 异常。
      */
     public String getCurrentUserRole() {
         Authentication authentication = getAuthenticatedAuthentication();
@@ -91,11 +91,7 @@ public class SecurityUtils {
      * @Description: 判断当前登录用户是否为管理员角色
      */
     public boolean isAdmin() {
-        try {
-            String role = getCurrentUserRole();
-            return "admin".equals(role);
-        } catch (BusinessException e) {
-            return false;
-        }
+        String role = getCurrentUserRole();
+        return "admin".equals(role);
     }
 }

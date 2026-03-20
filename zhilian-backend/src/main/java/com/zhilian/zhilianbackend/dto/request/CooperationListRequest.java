@@ -18,10 +18,10 @@ public class CooperationListRequest {
     @Min(value = 1, message = "页码最小为1")
     @Max(value = 1000, message = "页码最大为1000")
     @Schema(description = "页码，默认1")
-    private Integer page = 1;
+    private int page = 1;
 
     @Min(value = 1, message = "每页条数最小为1")
     @Max(value = 100, message = "每页条数最大为100")
     @Schema(description = "每页条数，默认10")
-    private Integer size = 10;
+    private int size = 10;
 }
