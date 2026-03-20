@@ -1,0 +1,209 @@
+<template>
+  <div class="dashboard-home">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">评价服务商</h2>
+        <el-breadcrumb separator="/" class="breadcrumb">
+          <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+          <el-breadcrumb-item :to="{ path: '/cooperation/my' }"
+            >我的合作</el-breadcrumb-item
+          >
+          <el-breadcrumb-item>发表评价</el-breadcrumb-item>
+        </el-breadcrumb>
+      </div>
+    </div>
+
+    <el-card class="form-card" shadow="hover">
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="100px"
+        class="evaluation-form"
+      >
+        <el-form-item label="合作信息">
+          <div class="coop-info">
+            <div v-if="coopInfo" class="info-text">
+              <p>服务商：{{ coopInfo.serviceName }}</p>
+              <p>需求：{{ coopInfo.demandTitle }}</p>
+              <p>合作金额：{{ coopInfo.amount }} 万元</p>
+              <p>
+                合作时间：{{ coopInfo.startDate }} 至 {{ coopInfo.endDate }}
+              </p>
+            </div>
+            <div v-else class="loading-info">加载合作信息中...</div>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="评分" prop="score">
+          <el-rate
+            v-model="form.score"
+            :texts="['1星', '2星', '3星', '4星', '5星']"
+            show-text
+          />
+        </el-form-item>
+
+        <el-form-item label="评价内容" prop="content">
+          <el-input
+            v-model="form.content"
+            type="textarea"
+            :rows="5"
+            placeholder="请写下您对服务商的评价（选填）"
+            maxlength="500"
+            show-word-limit
+          />
+        </el-form-item>
+
+        <el-form-item label="匿名评价" prop="isAnonymous">
+          <el-switch v-model="form.isAnonymous" />
+          <span class="anonymous-tip"
+            >开启后，评价人姓名将隐藏为“匿名用户”</span
+          >
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" :loading="submitting" @click="handleSubmit"
+            >提交评价</el-button
+          >
+          <el-button @click="goBack">取消</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import { submitEvaluation } from "@/api/evaluation";
+import { getCooperationDetail } from "@/api/cooperation";
+
+const route = useRoute();
+const router = useRouter();
+const formRef = ref(null);
+const submitting = ref(false);
+
+// 表单数据
+const form = reactive({
+  score: 0,
+  content: "",
+  isAnonymous: false,
+});
+
+// 合作信息（用于页面展示）
+const coopInfo = ref(null);
+
+// 获取合作详情（通过 coopId）
+const coopId = route.query.coopId;
+const fetchCoopDetail = async () => {
+  if (!coopId) {
+    ElMessage.error("缺少合作记录ID");
+    router.push("/cooperation/my");
+    return;
+  }
+  try {
+    const res = await getCooperationDetail(coopId);
+    coopInfo.value = res;
+  } catch (error) {
+    console.error("获取合作详情失败", error);
+    ElMessage.error("获取合作信息失败");
+  }
+};
+
+// 表单校验规则
+const rules = {
+  score: [{ required: true, message: "请选择评分", trigger: "change" }],
+  content: [{ max: 500, message: "评价内容不能超过500字", trigger: "blur" }],
+};
+
+// 提交评价
+const handleSubmit = async () => {
+  if (!formRef.value) return;
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return;
+    submitting.value = true;
+    try {
+      await submitEvaluation({
+        coopId: Number(coopId),
+        score: form.score,
+        content: form.content,
+        isAnonymous: form.isAnonymous,
+      });
+      ElMessage.success("评价提交成功");
+      router.push("/cooperation/my");
+    } catch (error) {
+      console.error("提交评价失败", error);
+      ElMessage.error("提交失败，请稍后重试");
+    } finally {
+      submitting.value = false;
+    }
+  });
+};
+
+const goBack = () => {
+  router.back();
+};
+
+onMounted(() => {
+  fetchCoopDetail();
+});
+</script>
+
+<style scoped>
+.dashboard-home {
+  padding: 24px;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+}
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.page-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2f3d;
+  line-height: 1.2;
+}
+.breadcrumb :deep(.el-breadcrumb__inner) {
+  font-weight: 400;
+  color: #8590a6;
+}
+.form-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.evaluation-form {
+  padding: 20px;
+}
+.coop-info {
+  background: #f5f7fa;
+  padding: 12px 16px;
+  border-radius: 8px;
+  width: 100%;
+}
+.info-text p {
+  margin: 6px 0;
+  line-height: 1.5;
+  color: #606266;
+}
+.loading-info {
+  color: #909399;
+  font-style: italic;
+}
+.anonymous-tip {
+  margin-left: 12px;
+  color: #909399;
+  font-size: 12px;
+}
+</style>

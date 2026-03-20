@@ -28,6 +28,11 @@
           <span>服务企业列表</span>
         </el-menu-item>
 
+        <el-menu-item index="/cooperation/my">
+          <el-icon><List /></el-icon>
+          <span>我的合作记录</span>
+        </el-menu-item>
+
         <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
@@ -77,6 +82,7 @@ import {
   Avatar,
   Collection,
   OfficeBuilding,
+  List,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
