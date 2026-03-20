@@ -30,7 +30,15 @@ public class SecurityUtils {
                 || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new BusinessException(401, "请先登录");
         }
-        return Long.parseLong(authentication.getName());
+        String name = authentication.getName();
+        if (name == null || name.trim().isEmpty()) {
+            throw new BusinessException(401, "登录信息无效，请重新登录");
+        }
+        try {
+            return Long.parseLong(name);
+        } catch (NumberFormatException e) {
+            throw new BusinessException(401, "登录信息无效，请重新登录");
+        }
     }
 
     /**
@@ -41,7 +49,9 @@ public class SecurityUtils {
      */
     public String getCurrentUserRole() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
+        // 与 getCurrentUserId() 保持一致：排除匿名登录态，避免返回 ROLE_ANONYMOUS 误导业务逻辑
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new BusinessException(401, "请先登录");
         }
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
