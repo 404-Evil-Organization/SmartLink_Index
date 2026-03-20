@@ -2,7 +2,6 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zhilian.zhilianbackend.mapper.CooperationMapper">
 
-    <!-- 自定义查询结果映射，对应 CooperationRecordVO -->
     <resultMap id="CooperationRecordVOMap" type="com.zhilian.zhilianbackend.dto.response.CooperationRecordVO">
         <id column="id" property="id"/>
         <result column="manu_id" property="manuId"/>
@@ -19,7 +18,6 @@
         <result column="has_evaluated" property="hasEvaluated"/>
     </resultMap>
 
-    <!-- 分页查询当前用户的合作记录 -->
     <select id="selectMyCooperations" resultMap="CooperationRecordVOMap">
         SELECT
         c.id,
@@ -37,8 +35,8 @@
         (SELECT COUNT(*) > 0
         FROM evaluation e
         WHERE e.coop_id = c.id
-        AND e.evaluator_role = #{role}
-        AND e.deleted = '1970-01-01 00:00:00'   <!-- 只统计未删除的评价（按合作 + 角色唯一） -->
+        AND e.evaluator_id = #{userId}
+        AND e.deleted = '1970-01-01 00:00:00'
         ) AS has_evaluated
         FROM cooperation c
         LEFT JOIN manufacture m ON c.manu_id = m.id AND m.deleted = '1970-01-01 00:00:00'

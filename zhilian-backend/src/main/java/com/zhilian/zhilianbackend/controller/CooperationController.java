@@ -3,6 +3,7 @@ package com.zhilian.zhilianbackend.controller;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.CooperationListRequest;
+import com.zhilian.zhilianbackend.dto.response.CooperationDetailVO;
 import com.zhilian.zhilianbackend.dto.response.CooperationRecordVO;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.CooperationService;
@@ -13,18 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 
-/**
- * @Author: xiaodengyou
- * @Date: 2026/3/19 17:30
- * @Description: 合作记录控制器
- */
 @Slf4j
 @RestController
 @RequestMapping("/cooperation")
@@ -34,12 +27,6 @@ public class CooperationController {
 
     private final CooperationService cooperationService;
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/19 17:30
-     * @return 当前登录用户ID
-     * @Description: 从 SecurityContext 获取当前登录用户ID
-     */
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
@@ -49,12 +36,6 @@ public class CooperationController {
         return Long.parseLong(authentication.getName());
     }
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/19 17:30
-     * @return 当前登录用户角色（小写，无 ROLE_ 前缀）
-     * @Description: 从 authorities 中提取用户角色
-     */
     private String getCurrentUserRole() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -71,21 +52,23 @@ public class CooperationController {
         return roleWithPrefix.toLowerCase();
     }
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/19 17:30
-     * @Param: request 查询参数
-     * @return 分页合作记录列表
-     * @Description: 获取当前用户的合作记录列表（分页）
-     */
     @GetMapping("/my-list")
     @Operation(summary = "获取我的合作记录列表")
     public Result<PageResult<CooperationRecordVO>> getMyCooperations(@ModelAttribute CooperationListRequest request) {
         Long userId = getCurrentUserId();
-        String role = getCurrentUserRole();
+        String userRole = getCurrentUserRole();
         PageResult<CooperationRecordVO> pageResult = cooperationService.pageMyCooperations(
-                userId, role, request.getStatus(), request.getPage(), request.getSize()
+                userId, userRole, request.getEnterpriseId(), request.getStatus(), request.getPage(), request.getSize()
         );
         return Result.success(pageResult);
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "获取合作记录详情")
+    public Result<CooperationDetailVO> getCooperationDetail(@PathVariable Long id) {
+        Long userId = getCurrentUserId();
+        String userRole = getCurrentUserRole();
+        CooperationDetailVO detail = cooperationService.getCooperationDetail(id, userId, userRole);
+        return Result.success(detail);
     }
 }
