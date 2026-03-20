@@ -156,7 +156,7 @@
         <!-- 状态列已移除 -->
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" link @click="handleDetail(row)">
+            <el-button size="small" link @click="handleDetail(row.id)">
               <el-icon><View /></el-icon>查看
             </el-button>
           </template>
@@ -177,7 +177,7 @@
       </div>
     </el-card>
 
-    <!-- 服务商详情弹窗（只读） -->
+    <!-- 服务商详情弹窗（只读）
     <el-dialog
       v-model="detailDialog.visible"
       title="服务企业详情"
@@ -217,7 +217,7 @@
         <el-descriptions-item label="资质概述" :span="2">{{
           detailDialog.data.qualification || "-"
         }}</el-descriptions-item>
-        <!-- <el-descriptions-item label="年收入(万元)">{{ detailDialog.data.annualRevenue || "-" }}</el-descriptions-item> -->
+        <el-descriptions-item label="年收入(万元)">{{ detailDialog.data.annualRevenue || "-" }}</el-descriptions-item>
         <el-descriptions-item label="企业logo" :span="2">
           <el-image
             v-if="detailDialog.data.logo"
@@ -229,7 +229,7 @@
         </el-descriptions-item>
       </el-descriptions>
 
-      <!-- 证书列表折叠面板（只读，纵向卡片布局） -->
+      证书列表折叠面板（只读，纵向卡片布局）
       <div class="certification-list">
         <el-collapse v-model="activeCertCollapse" class="cert-collapse">
           <el-collapse-item>
@@ -302,7 +302,8 @@
       <template #footer>
         <el-button @click="detailDialog.visible = false">关闭</el-button>
       </template>
-    </el-dialog>
+    </el-dialog> -->
+    
   </div>
 </template>
 
@@ -322,6 +323,9 @@ import { getRegions, getServiceTags } from "@/api/common";
 import { getCertList } from "@/api/certification";
 import { maskPhone } from "@/utils/desensitize";
 import { useUserStore } from "@/stores/user";
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // 获取用户角色
 const userStore = useUserStore();
@@ -486,16 +490,31 @@ const handleCurrentChange = (val) => {
 };
 
 // 查看详情
-const handleDetail = async (row) => {
-  try {
-    const res = await getServiceProviderDetail(row.id);
-    detailDialog.data = res;
-    detailDialog.visible = true;
-    // 获取证书列表
-    fetchCertList(row.id);
-  } catch (error) {
-    console.error("获取详情失败", error);
+// const handleDetail = async (row) => {
+//   try {
+//     const res = await getServiceProviderDetail(row.id);
+//     detailDialog.data = res;
+//     detailDialog.visible = true;
+//     // 获取证书列表
+//     fetchCertList(row.id);
+//   } catch (error) {
+//     console.error("获取详情失败", error);
+//   }
+// };
+  // 查看详情 → 跳转到详情页
+  // const handleDetail = (id) => {
+  //   console.log('传递的 ID:', id, '类型:', typeof id);
+  //   router.push(`/service/detail/${id}`)
+  // };
+  const handleDetail = (idObj) => {
+  // 假设 id 对象包含 id 属性
+  const realId = idObj.id || idObj.value || idObj;
+  if (!realId) {
+    console.error('无效的ID', idObj);
+    ElMessage.error('企业ID无效');
+    return;
   }
+  router.push(`/service/detail/${realId}`);
 };
 const certImage = ref(null);
 const showPreview = ref(false);
