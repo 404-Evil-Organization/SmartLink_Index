@@ -9,9 +9,8 @@ import request from '@/utils/request'
  * @returns {Promise<{ total: number, records: Array }>}
  */
 export function getEvaluationList(serviceId, params) {
-  const url = `/evaluation/list/${serviceId}`;
   return request({
-    url: url,
+    url: `/evaluation/list/${serviceId}`,
     method: 'get',
     params
   })
