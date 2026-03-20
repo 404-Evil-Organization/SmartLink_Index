@@ -11,25 +11,36 @@ import java.util.Collection;
 /**
  * @Author: xiaodengyou
  * @Date: 2026/3/20 17:55
- * @Param:
- * @Return:
  * @Description: 统一从 SecurityContext 中提取当前用户 ID 和角色，避免重复代码
- *  */
+ */
 @Component
 public class SecurityUtils {
 
     /**
-     * 获取当前登录用户的 ID
-     *
-     * @return 用户 ID
-     * @throws BusinessException 如果未登录或用户信息无效
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 18:46
+     * @Param:
+     * @Return: Authentication 已认证的 Authentication 对象
+     * @Description: 获取当前认证的 Authentication 对象，如果未认证或为匿名则抛出异常。
      */
-    public Long getCurrentUserId() {
+    private Authentication getAuthenticatedAuthentication() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getPrincipal())) {
             throw new BusinessException(401, "请先登录");
         }
+        return authentication;
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 18:46
+     * @Param:
+     * @Return: Long 当前登录用户的 ID
+     * @Description: 获取当前登录用户的 ID
+     */
+    public Long getCurrentUserId() {
+        Authentication authentication = getAuthenticatedAuthentication();
         String name = authentication.getName();
         if (name == null || name.trim().isEmpty()) {
             throw new BusinessException(401, "登录信息无效，请重新登录");
@@ -42,21 +53,17 @@ public class SecurityUtils {
     }
 
     /**
-     * 获取当前登录用户的角色
-     *
-     * @return 角色名称（小写，不带 ROLE_ 前缀）
-     * @throws BusinessException 如果未登录或无法获取角色
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 18:46
+     * @Param:
+     * @Return: String 角色名称（小写，不带 ROLE_ 前缀）
+     * @Description: 获取当前登录用户的角色
      */
     public String getCurrentUserRole() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        // 与 getCurrentUserId() 保持一致：排除匿名登录态，避免返回 ROLE_ANONYMOUS 误导业务逻辑
-        if (authentication == null || !authentication.isAuthenticated()
-                || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new BusinessException(401, "请先登录");
-        }
+        Authentication authentication = getAuthenticatedAuthentication();
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         if (authorities == null || authorities.isEmpty()) {
-            throw new BusinessException(401, "无法获取用户角色");
+            throw new BusinessException(403, "无法获取用户角色");
         }
         String roleWithPrefix = authorities.iterator().next().getAuthority();
         if (roleWithPrefix.startsWith("ROLE_")) {
