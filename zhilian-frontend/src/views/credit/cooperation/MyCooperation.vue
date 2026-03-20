@@ -154,7 +154,9 @@
           detailDialog.data.description || "-"
         }}</el-descriptions-item>
         <el-descriptions-item label="合作金额">{{
-          detailDialog.data.amount ? detailDialog.data.amount + " 万元" : "-"
+          detailDialog.data.amount === null || detailDialog.data.amount === undefined
+            ? "-"
+            : detailDialog.data.amount + " 万元"
         }}</el-descriptions-item>
         <el-descriptions-item label="开始日期">{{
           detailDialog.data.startDate || "-"
