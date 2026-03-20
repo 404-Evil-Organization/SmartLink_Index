@@ -65,7 +65,7 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
         evaluation.setEvaluatorRole(evaluatorRole);
         evaluation.setScore(request.getScore().byteValue());
         evaluation.setContent(request.getContent());
-        evaluation.setIsAnonymous(request.getIsAnonymous() ? (byte)1 : (byte)0);
+        evaluation.setIsAnonymous(Boolean.TRUE.equals(request.getIsAnonymous()) ? (byte) 1 : (byte) 0);
 
         // 5. 保存，捕获唯一约束异常
         try {
