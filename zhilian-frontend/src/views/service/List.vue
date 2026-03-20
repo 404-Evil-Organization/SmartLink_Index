@@ -509,15 +509,29 @@ const handleCurrentChange = (val) => {
   //   router.push(`/service/detail/${id}`)
   // };
   const handleDetail = (idObj) => {
-  // 假设 id 对象包含 id 属性
-  const realId = idObj.id || idObj.value || idObj;
-  if (!realId) {
-    console.error('无效的ID', idObj);
-    ElMessage.error('企业ID无效');
-    return;
-  }
-  router.push(`/credit/service/detail/${realId}`);
-};
+    // 统一只允许将 number/string 类型的 ID 拼入路由，防止出现 "[object Object]" 情况
+    let realId = null;
+
+    // 1. 直接传入基础类型（推荐用法）
+    if (typeof idObj === 'number' || typeof idObj === 'string') {
+      realId = idObj;
+    } else if (idObj && typeof idObj === 'object') {
+      // 2. 兼容旧用法：传入对象时，从 id / value 字段中提取
+      const candidate = idObj.id ?? idObj.value;
+      if (typeof candidate === 'number' || typeof candidate === 'string') {
+        realId = candidate;
+      }
+    }
+
+    // 最终校验：禁止将对象或空值拼进路由
+    if (realId === null || realId === undefined || realId === '') {
+      console.error('无效的ID', idObj);
+      ElMessage.error('企业ID无效');
+      return;
+    }
+
+    router.push(`/credit/service/detail/${realId}`);
+  };
 // const certImage = ref(null);
 // const showPreview = ref(false);
 
