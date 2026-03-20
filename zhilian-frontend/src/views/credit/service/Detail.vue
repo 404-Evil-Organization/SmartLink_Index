@@ -98,17 +98,17 @@
             </div>
           </template>
           <el-table :data="evalList" v-loading="evalLoading" border stripe>
-            <el-table-column prop="manufactureName" label="评价企业" width="120" />
-            <el-table-column prop="score" label="评分" width="200" align="center">
+            <el-table-column prop="manufactureName" label="评价企业" min-width="120" />
+            <el-table-column prop="score" label="评分" min-width="100" align="center">
               <template #default="{ row }">
                 <el-rate :model-value="row.score" disabled :texts="['1分', '2分', '3分', '4分', '5分']" show-text />
               </template>
             </el-table-column>
             <el-table-column prop="content" label="评价内容" min-width="200" />
             <el-table-column prop="createTime" label="评价时间" width="160" />
-            <el-table-column prop="isAnonymous" label="匿名" width="60" align="center">
+            <!-- <el-table-column prop="isAnonymous" label="匿名" width="60" align="center">
               <template #default="{ row }">{{ row.isAnonymous ? '是' : '否' }}</template>
-            </el-table-column>
+            </el-table-column> -->
           </el-table>
           <div class="pagination-container">
             <el-pagination
