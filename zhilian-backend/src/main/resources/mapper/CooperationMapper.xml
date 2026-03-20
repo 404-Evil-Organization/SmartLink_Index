@@ -37,8 +37,8 @@
         (SELECT COUNT(*) > 0
         FROM evaluation e
         WHERE e.coop_id = c.id
-        AND e.evaluator_id = #{userId}
-        AND e.deleted = '1970-01-01 00:00:00'   <!-- 只统计未删除的评价 -->
+        AND e.evaluator_role = #{role}
+        AND e.deleted = '1970-01-01 00:00:00'   <!-- 只统计未删除的评价（按合作 + 角色唯一） -->
         ) AS has_evaluated
         FROM cooperation c
         LEFT JOIN manufacture m ON c.manu_id = m.id AND m.deleted = '1970-01-01 00:00:00'
