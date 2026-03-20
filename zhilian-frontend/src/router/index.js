@@ -4,6 +4,7 @@ import { ElMessage } from "element-plus";
 import { enforceAdminOnly } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
+import serviceListRoutes from "./models/service";
 import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
 
@@ -30,6 +31,7 @@ const routes = [
         component: () => import("@/views/home.vue"),
       },
       ...dashboardRoutes,
+      ...serviceListRoutes, 
       ...manufactureRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
@@ -53,11 +55,9 @@ router.beforeEach(async (to, from, next) => {
   const token = userStore.token;
 
   if (token) {
-    // 已登录用户访问登录页，重定向到首页
     if (to.path === "/login") {
-      next("/");
+      next("/"); 
     } else {
-      // 如果已登录但用户信息为空（刷新页面导致），尝试获取
       if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
         try {
           await userStore.fetchUserInfo();
@@ -67,9 +67,9 @@ router.beforeEach(async (to, from, next) => {
           }
           next();
         } catch (error) {
-          // 根据错误状态码决定行为
           if (error.response?.status === 401) {
-            next("/login");
+            // 401 统一交由 axios 响应拦截器负责跳转至登录页并弹出提示，这里仅中止当前导航以避免重复导航/重复提示
+            next(false);
           } else {
             // 非 401 错误（网络、500等）：管理员路由保持 fail-close，普通路由可继续访问
             if (to.matched.some((record) => record.meta.adminOnly)) {
@@ -95,7 +95,7 @@ router.beforeEach(async (to, from, next) => {
     if (to.matched.some((record) => record.meta.requiresAuth)) {
       next("/login");
     } else {
-      next();
+      next(); // 注意这里用 next() 而不是 return true
     }
   }
 });

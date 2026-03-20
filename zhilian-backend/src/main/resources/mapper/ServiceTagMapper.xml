@@ -17,4 +17,26 @@
         id, service_id, tag_id, deleted, create_time, update_time
     </sql>
 
+    <!-- 批量插入或更新（存在则更新update_time，不存在则插入） -->
+    <insert id="insertOrUpdateBatch" parameterType="list">
+        INSERT INTO service_tag (
+        service_id,
+        tag_id,
+        deleted,
+        create_time,
+        update_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.serviceId},
+            #{item.tagId},
+            #{item.deleted},
+            NOW(),
+            NOW()
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        update_time = NOW()
+    </insert>
+
 </mapper>
