@@ -22,7 +22,7 @@
               :icon="Refresh"
               :loading="loadingEnterprises"
               circle
-              @click="fetchEnterprises"
+              @click="refreshEnterprises"
             />
           </el-tooltip>
         </div>
@@ -36,7 +36,7 @@
         class="diagnosis-form"
         @submit.prevent
       >
-        <!-- 企业选择（仅当有多家企业时显示） -->
+        <!-- 企业选择（当有多家企业时显示） -->
         <el-form-item
           label="选择企业"
           prop="manuId"
@@ -56,12 +56,13 @@
           </el-select>
         </el-form-item>
 
-        <!-- 隐藏的企业ID（当只有一家企业时自动填充） -->
+        <!-- 只有一家企业时显示企业名称（隐藏字段用于校验） -->
         <el-form-item
           v-else-if="enterpriseOptions.length === 1"
           prop="manuId"
           class="hidden-field"
         >
+          <input type="hidden" :value="form.manuId" />
           <span
             >诊断企业：<strong>{{
               enterpriseOptions[0]?.companyName
@@ -72,12 +73,23 @@
         <!-- 无企业提示 -->
         <div class="form-tip" v-else-if="enterpriseOptions.length === 0">
           <el-alert
-            title="您尚未创建制造企业，请先创建企业后再进行诊断"
+            title="您尚未创建或没有任何已审核通过的制造企业，请先创建企业后再进行诊断"
             type="warning"
             show-icon
             :closable="false"
             style="margin-bottom: 20px"
-          />
+          >
+            <template #default>
+              <el-button
+                type="primary"
+                size="small"
+                @click="goToEnterprise"
+                style="margin-top: 10px"
+              >
+                去创建企业
+              </el-button>
+            </template>
+          </el-alert>
         </div>
 
         <div v-if="enterpriseOptions.length >= 1">
@@ -95,6 +107,7 @@
                 :max="5"
                 :step="1"
                 :marks="scoreMarks"
+                :format-tooltip="formatTooltip"
               />
             </div>
             <div class="score-desc">评估企业信息系统建设、数据采集等能力</div>
@@ -113,6 +126,7 @@
                 :max="5"
                 :step="1"
                 :marks="scoreMarks"
+                :format-tooltip="formatTooltip"
               />
             </div>
             <div class="score-desc">评估生产线自动化、设备联网等能力</div>
@@ -131,6 +145,7 @@
                 :max="5"
                 :step="1"
                 :marks="scoreMarks"
+                :format-tooltip="formatTooltip"
               />
             </div>
             <div class="score-desc">评估数据分析、决策支持等能力</div>
@@ -149,6 +164,7 @@
                 :max="5"
                 :step="1"
                 :marks="scoreMarks"
+                :format-tooltip="formatTooltip"
               />
             </div>
             <div class="score-desc">评估与外部服务商协同、供应链整合能力</div>
@@ -172,7 +188,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
+import { ref, reactive, onMounted, computed, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { Refresh } from "@element-plus/icons-vue";
 import { useRouter } from "vue-router";
@@ -188,6 +204,7 @@ const userStore = useUserStore();
 const enterprises = ref([]);
 const loadingEnterprises = ref(false);
 
+// 获取企业列表（包含所有状态）
 const fetchEnterprises = async () => {
   loadingEnterprises.value = true;
   const userRole = userStore.userInfo?.role;
@@ -201,14 +218,53 @@ const fetchEnterprises = async () => {
     enterprises.value = res.records || [];
   } catch (error) {
     console.error("获取企业列表失败", error);
+    ElMessage.error("获取企业列表失败，请稍后重试");
   } finally {
     loadingEnterprises.value = false;
   }
 };
 
+// 仅显示已审核通过的企业（供用户选择）
 const enterpriseOptions = computed(() => {
-  return enterprises.value.filter((item) => item.auditStatus === "approved"); // 仅显示已审核企业
+  return enterprises.value.filter((item) => item.auditStatus === "approved");
 });
+
+// 同步选中的企业：自动选中唯一企业，或清空无效选中
+const syncSelectedEnterprise = () => {
+  const options = enterpriseOptions.value;
+  if (options.length === 1) {
+    // 只有一家企业时自动选中
+    if (form.manuId !== options[0].id) {
+      form.manuId = options[0].id;
+    }
+  } else if (options.length === 0) {
+    // 没有企业时清空选中
+    form.manuId = null;
+  } else {
+    // 多企业时，检查当前选中是否在列表中
+    const exists = options.some((item) => item.id === form.manuId);
+    if (!exists) {
+      form.manuId = null;
+    }
+  }
+};
+
+// 刷新企业列表（保留现有评分，仅更新企业数据）
+const refreshEnterprises = async () => {
+  await fetchEnterprises();
+  // fetch 完成后已调用同步，但 syncSelectedEnterprise 在 watch 中也会执行
+  // 为保证立即生效，再调用一次
+  syncSelectedEnterprise();
+};
+
+// 监听企业选项变化，自动同步选中状态
+watch(
+  enterpriseOptions,
+  () => {
+    syncSelectedEnterprise();
+  },
+  { deep: true },
+);
 
 // ---------- 表单 ----------
 const formRef = ref(null);
@@ -222,16 +278,7 @@ const form = reactive({
   serviceScore: 3,
 });
 
-// 当只有一家企业时自动选中
-onMounted(() => {
-  fetchEnterprises().then(() => {
-    if (enterpriseOptions.value.length === 1) {
-      form.manuId = enterpriseOptions.value[0].id;
-    }
-  });
-});
-
-// 评分标记
+// 评分标记（固定）
 const scoreMarks = {
   1: "1分",
   2: "2分",
@@ -240,58 +287,37 @@ const scoreMarks = {
   5: "5分",
 };
 
+// 评分滑块提示格式
+const formatTooltip = (val) => `${val}分`;
+
+// 生成评分校验规则（减少重复代码）
+const createScoreRule = (fieldName) => [
+  { required: true, message: `请选择${fieldName}得分`, trigger: "change" },
+  {
+    type: "number",
+    min: 1,
+    max: 5,
+    message: "得分必须在1-5之间",
+    trigger: "change",
+  },
+];
+
 // 校验规则
 const rules = {
   manuId: [
     { required: true, message: "请选择要诊断的企业", trigger: "change" },
   ],
-  infoScore: [
-    { required: true, message: "请选择信息化得分", trigger: "change" },
-    {
-      type: "number",
-      min: 1,
-      max: 5,
-      message: "得分必须在1-5之间",
-      trigger: "change",
-    },
-  ],
-  autoScore: [
-    { required: true, message: "请选择自动化得分", trigger: "change" },
-    {
-      type: "number",
-      min: 1,
-      max: 5,
-      message: "得分必须在1-5之间",
-      trigger: "change",
-    },
-  ],
-  dataScore: [
-    { required: true, message: "请选择数据应用得分", trigger: "change" },
-    {
-      type: "number",
-      min: 1,
-      max: 5,
-      message: "得分必须在1-5之间",
-      trigger: "change",
-    },
-  ],
-  serviceScore: [
-    { required: true, message: "请选择服务协同得分", trigger: "change" },
-    {
-      type: "number",
-      min: 1,
-      max: 5,
-      message: "得分必须在1-5之间",
-      trigger: "change",
-    },
-  ],
+  infoScore: createScoreRule("信息化水平"),
+  autoScore: createScoreRule("自动化水平"),
+  dataScore: createScoreRule("数据应用"),
+  serviceScore: createScoreRule("服务协同"),
 };
 
 // 提交
 const submitForm = async () => {
   if (enterpriseOptions.value.length === 0) {
-    ElMessage.warning("请先创建制造企业");
-    // router.push("/enterprise"); //后续补上
+    ElMessage.warning("请先创建并确保至少有一家企业审核通过");
+    goToEnterprise();
     return;
   }
 
@@ -312,30 +338,44 @@ const submitForm = async () => {
       dataScore: form.dataScore,
       serviceScore: form.serviceScore,
     });
-    // 当前路由表尚未提供诊断报告页（/diagnosis/report/:id），因此仅在本页提示成功，避免跳转到不存在的页面
-    ElMessage.success(
-      "诊断提交成功，报告正在后台生成，请稍后在诊断记录中查看。",
-    );
-    // TODO: 后续若补齐诊断报告页与路由（/diagnosis/report/:id），可在此根据 res.diagnosisId 进行跳转
-    // router.push(`/diagnosis/report/${res.diagnosisId}`);
-    router.push("/");
+    ElMessage.success("诊断提交成功，正在生成报告...");
+    // 如果后端返回了诊断ID且报告页面路由存在，则跳转报告页
+    if (res.diagnosisId && router.hasRoute("DiagnosisReport")) {
+      router.push(`/diagnosis/report/${res.diagnosisId}`);
+    } else {
+      // 否则跳转至首页（或诊断记录列表）
+      router.push("/");
+    }
   } catch (error) {
     console.error("提交失败", error);
+    ElMessage.error("提交失败，请稍后重试");
   } finally {
     submitting.value = false;
   }
 };
 
-// 重置表单
+// 重置表单（仅重置评分，保留企业选择）
 const resetForm = () => {
-  form.manuId =
-    enterpriseOptions.value.length === 1 ? enterpriseOptions.value[0].id : null;
   form.infoScore = 3;
   form.autoScore = 3;
   form.dataScore = 3;
   form.serviceScore = 3;
+  // 不清空 form.manuId
   formRef.value?.clearValidate();
 };
+
+// 跳转至企业创建页面（需根据实际路由调整）
+const goToEnterprise = () => {
+  // TODO: 根据实际路由配置，跳转到我的企业页面
+  router.push("/enterprise");
+};
+
+// 初始化
+onMounted(async () => {
+  await fetchEnterprises();
+  // 同步选中状态在 watch 中自动完成，但 fetch 完成后可能 watch 还未触发，手动调用一次确保初始状态
+  syncSelectedEnterprise();
+});
 </script>
 
 <style scoped>

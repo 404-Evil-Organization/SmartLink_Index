@@ -16,7 +16,7 @@
           <el-icon><HomeFilled /></el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-sub-menu v-if="isAdmin || isManufacture" index="1">
+        <el-sub-menu v-if="isAdmin || isManufacture" index="2">
           <template #title>
             <el-icon><Avatar /></el-icon>
             <span>数字化诊断</span>
