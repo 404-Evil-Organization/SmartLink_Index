@@ -317,7 +317,7 @@ import { normalizeTags } from "@/utils/tagUtils";
 // API 接口
 import {
   getServiceProviderList,
-  // getServiceProviderDetail,
+  getServiceProviderDetail,
 } from "@/api/service-provider";
 import { getRegions, getServiceTags } from "@/api/common";
 // import { getCertList } from "@/api/certification";
@@ -534,7 +534,11 @@ const handleCurrentChange = (val) => {
   };
 // const certImage = ref(null);
 // const showPreview = ref(false);
-
+onMounted(() => {
+  fetchRegions();
+  fetchServiceTags();
+  fetchList();   
+});
 </script>
 
 <style scoped>

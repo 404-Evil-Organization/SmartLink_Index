@@ -11,9 +11,9 @@
       </div>
     </div>
 
-    <el-row :gutter="20" class="top-row">
+    <el-row :gutter="20" class="top-row equal-height-row">
       <!-- 左侧：基本信息 -->
-      <el-col :span="12">
+      <el-col :span="12" class="col-item">
         <el-card class="info-card" shadow="hover">
           <template #header>
             <div class="card-header"><span>企业信息</span></div>
@@ -39,7 +39,7 @@
       </el-col>
 
       <!-- 右侧：证书列表（支持分页） -->
-      <el-col :span="12">
+      <el-col :span="12" class="col-item">
         <el-card class="cert-card" shadow="hover">
           <template #header>
             <div class="card-header">
@@ -47,13 +47,13 @@
               <el-tooltip content="刷新"><el-button :icon="Refresh" circle size="small" @click="fetchCertList" /></el-tooltip>
             </div>
           </template>
-          <el-table :data="certList" v-loading="certLoading" border stripe>
-            <el-table-column prop="certName" label="证书名称" min-width="120" />
+          <el-table :data="certList" v-loading="certLoading" border stripe style="width: 100%">
+            <el-table-column prop="certName" label="证书名称" min-width="150" />
             <el-table-column prop="certNo" label="证书编号" min-width="120" />
-            <el-table-column prop="issueAuthority" label="发证机构" min-width="120" />
+            <el-table-column prop="issueAuthority" label="发证机构" min-width="160" />
             <el-table-column prop="issueDate" label="发证日期" width="100" />
             <el-table-column prop="expireDate" label="有效期" width="100" />
-            <el-table-column label="证书文件" width="80">
+            <el-table-column label="证书文件" width="70">
               <template #default="{ row }">
                 <el-button
                     v-if="row.certFileUrl"
@@ -98,15 +98,15 @@
             </div>
           </template>
           <el-table :data="evalList" v-loading="evalLoading" border stripe>
-            <el-table-column prop="manufactureName" label="评价企业" min-width="150" />
-            <el-table-column prop="score" label="评分" width="100">
+            <el-table-column prop="manufactureName" label="评价企业" width="120" />
+            <el-table-column prop="score" label="评分" width="200" align="center">
               <template #default="{ row }">
-                <el-rate v-model="row.score" disabled :texts="['1分', '2分', '3分', '4分', '5分']" show-text />
+                <el-rate :model-value="row.score" disabled :texts="['1分', '2分', '3分', '4分', '5分']" show-text />
               </template>
             </el-table-column>
-            <el-table-column prop="content" label="评价内容" min-width="250" />
+            <el-table-column prop="content" label="评价内容" min-width="200" />
             <el-table-column prop="createTime" label="评价时间" width="160" />
-            <el-table-column prop="isAnonymous" label="匿名" width="60">
+            <el-table-column prop="isAnonymous" label="匿名" width="60" align="center">
               <template #default="{ row }">{{ row.isAnonymous ? '是' : '否' }}</template>
             </el-table-column>
           </el-table>
@@ -292,7 +292,8 @@ watch(() => route.params.id, (newId) => {
   word-break: break-word;
 }
 .cert-card,
-.evaluation-card {
+.evaluation-card,
+.info-card {
   width: 100%;
 }
 .pagination-container {
@@ -302,5 +303,62 @@ watch(() => route.params.id, (newId) => {
 }
 .el-table :deep(.el-rate) {
   display: inline-block;
+}
+.el-rate {
+  display: inline-flex;
+  gap: 2px;
+}
+.el-rate .el-rate__item {
+  margin-right: 2px;
+}
+.equal-height-row {
+  display: flex;
+  align-items: stretch;
+}
+.equal-height-row .col-item {
+  display: flex;
+  flex-direction: column;
+}
+.equal-height-row .el-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.equal-height-row .el-card__body {
+  flex: 1;
+}
+.el-table .el-table__cell .el-rate {
+  white-space: nowrap;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.el-table .el-rate__text {
+  margin-left: 4px;
+  white-space: nowrap;
+}
+/* 等高布局 */
+.equal-height-row {
+  display: flex;
+  align-items: stretch;    /* 让子元素拉伸到相同高度 */
+}
+
+.equal-height-row .col-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.equal-height-row .el-card {
+  flex: 1;                /* 卡片自动填充剩余高度 */
+  display: flex;
+  flex-direction: column;
+}
+
+.equal-height-row .el-card__body {
+  flex: 1;                /* 卡片内容区域也撑满，让内部内容可以正常滚动或布局 */
+}
+.cert-card .el-table .cell {
+  word-break: break-word;
+  white-space: normal;
 }
 </style>
