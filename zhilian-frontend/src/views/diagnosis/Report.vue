@@ -33,6 +33,7 @@
         </div>
         <el-select
           v-model="selectedManuId"
+          @change="(val) => console.log('下拉框变化，新值:', val)"
           placeholder="请选择企业"
           style="width: 300px"
           :loading="loadingEnterprises"
@@ -239,12 +240,12 @@ const fetchEnterprises = async () => {
     // 打印企业列表供调试
     console.log('企业列表:', enterprises.value.map(e => ({ id: e.id, name: e.companyName })))
 
-    // 如果企业列表长度为1且当前没有通过链接加载的报告，则自动加载该企业的报告
-    if (enterprises.value.length === 1 && !reportData.value && !loadingReport.value) {
-      console.log('检测到单个企业，自动加载报告')
-      selectedManuId.value = enterprises.value[0].id
-      fetchLatestReportByManuId(selectedManuId.value)
-    }
+    // // 如果企业列表长度为1且当前没有通过链接加载的报告，则自动加载该企业的报告
+    // if (enterprises.value.length === 1 && !reportData.value && !loadingReport.value) {
+    //   console.log('检测到单个企业，自动加载报告')
+    //   selectedManuId.value = enterprises.value[0].id
+    //   fetchLatestReportByManuId(selectedManuId.value)
+    // }
   } catch (error) {
     console.error('获取企业列表失败', error)
     ElMessage.error('获取企业列表失败')
@@ -355,20 +356,23 @@ const loadReport = () => {
   }
 }
 
+
 const handleViewReport = async () => {
+  console.log('======= handleViewReport 被调用 =======');
+  console.log('当前选中的企业ID:', selectedManuId.value);
   if (!selectedManuId.value) {
-    ElMessage.warning('请先选择企业')
-    return
+    ElMessage.warning('请先选择企业');
+    return;
   }
-  viewLoading.value = true
+  viewLoading.value = true;
   try {
-    const latest = await getLatestDiagnosis(selectedManuId.value)
+    const latest = await getLatestDiagnosis(selectedManuId.value);
+    console.log('【接口返回】最新报告:', latest);
     if (latest && latest.diagnosisId) {
-      router.push(`/diagnosis/report?id=${latest.diagnosisId}`)
+      router.push(`/diagnosis/report?id=${latest.diagnosisId}`);
     } else {
-      // 理论上这里不会执行，因为 getLatestDiagnosis 在无报告时会抛 404 被 catch 捕获
-      reportData.value = null
-      showNoReport.value = true
+      reportData.value = null;
+      showNoReport.value = true;
     }
   } catch (error) {
     const status = error?.response?.status || error?.code
@@ -376,12 +380,14 @@ const handleViewReport = async () => {
       reportData.value = null
       showNoReport.value = true
     } else {
-      ElMessage.error('获取报告失败，请稍后重试')
-    }
-  } finally {
-    viewLoading.value = false
+    console.error('获取报告失败:', error);
+    // ... 原有错误处理
+  } 
   }
-}
+  finally {
+    viewLoading.value = false;
+  }
+};
 
 const goToQuestionnaire = () => {
   ElMessage.info('诊断问卷功能开发中，请稍后再试')
@@ -452,9 +458,11 @@ watch(
 )
 
 onMounted(() => {
-  window.userStore = userStore   // 将 store 挂载到全局
-  fetchEnterprises( )
-})
+   if (route.query.id || route.query.manuId || route.params.id || route.params.manuId) {
+    router.replace({ query: {} });
+  }
+  fetchEnterprises();
+});
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleRadarResize)
