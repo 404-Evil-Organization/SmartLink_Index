@@ -309,21 +309,22 @@
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ElImageViewer } from "element-plus";
+// import { ElImageViewer } from "element-plus";
 import { Refresh, View } from "@element-plus/icons-vue";
-import { formatEstablishedDate } from "@/composables/date";
+// import { formatEstablishedDate } from "@/composables/date";
 import { normalizeTags } from "@/utils/tagUtils";
 
 // API 接口
 import {
   getServiceProviderList,
-  getServiceProviderDetail,
+  // getServiceProviderDetail,
 } from "@/api/service-provider";
 import { getRegions, getServiceTags } from "@/api/common";
 import { getCertList } from "@/api/certification";
 import { maskPhone } from "@/utils/desensitize";
 import { useUserStore } from "@/stores/user";
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus';
 
 const router = useRouter()
 
@@ -361,7 +362,7 @@ const pagination = reactive({
 });
 
 // 详情弹窗
-const detailDialog = reactive({ visible: false, data: {} });
+// const detailDialog = reactive({ visible: false, data: {} });
 
 // 获取列表
 const fetchList = async () => {
@@ -386,32 +387,32 @@ const fetchList = async () => {
 };
 
 // 证书列表相关
-const activeCertCollapse = ref(""); // 默认收起
-const certificateList = ref([]);
-const certLoading = ref(false);
+// const activeCertCollapse = ref(""); // 默认收起
+// const certificateList = ref([]);
+// const certLoading = ref(false);
 
 // 获取证书列表
-const fetchCertList = async (serviceId) => {
-  if (!serviceId) return;
-  certLoading.value = true;
-  try {
-    const res = await getCertList({ serviceId });
+// const fetchCertList = async (serviceId) => {
+//   if (!serviceId) return;
+//   certLoading.value = true;
+//   try {
+//     const res = await getCertList({ serviceId });
 
-    certificateList.value = Array.isArray(res.records) ? res.records : [];
-  } catch (error) {
-    console.error("获取证书列表失败", error);
-    certificateList.value = [];
-  } finally {
-    certLoading.value = false;
-  }
-};
+//     certificateList.value = Array.isArray(res.records) ? res.records : [];
+//   } catch (error) {
+//     console.error("获取证书列表失败", error);
+//     certificateList.value = [];
+//   } finally {
+//     certLoading.value = false;
+//   }
+// };
 
 // 刷新证书列表
-const refreshCertList = () => {
-  if (detailDialog.data?.id) {
-    fetchCertList(detailDialog.data.id);
-  }
-};
+// const refreshCertList = () => {
+//   if (detailDialog.data?.id) {
+//     fetchCertList(detailDialog.data.id);
+//   }
+// };
 
 // 区域下拉静态兜底选项（当接口异常或返回格式错误时使用）
 const DEFAULT_REGION_OPTIONS = ["全国", "华北地区", "华东地区", "华南地区"];
@@ -516,8 +517,8 @@ const handleCurrentChange = (val) => {
   }
   router.push(`/service/detail/${realId}`);
 };
-const certImage = ref(null);
-const showPreview = ref(false);
+// const certImage = ref(null);
+// const showPreview = ref(false);
 
 onMounted(() => {
   // 尝试从接口获取，失败时保持静态默认值
