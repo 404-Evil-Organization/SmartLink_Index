@@ -192,10 +192,8 @@ const evalPage = ref(1)
 const evalPageSize = ref(5)
 const evalTotal = ref(0)
 
-console.log('fetchEvalList serviceId:', serviceId);
 
 const fetchEvalList = async () => {
-  console.log('fetchEvalList 准备调用 getEvaluationList，serviceId=', serviceId);
   if (!serviceId) return
   evalLoading.value = true
   try {

@@ -10,7 +10,6 @@ import request from '@/utils/request'
  */
 export function getEvaluationList(serviceId, params) {
   const url = `/evaluation/list/${serviceId}`;
-  console.log('[getEvaluationList] 最终请求 URL:', url);  // 现在 url 已定义
   return request({
     url: url,
     method: 'get',
