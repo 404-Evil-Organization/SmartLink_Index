@@ -17,7 +17,6 @@
     </div>
 
     <!-- 搜索卡片 -->
-    <!-- 搜索卡片 -->
     <el-card class="search-card" shadow="hover">
       <el-form :model="searchForm" label-width="100px" class="search-form">
         <el-row :gutter="20">
@@ -186,11 +185,8 @@ import { ElMessage } from "element-plus";
 import { Refresh } from "@element-plus/icons-vue";
 import { getMyCooperationList, getCooperationDetail } from "@/api/cooperation";
 import { getMyManufactureList, getMyServiceList } from "@/api/enterprise";
-import { useUserStore } from "@/stores/user";
 
 const router = useRouter();
-const userStore = useUserStore();
-const userRole = computed(() => userStore.userInfo?.role);
 
 // 搜索表单
 const searchForm = reactive({

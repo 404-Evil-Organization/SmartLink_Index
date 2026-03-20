@@ -113,6 +113,17 @@ const fetchCoopDetail = async () => {
   coopId = Number(rawCoopId);
   try {
     const res = await getCooperationDetail(coopId);
+    // 校验合作是否已完成且未评价
+    if (res.status !== "completed") {
+      ElMessage.error("只有已完成的合作才能评价");
+      router.push("/cooperation/my");
+      return;
+    }
+    if (res.hasEvaluated) {
+      ElMessage.error("您已经评价过该合作");
+      router.push("/cooperation/my");
+      return;
+    }
     coopInfo.value = res;
   } catch (error) {
     console.error("获取合作详情失败", error);
