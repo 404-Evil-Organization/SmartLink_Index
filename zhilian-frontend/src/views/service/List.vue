@@ -320,11 +320,12 @@ import {
   // getServiceProviderDetail,
 } from "@/api/service-provider";
 import { getRegions, getServiceTags } from "@/api/common";
-import { getCertList } from "@/api/certification";
+// import { getCertList } from "@/api/certification";
 import { maskPhone } from "@/utils/desensitize";
 import { useUserStore } from "@/stores/user";
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus';
+
 
 const router = useRouter()
 
@@ -520,12 +521,6 @@ const handleCurrentChange = (val) => {
 // const certImage = ref(null);
 // const showPreview = ref(false);
 
-onMounted(() => {
-  // 尝试从接口获取，失败时保持静态默认值
-  fetchRegions();
-  fetchServiceTags();
-  fetchList();
-});
 </script>
 
 <style scoped>

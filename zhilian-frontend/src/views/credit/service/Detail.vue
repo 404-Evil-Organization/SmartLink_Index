@@ -74,7 +74,7 @@
               :page-sizes="[5, 10, 20]"
               layout="total, sizes, prev, pager, next, jumper"
               :total="certTotal"
-              @size-change="fetchCertList"
+              @size-change="handleCertSizeChange"
               @current-change="fetchCertList"
             />
           </div>
@@ -117,7 +117,7 @@
               :page-sizes="[5, 10, 20]"
               layout="total, sizes, prev, pager, next, jumper"
               :total="evalTotal"
-              @size-change="fetchEvalList"
+              @size-change="handleEvalSizeChange"
               @current-change="fetchEvalList"
             />
           </div>
@@ -128,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted,watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
@@ -146,13 +146,13 @@ const openCertPreview = (url) => {
 }
 
 const route = useRoute()
-const serviceId = route.params.id
+const serviceId = ref(route.params.id)
 
 // ---------- 基本信息 ----------
 const detailData = ref({})
 const fetchDetail = async () => {
   try {
-    const res = await getServiceProviderDetail(serviceId)
+    const res = await getServiceProviderDetail(serviceId.value )
     detailData.value = res
   } catch (error) {
     ElMessage.error('获取服务商详情失败')
@@ -185,6 +185,13 @@ const fetchCertList = async () => {
   }
 };
 
+// 证书分页 size 变化处理
+const handleCertSizeChange = (size) => {
+  certPage.value = 1
+  certPageSize.value = size
+  fetchCertList()
+}
+
 // ---------- 评价列表（分页） ----------
 const evalList = ref([])
 const evalLoading = ref(false)
@@ -210,11 +217,31 @@ const fetchEvalList = async () => {
   }
 }
 
-onMounted(() => {
+// 评价分页 size 变化处理
+const handleEvalSizeChange = (size) => {
+  evalPage.value = 1
+  evalPageSize.value = size
+  fetchEvalList()
+}
+
+// 监听路由参数变化，重新加载数据并重置分页
+watch(() => route.params.id, (newId) => {
+  if (!newId) return
+  serviceId.value = newId
+  // 重置分页
+  certPage.value = 1
+  evalPage.value = 1
+  // 重新获取数据
   fetchDetail()
   fetchCertList()
   fetchEvalList()
-})
+}, { immediate: true })
+
+// onMounted(() => {
+//   fetchDetail()
+//   fetchCertList()
+//   fetchEvalList()
+// })
 </script>
 
 <style scoped>
