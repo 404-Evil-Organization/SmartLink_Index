@@ -6,9 +6,9 @@ export default [
     component: () => import('@/views/service/List.vue')
   },
   {
-    path: 'service/detail/:id',
+    path: 'credit/service/detail/:id',
     name: 'serviceDetail',
-    component: () => import('@/views/service/Detail.vue'),
+    component: () => import('@/views/credit/service/Detail.vue'),
     meta: { requiresAuth: true }
   }
   // 后续可继续添加其他管理页面路由

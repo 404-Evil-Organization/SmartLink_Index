@@ -515,7 +515,7 @@ const handleCurrentChange = (val) => {
     ElMessage.error('企业ID无效');
     return;
   }
-  router.push(`/service/detail/${realId}`);
+  router.push(`/credit/service/detail/${realId}`);
 };
 // const certImage = ref(null);
 // const showPreview = ref(false);
