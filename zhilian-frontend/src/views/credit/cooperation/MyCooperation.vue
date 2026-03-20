@@ -84,7 +84,7 @@
         <el-table-column prop="demandTitle" label="需求标题" min-width="180" />
         <el-table-column prop="amount" label="合作金额(万元)" width="130">
           <template #default="{ row }">
-            {{ row.amount ? row.amount + " 万" : "-" }}
+            {{ row.amount === null || row.amount === undefined ? '-' : row.amount + ' 万' }}
           </template>
         </el-table-column>
         <el-table-column prop="startDate" label="开始日期" width="110" />
