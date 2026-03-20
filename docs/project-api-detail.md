@@ -1450,18 +1450,14 @@
     "records": [
       {
         "id": 5001,
-        "manuId": 1001,
-        "manuName": "深圳电子科技",
-        "serviceId": 2001,
-        "serviceName": "华测检测",
-        "demandId": 3001,
-        "demandTitle": "寻求PCB设计服务",
-        "startDate": "2026-03-01",
-        "endDate": "2026-06-30",
-        "amount": 10.0,
-        "status": "ongoing",
-        "createTime": "2026-03-01 10:00:00",
-        "hasEvaluated": false // 当前用户是否已评价过此合作
+        "opponentName": "华测检测",              // 合作对方企业名称
+        "demandTitle": "寻求PCB设计服务",       // 需求标题
+        "amount": 10.0,                         // 合作金额（万元）
+        "startDate": "2026-03-01",               // 开始日期
+        "endDate": "2026-06-30",                 // 结束日期
+        "status": "ongoing",                    // 合作状态
+        "createTime": "2026-03-01 10:00:00",    // 创建时间
+        "hasEvaluated": false                   // 当前用户是否已评价
       }
     ]
   }
@@ -1472,6 +1468,38 @@
 > - 若传入 `enterpriseId`，后端需校验该企业是否属于当前用户（通过 `manufacture` 或 `service_provider` 表的 `user_id` 字段）。
 > - 根据企业ID对应的类型（制造企业/服务商），自动使用 `manu_id` 或 `service_id` 进行合作记录查询。
 > - 若未传入 `enterpriseId`，后端根据当前用户的角色（从token中获取）自动选择其关联的第一个企业（若同一用户有多个同类型企业，可返回默认企业，或由业务逻辑决定，推荐返回最近创建或审核通过的企业）。
+
+### 5.5 获取合作记录详情
+
+- **URL**: `/api/cooperation/{id}`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **路径参数**: `id` (合作记录ID)
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 5001,
+    "manuId": 1001,
+    "manuName": "深圳电子科技",
+    "serviceId": 2001,
+    "serviceName": "华测检测",
+    "demandId": 3001,
+    "demandTitle": "寻求PCB设计服务",
+    "demandDescription": "需要专业PCB设计公司，有高速PCB设计经验者优先。",  // 需求详情
+    "amount": 10.0,
+    "startDate": "2026-03-01",
+    "endDate": "2026-06-30",
+    "description": "合作内容简述：提供PCB设计服务...",                // 合作内容描述
+    "status": "ongoing",
+    "createTime": "2026-03-01 10:00:00",
+    "hasEvaluated": false
+  }
+}
+```
 
 ---
 
