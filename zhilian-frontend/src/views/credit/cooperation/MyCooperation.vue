@@ -287,6 +287,7 @@ const handleEnterpriseChange = () => {
 
 // 分页变化
 const handlePageChange = () => {
+  pagination.current = 1;
   fetchList();
 };
 
