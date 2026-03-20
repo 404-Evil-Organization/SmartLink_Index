@@ -21,6 +21,7 @@
         :rules="rules"
         label-width="100px"
         class="evaluation-form"
+        v-loading="detailLoading"
       >
         <el-form-item label="合作信息">
           <div class="coop-info">
@@ -63,9 +64,14 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :loading="submitting" @click="handleSubmit"
-            >提交评价</el-button
+          <el-button
+            type="primary"
+            :loading="submitting"
+            :disabled="detailLoading || !coopInfo"
+            @click="handleSubmit"
           >
+            提交评价
+          </el-button>
           <el-button @click="goBack">取消</el-button>
         </el-form-item>
       </el-form>
@@ -84,6 +90,7 @@ const route = useRoute();
 const router = useRouter();
 const formRef = ref(null);
 const submitting = ref(false);
+const detailLoading = ref(false);
 
 // 表单数据
 const form = reactive({
@@ -111,6 +118,7 @@ const fetchCoopDetail = async () => {
     return;
   }
   coopId = Number(rawCoopId);
+  detailLoading.value = true; // 开始加载
   try {
     const res = await getCooperationDetail(coopId);
     // 校验合作是否已完成且未评价
@@ -129,37 +137,34 @@ const fetchCoopDetail = async () => {
     console.error("获取合作详情失败", error);
     ElMessage.error("获取合作信息失败");
     router.push("/cooperation/my");
+  } finally {
+    detailLoading.value = false; // 结束加载
   }
 };
 
-// 表单校验规则
-const rules = {
-  score: [
-    { required: true, message: "请选择评分", trigger: "change" },
-    {
-      type: "number",
-      min: 1,
-      max: 5,
-      message: "评分范围为 1~5 星",
-      trigger: "change",
-    },
-  ],
-  content: [{ max: 500, message: "评价内容不能超过500字", trigger: "blur" }],
-};
-
-// 提交评价
+// 提交评价（增加二次校验）
 const handleSubmit = async () => {
-  if (!coopId) {
-    ElMessage.error("合作记录ID无效，请重新选择");
+  // 二次校验合作信息是否满足条件（防止异步竞态）
+  if (!coopInfo.value) {
+    ElMessage.error("合作信息未加载完成，请稍后重试");
+    return;
+  }
+  if (coopInfo.value.status !== "completed") {
+    ElMessage.error("只有已完成的合作才能评价");
+    router.push("/cooperation/my");
+    return;
+  }
+  if (coopInfo.value.hasEvaluated) {
+    ElMessage.error("您已经评价过该合作");
     router.push("/cooperation/my");
     return;
   }
 
+  if (!formRef.value) return;
   try {
-    // 等待校验结果，如果失败会抛出异常
     await formRef.value.validate();
   } catch (error) {
-    // 校验失败，无需额外处理，用户会看到表单项错误提示
+    // 校验失败，无需额外处理
     return;
   }
 
@@ -180,6 +185,22 @@ const handleSubmit = async () => {
     submitting.value = false;
   }
 };
+
+// 表单校验规则
+const rules = {
+  score: [
+    { required: true, message: "请选择评分", trigger: "change" },
+    {
+      type: "number",
+      min: 1,
+      max: 5,
+      message: "评分范围为 1~5 星",
+      trigger: "change",
+    },
+  ],
+  content: [{ max: 500, message: "评价内容不能超过500字", trigger: "blur" }],
+};
+
 const goBack = () => {
   router.back();
 };
