@@ -338,8 +338,8 @@ const fetchLatestReportByManuId = async (manuId) => {
   }
 }
 
-/**
- * 根据 URL 参数加载报告（优先于企业列表自动加载）
+// /**
+//  * 根据 URL 参数加载报告（优先于企业列表自动加载）
 const loadReport = () => {
   const id = route.query.id || route.params.id
   const manuId = route.query.manuId || route.params.manuId

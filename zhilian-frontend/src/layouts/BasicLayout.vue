@@ -31,9 +31,10 @@
           <el-icon><DataLine /></el-icon>
           <span>诊断报告</span>
         </el-menu-item>
-
         </el-sub-menu>
-        <el-sub-menu v-if="isAdmin" index="2">
+
+       
+        <el-sub-menu v-if="isAdmin" index="2"></el-sub-menu>
         <el-menu-item index="/manufacture/list">
           <el-icon><OfficeBuilding /></el-icon>
           <span>制造企业列表</span>
