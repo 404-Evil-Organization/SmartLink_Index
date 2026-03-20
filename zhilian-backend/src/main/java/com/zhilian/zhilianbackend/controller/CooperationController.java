@@ -9,6 +9,7 @@ import com.zhilian.zhilianbackend.service.CooperationService;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -23,11 +24,9 @@ public class CooperationController {
     private final CooperationService cooperationService;
     private final SecurityUtils securityUtils; // 注入
 
-    // ... getCurrentUserId, getCurrentUserRole 方法可以移除，改用 SecurityUtils
-
     @GetMapping("/my-list")
     @Operation(summary = "获取我的合作记录列表")
-    public Result<PageResult<CooperationRecordVO>> getMyCooperations(@ModelAttribute CooperationListRequest request) {
+    public Result<PageResult<CooperationRecordVO>> getMyCooperations(@Valid @ModelAttribute CooperationListRequest request) {
         Long userId = securityUtils.getCurrentUserId();
         String userRole = securityUtils.getCurrentUserRole();
 

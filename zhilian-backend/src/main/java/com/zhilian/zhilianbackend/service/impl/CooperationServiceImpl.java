@@ -167,11 +167,10 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
             }
         }
 
-        // 查询当前用户是否已评价该合作
+        // 查询当前用户是否已评价该合作（仅筛选未被逻辑删除的记录，逻辑删除由 @TableLogic 自动处理）
         LambdaQueryWrapper<Evaluation> evaluationWrapper = new LambdaQueryWrapper<>();
         evaluationWrapper.eq(Evaluation::getCoopId, cooperation.getId())
-                .eq(Evaluation::getEvaluatorId, currentUserId)
-                .eq(Evaluation::getDeleted, "1970-01-01 00:00:00");
+                .eq(Evaluation::getEvaluatorId, currentUserId);
         boolean hasEvaluated = evaluationMapper.selectCount(evaluationWrapper) > 0;
 
         return CooperationDetailVO.builder()

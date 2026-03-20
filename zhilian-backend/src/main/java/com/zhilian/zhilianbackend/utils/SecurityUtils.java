@@ -58,7 +58,7 @@ public class SecurityUtils {
      * @Date: 2026/3/20 18:46
      * @Param:
      * @Return: String 角色名称（小写，不带 ROLE_ 前缀）
-     * @Description: 获取当前登录用户的角色，支持多角色场景下返回第一个有效角色（优先 ROLE_ 前缀）。
+     * @Description: 获取当前登录用户的角色，支持多角色场景下返回第一个有效角色。
      *              若未找到有效角色则抛出 403 异常。
      */
     public String getCurrentUserRole() {
