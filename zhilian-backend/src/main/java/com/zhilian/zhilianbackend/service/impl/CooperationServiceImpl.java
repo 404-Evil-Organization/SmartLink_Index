@@ -11,6 +11,7 @@ import com.zhilian.zhilianbackend.entity.*;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.*;
 import com.zhilian.zhilianbackend.service.CooperationService;
+import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,43 +26,9 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
     private final ServiceProviderMapper serviceProviderMapper;
     private final DemandMapper demandMapper;
     private final EvaluationMapper evaluationMapper;
+    private final SecurityUtils securityUtils;
 
-    /**
-     * 根据用户ID和角色获取默认企业ID
-     */
-    private Long getDefaultCompanyId(Long userId, String role) {
-        if ("manufacture".equals(role)) {
-            LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(Manufacture::getUserId, userId);
-            Manufacture manufacture = manufactureMapper.selectOne(wrapper);
-            return manufacture != null ? manufacture.getId() : null;
-        } else if ("service".equals(role)) {
-            LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(ServiceProvider::getUserId, userId);
-            ServiceProvider sp = serviceProviderMapper.selectOne(wrapper);
-            return sp != null ? sp.getId() : null;
-        }
-        return null;
-    }
-
-    /**
-     * 校验指定企业是否属于当前用户，并返回该企业的角色类型
-     */
-    private String validateAndGetRoleByEnterpriseId(Long enterpriseId, Long userId) {
-        // 检查制造企业
-        LambdaQueryWrapper<Manufacture> manuWrapper = new LambdaQueryWrapper<>();
-        manuWrapper.eq(Manufacture::getId, enterpriseId).eq(Manufacture::getUserId, userId);
-        if (manufactureMapper.selectCount(manuWrapper) > 0) {
-            return "manufacture";
-        }
-        // 检查服务商
-        LambdaQueryWrapper<ServiceProvider> spWrapper = new LambdaQueryWrapper<>();
-        spWrapper.eq(ServiceProvider::getId, enterpriseId).eq(ServiceProvider::getUserId, userId);
-        if (serviceProviderMapper.selectCount(spWrapper) > 0) {
-            return "service";
-        }
-        return null;
-    }
+    // ==================== 非管理员方法 ====================
 
     @Override
     public PageResult<CooperationRecordVO> pageMyCooperations(Long userId, String userRole, Long enterpriseId, String status, Integer page, Integer size) {
@@ -99,16 +66,14 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
             throw new BusinessException(404, "合作记录不存在");
         }
 
-        // 2. 权限校验：当前用户必须是该合作的一方（制造企业或服务商）
+        // 2. 权限校验：当前用户必须是该合作的一方
         boolean authorized = false;
-        Long userCompanyId = null;
         if ("manufacture".equals(userRole)) {
             LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Manufacture::getUserId, userId);
             Manufacture manufacture = manufactureMapper.selectOne(wrapper);
             if (manufacture != null && manufacture.getId().equals(cooperation.getManuId())) {
                 authorized = true;
-                userCompanyId = manufacture.getId();
             }
         } else if ("service".equals(userRole)) {
             LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
@@ -116,7 +81,6 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
             ServiceProvider sp = serviceProviderMapper.selectOne(wrapper);
             if (sp != null && sp.getId().equals(cooperation.getServiceId())) {
                 authorized = true;
-                userCompanyId = sp.getId();
             }
         }
 
@@ -124,7 +88,63 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
             throw new BusinessException(403, "无权查看该合作记录");
         }
 
-        // 3. 查询关联信息
+        return buildCooperationDetail(cooperation, userId);
+    }
+
+    // ==================== 管理员方法 ====================
+
+    @Override
+    public PageResult<CooperationRecordVO> pageMyCooperationsAdmin(Long userId, Long enterpriseId, String status, Integer page, Integer size) {
+        Page<CooperationRecordVO> pageParam = new Page<>(page, size);
+        IPage<CooperationRecordVO> iPage = cooperationMapper.selectMyCooperationsAdmin(pageParam, enterpriseId, status, userId);
+        return PageResult.from(iPage);
+    }
+
+    @Override
+    public CooperationDetailVO getCooperationDetailAdmin(Long cooperationId) {
+        Cooperation cooperation = cooperationMapper.selectById(cooperationId);
+        if (cooperation == null) {
+            throw new BusinessException(404, "合作记录不存在");
+        }
+        // 管理员查看时，userId 为当前登录的管理员 ID，用于计算 hasEvaluated
+        Long currentUserId = securityUtils.getCurrentUserId();
+        return buildCooperationDetail(cooperation, currentUserId);
+    }
+
+    // ==================== 私有辅助方法 ====================
+
+    private Long getDefaultCompanyId(Long userId, String role) {
+        if ("manufacture".equals(role)) {
+            LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Manufacture::getUserId, userId);
+            Manufacture manufacture = manufactureMapper.selectOne(wrapper);
+            return manufacture != null ? manufacture.getId() : null;
+        } else if ("service".equals(role)) {
+            LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(ServiceProvider::getUserId, userId);
+            ServiceProvider sp = serviceProviderMapper.selectOne(wrapper);
+            return sp != null ? sp.getId() : null;
+        }
+        return null;
+    }
+
+    private String validateAndGetRoleByEnterpriseId(Long enterpriseId, Long userId) {
+        // 检查制造企业
+        LambdaQueryWrapper<Manufacture> manuWrapper = new LambdaQueryWrapper<>();
+        manuWrapper.eq(Manufacture::getId, enterpriseId).eq(Manufacture::getUserId, userId);
+        if (manufactureMapper.selectCount(manuWrapper) > 0) {
+            return "manufacture";
+        }
+        // 检查服务商
+        LambdaQueryWrapper<ServiceProvider> spWrapper = new LambdaQueryWrapper<>();
+        spWrapper.eq(ServiceProvider::getId, enterpriseId).eq(ServiceProvider::getUserId, userId);
+        if (serviceProviderMapper.selectCount(spWrapper) > 0) {
+            return "service";
+        }
+        return null;
+    }
+
+    private CooperationDetailVO buildCooperationDetail(Cooperation cooperation, Long currentUserId) {
         String manuName = null;
         if (cooperation.getManuId() != null) {
             Manufacture manufacture = manufactureMapper.selectById(cooperation.getManuId());
@@ -147,14 +167,13 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
             }
         }
 
-        // 4. 查询是否已评价（基于当前用户）
+        // 查询当前用户是否已评价该合作
         LambdaQueryWrapper<Evaluation> evaluationWrapper = new LambdaQueryWrapper<>();
-        evaluationWrapper.eq(Evaluation::getCoopId, cooperationId)
-                .eq(Evaluation::getEvaluatorId, userId)
+        evaluationWrapper.eq(Evaluation::getCoopId, cooperation.getId())
+                .eq(Evaluation::getEvaluatorId, currentUserId)
                 .eq(Evaluation::getDeleted, "1970-01-01 00:00:00");
         boolean hasEvaluated = evaluationMapper.selectCount(evaluationWrapper) > 0;
 
-        // 5. 构建返回对象
         return CooperationDetailVO.builder()
                 .id(cooperation.getId())
                 .manuId(cooperation.getManuId())
