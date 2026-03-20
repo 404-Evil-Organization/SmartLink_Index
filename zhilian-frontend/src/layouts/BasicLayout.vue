@@ -26,10 +26,18 @@
             <span>诊断问卷</span>
           </el-menu-item>
         </el-sub-menu>
+
         <el-menu-item index="/manufacture/list">
           <el-icon><OfficeBuilding /></el-icon>
           <span>制造企业列表</span>
         </el-menu-item>
+
+        <!-- 新增服务企业列表菜单项 -->
+        <el-menu-item index="/service/list">
+          <el-icon><OfficeBuilding /></el-icon>
+          <span>服务企业列表</span>
+        </el-menu-item>
+
         <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
