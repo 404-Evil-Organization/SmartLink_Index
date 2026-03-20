@@ -30,14 +30,15 @@ public class EvaluationController {
 
         // 评价人角色（用于入库），只能是 manufacture 或 service
         String evaluatorRole;
-        // 管理员可以直接评价，但评价人角色固定使用 manufacture，避免将 admin 写入枚举字段
+        // 出于数据准确性考虑，禁止管理员直接写入评价表，避免占用真实企业评价名额
         if (securityUtils.isAdmin()) {
-            evaluatorRole = "manufacture";
+            return Result.forbidden("管理员不能直接提交评价，请使用企业账号登录后再评价");
         } else {
             // 非管理员仅允许制造企业提交评价
             if (!"manufacture".equals(role)) {
                 return Result.forbidden("只有制造企业可以提交评价");
             }
+            // 此处 role 一定为 manufacture，将其作为评价人角色入库
             evaluatorRole = role;
         }
         Long evaluationId = evaluationService.submitEvaluation(request, userId, evaluatorRole);
