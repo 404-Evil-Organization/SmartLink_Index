@@ -113,6 +113,14 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
 
     // ==================== 私有辅助方法 ====================
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: userId 当前登录用户ID
+     * @Param: role 用户角色（manufacture/service）
+     * @Return: 企业ID（制造企业ID或服务商ID），若无则返回null
+     * @Description: 根据用户ID和角色获取其关联的默认企业ID
+     */
     private Long getDefaultCompanyId(Long userId, String role) {
         if ("manufacture".equals(role)) {
             LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
@@ -128,6 +136,14 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
         return null;
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: enterpriseId 企业ID
+     * @Param: userId 当前登录用户ID
+     * @Return: 企业类型（"manufacture"或"service"），若不属当前用户则返回null
+     * @Description: 校验指定企业是否属于当前用户，并返回该企业的角色类型
+     */
     private String validateAndGetRoleByEnterpriseId(Long enterpriseId, Long userId) {
         // 检查制造企业
         LambdaQueryWrapper<Manufacture> manuWrapper = new LambdaQueryWrapper<>();
@@ -144,6 +160,14 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
         return null;
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: cooperation 合作实体
+     * @Param: currentUserId 当前登录用户ID
+     * @Return: 合作详情VO
+     * @Description: 构建合作记录详情对象（包含双方名称、需求详情、是否已评价等）
+     */
     private CooperationDetailVO buildCooperationDetail(Cooperation cooperation, Long currentUserId) {
         String manuName = null;
         if (cooperation.getManuId() != null) {

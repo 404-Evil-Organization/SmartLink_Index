@@ -8,6 +8,11 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.Date;
 
+/**
+ * @Author: xiaodengyou
+ * @Date: 2026/3/20 19:00
+ * @Description: 合作记录详情响应对象
+ */
 @Data
 @Builder
 @Schema(description = "合作记录详情响应")

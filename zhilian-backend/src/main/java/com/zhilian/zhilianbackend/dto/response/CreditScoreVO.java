@@ -11,7 +11,7 @@ import java.util.Date;
  * @Date: 2026/3/19 15:01
  * @Param:
  * @Return:
- * @Description:
+ * @Description: 服务商信用分响应对象
 **/
 @Data
 @Schema(description = "服务商信用分响应")

@@ -18,6 +18,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * @Author: xiaodengyou
+ * @Date: 2026/3/20 21:33
+ * @Description: 评价表业务逻辑实现类，实现评价相关的业务方法
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -27,6 +32,15 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
     private final ManufactureMapper manufactureMapper;
     private final SecurityUtils securityUtils;
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: request 评价请求参数
+     * @Param: evaluatorId 当前登录用户ID
+     * @Param: evaluatorRole 评价人角色（manufacture/service）
+     * @Return: 生成的评价ID
+     * @Description: 提交评价，包含合作存在性校验、权限校验（管理员禁止评价、非管理员必须为合作的制造企业方）、重复评价校验，捕获唯一约束异常并转换为业务异常
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long submitEvaluation(EvaluationSubmitRequest request, Long evaluatorId, String evaluatorRole) {

@@ -12,6 +12,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * @Author: xiaodengyou
+ * @Date: 2026/3/20 19:00
+ * @Description: 评价模块控制器，提供提交评价接口
+ */
 @Slf4j
 @RestController
 @RequestMapping("/evaluation")
@@ -22,6 +27,13 @@ public class EvaluationController {
     private final EvaluationService evaluationService;
     private final SecurityUtils securityUtils;
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: request 评价提交请求参数（包含合作ID、评分、内容、是否匿名）
+     * @Return: 评价ID
+     * @Description: 提交评价，仅制造企业可评价，管理员禁止评价（需使用企业账号）
+     */
     @PostMapping("/submit")
     @Operation(summary = "提交评价")
     public Result<EvaluationSubmitResponse> submitEvaluation(@Valid @RequestBody EvaluationSubmitRequest request) {

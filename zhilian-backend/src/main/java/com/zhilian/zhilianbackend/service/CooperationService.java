@@ -6,6 +6,14 @@ import com.zhilian.zhilianbackend.dto.response.CooperationDetailVO;
 import com.zhilian.zhilianbackend.dto.response.CooperationRecordVO;
 import com.zhilian.zhilianbackend.entity.Cooperation;
 
+/**
+ * @Author: xiaodengyou
+ * @Date: 2026/3/20 23:17
+ * @Param:
+ * @Return:
+ * @Description: 合作记录业务逻辑接口，定义合作记录的列表查询和详情查询方法
+**/
+
 public interface CooperationService extends IService<Cooperation> {
 
     /**

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
@@ -25,6 +26,7 @@ public class EvaluationSubmitRequest {
     @Schema(description = "评分（1-5星）", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer score;
 
+    @Size(max = 500, message = "评价内容不能超过500个字符")
     @Schema(description = "评价内容")
     private String content;
 

@@ -14,6 +14,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * @Author: xiaodengyou
+ * @Date: 2026/3/20 19:00
+ * @Description: 合作记录模块控制器，提供合作记录列表和详情查询接口
+ */
 @Slf4j
 @RestController
 @RequestMapping("/cooperation")
@@ -22,8 +27,15 @@ import org.springframework.web.bind.annotation.*;
 public class CooperationController {
 
     private final CooperationService cooperationService;
-    private final SecurityUtils securityUtils; // 注入
+    private final SecurityUtils securityUtils;
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: request 合作记录列表请求参数（包含企业ID、状态、分页信息）
+     * @Return: 分页的合作记录列表
+     * @Description: 获取当前用户的合作记录列表，管理员可查看所有合作或按企业筛选
+     */
     @GetMapping("/my-list")
     @Operation(summary = "获取我的合作记录列表")
     public Result<PageResult<CooperationRecordVO>> getMyCooperations(@Valid @ModelAttribute CooperationListRequest request) {
@@ -45,6 +57,13 @@ public class CooperationController {
         return Result.success(pageResult);
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: id 合作记录ID
+     * @Return: 合作记录详情
+     * @Description: 获取合作记录详情，非管理员只能查看自己参与的合作，管理员可查看任意
+     */
     @GetMapping("/{id}")
     @Operation(summary = "获取合作记录详情")
     public Result<CooperationDetailVO> getCooperationDetail(@PathVariable Long id) {

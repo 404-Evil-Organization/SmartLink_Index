@@ -5,6 +5,11 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
 
+/**
+ * @Author: xiaodengyou
+ * @Date: 2026/3/20 19:00
+ * @Description: 合作记录列表请求参数
+ */
 @Data
 @Schema(description = "合作记录列表请求参数")
 public class CooperationListRequest {
