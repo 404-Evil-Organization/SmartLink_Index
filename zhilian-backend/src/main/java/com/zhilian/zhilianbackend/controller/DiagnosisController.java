@@ -38,6 +38,12 @@ public class DiagnosisController {
     @Operation(summary = "提交诊断问卷", description = "制造企业填写问卷，系统计算诊断得分并生成报告")
     public Result<DiagnosisReportVO> submitDiagnosis(
             @Valid @RequestBody DiagnosisSubmitRequest request) {
+
+        // 判空防御：避免在日志中直接解引用可能为 null 的 request
+        if (request == null) {
+            log.warn("提交诊断问卷请求体为空");
+            throw new BusinessException(400, "诊断提交请求体不能为空");
+        }
         log.info("接收到诊断问卷提交请求: manuId={}", request.getManuId());
 
         DiagnosisReportVO response = diagnosisService.submitDiagnosis(request);
