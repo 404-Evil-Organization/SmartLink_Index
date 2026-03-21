@@ -1,7 +1,9 @@
 package com.zhilian.zhilianbackend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -24,5 +26,6 @@ public class DiagnosisReportVO {
     private String level;
     private List<String> suggestions;
     private Map<String, Integer> radarData;
-    private String diagnosisDate;   // Date 转 String
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date diagnosisDate;
 }

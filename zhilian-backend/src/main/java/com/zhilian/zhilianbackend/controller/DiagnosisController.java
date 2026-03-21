@@ -5,6 +5,8 @@ import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.service.DiagnosisService;
 import com.zhilian.zhilianbackend.exception.BusinessException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/diagnosis")
 @RequiredArgsConstructor
+@Tag(name = "数字化诊断模块", description = "企业数字化诊断相关接口")
 public class DiagnosisController {
     private final DiagnosisService diagnosisService;
 
@@ -61,6 +64,7 @@ public class DiagnosisController {
      * @Description: 提交诊断问卷接口
     **/
     @PostMapping("/submit")
+    @Operation(summary = "提交诊断问卷", description = "制造企业填写问卷，系统计算诊断得分并生成报告")
     public Result<DiagnosisReportVO> submitDiagnosis(
             @Valid @RequestBody(required = false) DiagnosisSubmitRequest request) {
 
@@ -88,6 +92,7 @@ public class DiagnosisController {
      * @Description: 根据ID获取诊断报告接口
     **/
     @GetMapping("/result/{id}")
+    @Operation(summary = "获取诊断报告", description = "根据诊断ID获取诊断详情，包含各维度得分、总分、等级和建议")
     public Result<DiagnosisReportVO> getDiagnosisById(
             @PathVariable("id") Long id) {
 
@@ -108,6 +113,7 @@ public class DiagnosisController {
      * @Description: 获取企业最新诊断报告接口
     **/
     @GetMapping("/latest")
+    @Operation(summary = "获取最新诊断报告", description = "获取指定企业的最新诊断报告")
     public Result<DiagnosisReportVO> getLatestDiagnosis(
             @RequestParam(name = "manuId", required = false) Long manuId) {
 

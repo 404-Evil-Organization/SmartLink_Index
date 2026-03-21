@@ -43,7 +43,7 @@ import java.util.Collections;
 public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis> implements DiagnosisService {
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
     private final ManufactureMapper manufactureMapper;
     private final UserMapper userMapper;
@@ -157,9 +157,7 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         // 5. 使用全局 ObjectMapper 将诊断建议列表序列化为 JSON 字符串，避免与反序列化时的 Jackson 配置不一致
         String suggestionsJson;
         try {
-            // 这里使用局部 ObjectMapper 实例进行序列化，避免引用未注入的 objectMapper 字段导致编译错误
-            ObjectMapper localObjectMapper = new ObjectMapper();
-            suggestionsJson = localObjectMapper.writeValueAsString(suggestions);
+            suggestionsJson = objectMapper.writeValueAsString(suggestions);
         } catch (JsonProcessingException e) {
             // 序列化失败视为服务异常，记录详细日志便于排查
             log.error("诊断建议序列化为 JSON 失败 - 用户ID: {}, 企业ID: {}, 建议列表: {}",
@@ -327,7 +325,6 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         if (diagnosis.getSuggestions() != null) {
             try {
                 // 使用 Jackson 统一解析 suggestions 字段，避免与 submitDiagnosis 中的 JSON 处理库不一致
-                ObjectMapper objectMapper = new ObjectMapper();
                 List<String> suggestions = objectMapper.readValue(
                         diagnosis.getSuggestions(),
                         new TypeReference<List<String>>() {}
@@ -356,10 +353,7 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         }
 
         // 格式化诊断日期
-        if (diagnosis.getDiagnosisDate() != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            vo.setDiagnosisDate(sdf.format(diagnosis.getDiagnosisDate()));
-        }
+        vo.setDiagnosisDate(diagnosis.getDiagnosisDate());
 
         return vo;
     }
