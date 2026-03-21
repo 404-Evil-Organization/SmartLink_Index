@@ -146,7 +146,6 @@ const handleLogout = async () => {
     console.error("退出登录失败", error);
   }
 };
-const isManufacture = computed(() => userStore.userInfo?.role === 'manufacture');
 </script>
 
 <style scoped>

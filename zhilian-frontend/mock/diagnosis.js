@@ -196,7 +196,7 @@ export default [
 
   // 2.2 获取诊断报告（根据ID）
   {
-    url: "/api/diagnosis/result/:id",
+    url: "/api/diagnosis/:id",
     method: "get",
     response: ({ params, query }) => {
       const id = parseInt(params?.id || query?.id);
@@ -246,7 +246,8 @@ export default [
     response: ({ query }) => {
       const manuId = parseInt(query.manuId);
       console.log("[mock] 请求企业最新报告，manuId:", manuId);
-
+       console.log('mock latest 被调用');
+       
       if (isNaN(manuId)) {
         return {
           code: 400,
@@ -277,6 +278,7 @@ export default [
         data: {
           diagnosisId: latest.id,
           manuId: latest.manuId,
+          manuName: latest.manuName,
           infoScore: latest.infoScore,
           autoScore: latest.autoScore,
           dataScore: latest.dataScore,

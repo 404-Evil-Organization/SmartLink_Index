@@ -42,7 +42,7 @@ export function submitDiagnosis(data) {
  */
 export function getDiagnosisResult(id) {
   return request({
-    url: `/diagnosis/result/${id}`,
+    url: `/diagnosis/${id}`,
     method: "get",
   });
 }

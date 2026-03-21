@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
-import { enforceAdminOnly, enforceRoles, checkRoleAccess } from "@/router/permission";
+import { enforceRoles, checkRoleAccess } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
 import serviceListRoutes from "./models/service";
