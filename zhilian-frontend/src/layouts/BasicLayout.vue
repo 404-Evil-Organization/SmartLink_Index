@@ -28,6 +28,14 @@
           <span>服务企业列表</span>
         </el-menu-item>
 
+        <el-menu-item
+          v-if="isAdmin || isManufacture || isService"
+          index="/enterprise"
+        >
+          <el-icon><OfficeBuilding /></el-icon>
+          <span>我的企业</span>
+        </el-menu-item>
+
         <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
@@ -89,6 +97,10 @@ const activeMenu = computed(() => route.path);
 
 // 判断当前用户是否为管理员
 const isAdmin = computed(() => userStore.userInfo?.role === "admin");
+const isManufacture = computed(
+  () => userStore.userInfo?.role === "manufacture",
+);
+const isService = computed(() => userStore.userInfo?.role === "service");
 
 // 退出登录
 const handleLogout = async () => {
