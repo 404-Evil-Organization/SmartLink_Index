@@ -97,10 +97,28 @@ public class SecurityUtils {
      * @Author: xiaodengyou
      * @Date: 2026/3/20 19:00
      * @Return: boolean true-当前用户为管理员，false-非管理员
-     * @Description: 判断当前登录用户是否为管理员角色
+     * @Description: 判断当前登录用户是否为管理员角色。
+     * 说明：不再依赖 getCurrentUserRole() 返回的“第一个角色”，而是遍历所有 authorities，
+     * 只要存在 ROLE_ADMIN 或 admin（忽略大小写）即视为管理员，避免多角色场景下因迭代顺序导致识别失败。
      */
     public boolean isAdmin() {
-        String role = getCurrentUserRole();
-        return "admin".equals(role);
+        Authentication authentication = getAuthenticatedAuthentication();
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        if (authorities == null || authorities.isEmpty()) {
+            // 无任何角色时直接判定为非管理员，避免误授权
+            return false;
+        }
+        return authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(role -> role != null && !role.trim().isEmpty())
+                .map(role -> {
+                    // 与 getCurrentUserRole 保持一致，统一去掉 ROLE_ 前缀
+                    if (role.startsWith("ROLE_")) {
+                        return role.substring(5);
+                    }
+                    return role;
+                })
+                .map(String::toLowerCase)
+                .anyMatch("admin"::equals);
     }
 }

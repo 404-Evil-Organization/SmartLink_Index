@@ -123,7 +123,7 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
      * @Return: 符合数据库枚举定义的角色字符串（manufacture 或 service）
      * @Description: 将外部传入的评价角色统一转换为数据库合法枚举值。
      *              当前 evaluation.evaluator_role 字段定义为 ENUM('manufacture','service')，
-     *              若传入 "admin"（管理员登录场景），约定统一按 "manufacture" 处理。
+     *              因此仅接受 "manufacture" 或 "service"（不区分大小写），否则抛出业务异常。
      */
     private String normalizeEvaluatorRole(String evaluatorRole) {
         if (evaluatorRole == null || evaluatorRole.trim().isEmpty()) {
@@ -133,10 +133,6 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
         if ("manufacture".equals(role) || "service".equals(role)) {
             return role;
         }
-        if ("admin".equals(role)) {
-            // 业务约定：管理员提交评价时，在数据库中按制造企业角色记录
-            return "manufacture";
-        }
-        throw new BusinessException(400, "评价角色不合法");
+        throw new BusinessException(400, "评价角色不合法，仅允许 manufacture 或 service");
     }
 }
