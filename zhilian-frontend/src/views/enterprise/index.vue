@@ -652,11 +652,16 @@ import {
   updateServiceProvider,
   deleteServiceProvider,
 } from "@/api/service-provider";
-import { getServiceTags, getProductTags, getRegions } from "@/api/common";
-import { uploadFile, deleteFile } from "@/api/common";
+import {
+  getServiceTags,
+  getProductTags,
+  getRegions,
+  uploadFile,
+  deleteFile,
+} from "@/api/common";
 import { useUserStore } from "@/stores/user";
 import { maskPhone } from "@/utils/desensitize";
-import { normalizeTags } from "@/utils/tagUtils";
+import { normalizeTags, joinTags } from "@/utils/tagUtils";
 
 const userStore = useUserStore();
 const userRole = computed(() => userStore.userInfo?.role);
@@ -745,13 +750,11 @@ const fetchManufactureList = async () => {
       page: manuPagination.current,
       size: manuPagination.size,
     };
+    if (manuSearchKeyword.value) {
+      params.companyName = manuSearchKeyword.value;
+    }
     const res = await getMyManufactureList(params);
     let records = res.records || [];
-    if (manuSearchKeyword.value) {
-      records = records.filter((item) =>
-        item.companyName.includes(manuSearchKeyword.value),
-      );
-    }
     manufactureList.value = records;
     manuPagination.total = res.total || 0;
   } catch (error) {
@@ -770,13 +773,11 @@ const fetchServiceList = async () => {
       page: servicePagination.current,
       size: servicePagination.size,
     };
+    if (serviceSearchKeyword.value) {
+      params.companyName = serviceSearchKeyword.value;
+    }
     const res = await getMyServiceList(params);
     let records = res.records || [];
-    if (serviceSearchKeyword.value) {
-      records = records.filter((item) =>
-        item.companyName.includes(serviceSearchKeyword.value),
-      );
-    }
     serviceList.value = records;
     servicePagination.total = res.total || 0;
   } catch (error) {
@@ -904,9 +905,7 @@ const openEditDialog = async (row, type) => {
         : [];
       form.description = detail.description || "";
     } else {
-      form.serviceType = detail.serviceType
-        ? detail.serviceType.split(",")
-        : [];
+      form.serviceType = normalizeTags(detail.serviceType);
       form.website = detail.website || "";
       form.employeeCount = detail.employeeCount ?? null;
       form.qualification = detail.qualification || "";
@@ -985,14 +984,6 @@ const customUpload = async (options) => {
   const { file, onSuccess, onError } = options;
   try {
     const url = await uploadFile(file);
-    const oldLogo = form.logo;
-    if (oldLogo && typeof oldLogo === "string" && oldLogo.trim() !== "") {
-      try {
-        await deleteFile(oldLogo);
-      } catch (deleteError) {
-        console.warn("删除旧 logo 失败", deleteError);
-      }
-    }
     form.logo = url;
     const uploadedFile = {
       name: file.name,
@@ -1068,7 +1059,7 @@ const submitForm = async () => {
         form.annualRevenue !== null && form.annualRevenue !== undefined
           ? String(form.annualRevenue)
           : "",
-      productType: form.productType.join(","), // 数组转逗号分隔字符串
+      productType: joinTags(form.productType), // 数组转逗号分隔字符串
       description: form.description,
       logo: form.logo,
       establishedDate: form.establishedDate,
@@ -1080,7 +1071,7 @@ const submitForm = async () => {
       address: form.address,
       contactPerson: form.contactPerson,
       contactPhone: form.contactPhone,
-      serviceType: form.serviceType.join(","),
+      serviceType: joinTags(form.serviceType),
       description: form.description,
       logo: form.logo,
       website: form.website,
@@ -1147,7 +1138,7 @@ const deleteEnterprise = async (row, type) => {
       fetchServiceList();
     }
   } catch (error) {
-    if (error !== "cancel") {
+    if (error !== "cancel" && error !== "close") {
       console.error("删除失败", error);
       ElMessage.error("删除失败");
     }
