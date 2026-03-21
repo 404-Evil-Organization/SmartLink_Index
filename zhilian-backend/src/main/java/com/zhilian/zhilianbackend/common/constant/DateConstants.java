@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.common.constant;
 
-import java.time.LocalDateTime;
+import java.sql.Timestamp;
+import java.util.Date;
 
 /**
  * @Author: taciturn-hg
@@ -18,11 +19,7 @@ public final class DateConstants {
     }
 
     /**
-     * 逻辑删除字段的“未删除”标记值
-     * <p>
-     * 当 deleted 字段类型为 DATETIME 时，约定该值表示数据未被逻辑删除。
-     * 注意：此值应与数据库中的实际值保持一致（如 1970-01-01 00:00:00）。
-     * </p>
+     * 逻辑删除字段的“未删除”标记值（1970-01-01 00:00:00）
      */
-    public static final LocalDateTime NOT_DELETED_TIME = LocalDateTime.of(1970, 1, 1, 0, 0, 0);
+    public static final Date NOT_DELETED_TIME = Timestamp.valueOf("1970-01-01 00:00:00");
 }

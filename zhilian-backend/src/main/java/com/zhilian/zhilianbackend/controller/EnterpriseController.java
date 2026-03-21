@@ -1,6 +1,6 @@
 package com.zhilian.zhilianbackend.controller;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.PageRequest;
@@ -42,22 +42,14 @@ public class EnterpriseController {
     @GetMapping("/manufacture/list")
     @Operation(summary = "获取个人制造企业列表", description = "返回当前登录用户创建的制造企业列表，包含所有审核状态")
     public Result<PageResult<EnterpriseManufactureVO>> getMyManufactureList(@Valid PageRequest pageRequest) {
-        // 获取当前登录用户ID
         Long userId = securityUtils.getCurrentUserId();
-
-        // 分页查询
-        Page<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(
+        // Service 返回 IPage，无需手动转换
+        IPage<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(
                 userId,
                 pageRequest.getPage().longValue(),
                 pageRequest.getSize().longValue()
         );
-
-        // 封装分页结果 - 使用page的records
-        Page<EnterpriseManufactureVO> mybatisPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        mybatisPage.setRecords(page.getRecords());
-        PageResult<EnterpriseManufactureVO> pageResult = PageResult.from(mybatisPage);
-
-        return Result.success(pageResult);
+        return Result.success(PageResult.from(page));
     }
 
     /**
@@ -70,21 +62,12 @@ public class EnterpriseController {
     @GetMapping("/service/list")
     @Operation(summary = "获取个人服务商列表", description = "返回当前登录用户创建的服务商列表，包含所有审核状态")
     public Result<PageResult<EnterpriseServiceVO>> getMyServiceList(@Valid PageRequest pageRequest) {
-        // 获取当前登录用户ID
         Long userId = securityUtils.getCurrentUserId();
-
-        // 分页查询
-        Page<EnterpriseServiceVO> page = enterpriseService.getMyServiceList(
+        IPage<EnterpriseServiceVO> page = enterpriseService.getMyServiceList(
                 userId,
                 pageRequest.getPage().longValue(),
                 pageRequest.getSize().longValue()
         );
-
-        // 封装分页结果 - 使用page的records
-        Page<EnterpriseServiceVO> mybatisPage = new Page<>(page.getCurrent(), page.getSize(), page.getTotal());
-        mybatisPage.setRecords(page.getRecords());
-        PageResult<EnterpriseServiceVO> pageResult = PageResult.from(mybatisPage);
-
-        return Result.success(pageResult);
+        return Result.success(PageResult.from(page));
     }
 }

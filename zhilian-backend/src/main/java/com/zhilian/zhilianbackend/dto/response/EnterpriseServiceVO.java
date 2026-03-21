@@ -1,9 +1,10 @@
 package com.zhilian.zhilianbackend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * @Author: 6017
@@ -41,8 +42,10 @@ public class EnterpriseServiceVO {
     private String auditRemark;
 
     @Schema(description = "审核时间")
-    private LocalDateTime auditTime;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date auditTime;
 
     @Schema(description = "创建时间")
-    private LocalDateTime createTime;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date createTime;
 }

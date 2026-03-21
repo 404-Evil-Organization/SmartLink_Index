@@ -1,6 +1,6 @@
 package com.zhilian.zhilianbackend.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseManufactureVO;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseServiceVO;
 
@@ -20,7 +20,7 @@ public interface EnterpriseService {
      * @Return: 分页结果
      * @Description: 获取当前用户的制造企业列表
     **/
-    Page<EnterpriseManufactureVO> getMyManufactureList(Long userId, Long page, Long size);
+    IPage<EnterpriseManufactureVO> getMyManufactureList(Long userId, Long pageNum, Long pageSize);
 
     /**
      * @Author: 6017
@@ -29,5 +29,5 @@ public interface EnterpriseService {
      * @Return: 分页结果
      * @Description: 获取当前用户的服务商列表
     **/
-    Page<EnterpriseServiceVO> getMyServiceList(Long userId, Long page, Long size);
+    IPage<EnterpriseServiceVO> getMyServiceList(Long userId, Long pageNum, Long pageSize);
 }

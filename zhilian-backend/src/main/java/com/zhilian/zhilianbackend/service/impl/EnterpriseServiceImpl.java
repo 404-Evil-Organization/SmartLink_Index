@@ -15,9 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * @Author: 6017
  * @Date: 2026/3/20 23:59
@@ -40,16 +37,14 @@ public class EnterpriseServiceImpl implements EnterpriseService {
      * @Description: 获取当前用户的制造企业列表
     **/
     @Override
-    public Page<EnterpriseManufactureVO> getMyManufactureList(Long userId, Long pageNum, Long pageSize) {
-        // 构建查询条件：根据user_id查询，且未删除
+    public IPage<EnterpriseManufactureVO> getMyManufactureList(Long userId, Long pageNum, Long pageSize) {
         LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Manufacture::getUserId, userId)
                 .eq(Manufacture::getDeleted, DateConstants.NOT_DELETED_TIME)
                 .orderByDesc(Manufacture::getCreateTime);
 
         Page<Manufacture> resultPage = manufactureMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
-
-        return (Page<EnterpriseManufactureVO>) resultPage.convert(this::convertToManufactureVO);
+        return resultPage.convert(this::convertToManufactureVO);
     }
 
     /**
@@ -60,17 +55,14 @@ public class EnterpriseServiceImpl implements EnterpriseService {
      * @Description: 获取当前用户的服务商列表
     **/
     @Override
-    public Page<EnterpriseServiceVO> getMyServiceList(Long userId, Long pageNum, Long pageSize) {
-        // 构建查询条件：根据user_id查询，且未删除
+    public IPage<EnterpriseServiceVO> getMyServiceList(Long userId, Long pageNum, Long pageSize) {
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ServiceProvider::getUserId, userId)
                 .eq(ServiceProvider::getDeleted, DateConstants.NOT_DELETED_TIME)
                 .orderByDesc(ServiceProvider::getCreateTime);
 
         Page<ServiceProvider> resultPage = serviceProviderMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
-
-        // 一行代码完成转换，强转回 Page（实际对象就是 Page）
-        return (Page<EnterpriseServiceVO>) resultPage.convert(this::convertToServiceVO);
+        return resultPage.convert(this::convertToServiceVO);
     }
 
     /**
