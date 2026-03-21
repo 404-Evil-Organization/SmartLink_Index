@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
+import com.zhilian.zhilianbackend.utils.SqlUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -58,7 +59,7 @@ public class EnterpriseServiceImpl implements EnterpriseService {
             wrapper.eq(Manufacture::getScale, requestDTO.getScale());
         }
         if (StringUtils.isNotBlank(requestDTO.getProductType())) {
-            String escaped = escapeSqlLike(requestDTO.getProductType());
+            String escaped = SqlUtils.escapeSqlLike(requestDTO.getProductType());
             wrapper.apply("product_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
         }
 
@@ -90,7 +91,7 @@ public class EnterpriseServiceImpl implements EnterpriseService {
             wrapper.eq(ServiceProvider::getRegion, requestDTO.getRegion());
         }
         if (StringUtils.isNotBlank(requestDTO.getServiceType())) {
-            String escaped = escapeSqlLike(requestDTO.getServiceType());
+            String escaped = SqlUtils.escapeSqlLike(requestDTO.getServiceType());
             wrapper.apply("service_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
         }
 
@@ -98,18 +99,6 @@ public class EnterpriseServiceImpl implements EnterpriseService {
 
         Page<ServiceProvider> resultPage = serviceProviderMapper.selectPage(new Page<>(requestDTO.getPage(), requestDTO.getSize()), wrapper);
         return resultPage.convert(this::convertToServiceVO);
-    }
-
-    /**
-     * 转义SQL LIKE特殊字符
-     */
-    private String escapeSqlLike(String keyword) {
-        if (StringUtils.isBlank(keyword)) {
-            return keyword;
-        }
-        return keyword.replace("\\", "\\\\")
-                      .replace("%", "\\%")
-                      .replace("_", "\\_");
     }
 
     /**

@@ -42,10 +42,19 @@ public class OssConfig {
         String cleanAk = accessKeyId != null ? accessKeyId.trim() : null;
         String cleanSk = accessKeySecret != null ? accessKeySecret.trim() : null;
         String cleanEndpoint = endpoint != null ? endpoint.trim() : null;
-        
-        log.info("Initializing OSS Client with endpoint: {}", cleanEndpoint);
-        log.info("AccessKeyId length after trim: {}", cleanAk != null ? cleanAk.length() : 0);
-        log.info("AccessKeySecret length after trim: {}", cleanSk != null ? cleanSk.length() : 0);
+
+        // 对清理后的配置进行非空校验，避免使用无效配置继续构建 OSS 客户端，方便快速发现配置问题。
+        if (cleanEndpoint == null || cleanEndpoint.isEmpty()) {
+            throw new IllegalStateException("OSS endpoint 未配置或为空，请检查配置项 oss.endpoint");
+        }
+        if (cleanAk == null || cleanAk.isEmpty()) {
+            throw new IllegalStateException("OSS AccessKeyId 未配置或为空，请检查配置项 oss.access-key-id");
+        }
+        if (cleanSk == null || cleanSk.isEmpty()) {
+            throw new IllegalStateException("OSS AccessKeySecret 未配置或为空，请检查配置项 oss.access-key-secret");
+        }
+        // 使用 DEBUG 级别且不输出任何敏感信息，避免在生产日志中泄露凭据相关特征。
+        log.debug("Initializing OSS Client.");
         
         return new OSSClientBuilder().build(cleanEndpoint, cleanAk, cleanSk);
     }

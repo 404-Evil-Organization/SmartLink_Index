@@ -743,14 +743,12 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { Plus, Refresh, View } from "@element-plus/icons-vue";
 import { getMyManufactureList, getMyServiceList } from "@/api/enterprise";
 import {
-  getManufactureList,
   getManufactureDetail,
   addManufacture,
   updateManufacture,
   deleteManufacture,
 } from "@/api/manufacture";
 import {
-  getServiceProviderList,
   getServiceProviderDetail,
   addServiceProvider,
   updateServiceProvider,
@@ -880,9 +878,12 @@ const fetchManufactureList = async () => {
       records = records.filter((item) =>
         item.companyName.includes(manuSearchKeyword.value),
       );
+      // 如果前端进行了过滤，则更新 total 为过滤后的数量
+      manuPagination.total = records.length;
+    } else {
+      manuPagination.total = res.total || 0;
     }
     manufactureList.value = records;
-    manuPagination.total = res.total || 0;
   } catch (error) {
     console.error("获取制造企业列表失败", error);
     ElMessage.error("获取制造企业列表失败");
@@ -908,9 +909,12 @@ const fetchServiceList = async () => {
       records = records.filter((item) =>
         item.companyName.includes(serviceSearchKeyword.value),
       );
+      // 如果前端进行了过滤，则更新 total 为过滤后的数量
+      servicePagination.total = records.length;
+    } else {
+      servicePagination.total = res.total || 0;
     }
     serviceList.value = records;
-    servicePagination.total = res.total || 0;
   } catch (error) {
     console.error("获取服务商列表失败", error);
     ElMessage.error("获取服务商列表失败");
@@ -958,19 +962,6 @@ const fetchProductTypeOptions = async () => {
     console.error("获取产品类型标签失败", error);
   }
 };
-
-onMounted(() => {
-  fetchRegions();
-  fetchScales();
-  fetchServiceTypeOptions();
-  fetchProductTypeOptions();
-
-  if (activeTab.value === "manufacture") {
-    fetchManufactureList();
-  } else {
-    fetchServiceList();
-  }
-});
 
 // 重置搜索
 const resetManuSearch = () => {
