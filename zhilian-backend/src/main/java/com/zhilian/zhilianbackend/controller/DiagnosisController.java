@@ -5,7 +5,6 @@ import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.service.DiagnosisService;
 import com.zhilian.zhilianbackend.exception.BusinessException;
-import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "数字化诊断模块", description = "企业数字化诊断相关接口")
 public class DiagnosisController {
     private final DiagnosisService diagnosisService;
-    private final SecurityUtils securityUtils;
 
     /**
      * @Author: 6017
@@ -49,10 +47,7 @@ public class DiagnosisController {
 
         log.info("接收到诊断问卷提交请求: manuId={}", request.getManuId());
 
-        // 从 SecurityContext 中获取当前登录用户ID，避免在 Controller 内重复解析 JWT
-        Long userId = securityUtils.getCurrentUserId();
-
-        DiagnosisReportVO response = diagnosisService.submitDiagnosis(request, userId);
+        DiagnosisReportVO response = diagnosisService.submitDiagnosis(request);
 
         return Result.success(response);
     }
@@ -71,9 +66,7 @@ public class DiagnosisController {
 
         log.info("接收到获取诊断报告请求: id={}", id);
 
-        Long userId = securityUtils.getCurrentUserId();
-
-        DiagnosisReportVO response = diagnosisService.getDiagnosisById(id, userId);
+        DiagnosisReportVO response = diagnosisService.getDiagnosisById(id);
 
         return Result.success(response);
     }
@@ -98,9 +91,7 @@ public class DiagnosisController {
 
         log.info("接收到获取企业最新诊断报告请求: manuId={}", manuId);
 
-        Long userId = securityUtils.getCurrentUserId();
-
-        DiagnosisReportVO response = diagnosisService.getLatestDiagnosis(manuId, userId);
+        DiagnosisReportVO response = diagnosisService.getLatestDiagnosis(manuId);
 
         return Result.success(response);
     }

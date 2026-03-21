@@ -75,13 +75,14 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     /**
      * @Author: 6017
      * @Date: 2026/3/17 22:47
-     * @Param: request 诊断提交请求参数（包含企业ID和各维度得分）userId 当前操作用户ID
+     * @Param: request 诊断提交请求参数（包含企业ID和各维度得分）
      * @Return: DiagnosisReportVO 诊断报告数据
      * @Description: 提交诊断问卷，计算总分、等级和建议，保存诊断记录
     **/
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public DiagnosisReportVO submitDiagnosis(DiagnosisSubmitRequest request, Long userId) {
+    public DiagnosisReportVO submitDiagnosis(DiagnosisSubmitRequest request) {
+        Long userId = securityUtils.getCurrentUserId();
         // 未登录时直接返回 401，避免后续 selectById(null) 导致错误的 404/403 或底层异常
         if (userId == null) {
             throw new BusinessException(401, "请先登录");
@@ -206,12 +207,13 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     /**
      * @Author: 6017
      * @Date: 2026/3/17 22:48
-     * @Param: id 诊断记录ID userId 当前操作用户ID
+     * @Param: id 诊断记录ID
      * @Return: DiagnosisReportVO 诊断报告数据
      * @Description: 根据ID获取诊断报告，并验证权限
     **/
     @Override
-    public DiagnosisReportVO getDiagnosisById(Long id, Long userId) {
+    public DiagnosisReportVO getDiagnosisById(Long id) {
+        Long userId = securityUtils.getCurrentUserId();
         // 参数校验
         if (id == null || id <= 0) {
             throw new BusinessException(400, "无效的诊断记录ID");
@@ -256,12 +258,13 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     /**
      * @Author: 6017
      * @Date: 2026/3/17 22:49
-     * @Param: manuId 制造企业ID userId 当前操作用户ID
+     * @Param: manuId 制造企业ID
      * @Return: DiagnosisReportVO 最新诊断报告数据
      * @Description: 获取企业最新诊断报告，并验证权限
     **/
     @Override
-    public DiagnosisReportVO getLatestDiagnosis(Long manuId, Long userId) {
+    public DiagnosisReportVO getLatestDiagnosis(Long manuId) {
+        Long userId = securityUtils.getCurrentUserId();
         log.info("获取企业最新诊断报告 - 企业ID: {}, 用户ID: {}", manuId, userId);
 
         // 登录校验：userId 为空视为未登录
