@@ -27,11 +27,11 @@ public class DiagnosisAlgorithmTempImpl implements DiagnosisAlgorithm {
         int dataClamped = clampScore(dataScore);
         int serviceClamped = clampScore(serviceScore);
 
-        // 2. 将 1-5 映射到 20-100 百分比（1 分约等于 20 分，5 分为 100 分）
-        double infoPercent = infoClamped / 5.0 * 100.0;
-        double autoPercent = autoClamped / 5.0 * 100.0;
-        double dataPercent = dataClamped / 5.0 * 100.0;
-        double servicePercent = serviceClamped / 5.0 * 100.0;
+        // 2. 将 1-5 线性映射到 0-100 百分比（1 分对应 0 分，5 分对应 100 分）
+        double infoPercent = (infoClamped - 1) / 4.0 * 100.0;
+        double autoPercent = (autoClamped - 1) / 4.0 * 100.0;
+        double dataPercent = (dataClamped - 1) / 4.0 * 100.0;
+        double servicePercent = (serviceClamped - 1) / 4.0 * 100.0;
 
         // 3. 按权重加权平均：信息化30%、自动化30%、数据应用20%、服务协同20%
         double total = infoPercent * 0.3
