@@ -51,11 +51,25 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
     public Page<EvaluationVO> getEvaluationPage(Long serviceId, Integer page, Integer size) {
         log.info("查询服务商评价列表，serviceId: {}, page: {}, size: {}", serviceId, page, size);
 
-        // ==================== 直接按服务商ID分页查询评价 ====================
-        // 使用 LambdaQueryWrapper 参数绑定，防止 SQL 注入，并让过滤与分页都在数据库侧完成
+        // ==================== 通过 Cooperation.serviceId 关联查询评价 ====================
+        // 第一步：先根据服务商ID在合作表中查出所有关联的合作记录ID（coopId），使用参数绑定防止 SQL 注入
+        LambdaQueryWrapper<Cooperation> coopWrapper = new LambdaQueryWrapper<>();
+        coopWrapper.eq(Cooperation::getServiceId, serviceId)
+                .select(Cooperation::getId);
+        List<Cooperation> serviceCoops = cooperationMapper.selectList(coopWrapper);
+        List<Long> coopIds = serviceCoops.stream()
+                .map(Cooperation::getId)
+                .collect(Collectors.toList());
+
+        // 如果该服务商没有任何合作记录，则直接返回空分页结果
+        if (coopIds.isEmpty()) {
+            return new Page<>(page, size);
+        }
+
+        // 第二步：基于 coopId 集合在评价表中分页查询评价记录，并按创建时间倒序排序
         Page<Evaluation> evaluationPage = new Page<>(page, size);
         LambdaQueryWrapper<Evaluation> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Evaluation::getServiceId, serviceId)
+        wrapper.in(Evaluation::getCoopId, coopIds)
                 .orderByDesc(Evaluation::getCreateTime);
 
         Page<Evaluation> pageResult = this.page(evaluationPage, wrapper);
