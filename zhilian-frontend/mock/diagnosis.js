@@ -241,7 +241,7 @@ export default [
 
   // 2.3 获取企业最新诊断报告
   {
-    url: "/api/diagnostics/latest",
+    url: "/api/diagnosis/latest",
     method: "get",
     response: ({ query }) => {
       const manuId = parseInt(query.manuId);
