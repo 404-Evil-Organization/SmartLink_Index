@@ -68,10 +68,19 @@ public class SecurityUtils {
             throw new BusinessException(403, "无法获取用户角色");
         }
 
+        // 优先寻找以 ROLE_ 开头的角色
         Optional<String> roleOpt = authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .filter(role -> role != null && !role.trim().isEmpty())
+                .filter(role -> role.startsWith("ROLE_"))
                 .findFirst();
+        // 如果没有任何以 ROLE_ 开头的角色，则回退到任意第一个非空角色
+        if (!roleOpt.isPresent()) {
+            roleOpt = authorities.stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .filter(role -> role != null && !role.trim().isEmpty())
+                    .findFirst();
+        }
 
         if (!roleOpt.isPresent()) {
             throw new BusinessException(403, "用户角色信息为空");

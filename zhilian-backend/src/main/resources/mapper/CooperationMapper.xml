@@ -2,6 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zhilian.zhilianbackend.mapper.CooperationMapper">
 
+    <!-- 逻辑删除未删除条件常量 -->
+    <sql id="notDeleted">deleted = '1970-01-01 00:00:00'</sql>
+
     <!-- 通用结果映射 -->
     <resultMap id="CooperationRecordVOMap" type="com.zhilian.zhilianbackend.dto.response.CooperationRecordVO">
         <id column="id" property="id"/>
@@ -38,12 +41,12 @@
 
     <sql id="cooperationJoins">
         FROM cooperation c
-        LEFT JOIN manufacture m ON c.manu_id = m.id AND m.deleted = '1970-01-01 00:00:00'
-        LEFT JOIN service_provider sp ON c.service_id = sp.id AND sp.deleted = '1970-01-01 00:00:00'
-        LEFT JOIN demand d ON c.demand_id = d.id AND d.deleted = '1970-01-01 00:00:00'
+        LEFT JOIN manufacture m ON c.manu_id = m.id AND m.<include refid="notDeleted"/>
+        LEFT JOIN service_provider sp ON c.service_id = sp.id AND sp.<include refid="notDeleted"/>
+        LEFT JOIN demand d ON c.demand_id = d.id AND d.<include refid="notDeleted"/>
         LEFT JOIN evaluation e ON e.coop_id = c.id
-            AND e.evaluator_id = #{userId}
-        AND e.deleted = '1970-01-01 00:00:00'
+        AND e.evaluator_id = #{userId}
+        AND e.<include refid="notDeleted"/>
     </sql>
 
     <sql id="cooperationGroupBy">
@@ -68,7 +71,7 @@
         <include refid="cooperationBaseColumns"/>
         <include refid="cooperationJoins"/>
         <where>
-            c.deleted = '1970-01-01 00:00:00'
+            c.<include refid="notDeleted"/>
             <if test="role == 'manufacture'">
                 AND c.manu_id = #{companyId}
             </if>
@@ -89,7 +92,7 @@
         <include refid="cooperationBaseColumns"/>
         <include refid="cooperationJoins"/>
         <where>
-            c.deleted = '1970-01-01 00:00:00'
+            c.<include refid="notDeleted"/>
             <if test="companyId != null">
                 AND (c.manu_id = #{companyId} OR c.service_id = #{companyId})
             </if>

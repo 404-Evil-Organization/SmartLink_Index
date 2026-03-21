@@ -29,15 +29,15 @@ public class CreditController {
      * @Author: xiaodengyou
      * @Date: 2026/3/19 16:30
      * @Param: serviceId 服务商ID
-     * @Return: 信用分信息（可能为null）
-     * @Description: 根据服务商ID获取最新信用分
+     * @Return: 信用分信息（如果不存在则返回404错误）
+     * @Description: 根据服务商ID获取最新信用分，不存在时返回404
      */
     @GetMapping("/{serviceId}")
     @Operation(summary = "获取服务商信用分")
     public Result<CreditScoreVO> getCreditScore(@PathVariable Long serviceId) {
         CreditScore creditScore = creditScoreService.getLatestByServiceId(serviceId);
         if (creditScore == null) {
-            return Result.success(null);
+            return Result.notFound("信用分记录不存在");
         }
         CreditScoreVO vo = convertToVO(creditScore);
         return Result.success(vo);
