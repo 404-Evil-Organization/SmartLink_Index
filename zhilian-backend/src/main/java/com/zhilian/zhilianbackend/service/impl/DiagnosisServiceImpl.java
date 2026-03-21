@@ -1,7 +1,7 @@
 package com.zhilian.zhilianbackend.service.impl;
 
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.entity.Diagnosis;
@@ -16,6 +16,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.service.algorithm.DiagnosisAlgorithm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -40,6 +41,9 @@ import java.util.Collections;
 @Service
 @RequiredArgsConstructor
 public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis> implements DiagnosisService {
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private final ManufactureMapper manufactureMapper;
     private final UserMapper userMapper;
@@ -322,10 +326,11 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         // 解析JSON格式的建议列表，防御历史脏数据/非法JSON，避免因单条坏数据导致接口整体500
         if (diagnosis.getSuggestions() != null) {
             try {
-                // 使用 Hutool JSON 工具反序列化 JSON 字符串为 List<String>
-                List<String> suggestions = JSONUtil.toList(
+                // 使用 Jackson 统一解析 suggestions 字段，避免与 submitDiagnosis 中的 JSON 处理库不一致
+                ObjectMapper objectMapper = new ObjectMapper();
+                List<String> suggestions = objectMapper.readValue(
                         diagnosis.getSuggestions(),
-                        String.class
+                        new TypeReference<List<String>>() {}
                 );
                 vo.setSuggestions(suggestions);
             } catch (Exception e) {

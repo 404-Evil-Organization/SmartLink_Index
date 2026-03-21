@@ -13,7 +13,7 @@ import java.util.Map;
  * @Date: 2026/3/17 21:13
  * @Param:
  * @Return:
- * @Description: 诊断算法临时实现类（供测试用），实现DiagnosisAlgorithm接口，提供总分计算、等级判断、改进建议生成和雷达图数据转换的临时实现。
+ * @Description: 诊断算法实现类，实现DiagnosisAlgorithm接口，提供总分计算、等级判断、改进建议生成和雷达图数据转换的实现。
  **/
 @Component
 public class DiagnosisAlgorithmTempImpl implements DiagnosisAlgorithm {
@@ -27,7 +27,7 @@ public class DiagnosisAlgorithmTempImpl implements DiagnosisAlgorithm {
         int dataClamped = clampScore(dataScore);
         int serviceClamped = clampScore(serviceScore);
 
-        // 2. 将 1-5 映射到 0-100 百分比（1 分约等于 20 分，5 分为 100 分）
+        // 2. 将 1-5 映射到 20-100 百分比（1 分约等于 20 分，5 分为 100 分）
         double infoPercent = infoClamped / 5.0 * 100.0;
         double autoPercent = autoClamped / 5.0 * 100.0;
         double dataPercent = dataClamped / 5.0 * 100.0;
