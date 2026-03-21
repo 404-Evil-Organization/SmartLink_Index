@@ -73,6 +73,36 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     }
 
     /**
+     * @Author: taciturn-hg
+     * @Date: 2026/3/21 14:00
+     * @Param: manuId 制造企业ID
+     * @Param userId 当前用户ID
+     * @Param errorMsg 权限不足时的错误提示信息
+     * @Return: void
+     * @Description: 校验制造企业是否存在，并检查当前用户是否有操作权限（企业创建者或管理员）
+    **/
+    private void checkManufactureAndPermission(Long manuId, Long userId, String errorMsg) {
+        Manufacture manufacture = manufactureMapper.selectById(manuId);
+        if (manufacture == null) {
+            throw new BusinessException(404, "关联的制造企业不存在");
+        }
+
+        boolean isAdmin = "admin".equals(securityUtils.getCurrentUserRole());
+        boolean isOwner = manufacture.getUserId().equals(userId);
+
+        if (!isOwner && !isAdmin) {
+            // 兜底校验用户是否存在
+            User user = userMapper.selectById(userId);
+            if (user == null) {
+                throw new BusinessException(404, "用户不存在");
+            }
+            log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
+                    userId, manufacture.getUserId(), user.getRole());
+            throw new BusinessException(403, errorMsg);
+        }
+    }
+
+    /**
      * @Author: 6017
      * @Date: 2026/3/17 22:47
      * @Param: request 诊断提交请求参数（包含企业ID和各维度得分）
@@ -83,10 +113,6 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     @Transactional(rollbackFor = Exception.class)
     public DiagnosisReportVO submitDiagnosis(DiagnosisSubmitRequest request) {
         Long userId = securityUtils.getCurrentUserId();
-        // 未登录时直接返回 401，避免后续 selectById(null) 导致错误的 404/403 或底层异常
-        if (userId == null) {
-            throw new BusinessException(401, "请先登录");
-        }
         // 先对请求对象做空校验，避免在访问字段前触发 NPE
         if (request == null) {
             throw new BusinessException(400, "诊断提交参数不能为空");
@@ -103,26 +129,8 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
 
         log.info("提交诊断问卷 - 用户ID: {}, 企业ID: {}", userId, manuId);
 
-        // 1. 验证制造企业是否存在
-        Manufacture manufacture = manufactureMapper.selectById(manuId);
-        if (manufacture == null) {
-            throw new BusinessException(404, "制造企业不存在");
-        }
-
-        // 2. 检查权限：企业创建者 或 管理员 可以提交诊断
-        boolean isAdmin = "admin".equals(securityUtils.getCurrentUserRole());
-        boolean isOwner = manufacture.getUserId().equals(userId);
-
-        if (!isOwner && !isAdmin) {
-            // 兜底校验用户是否存在
-            User user = userMapper.selectById(userId);
-            if (user == null) {
-                throw new BusinessException(404, "用户不存在");
-            }
-            log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
-                    userId, manufacture.getUserId(), user.getRole());
-            throw new BusinessException(403, "无权为此企业提交诊断");
-        }
+        // 1. 验证制造企业是否存在并检查权限
+        checkManufactureAndPermission(manuId, userId, "无权为此企业提交诊断");
 
         // 3. 先对四个维度得分做非空及 1-5 范围校验，再将校验通过的结果传给算法和持久化层
         byte infoScore = validateDimensionScore(request.getInfoScore(), "infoScore",
@@ -218,10 +226,6 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         if (id == null || id <= 0) {
             throw new BusinessException(400, "无效的诊断记录ID");
         }
-        // 未登录用户不允许访问诊断报告，避免 userId 为 null 导致底层异常或错误状态码
-        if (userId == null) {
-            throw new BusinessException(401, "请先登录");
-        }
 
         log.info("获取诊断报告 - 诊断ID: {}, 用户ID: {}", id, userId);
 
@@ -232,24 +236,7 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         }
 
         // 2. 验证权限
-        Manufacture manufacture = manufactureMapper.selectById(diagnosis.getManuId());
-        if (manufacture == null) {
-            throw new BusinessException(404, "关联的制造企业不存在");
-        }
-
-        boolean isAdmin = "admin".equals(securityUtils.getCurrentUserRole());
-        boolean isOwner = manufacture.getUserId().equals(userId);
-
-        if (!isOwner && !isAdmin) {
-            // 兜底校验用户是否存在
-            User user = userMapper.selectById(userId);
-            if (user == null) {
-                throw new BusinessException(404, "用户不存在");
-            }
-            log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
-                    userId, manufacture.getUserId(), user.getRole());
-            throw new BusinessException(403, "无权查看此诊断记录");
-        }
+        checkManufactureAndPermission(diagnosis.getManuId(), userId, "无权查看此诊断记录");
 
         // 3. 构建返回结果
         return buildDiagnosisReportVO(diagnosis);
@@ -267,11 +254,6 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         Long userId = securityUtils.getCurrentUserId();
         log.info("获取企业最新诊断报告 - 企业ID: {}, 用户ID: {}", manuId, userId);
 
-        // 登录校验：userId 为空视为未登录
-        if (userId == null) {
-            throw new BusinessException(401, "请先登录");
-        }
-
         // 参数校验：制造企业ID 不能为空，且必须为正数，防止出现 selectById(null/<=0) 等不确定或误导行为
         if (manuId == null) {
             throw new BusinessException(400, "制造企业ID不能为空");
@@ -280,26 +262,8 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
             throw new BusinessException(400, "制造企业ID必须为正数");
         }
 
-        // 1. 验证制造企业是否存在
-        Manufacture manufacture = manufactureMapper.selectById(manuId);
-        if (manufacture == null) {
-            throw new BusinessException(404, "制造企业不存在");
-        }
-
-        // 2. 检查权限
-        boolean isAdmin = "admin".equals(securityUtils.getCurrentUserRole());
-        boolean isOwner = manufacture.getUserId().equals(userId);
-
-        if (!isOwner && !isAdmin) {
-            // 兜底校验用户是否存在
-            User user = userMapper.selectById(userId);
-            if (user == null) {
-                throw new BusinessException(404, "用户不存在");
-            }
-            log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
-                    userId, manufacture.getUserId(), user.getRole());
-            throw new BusinessException(403, "无权查看此企业的诊断记录");
-        }
+        // 1. 验证制造企业是否存在并检查权限
+        checkManufactureAndPermission(manuId, userId, "无权查看此企业的诊断记录");
 
         // 3. 查询最新诊断记录
         LambdaQueryWrapper<Diagnosis> wrapper = new LambdaQueryWrapper<>();
