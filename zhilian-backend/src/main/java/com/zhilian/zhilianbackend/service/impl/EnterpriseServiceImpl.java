@@ -13,6 +13,7 @@ import com.zhilian.zhilianbackend.service.EnterpriseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import com.zhilian.zhilianbackend.utils.SecurityUtils;
 
 /**
  * @Author: 6017
@@ -27,6 +28,7 @@ public class EnterpriseServiceImpl implements EnterpriseService {
 
     private final ManufactureMapper manufactureMapper;
     private final ServiceProviderMapper serviceProviderMapper;
+    private final SecurityUtils securityUtils;
 
     /**
      * @Author: 6017
@@ -36,7 +38,8 @@ public class EnterpriseServiceImpl implements EnterpriseService {
      * @Description: 获取当前用户的制造企业列表
     **/
     @Override
-    public IPage<EnterpriseManufactureVO> getMyManufactureList(Long userId, long pageNum, long pageSize) {
+    public IPage<EnterpriseManufactureVO> getMyManufactureList(long pageNum, long pageSize) {
+        Long userId = securityUtils.getCurrentUserId();
         LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Manufacture::getUserId, userId)
                 .orderByDesc(Manufacture::getCreateTime);
@@ -53,7 +56,8 @@ public class EnterpriseServiceImpl implements EnterpriseService {
      * @Description: 获取当前用户的服务商列表
     **/
     @Override
-    public IPage<EnterpriseServiceVO> getMyServiceList(Long userId, long pageNum, long pageSize) {
+    public IPage<EnterpriseServiceVO> getMyServiceList(long pageNum, long pageSize) {
+        Long userId = securityUtils.getCurrentUserId();
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ServiceProvider::getUserId, userId)
                 .orderByDesc(ServiceProvider::getCreateTime);

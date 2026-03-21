@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class EnterpriseController {
 
     private final EnterpriseService enterpriseService;
-    private final SecurityUtils securityUtils;
 
     /**
      * @Author: 6017
@@ -42,9 +41,7 @@ public class EnterpriseController {
     @GetMapping("/manufacture/list")
     @Operation(summary = "获取个人制造企业列表", description = "返回当前登录用户创建的制造企业列表，包含所有审核状态")
     public Result<PageResult<EnterpriseManufactureVO>> getMyManufactureList(@Valid PageRequest pageRequest) {
-        Long userId = securityUtils.getCurrentUserId();
         IPage<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(
-                userId,
                 pageRequest.getPage(),
                 pageRequest.getSize()
         );
@@ -61,9 +58,7 @@ public class EnterpriseController {
     @GetMapping("/service/list")
     @Operation(summary = "获取个人服务商列表", description = "返回当前登录用户创建的服务商列表，包含所有审核状态")
     public Result<PageResult<EnterpriseServiceVO>> getMyServiceList(@Valid PageRequest pageRequest) {
-        Long userId = securityUtils.getCurrentUserId();
         IPage<EnterpriseServiceVO> page = enterpriseService.getMyServiceList(
-                userId,
                 pageRequest.getPage(),
                 pageRequest.getSize()
         );
