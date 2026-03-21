@@ -33,7 +33,6 @@
         </div>
         <el-select
           v-model="selectedManuId"
-          @change="(val) => console.log('下拉框变化，新值:', val)"
           placeholder="请选择企业"
           style="width: 300px"
           :loading="loadingEnterprises"
