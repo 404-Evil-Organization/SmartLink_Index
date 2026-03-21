@@ -188,7 +188,7 @@ import {
   DataLine,
   OfficeBuilding,
   View,
-  InfoFilled,
+  // InfoFilled,
   Calendar,
   TrendCharts,
   ChatLineSquare,
@@ -232,8 +232,13 @@ const fetchEnterprises = async () => {
       res = await getMyManufactureList({ page: 1, size: 100 });
     }
     // 如果需要过滤审核状态，取消下一行注释
-    // enterprises.value = (res.records || []).filter(item => item.auditStatus === 'approved');
-    enterprises.value = res.records || [];
+    enterprises.value = (res.records || []).filter(item => item.auditStatus === 'approved');
+    // 新增：单企业自动加载报告
+    if (enterprises.value.length === 1 && !loadingReport.value && !route.query.id && !route.query.manuId && !route.params.id && !route.params.manuId) {
+      const singleManuId = enterprises.value[0].id;
+      selectedManuId.value = singleManuId;
+      await fetchLatestReportByManuId(singleManuId);
+    }
   } catch (error) {
     console.error("获取企业列表失败", error);
     ElMessage.error("获取企业列表失败，请稍后重试");

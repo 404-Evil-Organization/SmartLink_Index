@@ -17,7 +17,7 @@
           <span>首页</span>
         </el-menu-item>
 
-        <el-sub-menu index="diagnosis">
+        <el-sub-menu v-if="isManufacture || isAdmin" index="diagnosis" >
           <template #title>
             <el-icon><Avatar /></el-icon>
             <span>数字化诊断</span>
@@ -33,12 +33,11 @@
         </el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu v-if="isAdmin" index="admin-manufacture">
+
         <el-menu-item index="/manufacture/list">
           <el-icon><OfficeBuilding /></el-icon>
           <span>制造企业列表</span>
         </el-menu-item>
-        </el-sub-menu>
 
         <!-- 新增服务企业列表菜单项 -->
         <el-menu-item index="/service/list">
@@ -110,19 +109,19 @@ const activeMenu = computed(() => route.path);
 // 判断当前用户是否为管理员
 const isAdmin = computed(() => userStore.userInfo?.role === "admin");
 
-// 跳转到最新诊断报告
-const goToLatestReport = () => {
-  const latestId = localStorage.getItem('latestDiagnosisId')
-  if (latestId) {
-    router.push(`/diagnosis/report?id=${latestId}`);
-  } else {
-    ElMessage.warning('暂无诊断报告，请先提交问卷')
-  }
-}
-// 判断当前用户是否为制造企业
-const isManufacture = computed(
-  () => userStore.userInfo?.role === "manufacture",
-);
+// // 跳转到最新诊断报告
+// const goToLatestReport = () => {
+//   const latestId = localStorage.getItem('latestDiagnosisId')
+//   if (latestId) {
+//     router.push(`/diagnosis/report?id=${latestId}`);
+//   } else {
+//     ElMessage.warning('暂无诊断报告，请先提交问卷')
+//   }
+// }
+// // 判断当前用户是否为制造企业
+// const isManufacture = computed(
+//   () => userStore.userInfo?.role === "manufacture",
+// );
 
 // 退出登录
 const handleLogout = async () => {
@@ -135,6 +134,7 @@ const handleLogout = async () => {
     console.error("退出登录失败", error);
   }
 };
+const isManufacture = computed(() => userStore.userInfo?.role === 'manufacture');
 </script>
 
 <style scoped>

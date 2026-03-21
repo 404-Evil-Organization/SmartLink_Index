@@ -24,8 +24,8 @@ import request from '@/utils/request'
  */
 export function getMyManufactureList(params) {
   return request({
-    url: '/enterprise/manufacture/list',
-    method: 'get',
+    url: "/enterprise/manufacture/list",
+    method: "get",
     params
   })
 }
