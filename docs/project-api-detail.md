@@ -1083,7 +1083,7 @@
 
 ### 2.2 获取诊断报告
 
-- **URL**: `/api/diagnosis/result/{id}`
+- **URL**: `/api/diagnosis/{id}`
 - **Method**: `GET`
 - **请求头**: `Authorization: Bearer <token>`（需制造企业角色）
 - **路径参数**: `id` (诊断记录ID)

@@ -15,6 +15,7 @@ import lombok.Data;
 @Data
 public class DiagnosisSubmitRequest {
     @NotNull(message = "制造企业ID不能为空")
+    @Min(value = 1, message = "制造企业ID必须为正数")
     private Long manuId;
 
     @NotNull(message = "信息化得分不能为空")

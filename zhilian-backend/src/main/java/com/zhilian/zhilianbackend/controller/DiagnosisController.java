@@ -59,7 +59,7 @@ public class DiagnosisController {
      * @Return: Result<DiagnosisReportVO> 统一返回格式的诊断报告
      * @Description: 根据ID获取诊断报告接口
     **/
-    @GetMapping("/result/{id}")
+    @GetMapping("/{id}")
     @Operation(summary = "获取诊断报告", description = "根据诊断ID获取诊断详情，包含各维度得分、总分、等级和建议")
     public Result<DiagnosisReportVO> getDiagnosisById(
             @PathVariable("id") Long id) {
