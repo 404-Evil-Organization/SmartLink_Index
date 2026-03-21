@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.service.algorithm;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.entity.*;
 import com.zhilian.zhilianbackend.mapper.*;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +33,6 @@ public class CreditScoreAlgorithm {
     private static final double QUAL_WEIGHT = 0.3;  // 资质分权重
     private static final double CASE_WEIGHT = 0.3;  // 案例分权重
     private static final double EVAL_WEIGHT = 0.4;  // 评价分权重
-
-    // 未删除标志常量
-    private static final String NOT_DELETED_TIME = "1970-01-01 00:00:00";
 
     /**
      * @Author: 6017
@@ -166,11 +164,13 @@ public class CreditScoreAlgorithm {
      * @Param: serviceId 服务商ID
      * @Return: Byte 评价分（0-100）
      * @Description: 计算评价分，基于平均评分和评价数量
-     * 修复：传入 NOT_DELETED_TIME 常量作为未删除标志
+     * 修复：使用 DateConstants.getNotDeletedTime() 获取未删除标志（Date 类型），避免隐式类型转换
      **/
     private Byte calculateEvalScore(Long serviceId) {
-        Double avgScore = evaluationMapper.getAvgScoreByServiceId(serviceId, NOT_DELETED_TIME);
-        Integer count = evaluationMapper.getCountByServiceId(serviceId, NOT_DELETED_TIME);
+        Date notDeletedTime = DateConstants.getNotDeletedTime();
+
+        Double avgScore = evaluationMapper.getAvgScoreByServiceId(serviceId, notDeletedTime);
+        Integer count = evaluationMapper.getCountByServiceId(serviceId, notDeletedTime);
 
         // 没有评价时给基础分60
         if (avgScore == null || avgScore == 0) {

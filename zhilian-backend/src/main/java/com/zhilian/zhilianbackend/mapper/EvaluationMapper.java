@@ -6,30 +6,32 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.Date;
+
 @Mapper
 public interface EvaluationMapper extends BaseMapper<Evaluation> {
 
     /**
      * 获取服务商的平均评分
      * @param serviceId 服务商ID
-     * @param notDeletedTime 未删除标志时间
+     * @param notDeletedTime 未删除标志时间（Date 类型）
      * @return 平均评分
      */
     @Select("SELECT AVG(score) FROM evaluation WHERE coop_id IN " +
             "(SELECT id FROM cooperation WHERE service_id = #{serviceId}) " +
             "AND deleted = #{notDeletedTime}")
     Double getAvgScoreByServiceId(@Param("serviceId") Long serviceId,
-                                  @Param("notDeletedTime") String notDeletedTime);
+                                  @Param("notDeletedTime") Date notDeletedTime);
 
     /**
      * 获取服务商的评价数量
      * @param serviceId 服务商ID
-     * @param notDeletedTime 未删除标志时间
+     * @param notDeletedTime 未删除标志时间（Date 类型）
      * @return 评价数量
      */
     @Select("SELECT COUNT(*) FROM evaluation WHERE coop_id IN " +
             "(SELECT id FROM cooperation WHERE service_id = #{serviceId}) " +
             "AND deleted = #{notDeletedTime}")
     Integer getCountByServiceId(@Param("serviceId") Long serviceId,
-                                @Param("notDeletedTime") String notDeletedTime);
+                                @Param("notDeletedTime") Date notDeletedTime);
 }

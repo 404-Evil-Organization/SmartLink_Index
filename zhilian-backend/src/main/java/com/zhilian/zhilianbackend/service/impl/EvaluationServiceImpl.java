@@ -51,11 +51,26 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
     public Page<EvaluationVO> getEvaluationPage(Long serviceId, Integer page, Integer size) {
         log.info("查询服务商评价列表，serviceId: {}, page: {}, size: {}", serviceId, page, size);
 
-        // ==================== 直接按服务商ID分页查询评价 ====================
-        // 使用 LambdaQueryWrapper 参数绑定，防止 SQL 注入，并让过滤与分页都在数据库侧完成
+        // ==================== 第一步：查询该服务商的所有合作记录ID ====================
+        // 使用 LambdaQueryWrapper 参数绑定，防止 SQL 注入
+        LambdaQueryWrapper<Cooperation> coopWrapper = new LambdaQueryWrapper<>();
+        coopWrapper.eq(Cooperation::getServiceId, serviceId)
+                .select(Cooperation::getId);
+        List<Long> coopIds = cooperationMapper.selectList(coopWrapper)
+                .stream()
+                .map(Cooperation::getId)
+                .collect(Collectors.toList());
+
+        // 如果没有合作记录，直接返回空页
+        if (coopIds.isEmpty()) {
+            log.info("服务商没有合作记录，serviceId: {}", serviceId);
+            return new Page<>(page, size);
+        }
+
+        // ==================== 第二步：分页查询评价（通过 coopId 过滤） ====================
         Page<Evaluation> evaluationPage = new Page<>(page, size);
         LambdaQueryWrapper<Evaluation> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Evaluation::getServiceId, serviceId)
+        wrapper.in(Evaluation::getCoopId, coopIds)  // 通过 coopId 过滤
                 .orderByDesc(Evaluation::getCreateTime);
 
         Page<Evaluation> pageResult = this.page(evaluationPage, wrapper);
