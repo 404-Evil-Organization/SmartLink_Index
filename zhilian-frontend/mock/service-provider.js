@@ -7,7 +7,6 @@ export default [
       const {
         page = 1,
         size = 10,
-        companyName,
         region,
         serviceType,
         status,
@@ -91,8 +90,6 @@ export default [
 
       // 筛选
       let filtered = mockList.filter((item) => {
-        if (companyName && !item.companyName.includes(companyName))
-          return false;
         if (region && item.region !== region) return false;
         if (serviceType && !item.serviceType.includes(serviceType))
           return false;

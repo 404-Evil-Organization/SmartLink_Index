@@ -3,7 +3,8 @@ package com.zhilian.zhilianbackend.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
-import com.zhilian.zhilianbackend.dto.request.PageRequest;
+import com.zhilian.zhilianbackend.dto.request.ManufactureListRequestDTO;
+import com.zhilian.zhilianbackend.dto.request.ServiceProviderListRequestDTO;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseManufactureVO;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseServiceVO;
 import com.zhilian.zhilianbackend.service.EnterpriseService;
@@ -34,16 +35,13 @@ public class EnterpriseController {
      * @Author: 6017
      * @Date: 2026/3/21 00:01
      * @Param: pageRequest 分页请求参数
-     * @Return: 个人制造企业分页列表
-     * @Description: 获取个人制造企业列表
+     * @Return: Result<PageResult<EnterpriseManufactureVO>> 个人制造企业分页列表
+     * @Description: 获取个人制造企业列表（管理员可获取全部）
     **/
     @GetMapping("/manufacture/list")
-    @Operation(summary = "获取个人制造企业列表", description = "返回当前登录用户创建的制造企业列表，包含所有审核状态")
-    public Result<PageResult<EnterpriseManufactureVO>> getMyManufactureList(@Valid PageRequest pageRequest) {
-        IPage<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(
-                pageRequest.getPage(),
-                pageRequest.getSize()
-        );
+    @Operation(summary = "获取个人制造企业列表", description = "普通用户：返回当前登录用户创建的制造企业列表，包含所有审核状态；管理员：可查看系统内全部制造企业数据")
+    public Result<PageResult<EnterpriseManufactureVO>> getMyManufactureList(@Valid ManufactureListRequestDTO pageRequest) {
+        IPage<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(pageRequest);
         return Result.success(PageResult.from(page));
     }
 
@@ -51,16 +49,13 @@ public class EnterpriseController {
      * @Author: 6017
      * @Date: 2026/3/21 00:01
      * @Param: pageRequest 分页请求参数
-     * @Return: 个人服务商分页列表
-     * @Description: 获取个人服务商列表
+     * @Return: Result<PageResult<EnterpriseServiceVO>> 个人服务商分页列表
+     * @Description: 获取个人服务商列表（管理员可获取全部）
     **/
     @GetMapping("/service/list")
-    @Operation(summary = "获取个人服务商列表", description = "返回当前登录用户创建的服务商列表，包含所有审核状态")
-    public Result<PageResult<EnterpriseServiceVO>> getMyServiceList(@Valid PageRequest pageRequest) {
-        IPage<EnterpriseServiceVO> page = enterpriseService.getMyServiceList(
-                pageRequest.getPage(),
-                pageRequest.getSize()
-        );
+    @Operation(summary = "获取个人服务商列表", description = "普通用户：返回当前登录用户创建的服务商列表，包含所有审核状态；管理员：可查看系统内全部服务商数据")
+    public Result<PageResult<EnterpriseServiceVO>> getMyServiceList(@Valid ServiceProviderListRequestDTO pageRequest) {
+        IPage<EnterpriseServiceVO> page = enterpriseService.getMyServiceList(pageRequest);
         return Result.success(PageResult.from(page));
     }
 }

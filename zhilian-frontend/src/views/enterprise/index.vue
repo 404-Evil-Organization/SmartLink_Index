@@ -35,6 +35,48 @@
                 @clear="fetchManufactureList"
                 @keyup.enter="fetchManufactureList"
               />
+              <el-select
+                v-model="manuSearchForm.region"
+                placeholder="选择区域"
+                clearable
+                filterable
+                style="width: 150px; margin-right: 10px"
+              >
+                <el-option
+                  v-for="region in regionOptions"
+                  :key="region"
+                  :label="region"
+                  :value="region"
+                />
+              </el-select>
+              <el-select
+                v-model="manuSearchForm.scale"
+                placeholder="选择规模"
+                clearable
+                filterable
+                style="width: 150px; margin-right: 10px"
+              >
+                <el-option
+                  v-for="item in scaleOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                />
+              </el-select>
+              <el-select
+                v-model="manuSearchForm.productType"
+                placeholder="选择主营产品"
+                clearable
+                filterable
+                style="width: 150px; margin-right: 10px"
+              >
+                <el-option
+                  v-for="item in productTypeOptions"
+                  :key="item.name"
+                  :label="item.name"
+                  :value="item.name"
+                />
+              </el-select>
               <el-button type="primary" @click="fetchManufactureList"
                 >查询</el-button
               >
@@ -109,6 +151,16 @@
                   </el-tag>
                 </template>
               </el-table-column>
+              <el-table-column
+                prop="auditRemark"
+                label="审核建议"
+                min-width="150"
+                show-overflow-tooltip
+              >
+                <template #default="{ row }">
+                  {{ row.auditRemark || "无" }}
+                </template>
+              </el-table-column>
               <el-table-column label="操作" width="220" fixed="right">
                 <template #default="{ row }">
                   <el-button
@@ -131,7 +183,7 @@
                     type="danger"
                     plain
                     @click="deleteEnterprise(row, 'manufacture')"
-                    :disabled="row.auditStatus !== 'pending'"
+                    :disabled="row.auditStatus !== 'pending' && !isAdmin"
                   >
                     删除
                   </el-button>
@@ -171,6 +223,34 @@
                 @clear="fetchServiceList"
                 @keyup.enter="fetchServiceList"
               />
+              <el-select
+                v-model="serviceSearchForm.region"
+                placeholder="选择区域"
+                clearable
+                filterable
+                style="width: 150px; margin-right: 10px"
+              >
+                <el-option
+                  v-for="region in regionOptions"
+                  :key="region"
+                  :label="region"
+                  :value="region"
+                />
+              </el-select>
+              <el-select
+                v-model="serviceSearchForm.serviceType"
+                placeholder="选择服务类型"
+                clearable
+                filterable
+                style="width: 150px; margin-right: 10px"
+              >
+                <el-option
+                  v-for="item in serviceTypeOptions"
+                  :key="item.name"
+                  :label="item.name"
+                  :value="item.name"
+                />
+              </el-select>
               <el-button type="primary" @click="fetchServiceList"
                 >查询</el-button
               >
@@ -238,6 +318,16 @@
                   </el-tag>
                 </template>
               </el-table-column>
+              <el-table-column
+                prop="auditRemark"
+                label="审核建议"
+                min-width="150"
+                show-overflow-tooltip
+              >
+                <template #default="{ row }">
+                  {{ row.auditRemark || "无" }}
+                </template>
+              </el-table-column>
               <el-table-column label="操作" width="220" fixed="right">
                 <template #default="{ row }">
                   <el-button size="small" @click="openDetail(row, 'service')">
@@ -257,7 +347,7 @@
                     type="danger"
                     plain
                     @click="deleteEnterprise(row, 'service')"
-                    :disabled="row.auditStatus !== 'pending'"
+                    :disabled="row.auditStatus !== 'pending' && !isAdmin"
                   >
                     删除
                   </el-button>
@@ -337,7 +427,7 @@
             detailDialog.data.description || "-"
           }}</el-descriptions-item>
           <el-descriptions-item label="成立日期">{{
-            detailDialog.data.establishedDate || "-"
+            formatEstablishedDate(detailDialog.data.establishedDate) || "-"
           }}</el-descriptions-item>
           <el-descriptions-item label="审核状态">
             <el-tag :type="getAuditStatusType(detailDialog.data.auditStatus)">
@@ -387,7 +477,7 @@
             detailDialog.data.website || "-"
           }}</el-descriptions-item>
           <el-descriptions-item label="成立日期">{{
-            detailDialog.data.establishedDate || "-"
+            formatEstablishedDate(detailDialog.data.establishedDate) || "-"
           }}</el-descriptions-item>
           <el-descriptions-item label="员工人数">{{
             detailDialog.data.employeeCount || "-"
@@ -668,12 +758,14 @@ import {
   getServiceTags,
   getProductTags,
   getRegions,
+  getScales,
   uploadFile,
   deleteFile,
 } from "@/api/common";
 import { useUserStore } from "@/stores/user";
 import { maskPhone } from "@/utils/desensitize";
 import { normalizeTags, joinTags } from "@/utils/tagUtils";
+import { formatEstablishedDate } from "@/composables/date";
 
 const userStore = useUserStore();
 const userRole = computed(() => userStore.userInfo?.role);
@@ -693,6 +785,11 @@ const activeTab = ref(
 const manufactureList = ref([]);
 const manuLoading = ref(false);
 const manuSearchKeyword = ref("");
+const manuSearchForm = reactive({
+  region: "",
+  scale: "",
+  productType: "",
+});
 const manuPagination = reactive({
   current: 1,
   size: 10,
@@ -703,6 +800,10 @@ const manuPagination = reactive({
 const serviceList = ref([]);
 const serviceLoading = ref(false);
 const serviceSearchKeyword = ref("");
+const serviceSearchForm = reactive({
+  region: "",
+  serviceType: "",
+});
 const servicePagination = reactive({
   current: 1,
   size: 10,
@@ -711,6 +812,7 @@ const servicePagination = reactive({
 
 // 选项数据
 const regionOptions = ref([]);
+const scaleOptions = ref([]);
 const serviceTypeOptions = ref([]);
 const productTypeOptions = ref([]);
 
@@ -761,18 +863,29 @@ const uploadedNewLogo = ref("");
 // 获取制造企业列表
 const fetchManufactureList = async () => {
   manuLoading.value = true;
+  let res;
   try {
     const params = {
       page: manuPagination.current,
       size: manuPagination.size,
+      region: manuSearchForm.region || "",
+      scale: manuSearchForm.scale || "",
+      productType: manuSearchForm.productType || "",
     };
-    if (manuSearchKeyword.value) {
-      params.companyName = manuSearchKeyword.value;
-    }
-    const res = await getMyManufactureList(params);
+    res = await getMyManufactureList(params);
     let records = res.records || [];
+    if (manuSearchKeyword.value) {
+      records = records.filter(
+        (item) =>
+          item.companyName &&
+          item.companyName.includes(manuSearchKeyword.value),
+      );
+      // 如果前端进行了过滤，则更新 total 为过滤后的数量
+      manuPagination.total = records.length;
+    } else {
+      manuPagination.total = res.total || 0;
+    }
     manufactureList.value = records;
-    manuPagination.total = res.total || 0;
   } catch (error) {
     console.error("获取制造企业列表失败", error);
     ElMessage.error("获取制造企业列表失败");
@@ -784,18 +897,28 @@ const fetchManufactureList = async () => {
 // 获取服务商列表
 const fetchServiceList = async () => {
   serviceLoading.value = true;
+  let res;
   try {
     const params = {
       page: servicePagination.current,
       size: servicePagination.size,
+      region: serviceSearchForm.region || "",
+      serviceType: serviceSearchForm.serviceType || "",
     };
-    if (serviceSearchKeyword.value) {
-      params.companyName = serviceSearchKeyword.value;
-    }
-    const res = await getMyServiceList(params);
+    res = await getMyServiceList(params);
     let records = res.records || [];
+    if (serviceSearchKeyword.value) {
+      records = records.filter(
+        (item) =>
+          item.companyName &&
+          item.companyName.includes(serviceSearchKeyword.value),
+      );
+      // 如果前端进行了过滤，则更新 total 为过滤后的数量
+      servicePagination.total = records.length;
+    } else {
+      servicePagination.total = res.total || 0;
+    }
     serviceList.value = records;
-    servicePagination.total = res.total || 0;
   } catch (error) {
     console.error("获取服务商列表失败", error);
     ElMessage.error("获取服务商列表失败");
@@ -811,6 +934,16 @@ const fetchRegions = async () => {
     regionOptions.value = Array.isArray(res) ? res : [];
   } catch (error) {
     console.error("获取区域列表失败", error);
+  }
+};
+
+// 获取规模选项
+const fetchScales = async () => {
+  try {
+    const res = await getScales();
+    scaleOptions.value = Array.isArray(res) ? res : [];
+  } catch (error) {
+    console.error("获取规模选项失败", error);
   }
 };
 
@@ -837,11 +970,16 @@ const fetchProductTypeOptions = async () => {
 // 重置搜索
 const resetManuSearch = () => {
   manuSearchKeyword.value = "";
+  manuSearchForm.region = "";
+  manuSearchForm.scale = "";
+  manuSearchForm.productType = "";
   manuPagination.current = 1;
   fetchManufactureList();
 };
 const resetServiceSearch = () => {
   serviceSearchKeyword.value = "";
+  serviceSearchForm.region = "";
+  serviceSearchForm.serviceType = "";
   servicePagination.current = 1;
   fetchServiceList();
 };
@@ -1131,7 +1269,7 @@ const submitForm = async () => {
         ElMessage.success("修改成功");
         fetchServiceList();
       }
-      
+
       // 提交成功后，如果新上传了 logo 或者删除了 logo，需要清理旧的原始 logo
       if (originalLogo.value && originalLogo.value !== form.logo) {
         try {
@@ -1206,6 +1344,7 @@ const getAuditStatusText = (status) => {
 
 // 在 onMounted 中只加载当前 activeTab 对应的数据
 onMounted(() => {
+  fetchScales();
   fetchRegions();
   fetchServiceTypeOptions();
   fetchProductTypeOptions();
