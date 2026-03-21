@@ -274,7 +274,7 @@
                 :total="servicePagination.total"
                 @size-change="
                   (size) => {
-                    manuPagination.size = size;
+                    servicePagination.size = size;
                     servicePagination.current = 1;
                     fetchServiceList();
                   }

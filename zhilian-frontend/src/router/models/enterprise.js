@@ -4,7 +4,7 @@ export default [
     name: "Enterprise",
     component: () => import("@/views/enterprise/index.vue"),
     meta: {
-      roles: ["enterprise", "service", "admin"],
+      roles: ["manufacture", "service", "admin"],
     },
   },
 ];
