@@ -148,8 +148,9 @@
                 :total="manuPagination.total"
                 @size-change="
                   (size) => {
+                    manuPagination.size = size;
                     manuPagination.current = 1;
-                    fetchManufactureList(size);
+                    fetchManufactureList();
                   }
                 "
                 @current-change="fetchManufactureList"
@@ -273,6 +274,7 @@
                 :total="servicePagination.total"
                 @size-change="
                   (size) => {
+                    manuPagination.size = size;
                     servicePagination.current = 1;
                     fetchServiceList();
                   }
