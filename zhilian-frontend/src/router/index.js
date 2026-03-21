@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
-import { checkRoleAccess } from "@/router/permission";
+import { enforceAdminOnly, enforceRoles, checkRoleAccess } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
 import serviceListRoutes from "./models/service";
@@ -9,6 +9,7 @@ import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
 import diagnosisRoutes from "./models/diagnosis";
 import errorRoutes from "./models/error";
+import enterpriseRoutes from "./models/enterprise";
 
 const routes = [
   {
@@ -31,6 +32,7 @@ const routes = [
       ...diagnosisRoutes,
       ...serviceListRoutes, 
       ...manufactureRoutes,
+      ...enterpriseRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,
@@ -58,7 +60,7 @@ router.beforeEach(async (to, from, next) => {
 
   if (token) {
     if (to.path === "/login") {
-      next("/"); 
+      next("/");
     } else {
       if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
         try {
@@ -66,6 +68,10 @@ router.beforeEach(async (to, from, next) => {
           // 用户信息加载完成后，进行角色权限检查
           if (!checkRoleAccess(to, userStore)) {
             return next("/403"); // 无权限跳转到403页面
+          }
+          // 基于角色的权限校验
+          if (enforceRoles(to, from, next, userStore)) {
+            return;
           }
           next();
         } catch (error) {
@@ -89,6 +95,9 @@ router.beforeEach(async (to, from, next) => {
         // 已有用户信息，直接检查角色权限
         if (!checkRoleAccess(to, userStore)) {
           return next("/403");
+        }
+        if (enforceRoles(to, from, next, userStore)) {
+          return;
         }
         next();
       }
