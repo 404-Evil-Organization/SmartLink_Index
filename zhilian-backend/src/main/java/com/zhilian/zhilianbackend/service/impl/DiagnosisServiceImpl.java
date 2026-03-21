@@ -2,6 +2,7 @@ package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.entity.Diagnosis;
@@ -16,7 +17,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.service.algorithm.DiagnosisAlgorithm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataAccessException;
 
-import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Date;
@@ -42,7 +41,6 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis> implements DiagnosisService {
 
-    @Autowired
     private final ObjectMapper objectMapper;
 
     private final ManufactureMapper manufactureMapper;
@@ -91,10 +89,14 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         if (request == null) {
             throw new BusinessException(400, "诊断提交参数不能为空");
         }
-        // 提前获取并校验制造企业ID，缺失时返回 400，而不是伪装成 404
+        // 提前获取并校验制造企业ID，缺失或非法时返回 400，而不是伪装成 404
         Long manuId = request.getManuId();
         if (manuId == null) {
             throw new BusinessException(400, "制造企业ID不能为空");
+        }
+        // manuId 必须为正数，避免传入 0 或负数导致后续 selectById 返回 404，语义不准确
+        if (manuId <= 0) {
+            throw new BusinessException(400, "制造企业ID必须为正数");
         }
 
         log.info("提交诊断问卷 - 用户ID: {}, 企业ID: {}", userId, manuId);
@@ -209,6 +211,10 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     **/
     @Override
     public DiagnosisReportVO getDiagnosisById(Long id, Long userId) {
+        // 参数校验
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "无效的诊断记录ID");
+        }
         // 未登录用户不允许访问诊断报告，避免 userId 为 null 导致底层异常或错误状态码
         if (userId == null) {
             throw new BusinessException(401, "请先登录");
@@ -308,7 +314,7 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
      * @Date: 2026/3/17 22:49
      * @Param: diagnosis 诊断记录实体
      * @Return: DiagnosisReportVO 格式化后的诊断报告
-     * @Description: 构建诊断报告响应（将Byte转为Integer，Date转为String）
+     * @Description: 构建诊断报告响应（将 Byte 转为 Integer，日期字段保持 Date 类型，由 @JsonFormat 控制序列化）
     **/
     private DiagnosisReportVO buildDiagnosisReportVO(Diagnosis diagnosis) {
         DiagnosisReportVO vo = new DiagnosisReportVO();
