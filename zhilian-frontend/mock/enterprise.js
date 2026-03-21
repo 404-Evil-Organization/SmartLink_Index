@@ -4,7 +4,7 @@ export default [
     url: "/api/enterprise/manufacture/list",
     method: "get",
     response: ({ query }) => {
-      const { page = 1, size = 10, companyName } = query;
+      const { page = 1, size = 10 } = query;
       let records = [
         {
           id: 1001,
@@ -47,10 +47,6 @@ export default [
         },
       ];
 
-      if (companyName) {
-        records = records.filter(item => item.companyName.includes(companyName));
-      }
-
       const start = (page - 1) * size;
       const end = start + size;
       return {
@@ -68,7 +64,7 @@ export default [
     url: "/api/enterprise/service/list",
     method: "get",
     response: ({ query }) => {
-      const { page = 1, size = 10, companyName } = query;
+      const { page = 1, size = 10 } = query;
       let records = [
         {
           id: 2001,
@@ -107,10 +103,6 @@ export default [
           createTime: "2026-03-04 10:30:00",
         },
       ];
-
-      if (companyName) {
-        records = records.filter(item => item.companyName.includes(companyName));
-      }
 
       const start = (page - 1) * size;
       const end = start + size;

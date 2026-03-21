@@ -181,8 +181,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 requestDTO.getEmployeeCount(),
                 null);
 
-        checkUserHasManufacture(userId);
-
         Manufacture manufacture = new Manufacture();
         BeanUtils.copyProperties(requestDTO, manufacture);
         manufacture.setUserId(userId);
@@ -398,21 +396,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         } catch (NumberFormatException e) {
             // 当 name 不是合法的 Long 时，返回 null，由上层判断并抛出“用户未登录”异常
             return null;
-        }
-    }
-
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-12 23:32
-     * @Param: userId 用户ID
-     * @Return: void
-     * @Description: 检查用户是否已创建过企业
-     **/
-    private void checkUserHasManufacture(Long userId) {
-        LambdaQueryWrapper<Manufacture> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Manufacture::getUserId, userId);
-        if (this.count(queryWrapper) > 0) {
-            throw new BusinessException(409, "该用户已创建过制造企业，不可重复创建");
         }
     }
 

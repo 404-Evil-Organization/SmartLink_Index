@@ -3,7 +3,8 @@ package com.zhilian.zhilianbackend.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
-import com.zhilian.zhilianbackend.dto.request.PageRequest;
+import com.zhilian.zhilianbackend.dto.request.ManufactureListRequestDTO;
+import com.zhilian.zhilianbackend.dto.request.ServiceProviderListRequestDTO;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseManufactureVO;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseServiceVO;
 import com.zhilian.zhilianbackend.service.EnterpriseService;
@@ -39,11 +40,8 @@ public class EnterpriseController {
     **/
     @GetMapping("/manufacture/list")
     @Operation(summary = "获取个人制造企业列表", description = "返回当前登录用户创建的制造企业列表，包含所有审核状态")
-    public Result<PageResult<EnterpriseManufactureVO>> getMyManufactureList(@Valid PageRequest pageRequest) {
-        IPage<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(
-                pageRequest.getPage(),
-                pageRequest.getSize()
-        );
+    public Result<PageResult<EnterpriseManufactureVO>> getMyManufactureList(@Valid ManufactureListRequestDTO pageRequest) {
+        IPage<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(pageRequest);
         return Result.success(PageResult.from(page));
     }
 
@@ -56,11 +54,8 @@ public class EnterpriseController {
     **/
     @GetMapping("/service/list")
     @Operation(summary = "获取个人服务商列表", description = "返回当前登录用户创建的服务商列表，包含所有审核状态")
-    public Result<PageResult<EnterpriseServiceVO>> getMyServiceList(@Valid PageRequest pageRequest) {
-        IPage<EnterpriseServiceVO> page = enterpriseService.getMyServiceList(
-                pageRequest.getPage(),
-                pageRequest.getSize()
-        );
+    public Result<PageResult<EnterpriseServiceVO>> getMyServiceList(@Valid ServiceProviderListRequestDTO pageRequest) {
+        IPage<EnterpriseServiceVO> page = enterpriseService.getMyServiceList(pageRequest);
         return Result.success(PageResult.from(page));
     }
 }
