@@ -67,7 +67,7 @@ public class DashboardController {
      * @Return: Result<List<TopDemandResponse>> 热门需求列表
      * @Description: 获取热门需求
     **/
-    @GetMapping("/topDemands")
+    @GetMapping("/top-demands")
     @Operation(summary = "获取热门需求", description = "按服务类型统计需求数量，返回Top N")
     public Result<List<TopDemandResponse>> getTopDemands(
             @RequestParam(required = false, defaultValue = "5") Integer top) {
