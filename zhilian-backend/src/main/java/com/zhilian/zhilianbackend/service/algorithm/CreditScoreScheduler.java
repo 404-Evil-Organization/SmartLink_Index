@@ -18,10 +18,10 @@ import java.util.List;
 /**
  * @Author: 6017
  * @Date: 2026/3/20 20:43
- * @Param: 
- * @Return: 
+ * @Param:
+ * @Return:
  * @Description: 信用分计算定时任务，每天凌晨2点执行，计算所有审核通过服务商的信用分
-**/
+ **/
 @Slf4j
 @Component
 @EnableScheduling
@@ -35,12 +35,12 @@ public class CreditScoreScheduler {
     /**
      * @Author: 6017
      * @Date: 2026/3/20 20:44
-     * @Param: 
-     * @Return: 
+     * @Param:
+     * @Return:
      * @Description: 每天凌晨2点执行信用分计算，遍历所有审核通过的服务商并计算信用分
-    **/
+     * 注意：不在方法级别加事务，避免长事务占用数据库连接
+     **/
     @Scheduled(cron = "0 0 2 * * ?")
-    @Transactional
     public void calculateAllCreditScores() {
         log.info("========== 开始定时任务：计算所有服务商信用分 ==========");
 
@@ -56,7 +56,8 @@ public class CreditScoreScheduler {
 
         for (ServiceProvider provider : providers) {
             try {
-                calculateAndSaveCreditScore(provider.getId());
+                // 每个服务商独立事务，互不影响
+                calculateAndSaveCreditScoreWithTransaction(provider.getId());
                 successCount++;
             } catch (Exception e) {
                 failCount++;
@@ -70,11 +71,41 @@ public class CreditScoreScheduler {
 
     /**
      * @Author: 6017
-     * @Date: 2026/3/20 20:44
+     * @Date: 2026/3/21 10:00
      * @Param: serviceId 服务商ID
-     * @Return: 
-     * @Description: 计算并保存单个服务商的信用分
-    **/
+     * @Return:
+     * @Description: 带事务的计算并保存单个服务商的信用分，每个服务商独立事务
+     **/
+    @Transactional
+    public void calculateAndSaveCreditScoreWithTransaction(Long serviceId) {
+        // 1. 调用算法类计算信用分
+        CreditScoreAlgorithm.CreditScoreResult result = creditScoreAlgorithm.calculate(serviceId);
+
+        // 2. 创建信用分记录
+        CreditScore creditScore = new CreditScore();
+        creditScore.setServiceId(serviceId)
+                .setScore(result.getTotalScore())
+                .setQualScore(result.getQualScore())
+                .setCaseScore(result.getCaseScore())
+                .setEvalScore(result.getEvalScore())
+                .setCalcTime(new Date());
+
+        // 3. 保存到数据库
+        creditScoreMapper.insert(creditScore);
+
+        log.debug("信用分保存完成，serviceId: {}, 综合分: {}, 资质分: {}, 案例分: {}, 评价分: {}",
+                serviceId, result.getTotalScore(), result.getQualScore(),
+                result.getCaseScore(), result.getEvalScore());
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/21 10:00
+     * @Param: serviceId 服务商ID
+     * @Return:
+     * @Description: 计算并保存单个服务商的信用分（无事务版本，供内部调用）
+     * 注意：此方法不开启事务，由调用方决定事务边界
+     **/
     private void calculateAndSaveCreditScore(Long serviceId) {
         // 1. 调用算法类计算信用分
         CreditScoreAlgorithm.CreditScoreResult result = creditScoreAlgorithm.calculate(serviceId);
