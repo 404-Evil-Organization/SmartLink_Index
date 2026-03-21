@@ -98,32 +98,4 @@ public class CreditScoreScheduler {
                 result.getCaseScore(), result.getEvalScore());
     }
 
-    /**
-     * @Author: 6017
-     * @Date: 2026/3/21 10:00
-     * @Param: serviceId 服务商ID
-     * @Return:
-     * @Description: 计算并保存单个服务商的信用分（无事务版本，供内部调用）
-     * 注意：此方法不开启事务，由调用方决定事务边界
-     **/
-    private void calculateAndSaveCreditScore(Long serviceId) {
-        // 1. 调用算法类计算信用分
-        CreditScoreAlgorithm.CreditScoreResult result = creditScoreAlgorithm.calculate(serviceId);
-
-        // 2. 创建信用分记录
-        CreditScore creditScore = new CreditScore();
-        creditScore.setServiceId(serviceId)
-                .setScore(result.getTotalScore())
-                .setQualScore(result.getQualScore())
-                .setCaseScore(result.getCaseScore())
-                .setEvalScore(result.getEvalScore())
-                .setCalcTime(new Date());
-
-        // 3. 保存到数据库
-        creditScoreMapper.insert(creditScore);
-
-        log.debug("信用分保存完成，serviceId: {}, 综合分: {}, 资质分: {}, 案例分: {}, 评价分: {}",
-                serviceId, result.getTotalScore(), result.getQualScore(),
-                result.getCaseScore(), result.getEvalScore());
-    }
 }
