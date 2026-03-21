@@ -115,7 +115,7 @@ let manufactureList = [
 ];
 
 export default [
-  // 1.2.1 获取制造企业列表（公共列表）
+  // 1.2.1 获取制造企业列表
   {
     url: "/api/manufacture/list",
     method: "get",
@@ -123,11 +123,13 @@ export default [
       const { page = 1, size = 10, region, scale, productType } = query;
       let filtered = manufactureList;
 
+      
       // 公共列表仅返回审核通过的企业（前端还会再按userId过滤，但mock里先过滤掉未审核的）
       filtered = filtered.filter((item) => item.auditStatus === "approved");
 
+      // 前端筛选
       if (region) {
-        filtered = filtered.filter((item) => item.region.includes(region));
+        filtered = filtered.filter((item) => item.region === region);
       }
       if (scale) {
         filtered = filtered.filter((item) => item.scale === scale);

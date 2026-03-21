@@ -156,7 +156,7 @@
         <!-- 状态列已移除 -->
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" link @click="handleDetail(row)">
+            <el-button size="small" link @click="handleDetail(row.id)">
               <el-icon><View /></el-icon>查看
             </el-button>
           </template>
@@ -177,7 +177,7 @@
       </div>
     </el-card>
 
-    <!-- 服务商详情弹窗（只读） -->
+    <!-- 服务商详情弹窗（只读）
     <el-dialog
       v-model="detailDialog.visible"
       title="服务企业详情"
@@ -217,7 +217,7 @@
         <el-descriptions-item label="资质概述" :span="2">{{
           detailDialog.data.qualification || "-"
         }}</el-descriptions-item>
-        <!-- <el-descriptions-item label="年收入(万元)">{{ detailDialog.data.annualRevenue || "-" }}</el-descriptions-item> -->
+        <el-descriptions-item label="年收入(万元)">{{ detailDialog.data.annualRevenue || "-" }}</el-descriptions-item>
         <el-descriptions-item label="企业logo" :span="2">
           <el-image
             v-if="detailDialog.data.logo"
@@ -229,7 +229,7 @@
         </el-descriptions-item>
       </el-descriptions>
 
-      <!-- 证书列表折叠面板（只读，纵向卡片布局） -->
+      证书列表折叠面板（只读，纵向卡片布局）
       <div class="certification-list">
         <el-collapse v-model="activeCertCollapse" class="cert-collapse">
           <el-collapse-item>
@@ -302,15 +302,16 @@
       <template #footer>
         <el-button @click="detailDialog.visible = false">关闭</el-button>
       </template>
-    </el-dialog>
+    </el-dialog> -->
+    
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ElImageViewer } from "element-plus";
+// import { ElImageViewer } from "element-plus";
 import { Refresh, View } from "@element-plus/icons-vue";
-import { formatEstablishedDate } from "@/composables/date";
+// import { formatEstablishedDate } from "@/composables/date";
 import { normalizeTags } from "@/utils/tagUtils";
 
 // API 接口
@@ -319,9 +320,14 @@ import {
   getServiceProviderDetail,
 } from "@/api/service-provider";
 import { getRegions, getServiceTags } from "@/api/common";
-import { getCertList } from "@/api/certification";
+// import { getCertList } from "@/api/certification";
 import { maskPhone } from "@/utils/desensitize";
 import { useUserStore } from "@/stores/user";
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus';
+
+
+const router = useRouter()
 
 // 获取用户角色
 const userStore = useUserStore();
@@ -357,7 +363,7 @@ const pagination = reactive({
 });
 
 // 详情弹窗
-const detailDialog = reactive({ visible: false, data: {} });
+// const detailDialog = reactive({ visible: false, data: {} });
 
 // 获取列表
 const fetchList = async () => {
@@ -382,32 +388,32 @@ const fetchList = async () => {
 };
 
 // 证书列表相关
-const activeCertCollapse = ref(""); // 默认收起
-const certificateList = ref([]);
-const certLoading = ref(false);
+// const activeCertCollapse = ref(""); // 默认收起
+// const certificateList = ref([]);
+// const certLoading = ref(false);
 
 // 获取证书列表
-const fetchCertList = async (serviceId) => {
-  if (!serviceId) return;
-  certLoading.value = true;
-  try {
-    const res = await getCertList({ serviceId });
+// const fetchCertList = async (serviceId) => {
+//   if (!serviceId) return;
+//   certLoading.value = true;
+//   try {
+//     const res = await getCertList({ serviceId });
 
-    certificateList.value = Array.isArray(res.records) ? res.records : [];
-  } catch (error) {
-    console.error("获取证书列表失败", error);
-    certificateList.value = [];
-  } finally {
-    certLoading.value = false;
-  }
-};
+//     certificateList.value = Array.isArray(res.records) ? res.records : [];
+//   } catch (error) {
+//     console.error("获取证书列表失败", error);
+//     certificateList.value = [];
+//   } finally {
+//     certLoading.value = false;
+//   }
+// };
 
 // 刷新证书列表
-const refreshCertList = () => {
-  if (detailDialog.data?.id) {
-    fetchCertList(detailDialog.data.id);
-  }
-};
+// const refreshCertList = () => {
+//   if (detailDialog.data?.id) {
+//     fetchCertList(detailDialog.data.id);
+//   }
+// };
 
 // 区域下拉静态兜底选项（当接口异常或返回格式错误时使用）
 const DEFAULT_REGION_OPTIONS = ["全国", "华北地区", "华东地区", "华南地区"];
@@ -486,25 +492,52 @@ const handleCurrentChange = (val) => {
 };
 
 // 查看详情
-const handleDetail = async (row) => {
-  try {
-    const res = await getServiceProviderDetail(row.id);
-    detailDialog.data = res;
-    detailDialog.visible = true;
-    // 获取证书列表
-    fetchCertList(row.id);
-  } catch (error) {
-    console.error("获取详情失败", error);
-  }
-};
-const certImage = ref(null);
-const showPreview = ref(false);
+// const handleDetail = async (row) => {
+//   try {
+//     const res = await getServiceProviderDetail(row.id);
+//     detailDialog.data = res;
+//     detailDialog.visible = true;
+//     // 获取证书列表
+//     fetchCertList(row.id);
+//   } catch (error) {
+//     console.error("获取详情失败", error);
+//   }
+// };
+  // 查看详情 → 跳转到详情页
+  // const handleDetail = (id) => {
+  //   console.log('传递的 ID:', id, '类型:', typeof id);
+  //   router.push(`/service/detail/${id}`)
+  // };
+  const handleDetail = (idObj) => {
+    // 统一只允许将 number/string 类型的 ID 拼入路由，防止出现 "[object Object]" 情况
+    let realId = null;
 
+    // 1. 直接传入基础类型（推荐用法）
+    if (typeof idObj === 'number' || typeof idObj === 'string') {
+      realId = idObj;
+    } else if (idObj && typeof idObj === 'object') {
+      // 2. 兼容旧用法：传入对象时，从 id / value 字段中提取
+      const candidate = idObj.id ?? idObj.value;
+      if (typeof candidate === 'number' || typeof candidate === 'string') {
+        realId = candidate;
+      }
+    }
+
+    // 最终校验：禁止将对象或空值拼进路由
+    if (realId === null || realId === undefined || realId === '') {
+      console.error('无效的ID', idObj);
+      ElMessage.error('企业ID无效');
+      return;
+    }
+
+    router.push(`/credit/service/detail/${realId}`);
+  };
+// const certImage = ref(null);
+// const showPreview = ref(false);
 onMounted(() => {
-  // 尝试从接口获取，失败时保持静态默认值
   fetchRegions();
   fetchServiceTags();
-  fetchList();
+  fetchList();   
 });
 </script>
 
