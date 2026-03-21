@@ -875,8 +875,10 @@ const fetchManufactureList = async () => {
     res = await getMyManufactureList(params);
     let records = res.records || [];
     if (manuSearchKeyword.value) {
-      records = records.filter((item) =>
-        item.companyName.includes(manuSearchKeyword.value),
+      records = records.filter(
+        (item) =>
+          item.companyName &&
+          item.companyName.includes(manuSearchKeyword.value),
       );
       // 如果前端进行了过滤，则更新 total 为过滤后的数量
       manuPagination.total = records.length;
@@ -906,8 +908,10 @@ const fetchServiceList = async () => {
     res = await getMyServiceList(params);
     let records = res.records || [];
     if (serviceSearchKeyword.value) {
-      records = records.filter((item) =>
-        item.companyName.includes(serviceSearchKeyword.value),
+      records = records.filter(
+        (item) =>
+          item.companyName &&
+          item.companyName.includes(serviceSearchKeyword.value),
       );
       // 如果前端进行了过滤，则更新 total 为过滤后的数量
       servicePagination.total = records.length;
@@ -1340,6 +1344,7 @@ const getAuditStatusText = (status) => {
 
 // 在 onMounted 中只加载当前 activeTab 对应的数据
 onMounted(() => {
+  fetchScales();
   fetchRegions();
   fetchServiceTypeOptions();
   fetchProductTypeOptions();

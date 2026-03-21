@@ -19,7 +19,6 @@ import com.zhilian.zhilianbackend.mapper.ManufactureTagMapper;
 import com.zhilian.zhilianbackend.service.ManufactureService;
 import com.zhilian.zhilianbackend.service.ManufactureTagService;
 import com.zhilian.zhilianbackend.service.TagService;
-import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import com.zhilian.zhilianbackend.utils.SqlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

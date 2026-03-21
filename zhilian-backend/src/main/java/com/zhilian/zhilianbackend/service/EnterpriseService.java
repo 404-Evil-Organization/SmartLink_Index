@@ -19,8 +19,8 @@ public interface EnterpriseService {
      * @Author: 6017
      * @Date: 2026/3/20 23:58
      * @Param requestDTO  查询参数
-     * @Return: 分页结果
-     * @Description: 获取当前用户的制造企业列表
+     * @Return: IPage<EnterpriseManufactureVO> 分页结果
+     * @Description: 获取当前用户的制造企业列表（管理员可获取全部）
     **/
     IPage<EnterpriseManufactureVO> getMyManufactureList(ManufactureListRequestDTO requestDTO);
 
@@ -28,8 +28,8 @@ public interface EnterpriseService {
      * @Author: 6017
      * @Date: 2026/3/20 23:58
      * @Param requestDTO  查询参数
-     * @Return: 分页结果
-     * @Description: 获取当前用户的服务商列表
+     * @Return: IPage<EnterpriseServiceVO> 分页结果
+     * @Description: 获取当前用户的服务商列表（管理员可获取全部）
     **/
     IPage<EnterpriseServiceVO> getMyServiceList(ServiceProviderListRequestDTO requestDTO);
 }

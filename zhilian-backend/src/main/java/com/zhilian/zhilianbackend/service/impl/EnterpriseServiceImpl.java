@@ -37,9 +37,9 @@ public class EnterpriseServiceImpl implements EnterpriseService {
     /**
      * @Author: 6017
      * @Date: 2026/3/20 23:59
-     * @Param: userId 用户ID  pageNum 页码  pageSize 每页条数
-     * @Return: 分页结果
-     * @Description: 获取当前用户的制造企业列表
+     * @Param: requestDTO 查询请求参数
+     * @Return: IPage<EnterpriseManufactureVO> 分页结果
+     * @Description: 获取当前用户的制造企业列表（管理员可获取全部）
     **/
     @Override
     public IPage<EnterpriseManufactureVO> getMyManufactureList(ManufactureListRequestDTO requestDTO) {
@@ -73,8 +73,8 @@ public class EnterpriseServiceImpl implements EnterpriseService {
      * @Author: 6017
      * @Date: 2026/3/20 23:59
      * @Param: requestDTO 查询参数
-     * @Return: 分页结果
-     * @Description: 获取当前用户的服务商列表
+     * @Return: IPage<EnterpriseServiceVO> 分页结果
+     * @Description: 获取当前用户的服务商列表（管理员可获取全部）
     **/
     @Override
     public IPage<EnterpriseServiceVO> getMyServiceList(ServiceProviderListRequestDTO requestDTO) {
