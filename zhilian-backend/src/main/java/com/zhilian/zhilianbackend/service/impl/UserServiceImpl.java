@@ -318,12 +318,16 @@ public class UserServiceImpl implements UserService {
         detail.setCreateTime(user.getCreateTime());
 
         if ("manufacture".equals(user.getRole())) {
-            // 使用 getOne 并传入 false 避免多条记录时抛出异常，多条时返回第一条
-            Manufacture manufacture = manufactureService.getOne(
-                    new LambdaQueryWrapper<Manufacture>().eq(Manufacture::getUserId, user.getId()),
-                    false
-            );
-            if (manufacture != null) {
+            // 查询该用户关联的制造企业列表，按创建时间降序，取最新一条
+            List<Manufacture> manufactureList = manufactureService.lambdaQuery()
+                    .eq(Manufacture::getUserId, user.getId())
+                    .orderByDesc(Manufacture::getCreateTime)
+                    .list();
+            if (!manufactureList.isEmpty()) {
+                if (manufactureList.size() > 1) {
+                    log.error("数据异常：用户ID={} 关联多条制造企业记录，取最新一条", user.getId());
+                }
+                Manufacture manufacture = manufactureList.get(0);
                 UserDetailVO.ManufactureInfo info = new UserDetailVO.ManufactureInfo();
                 info.setId(manufacture.getId());
                 info.setCompanyName(manufacture.getCompanyName());
@@ -332,12 +336,16 @@ public class UserServiceImpl implements UserService {
                 detail.setManufactureInfo(info);
             }
         } else if ("service".equals(user.getRole())) {
-            // 使用 getOne 并传入 false 避免多条记录时抛出异常，多条时返回第一条
-            ServiceProvider service = serviceProviderService.getOne(
-                    new LambdaQueryWrapper<ServiceProvider>().eq(ServiceProvider::getUserId, user.getId()),
-                    false
-            );
-            if (service != null) {
+            // 查询该用户关联的服务商列表，按创建时间降序，取最新一条
+            List<ServiceProvider> serviceList = serviceProviderService.lambdaQuery()
+                    .eq(ServiceProvider::getUserId, user.getId())
+                    .orderByDesc(ServiceProvider::getCreateTime)
+                    .list();
+            if (!serviceList.isEmpty()) {
+                if (serviceList.size() > 1) {
+                    log.error("数据异常：用户ID={} 关联多条服务商记录，取最新一条", user.getId());
+                }
+                ServiceProvider service = serviceList.get(0);
                 UserDetailVO.ServiceProviderInfo info = new UserDetailVO.ServiceProviderInfo();
                 info.setId(service.getId());
                 info.setCompanyName(service.getCompanyName());
