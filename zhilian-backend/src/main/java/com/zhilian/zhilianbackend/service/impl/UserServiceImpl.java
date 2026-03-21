@@ -1,26 +1,35 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhilian.zhilianbackend.dto.request.UserChangePasswordRequest;
+import com.zhilian.zhilianbackend.dto.request.UserListRequest;
 import com.zhilian.zhilianbackend.dto.request.UserLoginRequest;
 import com.zhilian.zhilianbackend.dto.request.UserRegisterRequest;
-import com.zhilian.zhilianbackend.dto.response.UserInfoResponse;
-import com.zhilian.zhilianbackend.dto.response.UserLoginResponse;
-import com.zhilian.zhilianbackend.dto.response.UserRegisterResponse;
+import com.zhilian.zhilianbackend.dto.response.*;
+import com.zhilian.zhilianbackend.entity.Manufacture;
+import com.zhilian.zhilianbackend.entity.ServiceProvider;
 import com.zhilian.zhilianbackend.entity.User;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.UserMapper;
+import com.zhilian.zhilianbackend.service.ManufactureService;
+import com.zhilian.zhilianbackend.service.ServiceProviderService;
 import com.zhilian.zhilianbackend.service.UserService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * @Author: 6017
@@ -38,6 +47,15 @@ public class UserServiceImpl implements UserService {
 
     // 用于用户名的锁缓存：使用带引用计数的锁对象
     private final ConcurrentHashMap<String, UsernameLock> lockMap = new ConcurrentHashMap<>();
+
+    // 关键修改：改为字段注入 + @Lazy，避免循环依赖
+    @Lazy
+    @Autowired
+    private ManufactureService manufactureService;
+
+    @Lazy
+    @Autowired
+    private ServiceProviderService serviceProviderService;
 
     /**
      * 用户名级别锁对象：
@@ -211,5 +229,158 @@ public class UserServiceImpl implements UserService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userMapper.updateById(user);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/21 15:04
+     * @Param:
+     * @Return: String 随机生成的密码（8-12位，字母数字混合）
+     * @Description: 生成随机临时密码
+     */
+    private String generateRandomPassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        SecureRandom random = new SecureRandom();
+        int length = 8 + random.nextInt(5); // 8~12位
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/21 15:04
+     * @Param: request 用户列表查询参数
+     * @Return: Page<UserListVO> 分页用户列表
+     * @Description: 管理员 - 分页查询用户列表
+     */
+    @Override
+    public Page<UserListVO> pageUsers(UserListRequest request) {
+        Page<User> page = new Page<>(request.getPage(), request.getSize());
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        if (request.getRole() != null && !request.getRole().isEmpty()) {
+            wrapper.eq(User::getRole, request.getRole());
+        }
+        if (request.getStatus() != null) {
+            wrapper.eq(User::getStatus, request.getStatus());
+        }
+        if (request.getKeyword() != null && !request.getKeyword().isEmpty()) {
+            wrapper.and(w -> w.like(User::getUsername, request.getKeyword())
+                    .or().like(User::getPhone, request.getKeyword()));
+        }
+        wrapper.orderByDesc(User::getCreateTime);
+
+        Page<User> userPage = userMapper.selectPage(page, wrapper);
+        Page<UserListVO> voPage = new Page<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
+        voPage.setRecords(userPage.getRecords().stream().map(user -> {
+            UserListVO vo = new UserListVO();
+            vo.setId(user.getId());
+            vo.setUsername(user.getUsername());
+            vo.setRole(user.getRole());
+            vo.setPhone(user.getPhone());
+            vo.setEmail(user.getEmail());
+            vo.setStatus(user.getStatus());
+            vo.setCreateTime(user.getCreateTime());
+            return vo;
+        }).collect(Collectors.toList()));
+        return voPage;
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/21 15:04
+     * @Param: userId 用户ID
+     * @Return: UserDetailVO 用户详情（含企业信息）
+     * @Description: 管理员 - 获取用户详情（含企业信息）
+     */
+    @Override
+    public UserDetailVO getUserDetail(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+
+        UserDetailVO detail = new UserDetailVO();
+        detail.setId(user.getId());
+        detail.setUsername(user.getUsername());
+        detail.setRole(user.getRole());
+        detail.setPhone(user.getPhone());
+        detail.setEmail(user.getEmail());
+        detail.setStatus(user.getStatus());
+        detail.setCreateTime(user.getCreateTime());
+
+        if ("manufacture".equals(user.getRole())) {
+            // 使用 ManufactureService 的 lambdaQuery 查询
+            Manufacture manufacture = manufactureService.lambdaQuery()
+                    .eq(Manufacture::getUserId, user.getId())
+                    .one();
+            if (manufacture != null) {
+                UserDetailVO.ManufactureInfo info = new UserDetailVO.ManufactureInfo();
+                info.setId(manufacture.getId());
+                info.setCompanyName(manufacture.getCompanyName());
+                info.setRegion(manufacture.getRegion());
+                info.setScale(manufacture.getScale());
+                detail.setManufactureInfo(info);
+            }
+        } else if ("service".equals(user.getRole())) {
+            // 使用 ServiceProviderService 的 lambdaQuery 查询
+            ServiceProvider service = serviceProviderService.lambdaQuery()
+                    .eq(ServiceProvider::getUserId, user.getId())
+                    .one();
+            if (service != null) {
+                UserDetailVO.ServiceProviderInfo info = new UserDetailVO.ServiceProviderInfo();
+                info.setId(service.getId());
+                info.setCompanyName(service.getCompanyName());
+                info.setRegion(service.getRegion());
+                info.setServiceType(service.getServiceType());
+                detail.setServiceProviderInfo(info);
+            }
+        }
+        return detail;
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/21 15:04
+     * @Param: userId 用户ID
+     * @Param: status 状态值（0禁用 1正常）
+     * @Return: void
+     * @Description: 管理员 - 修改用户状态（启用/禁用）
+     */
+    @Override
+    @Transactional
+    public void updateUserStatus(Long userId, Integer status) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        // 可选：防止管理员禁用自己
+        // if (userId.equals(getCurrentUserId())) {
+        //     throw new BusinessException(400, "不能禁用当前登录的管理员账号");
+        // }
+        user.setStatus(status);
+        userMapper.updateById(user);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/21 15:04
+     * @Param: userId 用户ID
+     * @Return: String 新生成的临时密码
+     * @Description: 管理员 - 重置用户密码（生成随机临时密码）
+     */
+    @Override
+    @Transactional
+    public String resetUserPassword(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(404, "用户不存在");
+        }
+        String newPassword = generateRandomPassword();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userMapper.updateById(user);
+        return newPassword;
     }
 }
