@@ -22,10 +22,11 @@ const chartOptions = computed(() => ({
   xAxis: { type: 'category', data: props.xAxisData },
   yAxis: { type: 'value', name: props.yAxisName },
   series: props.series.map(s => ({
+    // 先展开调用方传入的配置，再覆盖组件固定字段，避免被外部篡改
+    ...s,
     type: 'line',
     smooth: props.smooth,
     areaStyle: props.areaStyle ? {} : undefined,
-    ...s,
   })),
 }))
 </script>

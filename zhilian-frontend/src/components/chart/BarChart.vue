@@ -21,9 +21,11 @@ const chartOptions = computed(() => ({
   xAxis: { type: 'category', data: props.xAxisData, axisLabel: { rotate: 0 } },
   yAxis: { type: 'value', name: props.yAxisName },
   series: props.series.map(s => ({
-    type: 'bar',
-    barWidth: props.barWidth,
     ...s,
+    // 固定为柱状图类型，防止调用方通过 series 覆盖 type 破坏组件语义
+    type: 'bar',
+    // 统一柱宽，如需允许自定义可改为优先使用 s.barWidth
+    barWidth: props.barWidth,
   })),
 }))
 </script>

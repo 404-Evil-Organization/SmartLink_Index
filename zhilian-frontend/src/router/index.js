@@ -18,33 +18,38 @@ const routes = [
     name: "Register",
     component: () => import("@/views/auth/Register.vue"),
   },
+];
 
-  // 测试文件后期删除为了验证chart实现与否
-  {
+// 仅在开发环境注册 chart 测试路由，防止生产环境暴露调试入口
+if (import.meta.env.DEV) {
+  routes.push({
     path: "/chart-test",
     name: "ChartTest",
     component: () => import("@/views/test/ChartTest.vue"),
-    // 不加 meta.requiresAuth，这样未登录也能访问
-  },
+    // 即使未来误在非 DEV 环境启用，也要求登录后才能访问
+    meta: {
+      requiresAuth: true,
+    },
+  });
+}
 
-  {
-    path: "/",
-    component: () => import("@/layouts/BasicLayout.vue"),
-    meta: { requiresAuth: true },
-    children: [
-      ...dashboardRoutes,
-      ...manufactureRoutes,
-      // 管理端路由统一标记为仅管理员可访问
-      ...adminRoutes.map((route) => ({
-        ...route,
-        meta: {
-          ...(route.meta || {}),
-          adminOnly: true,
-        },
-      })),
-    ],
-  },
-];
+routes.push({
+  path: "/",
+  component: () => import("@/layouts/BasicLayout.vue"),
+  meta: { requiresAuth: true },
+  children: [
+    ...dashboardRoutes,
+    ...manufactureRoutes,
+    // 管理端路由统一标记为仅管理员可访问
+    ...adminRoutes.map((route) => ({
+      ...route,
+      meta: {
+        ...(route.meta || {}),
+        adminOnly: true,
+      },
+    })),
+  ],
+});
 
 const router = createRouter({
   history: createWebHistory(),
