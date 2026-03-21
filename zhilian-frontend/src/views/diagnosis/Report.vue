@@ -20,9 +20,9 @@
       <el-skeleton :rows="1" animated />
     </el-card>
 
-    <!-- 多个企业选择卡片：仅当有多个企业且没有报告数据时显示 -->
+    <!-- 企业选择卡片：仅当存在企业且没有报告数据时显示 -->
     <el-card
-      v-else-if="enterpriseOptions.length > 1 && !reportData && !showNoReport"
+      v-else-if="enterpriseOptions.length > 0 && !reportData && !showNoReport"
       class="enterprise-card fancy-card"
       shadow="hover"
     >

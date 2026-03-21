@@ -54,9 +54,9 @@ export function getDiagnosisResult(id) {
  */
 export function getLatestDiagnosis(manuId) {
   return request({
-    url: '/diagnostics/latest',
-    method: 'get',
+    url: "/diagnosis/latest",
+    method: "get",
     params: { manuId }
-  })
+  });
 }
 
