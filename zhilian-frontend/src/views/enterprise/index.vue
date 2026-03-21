@@ -146,7 +146,12 @@
                 :page-sizes="[5, 10, 20, 50]"
                 layout="total, sizes, prev, pager, next, jumper"
                 :total="manuPagination.total"
-                @size-change="fetchManufactureList"
+                @size-change="
+                  (size) => {
+                    manuPagination.current = 1;
+                    fetchManufactureList(size);
+                  }
+                "
                 @current-change="fetchManufactureList"
               />
             </div>
@@ -266,7 +271,12 @@
                 :page-sizes="[5, 10, 20, 50]"
                 layout="total, sizes, prev, pager, next, jumper"
                 :total="servicePagination.total"
-                @size-change="fetchServiceList"
+                @size-change="
+                  (size) => {
+                    servicePagination.current = 1;
+                    fetchServiceList();
+                  }
+                "
                 @current-change="fetchServiceList"
               />
             </div>
@@ -741,6 +751,10 @@ const form = reactive({
 
 const formRef = ref(null);
 const fileList = ref([]);
+// 记录原始 logo，用于编辑时对比
+const originalLogo = ref("");
+// 记录新上传的 logo，用于删除
+const uploadedNewLogo = ref("");
 
 // 获取制造企业列表
 const fetchManufactureList = async () => {
@@ -917,8 +931,10 @@ const openEditDialog = async (row, type) => {
       fileList.value = [
         { name: fileName, url: detail.logo, status: "success" },
       ];
+      originalLogo.value = detail.logo;
     } else {
       fileList.value = [];
+      originalLogo.value = "";
     }
   } catch (error) {
     console.error("获取详情失败", error);
@@ -945,6 +961,9 @@ const resetFormData = () => {
   form.website = "";
   form.qualification = "";
   fileList.value = [];
+  // 重置 logo 相关的状态
+  originalLogo.value = "";
+  uploadedNewLogo.value = "";
   formRef.value?.clearValidate();
 };
 
@@ -984,7 +1003,16 @@ const customUpload = async (options) => {
   const { file, onSuccess, onError } = options;
   try {
     const url = await uploadFile(file);
+    // 如果之前有新上传的 logo 未保存，先清理掉
+    if (uploadedNewLogo.value) {
+      try {
+        await deleteFile(uploadedNewLogo.value);
+      } catch (e) {
+        console.log("清理旧的未保存logo失败", e);
+      }
+    }
     form.logo = url;
+    uploadedNewLogo.value = url;
     const uploadedFile = {
       name: file.name,
       url: url,
@@ -1022,13 +1050,18 @@ const beforeUpload = (file) => {
 
 const handleRemove = async () => {
   try {
-    await deleteFile(form.logo);
+    // 只有在删除的是本次新上传的图片时，才直接调用 deleteFile 删除云端文件
+    if (form.logo === uploadedNewLogo.value && uploadedNewLogo.value !== "") {
+      await deleteFile(form.logo);
+      uploadedNewLogo.value = "";
+    }
+    // 如果删除的是历史原始 logo，则仅清空表单数据，等提交成功后再决定是否删除云端文件
     form.logo = "";
     fileList.value = [];
-    ElMessage.success("删除成功");
+    ElMessage.success("移除成功");
   } catch (error) {
-    ElMessage.error("删除失败");
-    console.log("删除失败", error);
+    ElMessage.error("移除失败");
+    console.log("移除失败", error);
   }
 };
 
@@ -1054,11 +1087,11 @@ const submitForm = async () => {
       employeeCount:
         form.employeeCount !== null && form.employeeCount !== undefined
           ? String(form.employeeCount)
-          : "",
+          : null,
       annualRevenue:
         form.annualRevenue !== null && form.annualRevenue !== undefined
           ? String(form.annualRevenue)
-          : "",
+          : null,
       productType: joinTags(form.productType), // 数组转逗号分隔字符串
       description: form.description,
       logo: form.logo,
@@ -1079,7 +1112,7 @@ const submitForm = async () => {
       employeeCount:
         form.employeeCount !== null && form.employeeCount !== undefined
           ? String(form.employeeCount)
-          : "",
+          : null,
       qualification: form.qualification,
     };
   }
@@ -1105,14 +1138,33 @@ const submitForm = async () => {
         ElMessage.success("修改成功");
         fetchServiceList();
       }
+      
+      // 提交成功后，如果新上传了 logo 或者删除了 logo，需要清理旧的原始 logo
+      if (originalLogo.value && originalLogo.value !== form.logo) {
+        try {
+          await deleteFile(originalLogo.value);
+        } catch (e) {
+          console.log("清理被替换的旧logo失败", e);
+        }
+      }
     }
+    // 提交成功后，清除上传记录，防止弹窗关闭时误删
+    uploadedNewLogo.value = "";
     formDialog.visible = false;
   } catch (error) {
     // 错误由拦截器统一处理
   }
 };
 
-const resetForm = () => {
+const resetForm = async () => {
+  // 如果弹窗关闭时（比如取消），存在已上传但未提交的新 logo，则删除它
+  if (uploadedNewLogo.value) {
+    try {
+      await deleteFile(uploadedNewLogo.value);
+    } catch (e) {
+      console.log("清理未保存的新logo失败", e);
+    }
+  }
   resetFormData();
 };
 
