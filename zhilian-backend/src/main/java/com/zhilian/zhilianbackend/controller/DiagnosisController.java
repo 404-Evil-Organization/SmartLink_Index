@@ -37,14 +37,7 @@ public class DiagnosisController {
     @PostMapping("/submit")
     @Operation(summary = "提交诊断问卷", description = "制造企业填写问卷，系统计算诊断得分并生成报告")
     public Result<DiagnosisReportVO> submitDiagnosis(
-            @Valid @RequestBody(required = false) DiagnosisSubmitRequest request) {
-
-        // 空 body 时 request 会为 null，这里主动抛出业务异常映射为 400，避免返回 500
-        if (request == null) {
-            log.warn("诊断问卷提交请求体为空");
-            throw new BusinessException(400, "诊断提交请求体不能为空");
-        }
-
+            @Valid @RequestBody DiagnosisSubmitRequest request) {
         log.info("接收到诊断问卷提交请求: manuId={}", request.getManuId());
 
         DiagnosisReportVO response = diagnosisService.submitDiagnosis(request);
