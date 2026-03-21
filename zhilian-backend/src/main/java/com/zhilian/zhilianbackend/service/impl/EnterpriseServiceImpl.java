@@ -1,7 +1,9 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseManufactureVO;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseServiceVO;
 import com.zhilian.zhilianbackend.entity.Manufacture;
@@ -42,23 +44,12 @@ public class EnterpriseServiceImpl implements EnterpriseService {
         // 构建查询条件：根据user_id查询，且未删除
         LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Manufacture::getUserId, userId)
-                .eq(Manufacture::getDeleted, "1970-01-01 00:00:00")
+                .eq(Manufacture::getDeleted, DateConstants.NOT_DELETED_TIME)
                 .orderByDesc(Manufacture::getCreateTime);
 
-        // 分页查询
-        Page<Manufacture> manufacturePage = new Page<>(pageNum, pageSize);
-        Page<Manufacture> resultPage = manufactureMapper.selectPage(manufacturePage, wrapper);
+        Page<Manufacture> resultPage = manufactureMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
 
-        // 转换为VO并创建新的Page对象
-        List<EnterpriseManufactureVO> records = resultPage.getRecords().stream()
-                .map(this::convertToManufactureVO)
-                .collect(Collectors.toList());
-
-        // 创建返回的Page对象，使用泛型构造器
-        Page<EnterpriseManufactureVO> voPage = new Page<>(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal());
-        voPage.setRecords(records);
-
-        return voPage;
+        return (Page<EnterpriseManufactureVO>) resultPage.convert(this::convertToManufactureVO);
     }
 
     /**
@@ -73,23 +64,13 @@ public class EnterpriseServiceImpl implements EnterpriseService {
         // 构建查询条件：根据user_id查询，且未删除
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ServiceProvider::getUserId, userId)
-                .eq(ServiceProvider::getDeleted, "1970-01-01 00:00:00")
+                .eq(ServiceProvider::getDeleted, DateConstants.NOT_DELETED_TIME)
                 .orderByDesc(ServiceProvider::getCreateTime);
 
-        // 分页查询
-        Page<ServiceProvider> servicePage = new Page<>(pageNum, pageSize);
-        Page<ServiceProvider> resultPage = serviceProviderMapper.selectPage(servicePage, wrapper);
+        Page<ServiceProvider> resultPage = serviceProviderMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
 
-        // 转换为VO并创建新的Page对象
-        List<EnterpriseServiceVO> records = resultPage.getRecords().stream()
-                .map(this::convertToServiceVO)
-                .collect(Collectors.toList());
-
-        // 创建返回的Page对象，使用泛型构造器
-        Page<EnterpriseServiceVO> voPage = new Page<>(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal());
-        voPage.setRecords(records);
-
-        return voPage;
+        // 一行代码完成转换，强转回 Page（实际对象就是 Page）
+        return (Page<EnterpriseServiceVO>) resultPage.convert(this::convertToServiceVO);
     }
 
     /**
