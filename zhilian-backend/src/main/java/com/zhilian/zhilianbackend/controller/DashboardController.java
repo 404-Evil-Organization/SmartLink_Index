@@ -1,7 +1,8 @@
 package com.zhilian.zhilianbackend.controller;
 
 import com.zhilian.zhilianbackend.common.result.Result;
-import com.zhilian.zhilianbackend.dto.response.*;
+import com.zhilian.zhilianbackend.dto.response.DashboardStatisticsResponse;
+import com.zhilian.zhilianbackend.dto.response.NetworkDataResponse;
 import com.zhilian.zhilianbackend.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -71,7 +72,13 @@ public class DashboardController {
     @Operation(summary = "获取热门需求", description = "按服务类型统计需求数量，返回Top N")
     public Result<List<TopDemandResponse>> getTopDemands(
             @RequestParam(required = false, defaultValue = "5") Integer top) {
-        log.info("获取热门需求，top: {}", top);
+        // 对 top 参数做合理区间约束，防止恶意传入超大值导致数据库压力过大
+        if (top == null || top < 1) {
+            top = 1;
+        } else if (top > 50) {
+            top = 50;
+        }
+        log.info("获取热门需求，归一化后 top: {}", top);
         List<TopDemandResponse> topDemands = dashboardService.getTopDemands(top);
         return Result.success(topDemands);
     }
