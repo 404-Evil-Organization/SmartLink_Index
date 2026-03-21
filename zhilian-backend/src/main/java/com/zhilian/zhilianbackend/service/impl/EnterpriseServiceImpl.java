@@ -36,7 +36,7 @@ public class EnterpriseServiceImpl implements EnterpriseService {
      * @Description: 获取当前用户的制造企业列表
     **/
     @Override
-    public IPage<EnterpriseManufactureVO> getMyManufactureList(Long userId, Long pageNum, Long pageSize) {
+    public IPage<EnterpriseManufactureVO> getMyManufactureList(Long userId, long pageNum, long pageSize) {
         LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Manufacture::getUserId, userId)
                 .orderByDesc(Manufacture::getCreateTime);
@@ -53,7 +53,7 @@ public class EnterpriseServiceImpl implements EnterpriseService {
      * @Description: 获取当前用户的服务商列表
     **/
     @Override
-    public IPage<EnterpriseServiceVO> getMyServiceList(Long userId, Long pageNum, Long pageSize) {
+    public IPage<EnterpriseServiceVO> getMyServiceList(Long userId, long pageNum, long pageSize) {
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ServiceProvider::getUserId, userId)
                 .orderByDesc(ServiceProvider::getCreateTime);

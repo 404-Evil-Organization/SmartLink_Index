@@ -22,7 +22,7 @@ public interface EnterpriseService {
      * @Return: 分页结果
      * @Description: 获取当前用户的制造企业列表
     **/
-    IPage<EnterpriseManufactureVO> getMyManufactureList(Long userId, Long pageNum, Long pageSize);
+    IPage<EnterpriseManufactureVO> getMyManufactureList(Long userId, long pageNum, long pageSize);
 
     /**
      * @Author: 6017
@@ -33,5 +33,5 @@ public interface EnterpriseService {
      * @Return: 分页结果
      * @Description: 获取当前用户的服务商列表
     **/
-    IPage<EnterpriseServiceVO> getMyServiceList(Long userId, Long pageNum, Long pageSize);
+    IPage<EnterpriseServiceVO> getMyServiceList(Long userId, long pageNum, long pageSize);
 }

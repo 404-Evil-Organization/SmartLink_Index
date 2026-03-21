@@ -36,7 +36,7 @@ public final class DateConstants {
      * @Description: 获取逻辑删除字段的“未删除”标记时间
      **/
     public static Date getNotDeletedTime() {
-        // 直接返回缓存的 Timestamp 实例，避免重复解析与对象创建
-        return NOT_DELETED_TIME;
+        // 返回防御性拷贝，避免外部修改污染全局常量
+        return new Date(NOT_DELETED_TIME.getTime());
     }
 }

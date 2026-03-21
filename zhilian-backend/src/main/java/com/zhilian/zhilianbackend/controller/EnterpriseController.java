@@ -43,10 +43,12 @@ public class EnterpriseController {
     @Operation(summary = "获取个人制造企业列表", description = "返回当前登录用户创建的制造企业列表，包含所有审核状态")
     public Result<PageResult<EnterpriseManufactureVO>> getMyManufactureList(@Valid PageRequest pageRequest) {
         Long userId = securityUtils.getCurrentUserId();
+        long pageNum = pageRequest.getPage() != null ? pageRequest.getPage() : 1L;
+        long pageSize = pageRequest.getSize() != null ? pageRequest.getSize() : 10L;
         IPage<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(
                 userId,
-                pageRequest.getPage().longValue(),
-                pageRequest.getSize().longValue()
+                pageNum,
+                pageSize
         );
         return Result.success(PageResult.from(page));
     }
@@ -62,10 +64,12 @@ public class EnterpriseController {
     @Operation(summary = "获取个人服务商列表", description = "返回当前登录用户创建的服务商列表，包含所有审核状态")
     public Result<PageResult<EnterpriseServiceVO>> getMyServiceList(@Valid PageRequest pageRequest) {
         Long userId = securityUtils.getCurrentUserId();
+        long pageNum = pageRequest.getPage() != null ? pageRequest.getPage() : 1L;
+        long pageSize = pageRequest.getSize() != null ? pageRequest.getSize() : 10L;
         IPage<EnterpriseServiceVO> page = enterpriseService.getMyServiceList(
                 userId,
-                pageRequest.getPage().longValue(),
-                pageRequest.getSize().longValue()
+                pageNum,
+                pageSize
         );
         return Result.success(PageResult.from(page));
     }
