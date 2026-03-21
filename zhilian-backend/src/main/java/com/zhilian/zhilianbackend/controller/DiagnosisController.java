@@ -5,13 +5,12 @@ import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.service.DiagnosisService;
 import com.zhilian.zhilianbackend.exception.BusinessException;
+import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -28,33 +27,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "数字化诊断模块", description = "企业数字化诊断相关接口")
 public class DiagnosisController {
     private final DiagnosisService diagnosisService;
-
-    /**
-     * 从 Spring Security 的 SecurityContext 中获取当前登录用户 ID。
-     * 说明：需与全局认证逻辑保持一致，避免与 JwtAuthenticationFilter 行为不一致。
-     * 当认证信息缺失、为匿名用户或无法解析出合法用户 ID 时，统一抛出 401 业务异常。
-     */
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            log.warn("当前请求未找到认证信息或未通过认证，拒绝访问诊断接口");
-            throw new BusinessException(401, "请先登录");
-        }
-        Object principal = authentication.getPrincipal();
-        // 与全局安全配置保持一致：anonymousUser 视为未登录
-        if (principal instanceof String && "anonymousUser".equals(principal)) {
-            log.warn("当前请求为匿名用户访问诊断接口，拒绝访问");
-            throw new BusinessException(401, "请先登录");
-        }
-        // 统一使用 authentication.getName() 解析当前登录用户标识
-        String userIdStr = authentication.getName();
-        try {
-            return Long.valueOf(userIdStr);
-        } catch (NumberFormatException e) {
-            log.warn("无法从 authentication.getName() 解析用户ID，name={}", userIdStr, e);
-            throw new BusinessException(401, "请先登录");
-        }
-    }
+    private final SecurityUtils securityUtils;
 
     /**
      * @Author: 6017
@@ -77,7 +50,7 @@ public class DiagnosisController {
         log.info("接收到诊断问卷提交请求: manuId={}", request.getManuId());
 
         // 从 SecurityContext 中获取当前登录用户ID，避免在 Controller 内重复解析 JWT
-        Long userId = getCurrentUserId();
+        Long userId = securityUtils.getCurrentUserId();
 
         DiagnosisReportVO response = diagnosisService.submitDiagnosis(request, userId);
 
@@ -98,7 +71,7 @@ public class DiagnosisController {
 
         log.info("接收到获取诊断报告请求: id={}", id);
 
-        Long userId = getCurrentUserId();
+        Long userId = securityUtils.getCurrentUserId();
 
         DiagnosisReportVO response = diagnosisService.getDiagnosisById(id, userId);
 
@@ -125,7 +98,7 @@ public class DiagnosisController {
 
         log.info("接收到获取企业最新诊断报告请求: manuId={}", manuId);
 
-        Long userId = getCurrentUserId();
+        Long userId = securityUtils.getCurrentUserId();
 
         DiagnosisReportVO response = diagnosisService.getLatestDiagnosis(manuId, userId);
 

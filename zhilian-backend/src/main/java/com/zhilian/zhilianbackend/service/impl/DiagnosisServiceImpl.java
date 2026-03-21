@@ -2,7 +2,6 @@ package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.entity.Diagnosis;
@@ -15,6 +14,7 @@ import com.zhilian.zhilianbackend.mapper.UserMapper;
 import com.zhilian.zhilianbackend.service.DiagnosisService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.service.algorithm.DiagnosisAlgorithm;
+import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,6 +46,7 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     private final ManufactureMapper manufactureMapper;
     private final UserMapper userMapper;
     private final DiagnosisAlgorithm diagnosisAlgorithm;
+    private final SecurityUtils securityUtils;
 
     /**
      * 校验单个诊断维度得分是否合法（1-5 分），并安全转换为 byte。
@@ -108,15 +109,15 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         }
 
         // 2. 检查权限：企业创建者 或 管理员 可以提交诊断
-        User user = userMapper.selectById(userId);
-        if (user == null) {
-            throw new BusinessException(404, "用户不存在");
-        }
-
-        boolean isAdmin = "admin".equals(user.getRole());
+        boolean isAdmin = "admin".equals(securityUtils.getCurrentUserRole());
         boolean isOwner = manufacture.getUserId().equals(userId);
 
         if (!isOwner && !isAdmin) {
+            // 兜底校验用户是否存在
+            User user = userMapper.selectById(userId);
+            if (user == null) {
+                throw new BusinessException(404, "用户不存在");
+            }
             log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
                     userId, manufacture.getUserId(), user.getRole());
             throw new BusinessException(403, "无权为此企业提交诊断");
@@ -234,15 +235,15 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
             throw new BusinessException(404, "关联的制造企业不存在");
         }
 
-        User user = userMapper.selectById(userId);
-        if (user == null) {
-            throw new BusinessException(404, "用户不存在");
-        }
-
-        boolean isAdmin = "admin".equals(user.getRole());
+        boolean isAdmin = "admin".equals(securityUtils.getCurrentUserRole());
         boolean isOwner = manufacture.getUserId().equals(userId);
 
         if (!isOwner && !isAdmin) {
+            // 兜底校验用户是否存在
+            User user = userMapper.selectById(userId);
+            if (user == null) {
+                throw new BusinessException(404, "用户不存在");
+            }
             log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
                     userId, manufacture.getUserId(), user.getRole());
             throw new BusinessException(403, "无权查看此诊断记录");
@@ -268,9 +269,12 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
             throw new BusinessException(401, "请先登录");
         }
 
-        // 参数校验：制造企业ID 不能为空，防止出现 selectById(null) 等不确定行为
+        // 参数校验：制造企业ID 不能为空，且必须为正数，防止出现 selectById(null/<=0) 等不确定或误导行为
         if (manuId == null) {
             throw new BusinessException(400, "制造企业ID不能为空");
+        }
+        if (manuId <= 0) {
+            throw new BusinessException(400, "制造企业ID必须为正数");
         }
 
         // 1. 验证制造企业是否存在
@@ -280,15 +284,15 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         }
 
         // 2. 检查权限
-        User user = userMapper.selectById(userId);
-        if (user == null) {
-            throw new BusinessException(404, "用户不存在");
-        }
-
-        boolean isAdmin = "admin".equals(user.getRole());
+        boolean isAdmin = "admin".equals(securityUtils.getCurrentUserRole());
         boolean isOwner = manufacture.getUserId().equals(userId);
 
         if (!isOwner && !isAdmin) {
+            // 兜底校验用户是否存在
+            User user = userMapper.selectById(userId);
+            if (user == null) {
+                throw new BusinessException(404, "用户不存在");
+            }
             log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
                     userId, manufacture.getUserId(), user.getRole());
             throw new BusinessException(403, "无权查看此企业的诊断记录");
