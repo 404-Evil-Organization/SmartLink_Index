@@ -3,11 +3,11 @@ export default [
   {
     url: '/api/certification/list',
     method: 'get',
-    response: ({ query }) => {
-      const { serviceId } = query
-
+    response: ({ params, query }) => {
+       const serviceId = parseInt(params?.serviceId || query?.serviceId);
+        const { page = 1, size = 10 } = query;
       // 静态证书数据（字段与接口文档一致）
-      const mockList = [
+      const allCerts = [
         {
           id: 10001,
           serviceId: 1,
@@ -60,13 +60,21 @@ export default [
 
       // 如果传了 serviceId，筛选返回；否则返回全部（用于管理后台）
       const filtered = serviceId
-        ? mockList.filter(item => item.serviceId === parseInt(serviceId))
-        : mockList
+        ? allCerts.filter(item => item.serviceId === parseInt(serviceId))
+        : allCerts
+
+      // 分页处理
+      const startIndex = (page - 1) * size
+      const endIndex = startIndex + parseInt(size)
+      const paginated = filtered.slice(startIndex, endIndex)
 
       return {
         code: 200,
         message: 'success',
-        data: filtered
+        data: {
+          total: filtered.length,
+          records: paginated
+        }
       }
     }
   }

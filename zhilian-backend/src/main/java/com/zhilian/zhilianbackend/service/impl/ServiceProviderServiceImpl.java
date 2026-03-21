@@ -20,6 +20,7 @@ import com.zhilian.zhilianbackend.mapper.ServiceTagMapper;
 import com.zhilian.zhilianbackend.mapper.TagMapper;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
 import com.zhilian.zhilianbackend.service.UserService;
+import com.zhilian.zhilianbackend.utils.SqlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -79,7 +80,8 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             queryWrapper.eq(ServiceProvider::getRegion, requestDTO.getRegion());
         }
         if (StringUtils.isNotBlank(requestDTO.getServiceType())) {
-            queryWrapper.like(ServiceProvider::getServiceType, requestDTO.getServiceType());
+            String escaped = SqlUtils.escapeSqlLike(requestDTO.getServiceType());
+            queryWrapper.apply("service_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
         }
         queryWrapper.eq(ServiceProvider::getAuditStatus, "approved");
         queryWrapper.orderByDesc(ServiceProvider::getCreateTime);
