@@ -30,12 +30,13 @@ public interface DemandMapper extends BaseMapper<Demand> {
             "FROM demand_tag dt " +
             "INNER JOIN tag t ON dt.tag_id = t.id " +
             "INNER JOIN demand d ON dt.demand_id = d.id " +
-            "WHERE d.deleted = '1970-01-01 00:00:00' " +
+            "WHERE d.deleted = #{notDeletedTime} " +
             "AND d.audit_status = 'approved' " +
-            "AND dt.deleted = '1970-01-01 00:00:00' " +
-            "AND t.deleted = '1970-01-01 00:00:00' " +
+            "AND dt.deleted = #{notDeletedTime} " +
+            "AND t.deleted = #{notDeletedTime} " +
             "GROUP BY t.id, t.name " +
             "ORDER BY count DESC " +
             "LIMIT #{top}")
-    List<TopDemandResponse> getTopDemands(@Param("top") Integer top);
+    List<TopDemandResponse> getTopDemands(@Param("top") Integer top,
+                                          @Param("notDeletedTime") String notDeletedTime);
 }

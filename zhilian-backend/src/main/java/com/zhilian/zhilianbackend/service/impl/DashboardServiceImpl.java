@@ -1,12 +1,19 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.zhilian.zhilianbackend.dto.response.*;
+import com.zhilian.zhilianbackend.dto.response.DashboardStatisticsResponse;
+import com.zhilian.zhilianbackend.dto.response.HeatmapDataResponse;
+import com.zhilian.zhilianbackend.dto.response.NetworkDataResponse;
+import com.zhilian.zhilianbackend.dto.response.TopDemandResponse;
 import com.zhilian.zhilianbackend.entity.Cooperation;
 import com.zhilian.zhilianbackend.entity.Demand;
 import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
-import com.zhilian.zhilianbackend.mapper.*;
+import com.zhilian.zhilianbackend.mapper.CooperationMapper;
+import com.zhilian.zhilianbackend.mapper.DemandMapper;
+import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
+import com.zhilian.zhilianbackend.mapper.NetworkMapper;
+import com.zhilian.zhilianbackend.mapper.ServiceProviderMapper;
 import com.zhilian.zhilianbackend.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -122,14 +129,28 @@ public class DashboardServiceImpl implements DashboardService {
         nodes.addAll(networkMapper.getManufactureNodes());
         nodes.addAll(networkMapper.getServiceNodes());
 
-        // 获取连接数据
+        // 获取连接数据（Mapper 返回 List<Map<String, Object>>，此处需做安全类型检查）
         List<Map<String, Object>> linkMaps = networkMapper.getCooperationLinks();
         List<NetworkDataResponse.LinkDTO> links = linkMaps.stream()
-                .map(map -> NetworkDataResponse.LinkDTO.builder()
-                        .source((String) map.get("source"))
-                        .target((String) map.get("target"))
-                        .value(((Number) map.get("value")).longValue())
-                        .build())
+                .filter(map -> map != null)
+                .map(map -> {
+                    Object sourceObj = map.get("source");
+                    Object targetObj = map.get("target");
+                    Object valueObj = map.get("value");
+
+                    // 防御性编程：检查键是否存在且类型是否匹配，避免 ClassCastException / NullPointerException
+                    if (!(sourceObj instanceof String) || !(targetObj instanceof String) || !(valueObj instanceof Number)) {
+                        log.warn("网络关系数据格式异常，忽略此记录: {}", map);
+                        return null;
+                    }
+
+                    return NetworkDataResponse.LinkDTO.builder()
+                            .source((String) sourceObj)
+                            .target((String) targetObj)
+                            .value(((Number) valueObj).longValue())
+                            .build();
+                })
+                .filter(link -> link != null)
                 .collect(Collectors.toList());
 
         return NetworkDataResponse.builder()
