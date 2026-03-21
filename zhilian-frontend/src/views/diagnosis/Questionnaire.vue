@@ -341,7 +341,7 @@ const submitForm = async () => {
     ElMessage.success("诊断提交成功，正在生成报告...");
     // 如果后端返回了诊断ID且报告页面路由存在，则跳转报告页
     if (res.diagnosisId && router.hasRoute("DiagnosisReport")) {
-      router.push(`/diagnosis/report/${res.diagnosisId}`);
+      router.push(`/diagnosis/${res.diagnosisId}`);
     } else {
       // 否则跳转至首页（或诊断记录列表）
       router.push("/");

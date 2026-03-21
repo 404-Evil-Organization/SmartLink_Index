@@ -104,7 +104,7 @@ export default [
   },
   // 2.2 获取诊断报告
   {
-    url: "/api/diagnosis/result/:id",
+    url: "/api/diagnosis/:id",
     method: "get",
     response: ({ params }) => {
       const id = parseInt(params.id);
