@@ -1,8 +1,5 @@
-// mock/enterprise.js
-// 模拟个人企业列表数据（当前登录用户的企业）
-
 // 模拟当前登录用户ID（假设为1001）
-const CURRENT_USER_ID = 1001;
+// const CURRENT_USER_ID = 1001;
 
 // 个人制造企业数据（包含所有审核状态）
 let myManufactureList = [
@@ -53,34 +50,6 @@ let myManufactureList = [
     productType: "软件开发",
     contactPerson: "孙八",
     contactPhone: "13700137006",
-    auditStatus: "pending",
-    auditRemark: null,
-    auditTime: null,
-    createTime: "2026-03-01 10:00:00",
-  },
-];
-
-// 个人服务商数据（当前登录用户的服务商）
-let myServiceList = [
-  {
-    id: 2001,
-    companyName: "华测检测认证集团",
-    region: "深圳",
-    serviceType: "检测认证",
-    contactPerson: "王五",
-    contactPhone: "13700137003",
-    auditStatus: "approved",
-    auditRemark: null,
-    auditTime: "2026-03-17 15:44:52",
-    createTime: "2026-03-01 10:00:00",
-  },
-  {
-    id: 2002,
-    companyName: "广和咨询",
-    region: "广州",
-    serviceType: "管理咨询",
-    contactPerson: "周九",
-    contactPhone: "13800138009",
     auditStatus: "pending",
     auditRemark: null,
     auditTime: null,
