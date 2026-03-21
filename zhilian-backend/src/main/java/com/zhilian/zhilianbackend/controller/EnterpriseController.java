@@ -7,7 +7,6 @@ import com.zhilian.zhilianbackend.dto.request.PageRequest;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseManufactureVO;
 import com.zhilian.zhilianbackend.dto.response.EnterpriseServiceVO;
 import com.zhilian.zhilianbackend.service.EnterpriseService;
-import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
