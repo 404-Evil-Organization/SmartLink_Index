@@ -7,6 +7,7 @@ import dashboardRoutes from "./models/dashboard";
 import serviceListRoutes from "./models/service";
 import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
+import enterpriseRoutes from "./models/enterprise";
 
 const routes = [
   {
@@ -25,8 +26,9 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       ...dashboardRoutes,
-      ...serviceListRoutes, 
+      ...serviceListRoutes,
       ...manufactureRoutes,
+      ...enterpriseRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,
@@ -50,7 +52,7 @@ router.beforeEach(async (to, from, next) => {
 
   if (token) {
     if (to.path === "/login") {
-      next("/"); 
+      next("/");
     } else {
       if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
         try {

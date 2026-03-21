@@ -28,6 +28,11 @@
           <span>服务企业列表</span>
         </el-menu-item>
 
+        <el-menu-item index="/enterprise">
+          <el-icon><OfficeBuilding /></el-icon>
+          <span>我的企业</span>
+        </el-menu-item>
+
         <el-sub-menu v-if="isAdmin" index="1">
           <template #title>
             <el-icon><Avatar /></el-icon>
