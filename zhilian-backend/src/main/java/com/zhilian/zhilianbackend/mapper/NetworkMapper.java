@@ -57,7 +57,13 @@ public interface NetworkMapper {
             "CONCAT('s', c.service_id) AS target, " +
             "COUNT(*) AS value " +
             "FROM cooperation c " +
+            "JOIN manufacture m ON c.manu_id = m.id " +
+            "JOIN service_provider s ON c.service_id = s.id " +
             "WHERE c.deleted = '1970-01-01 00:00:00' " +
+            "AND m.deleted = '1970-01-01 00:00:00' " +
+            "AND m.audit_status = 'approved' " +
+            "AND s.deleted = '1970-01-01 00:00:00' " +
+            "AND s.audit_status = 'approved' " +
             "GROUP BY c.manu_id, c.service_id " +
             "ORDER BY value DESC")
     List<Map<String, Object>> getCooperationLinks();

@@ -24,6 +24,7 @@ public class HeatmapDataResponse {
 
     /**
      * 合作次数/指数值
+     * 使用 Long 类型以安全承接数据库 COUNT(...) 返回的 BIGINT 结果，避免整数溢出
      */
-    private Integer value;
+    private Long value;
 }
