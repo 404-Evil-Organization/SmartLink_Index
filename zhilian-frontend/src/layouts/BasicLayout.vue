@@ -17,7 +17,7 @@
           <span>首页</span>
         </el-menu-item>
 
-        <el-sub-menu index="1">
+        <el-sub-menu index="diagnosis">
           <template #title>
             <el-icon><Avatar /></el-icon>
             <span>数字化诊断</span>
@@ -27,17 +27,18 @@
             <span>诊断问卷</span>
           </el-menu-item>
 
-          <el-menu-item index="/diagnosis/report">
+          <el-menu-item index="/diagnosis/report" >
           <el-icon><DataLine /></el-icon>
           <span>诊断报告</span>
         </el-menu-item>
         </el-sub-menu>
 
-       
+        <el-sub-menu v-if="isAdmin" index="admin-manufacture">
         <el-menu-item index="/manufacture/list">
           <el-icon><OfficeBuilding /></el-icon>
           <span>制造企业列表</span>
         </el-menu-item>
+        </el-sub-menu>
 
         <!-- 新增服务企业列表菜单项 -->
         <el-menu-item index="/service/list">
@@ -45,7 +46,7 @@
           <span>服务企业列表</span>
         </el-menu-item>
 
-        <el-sub-menu v-if="isAdmin" index="1">
+        <el-sub-menu v-if="isAdmin" index="admin">
           <template #title>
             <el-icon><Avatar /></el-icon>
             <span>管理员</span>

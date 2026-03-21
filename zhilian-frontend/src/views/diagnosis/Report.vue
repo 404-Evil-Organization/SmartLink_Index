@@ -200,6 +200,7 @@ import {
 } from '@element-plus/icons-vue'
 import { getDiagnosisResult, getLatestDiagnosis } from '@/api/diagnosis'
 import { getManufactureList } from '@/api/manufacture'
+import { getMyManufactureList } from '@/api/enterprise'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
@@ -221,38 +222,25 @@ const selectedManuId = ref(null)
  * 获取当前用户拥有的所有审核通过的企业
  */
 const fetchEnterprises = async () => {
-  loadingEnterprises.value = true
+  loadingEnterprises.value = true;
+  const userRole = userStore.userInfo?.role;
   try {
-    const res = await getManufactureList({ page: 1, size: 100 })
-    const records = res?.records || []
-    const currentUserId = userStore.userInfo?.id
-
-    if (!currentUserId) {
-      console.warn('未能获取当前登录用户ID，企业列表将保持为空以避免越权风险')
-      enterprises.value = []
+    let res = {};
+    if (userRole === "admin") {
+      res = await getManufactureList({ page: 1, size: 100 });
     } else {
-      enterprises.value = records
-        .filter(item => item.userId === currentUserId)
-        .filter(item => item.auditStatus === 'approved')
+      res = await getMyManufactureList({ page: 1, size: 100 });
     }
-
-    // 打印企业列表供调试
-    console.log('企业列表:', enterprises.value.map(e => ({ id: e.id, name: e.companyName })))
-
-    // // 如果企业列表长度为1且当前没有通过链接加载的报告，则自动加载该企业的报告
-    // if (enterprises.value.length === 1 && !reportData.value && !loadingReport.value) {
-    //   console.log('检测到单个企业，自动加载报告')
-    //   selectedManuId.value = enterprises.value[0].id
-    //   fetchLatestReportByManuId(selectedManuId.value)
-    // }
+    // 如果需要过滤审核状态，取消下一行注释
+    // enterprises.value = (res.records || []).filter(item => item.auditStatus === 'approved');
+    enterprises.value = res.records || [];
   } catch (error) {
-    console.error('获取企业列表失败', error)
-    ElMessage.error('获取企业列表失败')
+    console.error("获取企业列表失败", error);
+    ElMessage.error("获取企业列表失败，请稍后重试");
   } finally {
-    loadingEnterprises.value = false
+    loadingEnterprises.value = false;
   }
-}
-
+};
 const enterpriseOptions = computed(() => enterprises.value)
 
 // ---------- 报告详情 ----------
@@ -319,6 +307,8 @@ const fetchReportById = async (id) => {
   }
 }
 
+
+
 const fetchLatestReportByManuId = async (manuId) => {
   if (!manuId) return
   loadingReport.value = true
@@ -357,8 +347,6 @@ const loadReport = () => {
 
 
 const handleViewReport = async () => {
-  console.log('======= handleViewReport 被调用 =======');
-  console.log('当前选中的企业ID:', selectedManuId.value);
   if (!selectedManuId.value) {
     ElMessage.warning('请先选择企业');
     return;
@@ -366,7 +354,6 @@ const handleViewReport = async () => {
   viewLoading.value = true;
   try {
     const latest = await getLatestDiagnosis(selectedManuId.value);
-    console.log('【接口返回】最新报告:', latest);
     if (latest && latest.diagnosisId) {
       router.push(`/diagnosis/report?id=${latest.diagnosisId}`);
     } else {
@@ -374,16 +361,8 @@ const handleViewReport = async () => {
       showNoReport.value = true;
     }
   } catch (error) {
-    const status = error?.response?.status || error?.code
-    if (status === 404) {
-      reportData.value = null
-      showNoReport.value = true
-    } else {
-    console.error('获取报告失败:', error);
-    // ... 原有错误处理
-  } 
-  }
-  finally {
+    handleReportError(error);
+  } finally {
     viewLoading.value = false;
   }
 };
