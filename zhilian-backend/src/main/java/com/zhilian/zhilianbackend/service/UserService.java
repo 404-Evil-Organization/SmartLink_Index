@@ -5,7 +5,11 @@ import com.zhilian.zhilianbackend.dto.request.UserChangePasswordRequest;
 import com.zhilian.zhilianbackend.dto.request.UserListRequest;
 import com.zhilian.zhilianbackend.dto.request.UserLoginRequest;
 import com.zhilian.zhilianbackend.dto.request.UserRegisterRequest;
-import com.zhilian.zhilianbackend.dto.response.*;
+import com.zhilian.zhilianbackend.dto.response.UserDetailVO;
+import com.zhilian.zhilianbackend.dto.response.UserInfoResponse;
+import com.zhilian.zhilianbackend.dto.response.UserListVO;
+import com.zhilian.zhilianbackend.dto.response.UserLoginResponse;
+import com.zhilian.zhilianbackend.dto.response.UserRegisterResponse;
 
 /**
  * @Author: 6017

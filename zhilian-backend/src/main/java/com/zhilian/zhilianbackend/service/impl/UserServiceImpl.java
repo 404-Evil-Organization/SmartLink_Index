@@ -16,9 +16,7 @@ import com.zhilian.zhilianbackend.service.ManufactureService;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
 import com.zhilian.zhilianbackend.service.UserService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -38,7 +36,6 @@ import java.util.stream.Collectors;
  **/
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
@@ -48,14 +45,23 @@ public class UserServiceImpl implements UserService {
     // 用于用户名的锁缓存：使用带引用计数的锁对象
     private final ConcurrentHashMap<String, UsernameLock> lockMap = new ConcurrentHashMap<>();
 
-    // 关键修改：改为字段注入 + @Lazy，避免循环依赖
-    @Lazy
-    @Autowired
-    private ManufactureService manufactureService;
+    // 使用构造器注入 + 参数级 @Lazy，避免字段注入带来的不可变性/可测试性问题
+    private final ManufactureService manufactureService;
+    private final ServiceProviderService serviceProviderService;
 
-    @Lazy
-    @Autowired
-    private ServiceProviderService serviceProviderService;
+    /**
+     * 通过构造器注入所有依赖，在参数上使用 @Lazy 解决与其他 Service 的循环依赖问题。
+     * 保持依赖字段为 final，提高不可变性和可测试性。
+     */
+    public UserServiceImpl(UserMapper userMapper,
+                           JwtUtil jwtUtil,
+                           @Lazy ManufactureService manufactureService,
+                           @Lazy ServiceProviderService serviceProviderService) {
+        this.userMapper = userMapper;
+        this.jwtUtil = jwtUtil;
+        this.manufactureService = manufactureService;
+        this.serviceProviderService = serviceProviderService;
+    }
 
     /**
      * 用户名级别锁对象：
@@ -312,10 +318,11 @@ public class UserServiceImpl implements UserService {
         detail.setCreateTime(user.getCreateTime());
 
         if ("manufacture".equals(user.getRole())) {
-            // 使用 ManufactureService 的 lambdaQuery 查询
-            Manufacture manufacture = manufactureService.lambdaQuery()
-                    .eq(Manufacture::getUserId, user.getId())
-                    .one();
+            // 使用 getOne 并传入 false 避免多条记录时抛出异常，多条时返回第一条
+            Manufacture manufacture = manufactureService.getOne(
+                    new LambdaQueryWrapper<Manufacture>().eq(Manufacture::getUserId, user.getId()),
+                    false
+            );
             if (manufacture != null) {
                 UserDetailVO.ManufactureInfo info = new UserDetailVO.ManufactureInfo();
                 info.setId(manufacture.getId());
@@ -325,10 +332,11 @@ public class UserServiceImpl implements UserService {
                 detail.setManufactureInfo(info);
             }
         } else if ("service".equals(user.getRole())) {
-            // 使用 ServiceProviderService 的 lambdaQuery 查询
-            ServiceProvider service = serviceProviderService.lambdaQuery()
-                    .eq(ServiceProvider::getUserId, user.getId())
-                    .one();
+            // 使用 getOne 并传入 false 避免多条记录时抛出异常，多条时返回第一条
+            ServiceProvider service = serviceProviderService.getOne(
+                    new LambdaQueryWrapper<ServiceProvider>().eq(ServiceProvider::getUserId, user.getId()),
+                    false
+            );
             if (service != null) {
                 UserDetailVO.ServiceProviderInfo info = new UserDetailVO.ServiceProviderInfo();
                 info.setId(service.getId());

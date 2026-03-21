@@ -53,12 +53,7 @@ public class AdminUserController {
     public Result<PageResult<UserListVO>> listUsers(@Valid UserListRequest request) {
         checkAdmin();
         Page<UserListVO> page = userService.pageUsers(request);
-        PageResult<UserListVO> pageResult = new PageResult<>(
-                page.getTotal(),
-                page.getRecords(),
-                (long) request.getPage(),
-                (long) request.getSize()
-        );
+        PageResult<UserListVO> pageResult = PageResult.from(page);
         return Result.success(pageResult);
     }
 
