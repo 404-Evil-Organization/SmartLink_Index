@@ -9,7 +9,6 @@ import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.DiagnosisMapper;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
-import com.zhilian.zhilianbackend.mapper.UserMapper;
 import com.zhilian.zhilianbackend.service.DiagnosisService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.service.algorithm.DiagnosisAlgorithm;
@@ -301,7 +300,12 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
                         diagnosis.getSuggestions(),
                         new TypeReference<List<String>>() {}
                 );
-                vo.setSuggestions(suggestions);
+                // 注意：当原始 JSON 为字符串 "null" 时，readValue 会返回 Java 层面的 null，这里做一次兜底，保持响应结构稳定
+                if (suggestions == null) {
+                    vo.setSuggestions(Collections.emptyList());
+                } else {
+                    vo.setSuggestions(suggestions);
+                }
             } catch (Exception e) {
                 // 不中断整体诊断报告查询，仅记录错误并降级为空列表，后续可根据日志排查并修复脏数据
                 log.error("解析诊断建议JSON失败，diagnosisId={}, suggestions={}", diagnosis.getId(), diagnosis.getSuggestions(), e);
