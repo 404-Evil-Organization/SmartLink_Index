@@ -1,0 +1,61 @@
+package com.zhilian.zhilianbackend.controller;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.zhilian.zhilianbackend.common.result.PageResult;
+import com.zhilian.zhilianbackend.common.result.Result;
+import com.zhilian.zhilianbackend.dto.request.ManufactureListRequestDTO;
+import com.zhilian.zhilianbackend.dto.request.ServiceProviderListRequestDTO;
+import com.zhilian.zhilianbackend.dto.response.EnterpriseManufactureVO;
+import com.zhilian.zhilianbackend.dto.response.EnterpriseServiceVO;
+import com.zhilian.zhilianbackend.service.EnterpriseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * @Author: 6017
+ * @Date: 2026/3/20 23:56
+ * @Param: 
+ * @Return: 
+ * @Description: 个人企业管理控制器，提供个人制造企业列表和个人服务商列表接口
+**/
+@RestController
+@RequestMapping("/enterprise")
+@RequiredArgsConstructor
+@Tag(name = "个人企业管理", description = "个人企业相关接口")
+public class EnterpriseController {
+
+    private final EnterpriseService enterpriseService;
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/21 00:01
+     * @Param: pageRequest 分页请求参数
+     * @Return: Result<PageResult<EnterpriseManufactureVO>> 个人制造企业分页列表
+     * @Description: 获取个人制造企业列表（管理员可获取全部）
+    **/
+    @GetMapping("/manufacture/list")
+    @Operation(summary = "获取个人制造企业列表", description = "普通用户：返回当前登录用户创建的制造企业列表，包含所有审核状态；管理员：可查看系统内全部制造企业数据")
+    public Result<PageResult<EnterpriseManufactureVO>> getMyManufactureList(@Valid ManufactureListRequestDTO pageRequest) {
+        IPage<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(pageRequest);
+        return Result.success(PageResult.from(page));
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/21 00:01
+     * @Param: pageRequest 分页请求参数
+     * @Return: Result<PageResult<EnterpriseServiceVO>> 个人服务商分页列表
+     * @Description: 获取个人服务商列表（管理员可获取全部）
+    **/
+    @GetMapping("/service/list")
+    @Operation(summary = "获取个人服务商列表", description = "普通用户：返回当前登录用户创建的服务商列表，包含所有审核状态；管理员：可查看系统内全部服务商数据")
+    public Result<PageResult<EnterpriseServiceVO>> getMyServiceList(@Valid ServiceProviderListRequestDTO pageRequest) {
+        IPage<EnterpriseServiceVO> page = enterpriseService.getMyServiceList(pageRequest);
+        return Result.success(PageResult.from(page));
+    }
+}
