@@ -43,7 +43,6 @@ public class EnterpriseController {
     @Operation(summary = "获取个人制造企业列表", description = "返回当前登录用户创建的制造企业列表，包含所有审核状态")
     public Result<PageResult<EnterpriseManufactureVO>> getMyManufactureList(@Valid PageRequest pageRequest) {
         Long userId = securityUtils.getCurrentUserId();
-        // Service 返回 IPage，无需手动转换
         IPage<EnterpriseManufactureVO> page = enterpriseService.getMyManufactureList(
                 userId,
                 pageRequest.getPage().longValue(),

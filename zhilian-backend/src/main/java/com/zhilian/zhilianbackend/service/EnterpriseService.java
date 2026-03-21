@@ -16,7 +16,9 @@ public interface EnterpriseService {
     /**
      * @Author: 6017
      * @Date: 2026/3/20 23:58
-     * @Param: userId 用户ID  page 页码  size 每页条数
+     * @Param userId   用户ID
+     * @Param pageNum  页码，默认1
+     * @Param pageSize 每页条数，默认10
      * @Return: 分页结果
      * @Description: 获取当前用户的制造企业列表
     **/
@@ -25,7 +27,9 @@ public interface EnterpriseService {
     /**
      * @Author: 6017
      * @Date: 2026/3/20 23:58
-     * @Param: userId 用户ID  page 页码  size 每页条数
+     * @Param userId   用户ID
+     * @Param pageNum  页码，默认1
+     * @Param pageSize 每页条数，默认10
      * @Return: 分页结果
      * @Description: 获取当前用户的服务商列表
     **/

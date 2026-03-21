@@ -40,7 +40,7 @@ public class EnterpriseServiceImpl implements EnterpriseService {
     public IPage<EnterpriseManufactureVO> getMyManufactureList(Long userId, Long pageNum, Long pageSize) {
         LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Manufacture::getUserId, userId)
-                .eq(Manufacture::getDeleted, DateConstants.NOT_DELETED_TIME)
+                .eq(Manufacture::getDeleted, DateConstants.getNotDeletedTime())
                 .orderByDesc(Manufacture::getCreateTime);
 
         Page<Manufacture> resultPage = manufactureMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
@@ -58,7 +58,7 @@ public class EnterpriseServiceImpl implements EnterpriseService {
     public IPage<EnterpriseServiceVO> getMyServiceList(Long userId, Long pageNum, Long pageSize) {
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ServiceProvider::getUserId, userId)
-                .eq(ServiceProvider::getDeleted, DateConstants.NOT_DELETED_TIME)
+                .eq(ServiceProvider::getDeleted, DateConstants.getNotDeletedTime())
                 .orderByDesc(ServiceProvider::getCreateTime);
 
         Page<ServiceProvider> resultPage = serviceProviderMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
