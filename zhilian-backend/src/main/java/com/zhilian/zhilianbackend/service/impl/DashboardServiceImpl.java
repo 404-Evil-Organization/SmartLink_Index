@@ -50,27 +50,23 @@ public class DashboardServiceImpl implements DashboardService {
         Long manufactureCount = manufactureMapper.selectCount(
                 new LambdaQueryWrapper<Manufacture>()
                         .eq(Manufacture::getAuditStatus, "approved")
-                        .eq(Manufacture::getDeleted, "1970-01-01 00:00:00")
         );
 
         // 统计服务商数量（审核通过的）
         Long serviceCount = serviceProviderMapper.selectCount(
                 new LambdaQueryWrapper<ServiceProvider>()
                         .eq(ServiceProvider::getAuditStatus, "approved")
-                        .eq(ServiceProvider::getDeleted, "1970-01-01 00:00:00")
         );
 
         // 统计需求数量（审核通过的）
         Long demandCount = demandMapper.selectCount(
                 new LambdaQueryWrapper<Demand>()
                         .eq(Demand::getAuditStatus, "approved")
-                        .eq(Demand::getDeleted, "1970-01-01 00:00:00")
         );
 
-        // 统计合作数量
+        // 统计合作数量（仅统计未逻辑删除的数据，逻辑删除由 @TableLogic 自动处理）
         Long cooperationCount = cooperationMapper.selectCount(
                 new LambdaQueryWrapper<Cooperation>()
-                        .eq(Cooperation::getDeleted, "1970-01-01 00:00:00")
         );
 
         return DashboardStatisticsResponse.builder()
@@ -132,7 +128,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .map(map -> NetworkDataResponse.LinkDTO.builder()
                         .source((String) map.get("source"))
                         .target((String) map.get("target"))
-                        .value(((Number) map.get("value")).intValue())
+                        .value(((Number) map.get("value")).longValue())
                         .build())
                 .collect(Collectors.toList());
 

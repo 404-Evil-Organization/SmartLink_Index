@@ -80,8 +80,8 @@ public class NetworkDataResponse {
         private String target;
 
         /**
-         * 合作次数/权重
+         * 合作次数/权重（使用 Long 对齐数据库 COUNT(*) 的 BIGINT 类型，避免大数量级溢出）
          */
-        private Integer value;
+        private Long value;
     }
 }

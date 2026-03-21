@@ -32,11 +32,13 @@ public interface CooperationMapper extends BaseMapper<Cooperation> {
             "INNER JOIN manufacture m ON c.manu_id = m.id " +
             "WHERE m.region IS NOT NULL AND m.region != '' " +
             "AND c.deleted = '1970-01-01 00:00:00' " +
+            "AND m.deleted = '1970-01-01 00:00:00' " +
+            "AND m.audit_status = 'approved' " +
             "<if test='startDate != null'>" +
-            "AND c.create_time >= #{startDate} " +
+            "AND c.create_time &gt;= #{startDate} " +
             "</if>" +
             "<if test='endDate != null'>" +
-            "AND c.create_time &lt;= #{endDate} " +
+            "AND c.create_time &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY) " +
             "</if>" +
             "GROUP BY m.region " +
             "ORDER BY value DESC" +
