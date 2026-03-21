@@ -42,26 +42,16 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
     **/
     @Override
     public Page<EvaluationVO> getEvaluationPage(Long serviceId, Integer page, Integer size) {
-        // 1. 查询该服务商的所有合作记录ID
-        LambdaQueryWrapper<Cooperation> coopWrapper = new LambdaQueryWrapper<>();
-        coopWrapper.eq(Cooperation::getServiceId, serviceId)
-                .select(Cooperation::getId);
-        List<Long> coopIds = cooperationMapper.selectList(coopWrapper)
-                .stream().map(Cooperation::getId).collect(Collectors.toList());
-
-        if (coopIds.isEmpty()) {
-            return new Page<>(page, size);
-        }
-
-        // 2. 分页查询评价
+        // 1. 直接在评价查询中通过子查询按服务商 ID 过滤，避免先拉取所有合作记录 ID
         Page<Evaluation> evaluationPage = new Page<>(page, size);
         LambdaQueryWrapper<Evaluation> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(Evaluation::getCoopId, coopIds)
+        wrapper.inSql(Evaluation::getCoopId,
+                        "SELECT id FROM cooperation WHERE service_id = " + serviceId)
                 .orderByDesc(Evaluation::getCreateTime);
 
         Page<Evaluation> pageResult = this.page(evaluationPage, wrapper);
 
-        // 3. 转换为VO
+        // 2. 转换为VO
         List<EvaluationVO> voList = pageResult.getRecords().stream().map(this::convertToVO).collect(Collectors.toList());
 
         Page<EvaluationVO> voPage = new Page<>(pageResult.getCurrent(), pageResult.getSize(), pageResult.getTotal());

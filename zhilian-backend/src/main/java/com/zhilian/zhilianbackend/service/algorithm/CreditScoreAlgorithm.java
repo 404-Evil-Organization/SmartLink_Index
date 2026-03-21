@@ -40,6 +40,11 @@ public class CreditScoreAlgorithm {
      * @Description: 计算服务商信用分，包括资质分、案例分、评价分和综合分
     **/
     public CreditScoreResult calculate(Long serviceId) {
+        // 入参校验：serviceId 不能为空且必须为正数，防止后续 Mapper 调用触发难以定位的异常
+        if (serviceId == null || serviceId <= 0) {
+            log.warn("计算服务商信用分入参非法，serviceId: {}", serviceId);
+            throw new IllegalArgumentException("serviceId 不能为空且必须为正数");
+        }
         log.debug("开始计算服务商信用分，serviceId: {}", serviceId);
 
         // 1. 计算资质分
@@ -75,7 +80,8 @@ public class CreditScoreAlgorithm {
         LambdaQueryWrapper<Certification> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Certification::getServiceId, serviceId)
                 .eq(Certification::getStatus, 1)  // 有效状态
-                .ge(Certification::getExpireDate, new Date()); // 未过期
+                // 使用当前“日期”而非当前“时间”，确保到期日当天仍视为未过期
+                .ge(Certification::getExpireDate, java.sql.Date.valueOf(java.time.LocalDate.now())); // 未过期
 
         List<Certification> certifications = certificationMapper.selectList(wrapper);
 
@@ -112,9 +118,9 @@ public class CreditScoreAlgorithm {
             return (byte) 0;
         }
 
-        // 查询该服务商的所有案例
+        // 查询该服务商的所有案例，改为通过 serviceId 进行精确关联，避免企业名称变更或重名导致归属错误
         LambdaQueryWrapper<AbroadCase> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(AbroadCase::getCompanyName, serviceProvider.getCompanyName())
+        wrapper.eq(AbroadCase::getServiceId, serviceId)
                 .eq(AbroadCase::getCompanyType, "service")
                 .eq(AbroadCase::getStatus, 1); // 已发布
 

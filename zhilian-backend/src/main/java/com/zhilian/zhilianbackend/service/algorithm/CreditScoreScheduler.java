@@ -44,10 +44,9 @@ public class CreditScoreScheduler {
     public void calculateAllCreditScores() {
         log.info("========== 开始定时任务：计算所有服务商信用分 ==========");
 
-        // 查询所有审核通过的服务商
+        // 查询所有审核通过的服务商，逻辑删除由 @TableLogic 自动处理
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ServiceProvider::getAuditStatus, "approved")
-                .eq(ServiceProvider::getDeleted, "1970-01-01 00:00:00");
+        wrapper.eq(ServiceProvider::getAuditStatus, "approved");
 
         List<ServiceProvider> providers = serviceProviderMapper.selectList(wrapper);
         log.info("找到 {} 个服务商需要计算信用分", providers.size());
