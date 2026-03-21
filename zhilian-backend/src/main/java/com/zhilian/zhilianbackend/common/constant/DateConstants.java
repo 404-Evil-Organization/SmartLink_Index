@@ -22,15 +22,21 @@ public final class DateConstants {
      * 逻辑删除字段的“未删除”标记值（1970-01-01 00:00:00）
      */
     private static final String NOT_DELETED_TIME_STR = "1970-01-01 00:00:00";
-    
+
+    /**
+     * 逻辑删除字段的“未删除”标记时间常量（缓存的 Timestamp 实例）
+     */
+    private static final Timestamp NOT_DELETED_TIME = Timestamp.valueOf(NOT_DELETED_TIME_STR);
+
     /**
      * @Author: taciturn-hg
      * @Date: 2026/3/21 13:37
-     * @Param: 
-     * @Return: 新创建的代表“未删除”时间点的 Date 实例
+     * @Param:
+     * @Return: 代表“未删除”时间点的 Date 常量实例
      * @Description: 获取逻辑删除字段的“未删除”标记时间
-    **/
+     **/
     public static Date getNotDeletedTime() {
-        return Timestamp.valueOf(NOT_DELETED_TIME_STR);
+        // 直接返回缓存的 Timestamp 实例，避免重复解析与对象创建
+        return NOT_DELETED_TIME;
     }
 }
