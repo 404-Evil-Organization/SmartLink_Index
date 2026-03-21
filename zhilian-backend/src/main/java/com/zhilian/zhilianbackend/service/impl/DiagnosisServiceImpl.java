@@ -6,7 +6,6 @@ import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.entity.Diagnosis;
 import com.zhilian.zhilianbackend.entity.Manufacture;
-import com.zhilian.zhilianbackend.entity.User;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.DiagnosisMapper;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
@@ -44,7 +43,6 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
     private final ObjectMapper objectMapper;
 
     private final ManufactureMapper manufactureMapper;
-    private final UserMapper userMapper;
     private final DiagnosisAlgorithm diagnosisAlgorithm;
     private final SecurityUtils securityUtils;
 
@@ -87,12 +85,12 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
             throw new BusinessException(404, "关联的制造企业不存在");
         }
 
-        boolean isAdmin = "admin".equals(securityUtils.getCurrentUserRole());
+        // 只从 SecurityContext 获取一次当前用户角色，后续复用，避免重复读取
+        String currentRole = securityUtils.getCurrentUserRole();
+        boolean isAdmin = "admin".equals(currentRole);
         boolean isOwner = manufacture.getUserId().equals(userId);
 
         if (!isOwner && !isAdmin) {
-            // 直接从 SecurityContext 获取当前用户角色，避免额外数据库查询
-            String currentRole = securityUtils.getCurrentUserRole();
             log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
                     userId, manufacture.getUserId(), currentRole);
             throw new BusinessException(403, errorMsg);
