@@ -131,13 +131,13 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
 
         // 3. 先对四个维度得分做非空及 1-5 范围校验，再将校验通过的结果传给算法和持久化层
         byte infoScore = validateDimensionScore(request.getInfoScore(), "infoScore",
-                request.getManuId(), userId);
+                manuId, userId);
         byte autoScore = validateDimensionScore(request.getAutoScore(), "autoScore",
-                request.getManuId(), userId);
+                manuId, userId);
         byte dataScore = validateDimensionScore(request.getDataScore(), "dataScore",
-                request.getManuId(), userId);
+                manuId, userId);
         byte serviceScore = validateDimensionScore(request.getServiceScore(), "serviceScore",
-                request.getManuId(), userId);
+                manuId, userId);
 
         int totalScore = diagnosisAlgorithm.calculateTotalScore(
                 infoScore,
