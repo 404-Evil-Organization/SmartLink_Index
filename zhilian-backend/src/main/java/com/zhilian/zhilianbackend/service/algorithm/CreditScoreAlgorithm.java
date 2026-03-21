@@ -112,15 +112,17 @@ public class CreditScoreAlgorithm {
      * @Description: 计算案例分，基于出海案例的数量和时效性
     **/
     private Byte calculateCaseScore(Long serviceId) {
-        // 获取服务商信息
-        ServiceProvider serviceProvider = serviceProviderMapper.selectById(serviceId);
-        if (serviceProvider == null) {
+        // 为兼容当前表结构与 AbroadCase 实体，这里通过公司名称 + companyType 进行关联
+        // 若后续数据库与实体补充了 serviceId 字段，可再切换为直接使用 serviceId 关联
+        String companyName = serviceProvider.getCompanyName();
+        if (companyName == null || companyName.isEmpty()) {
+            // 无有效公司名称时无法可靠关联案例，直接返回 0 分，避免误计
             return (byte) 0;
         }
 
-        // 查询该服务商的所有案例，改为通过 serviceId 进行精确关联，避免企业名称变更或重名导致归属错误
+        // 查询该服务商的所有案例，通过 companyName + companyType 精确关联
         LambdaQueryWrapper<AbroadCase> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(AbroadCase::getServiceId, serviceId)
+        wrapper.eq(AbroadCase::getCompanyName, companyName)
                 .eq(AbroadCase::getCompanyType, "service")
                 .eq(AbroadCase::getStatus, 1); // 已发布
 
