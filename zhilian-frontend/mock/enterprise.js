@@ -5,7 +5,7 @@ export default [
     method: "get",
     response: ({ query }) => {
       const { page = 1, size = 10 } = query;
-      const records = [
+      let records = [
         {
           id: 1001,
           companyName: "深圳电子科技",
@@ -64,7 +64,7 @@ export default [
     method: "get",
     response: ({ query }) => {
       const { page = 1, size = 10 } = query;
-      const records = [
+      let records = [
         {
           id: 2001,
           companyName: "华测检测",
