@@ -340,10 +340,8 @@ const loadReport = () => {
   const manuId = route.query.manuId || route.params.manuId
 
   if (id) {
-    console.log('通过链接访问报告 ID:', id)
     fetchReportById(id)
   } else if (manuId) {
-    console.log('通过链接访问企业最新报告，企业 ID:', manuId)
     fetchLatestReportByManuId(manuId)
   } else {
     reportData.value = null
