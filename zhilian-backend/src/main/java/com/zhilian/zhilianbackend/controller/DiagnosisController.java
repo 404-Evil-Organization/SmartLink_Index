@@ -81,7 +81,12 @@ public class DiagnosisController {
     @GetMapping("/latest")
     @Operation(summary = "获取最新诊断报告", description = "获取指定企业的最新诊断报告")
     public Result<DiagnosisReportVO> getLatestDiagnosis(
-            @RequestParam(name = "manuId") Long manuId) {
+            @RequestParam(name = "manuId", required = false) Long manuId) {
+
+        if (manuId == null) {
+            log.warn("获取最新诊断报告请求缺少必填参数 manuId");
+            throw new BusinessException(400, "制造企业ID不能为空");
+        }
 
         log.info("接收到获取企业最新诊断报告请求: manuId={}", manuId);
 
