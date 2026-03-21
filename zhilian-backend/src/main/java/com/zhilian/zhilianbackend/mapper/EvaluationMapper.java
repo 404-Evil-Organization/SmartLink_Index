@@ -18,30 +18,34 @@ public interface EvaluationMapper extends BaseMapper<Evaluation> {
      * 仅统计：未被逻辑删除的合作记录 + 未被逻辑删除的评价记录
      *
      * @param serviceId 服务商ID
+     * @param notDeleted 逻辑删除标记中的“未删除”时间值，由调用方统一提供
      * @return 平均评分
      */
     @Select("SELECT AVG(score) FROM evaluation " +
             "WHERE coop_id IN (" +
             "  SELECT id FROM cooperation " +
             "  WHERE service_id = #{serviceId} " +
-            "    AND cooperation.deleted = '1970-01-01 00:00:00'" +
+            "    AND cooperation.deleted = #{notDeleted}" +
             ") " +
-            "AND evaluation.deleted = '1970-01-01 00:00:00'")
-    Double getAvgScoreByServiceId(@Param("serviceId") Long serviceId);
+            "AND evaluation.deleted = #{notDeleted}")
+    Double getAvgScoreByServiceId(@Param("serviceId") Long serviceId,
+                                  @Param("notDeleted") String notDeleted);
 
     /**
      * 获取服务商的评价数量
      * 仅统计：未被逻辑删除的合作记录 + 未被逻辑删除的评价记录
      *
      * @param serviceId 服务商ID
+     * @param notDeleted 逻辑删除标记中的“未删除”时间值，由调用方统一提供
      * @return 评价数量
      */
     @Select("SELECT COUNT(*) FROM evaluation " +
             "WHERE coop_id IN (" +
             "  SELECT id FROM cooperation " +
             "  WHERE service_id = #{serviceId} " +
-            "    AND cooperation.deleted = '1970-01-01 00:00:00'" +
+            "    AND cooperation.deleted = #{notDeleted}" +
             ") " +
-            "AND evaluation.deleted = '1970-01-01 00:00:00'")
-    Integer getCountByServiceId(@Param("serviceId") Long serviceId);
+            "AND evaluation.deleted = #{notDeleted}")
+    Integer getCountByServiceId(@Param("serviceId") Long serviceId,
+                                @Param("notDeleted") String notDeleted);
 }
