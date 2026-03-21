@@ -91,13 +91,10 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         boolean isOwner = manufacture.getUserId().equals(userId);
 
         if (!isOwner && !isAdmin) {
-            // 兜底校验用户是否存在
-            User user = userMapper.selectById(userId);
-            if (user == null) {
-                throw new BusinessException(404, "用户不存在");
-            }
+            // 直接从 SecurityContext 获取当前用户角色，避免额外数据库查询
+            String currentRole = securityUtils.getCurrentUserRole();
             log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
-                    userId, manufacture.getUserId(), user.getRole());
+                    userId, manufacture.getUserId(), currentRole);
             throw new BusinessException(403, errorMsg);
         }
     }
