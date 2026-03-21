@@ -1086,14 +1086,8 @@ const submitForm = async () => {
       contactPerson: form.contactPerson,
       contactPhone: form.contactPhone,
       scale: form.scale,
-      employeeCount:
-        form.employeeCount !== null && form.employeeCount !== undefined
-          ? String(form.employeeCount)
-          : null,
-      annualRevenue:
-        form.annualRevenue !== null && form.annualRevenue !== undefined
-          ? String(form.annualRevenue)
-          : null,
+      employeeCount: form.employeeCount ?? null,
+      annualRevenue: form.annualRevenue ?? null,
       productType: joinTags(form.productType), // 数组转逗号分隔字符串
       description: form.description,
       logo: form.logo,
@@ -1111,10 +1105,7 @@ const submitForm = async () => {
       logo: form.logo,
       website: form.website,
       establishedDate: form.establishedDate,
-      employeeCount:
-        form.employeeCount !== null && form.employeeCount !== undefined
-          ? String(form.employeeCount)
-          : null,
+      employeeCount: form.employeeCount ?? null,
       qualification: form.qualification,
     };
   }
