@@ -257,15 +257,15 @@ const refreshEnterprises = async () => {
   syncSelectedEnterprise();
 };
 
-// 监听企业选项变化，自动同步选中状态
-watch(
-  enterpriseOptions,
-  () => {
-    syncSelectedEnterprise();
-  },
-  { deep: true },
+// 基于企业列表派生出仅包含 id 的数组，用于轻量监听
+const enterpriseOptionIds = computed(() =>
+  enterpriseOptions.value.map((item) => item.id),
 );
 
+// 监听企业选项变化（通过 id 列表），自动同步选中状态
+watch(enterpriseOptionIds, () => {
+  syncSelectedEnterprise();
+});
 // ---------- 表单 ----------
 const formRef = ref(null);
 const submitting = ref(false);
