@@ -63,20 +63,20 @@ public class DashboardServiceImpl implements DashboardService {
         Long serviceCount = serviceProviderMapper.selectCount(
                 new LambdaQueryWrapper<ServiceProvider>()
                         .eq(ServiceProvider::getAuditStatus, "approved")
-                        .eq(ServiceProvider::getDeleted, DateConstants.getNotDeletedTimeStr())
+                        .eq(ServiceProvider::getDeleted, DateConstants.getNotDeletedTime())
         );
 
         // 统计需求数量（审核通过的）
         Long demandCount = demandMapper.selectCount(
                 new LambdaQueryWrapper<Demand>()
                         .eq(Demand::getAuditStatus, "approved")
-                        .eq(Demand::getDeleted, DateConstants.getNotDeletedTimeStr())
+                        .eq(Demand::getDeleted, DateConstants.getNotDeletedTime())
         );
 
         // 统计合作数量
         Long cooperationCount = cooperationMapper.selectCount(
                 new LambdaQueryWrapper<Cooperation>()
-                        .eq(Cooperation::getDeleted, DateConstants.getNotDeletedTimeStr())
+                        .eq(Cooperation::getDeleted, DateConstants.getNotDeletedTime())
         );
 
         return DashboardStatisticsResponse.builder()
