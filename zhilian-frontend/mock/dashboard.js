@@ -8,7 +8,7 @@ export default [
       code: 200,
       message: "success",
       data: {
-        manufactureCount: 1250,
+        manufactureCount: 1200,
         serviceCount: 380,
         demandCount: 560,
         cooperationCount: 890,

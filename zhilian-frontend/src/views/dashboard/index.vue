@@ -94,12 +94,10 @@
             <div class="table-toolbar">
               <div class="table-title">区域合作热力图</div>
             </div>
-            <div class="chart-placeholder">
-              <div class="placeholder-content" v-if="heatmap.length">
-                已获取 {{ heatmap.length }} 个区域数据（待渲染图表）
-              </div>
-              <div v-else class="placeholder-content">暂无数据</div>
+            <div v-if="heatmap.length" class="chart-container">
+              <div ref="heatmapChartRef" class="chart-box"></div>
             </div>
+            <div v-else class="placeholder-content">暂无数据</div>
           </el-card>
         </el-col>
         <el-col :span="12">
@@ -128,14 +126,14 @@
             <div class="table-toolbar">
               <div class="table-title">合作网络关系图</div>
             </div>
-            <div class="chart-placeholder" style="height: 300px">
-              <div class="placeholder-content" v-if="network.nodes.length">
-                节点数：{{ network.nodes.length }}，连接数：{{
-                  network.links.length
-                }}（待渲染图表）
-              </div>
-              <div v-else class="placeholder-content">暂无数据</div>
+            <div
+              v-if="network.nodes && network.nodes.length"
+              class="chart-container"
+              style="height: 320px"
+            >
+              <div ref="networkChartRef" class="chart-box"></div>
             </div>
+            <div v-else class="placeholder-content">暂无数据</div>
           </el-card>
         </el-col>
       </el-row>
@@ -144,7 +142,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import {
+  ref,
+  reactive,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+  watch,
+} from "vue";
 import { ElMessage } from "element-plus";
 import {
   Refresh,
@@ -159,6 +164,7 @@ import {
   getTopDemands,
   getNetwork,
 } from "@/api/dashboard";
+import * as echarts from "echarts";
 
 const loading = ref(false);
 
@@ -172,34 +178,89 @@ const stats = reactive({
 
 // 热力图数据
 const heatmap = ref([]);
-
 // 热门需求
 const topDemands = ref([]);
-
 // 网络关系
 const network = ref({
   nodes: [],
   links: [],
 });
 
+// 图表实例
+let heatmapChart = null;
+let networkChart = null;
+
+// 图表 DOM 引用
+const heatmapChartRef = ref(null);
+const networkChartRef = ref(null);
+
 // 统一获取所有数据
 const fetchAllData = async () => {
   loading.value = true;
   try {
-    // 并行请求所有接口
     const [statsRes, heatmapRes, topDemandsRes, networkRes] = await Promise.all(
       [getStatistics(), getHeatmap(), getTopDemands({ top: 5 }), getNetwork()],
     );
 
-    // 更新数据
-    stats.manufactureCount = statsRes.manufactureCount;
-    stats.serviceCount = statsRes.serviceCount;
-    stats.demandCount = statsRes.demandCount;
-    stats.cooperationCount = statsRes.cooperationCount;
+    // 统一提取 data 字段（兼容包装和直接返回）
+    const statsData = statsRes.data || statsRes;
+    const heatmapData = heatmapRes.data || heatmapRes;
+    const topDemandsData = topDemandsRes.data || topDemandsRes;
+    const networkData = networkRes.data || networkRes;
 
-    heatmap.value = heatmapRes;
-    topDemands.value = topDemandsRes;
-    network.value = networkRes;
+    // 统计卡片
+    stats.manufactureCount = statsData.manufactureCount ?? 0;
+    stats.serviceCount = statsData.serviceCount ?? 0;
+    stats.demandCount = statsData.demandCount ?? 0;
+    stats.cooperationCount = statsData.cooperationCount ?? 0;
+
+    // 热力图数据（兼容字段名）
+    heatmap.value = (heatmapData || []).map((item) => ({
+      region: item.region || item.name || item.area || "未知",
+      value: item.value ?? item.count ?? item.heat ?? 0,
+    }));
+
+    // 热门需求
+    topDemands.value = (topDemandsData || []).map((item) => ({
+      serviceType: item.serviceType || item.type || "其他",
+      count: item.count ?? item.value ?? 0,
+    }));
+
+    // 网络图数据
+    const rawNodes = networkData.nodes || [];
+    const rawLinks = networkData.links || [];
+
+    // 建立 id 到 name 的映射
+    const idToName = {};
+    rawNodes.forEach((node) => {
+      idToName[node.id] = node.name;
+    });
+
+    network.value = {
+      nodes: rawNodes.map((node) => ({
+        name: node.name,
+        symbolSize: node.symbolSize || 30,
+        category: node.category || 0,
+        value: node.value || 1,
+        id: node.id, // 保留 id 供调试
+      })),
+      links: rawLinks.map((link) => ({
+        source: idToName[link.source] || link.source, // 转换为 name
+        target: idToName[link.target] || link.target,
+        value: link.value ?? 1,
+      })),
+    };
+
+    // 调试输出
+    console.log("热力图数据解析后：", heatmap.value);
+    console.log("网络图数据解析后：", network.value);
+
+    await nextTick();
+    // 延迟一点点确保 DOM 已渲染
+    setTimeout(() => {
+      renderHeatmapChart();
+      renderNetworkChart();
+    }, 50);
 
     ElMessage.success("数据更新成功");
   } catch (error) {
@@ -210,8 +271,260 @@ const fetchAllData = async () => {
   }
 };
 
+// 渲染区域合作热力图（柱状图）
+const renderHeatmapChart = () => {
+  try {
+    if (!heatmapChartRef.value) {
+      console.warn("热力图容器未找到");
+      return;
+    }
+
+    // 数据为空时销毁图表
+    if (!heatmap.value.length) {
+      if (heatmapChart) {
+        heatmapChart.dispose();
+        heatmapChart = null;
+      }
+      return;
+    }
+
+    // 检查现有实例是否绑定到当前 DOM 元素
+    if (heatmapChart && heatmapChart.getDom() !== heatmapChartRef.value) {
+      heatmapChart.dispose();
+      heatmapChart = null;
+    }
+
+    // 初始化或重置图表
+    if (!heatmapChart) {
+      heatmapChart = echarts.init(heatmapChartRef.value);
+    }
+
+    const regions = heatmap.value.map((item) => item.region);
+    const values = heatmap.value.map((item) => item.value);
+
+    const option = {
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params) => {
+          const data = params[0];
+          return `${data.name}<br/>合作热度: ${data.value}`;
+        },
+      },
+      grid: {
+        left: "8%",
+        right: "5%",
+        top: "15%",
+        bottom: "5%",
+        containLabel: true,
+      },
+      xAxis: {
+        type: "category",
+        data: regions,
+        axisLabel: {
+          rotate: regions.length > 5 ? 25 : 0,
+          interval: 0,
+          fontSize: 11,
+        },
+        axisLine: { lineStyle: { color: "#909399" } },
+      },
+      yAxis: {
+        type: "value",
+        name: "合作次数",
+        nameStyle: { fontSize: 12, color: "#606266" },
+        splitLine: { lineStyle: { type: "dashed", color: "#e9e9e9" } },
+      },
+      series: [
+        {
+          name: "合作热度",
+          type: "bar",
+          data: values,
+          barWidth: "40%",
+          itemStyle: {
+            borderRadius: [6, 6, 0, 0],
+            color: {
+              type: "linear",
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: "#f56c6c" },
+                { offset: 0.5, color: "#e6a23c" },
+                { offset: 1, color: "#67c23a" },
+              ],
+            },
+            shadowColor: "rgba(0, 0, 0, 0.1)",
+            shadowBlur: 4,
+          },
+          label: {
+            show: true,
+            position: "top",
+            color: "#1f2f3d",
+            fontSize: 11,
+          },
+        },
+      ],
+      backgroundColor: "transparent",
+    };
+
+    heatmapChart.setOption(option, true);
+    heatmapChart.resize();
+    console.log("热力图渲染成功", { regions, values });
+  } catch (error) {
+    console.error("热力图渲染失败:", error);
+  }
+};
+
+// 渲染合作网络关系图（力导向图）
+const renderNetworkChart = () => {
+  try {
+    if (!networkChartRef.value) {
+      console.warn("网络图容器未找到");
+      return;
+    }
+
+    if (!network.value.nodes.length) {
+      if (networkChart) {
+        networkChart.dispose();
+        networkChart = null;
+      }
+      return;
+    }
+
+    // 检查实例与 DOM 是否匹配
+    if (networkChart && networkChart.getDom() !== networkChartRef.value) {
+      networkChart.dispose();
+      networkChart = null;
+    }
+
+    if (!networkChart) {
+      networkChart = echarts.init(networkChartRef.value);
+    }
+
+    // 验证节点和链接数据
+    const nodes = network.value.nodes.map((node) => ({
+      name: node.name,
+      symbolSize: node.symbolSize || 25,
+      category: node.category || 0,
+      value: node.value || 1,
+    }));
+
+    const links = network.value.links.map((link) => ({
+      source: link.source,
+      target: link.target,
+      value: link.value || 1,
+    }));
+
+    // 可选：去重分类（如果 category 存在且需要不同颜色）
+    const categories = [...new Set(nodes.map((n) => n.category))].map(
+      (cat) => ({
+        name: String(cat),
+        itemStyle: { color: `hsl(${Math.random() * 360}, 70%, 60%)` },
+      }),
+    );
+
+    const option = {
+      tooltip: {
+        trigger: "item",
+        formatter: (params) => {
+          if (params.dataType === "node") {
+            return `企业/机构: ${params.name}<br/>合作次数: ${params.value || "-"}`;
+          } else if (params.dataType === "edge") {
+            return `合作关联: ${params.data.source} → ${params.data.target}<br/>强度: ${params.data.value}`;
+          }
+          return "";
+        },
+      },
+      series: [
+        {
+          type: "graph",
+          layout: "force",
+          force: {
+            repulsion: 300,
+            edgeLength: 120,
+            gravity: 0.1,
+            friction: 0.1,
+            layoutAnimation: true,
+          },
+          roam: true,
+          draggable: true,
+          data: nodes,
+          links: links,
+          categories: categories,
+          label: {
+            show: true,
+            position: "right",
+            fontSize: 11,
+            offset: [5, 0],
+            formatter: (params) => params.name,
+          },
+          emphasis: {
+            focus: "adjacency",
+            label: { show: true, fontWeight: "bold" },
+          },
+          lineStyle: {
+            color: "source",
+            curveness: 0.3,
+            width: 1.5,
+            opacity: 0.6,
+          },
+          edgeSymbol: ["none", "arrow"],
+          edgeSymbolSize: [0, 8],
+          itemStyle: {
+            borderColor: "#fff",
+            borderWidth: 1,
+            shadowBlur: 8,
+            shadowColor: "rgba(0, 0, 0, 0.2)",
+          },
+          symbolSize: 25,
+          focusNodeAdjacency: true,
+        },
+      ],
+      backgroundColor: "transparent",
+    };
+
+    networkChart.setOption(option, true);
+    networkChart.resize();
+    console.log("网络图渲染成功", {
+      nodesCount: nodes.length,
+      linksCount: links.length,
+    });
+  } catch (error) {
+    console.error("网络图渲染失败:", error);
+  }
+};
+
+// 窗口大小自适应
+const handleResize = () => {
+  if (heatmapChart) heatmapChart.resize();
+  if (networkChart) networkChart.resize();
+};
+
+// 监听数据变化重新渲染
+watch(heatmap, () => {
+  nextTick(() => renderHeatmapChart());
+});
+
+watch(network, () => {
+  nextTick(() => renderNetworkChart());
+});
+
 onMounted(() => {
   fetchAllData();
+  window.addEventListener("resize", handleResize);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", handleResize);
+  if (heatmapChart) {
+    heatmapChart.dispose();
+    heatmapChart = null;
+  }
+  if (networkChart) {
+    networkChart.dispose();
+    networkChart = null;
+  }
 });
 
 // 刷新按钮
@@ -225,7 +538,6 @@ const handleRefresh = fetchAllData;
   min-height: 100vh;
   position: relative;
 }
-
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -236,20 +548,17 @@ const handleRefresh = fetchAllData;
   z-index: 10;
   padding: 24px;
 }
-
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
 }
-
 .header-left {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-
 .page-title {
   margin: 0;
   font-size: 28px;
@@ -257,39 +566,32 @@ const handleRefresh = fetchAllData;
   color: #1f2f3d;
   line-height: 1.2;
 }
-
 .breadcrumb :deep(.el-breadcrumb__inner) {
   font-weight: 400;
   color: #8590a6;
 }
-
 .header-right {
   display: flex;
   gap: 12px;
 }
-
 .stat-cards {
   margin-bottom: 24px;
 }
-
 .stat-card {
   border-radius: 12px;
   transition:
     transform 0.3s,
     box-shadow 0.3s;
 }
-
 .stat-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
-
 .stat-card :deep(.el-card__body) {
   display: flex;
   align-items: center;
   gap: 16px;
 }
-
 .stat-icon {
   width: 56px;
   height: 56px;
@@ -298,33 +600,27 @@ const handleRefresh = fetchAllData;
   align-items: center;
   justify-content: center;
 }
-
 .stat-info {
   flex: 1;
 }
-
 .stat-value {
   font-size: 28px;
   font-weight: 600;
   color: #1f2f3d;
   line-height: 1.2;
 }
-
 .stat-label {
   font-size: 14px;
   color: #8590a6;
   margin-top: 4px;
 }
-
 .chart-row {
   margin-bottom: 24px;
 }
-
 .table-card {
   border-radius: 12px;
   overflow: hidden;
 }
-
 .table-toolbar {
   display: flex;
   justify-content: space-between;
@@ -332,13 +628,21 @@ const handleRefresh = fetchAllData;
   padding: 16px 20px;
   border-bottom: 1px solid #ebeef5;
 }
-
 .table-title {
   font-weight: 600;
   color: #1f2f3d;
 }
-
-.chart-placeholder {
+.chart-container {
+  width: 100%;
+  height: 250px;
+  padding: 8px;
+  background-color: #fafbfc;
+}
+.chart-box {
+  width: 100%;
+  height: 100%;
+}
+.placeholder-content {
   height: 250px;
   display: flex;
   align-items: center;
@@ -347,20 +651,17 @@ const handleRefresh = fetchAllData;
   color: #909399;
   font-size: 14px;
 }
-
 .list-placeholder {
   padding: 16px 20px;
   min-height: 218px;
   background-color: #fafbfc;
 }
-
 .placeholder-item {
   padding: 8px 0;
   border-bottom: 1px dashed #ebeef5;
   color: #606266;
   font-size: 14px;
 }
-
 .placeholder-item:last-child {
   border-bottom: none;
 }
