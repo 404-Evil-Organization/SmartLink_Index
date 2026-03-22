@@ -48,10 +48,10 @@ public interface NetworkMapper {
     /**
      * @Author: 6017
      * @Date: 2026/3/20 21:50
-     * @Param: 
-     * @Return: List<NetworkDataResponse.NodeDTO> 服务商节点列表
-     * @Description: 获取服务商节点列表
-    **/
+     * @Param:
+     * @Return: List<Map<String, Object>> 合作关系链接列表（边数据），包含 source/target/value 字段
+     * @Description: 获取制造企业与服务商之间的合作关系链接列表（边数据），用于网络关系可视化
+     **/
     @Select("SELECT " +
             "CONCAT('m', c.manu_id) AS source, " +
             "CONCAT('s', c.service_id) AS target, " +
