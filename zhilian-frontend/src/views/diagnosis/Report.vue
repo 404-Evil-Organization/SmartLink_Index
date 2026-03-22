@@ -4,7 +4,9 @@
     <div class="page-header">
       <div class="header-left">
         <h2 class="page-title">
-          <el-icon :size="28" color="#409EFF"><DataLine /></el-icon>
+          <el-icon :size="28" color="#409EFF">
+            <DataLine/>
+          </el-icon>
           数字化诊断报告
         </h2>
         <el-breadcrumb separator="/" class="breadcrumb">
@@ -17,41 +19,43 @@
 
     <!-- 加载中状态（企业列表） -->
     <el-card v-if="loadingEnterprises" class="enterprise-card" shadow="hover">
-      <el-skeleton :rows="1" animated />
+      <el-skeleton :rows="1" animated/>
     </el-card>
 
     <!-- 企业选择卡片：仅当存在企业且没有报告数据时显示 -->
     <el-card
-      v-else-if="enterpriseOptions.length > 0 && !reportData && !showNoReport"
-      class="enterprise-card fancy-card"
-      shadow="hover"
+        v-else-if="enterpriseOptions.length > 0 && !reportData && !showNoReport"
+        class="enterprise-card fancy-card"
+        shadow="hover"
     >
       <div class="enterprise-selector">
         <div class="selector-left">
-          <el-icon size="20" color="#409EFF"><OfficeBuilding /></el-icon>
+          <el-icon size="20" color="#409EFF">
+            <OfficeBuilding/>
+          </el-icon>
           <span class="label">选择企业：</span>
         </div>
         <el-select
-          v-model="selectedManuId"
-          placeholder="请选择企业"
-          style="width: 300px"
-          :loading="loadingEnterprises"
-          clearable
-          filterable
+            v-model="selectedManuId"
+            placeholder="请选择企业"
+            style="width: 300px"
+            :loading="loadingEnterprises"
+            clearable
+            filterable
         >
           <el-option
-            v-for="item in enterpriseOptions"
-            :key="item.id"
-            :label="item.companyName"
-            :value="item.id"
+              v-for="item in enterpriseOptions"
+              :key="item.id"
+              :label="item.companyName"
+              :value="item.id"
           />
         </el-select>
         <el-button
-          type="primary"
-          :loading="viewLoading"
-          @click="handleViewReport"
-          :icon="View"
-          round
+            type="primary"
+            :loading="viewLoading"
+            @click="handleViewReport"
+            :icon="View"
+            round
         >
           查看报告
         </el-button>
@@ -60,14 +64,14 @@
 
     <!-- 无企业提示卡片：仅当没有企业且没有报告数据时显示 -->
     <el-card
-      v-else-if="enterpriseOptions.length === 0 && !reportData && !showNoReport"
-      class="enterprise-card fancy-card"
-      shadow="hover"
+        v-else-if="enterpriseOptions.length === 0 && !reportData && !showNoReport"
+        class="enterprise-card fancy-card"
+        shadow="hover"
     >
       <el-result
-        icon="warning"
-        title="您尚未创建制造企业"
-        sub-title="请先创建企业后再查看诊断报告"
+          icon="warning"
+          title="您尚未创建制造企业"
+          sub-title="请先创建企业后再查看诊断报告"
       >
         <template #extra>
           <el-button type="primary" @click="goToEnterpriseManage" round>前往创建</el-button>
@@ -83,12 +87,16 @@
         <el-card shadow="never" class="info-card">
           <div class="basic-info">
             <div class="info-item">
-              <el-icon><OfficeBuilding /></el-icon>
+              <el-icon>
+                <OfficeBuilding/>
+              </el-icon>
               <span class="label">诊断企业：</span>
               <span class="value">{{ reportData.manuName || '未知' }}</span>
             </div>
             <div class="info-item">
-              <el-icon><Calendar /></el-icon>
+              <el-icon>
+                <Calendar/>
+              </el-icon>
               <span class="label">诊断时间：</span>
               <span class="value">{{ formatDate(reportData.diagnosisDate) || '-' }}</span>
             </div>
@@ -110,7 +118,9 @@
         <!-- 雷达图 -->
         <el-card shadow="never" class="chart-card">
           <div class="chart-title">
-            <el-icon><TrendCharts /></el-icon>
+            <el-icon>
+              <TrendCharts/>
+            </el-icon>
             <span>各维度得分雷达图</span>
           </div>
           <div ref="radarChartRef" style="height: 300px; width: 100%;"></div>
@@ -122,17 +132,19 @@
             <el-col :span="6" v-for="dim in dimensions" :key="dim.name">
               <el-card shadow="hover" class="dimension-card" :body-style="{ padding: '16px' }">
                 <div class="dimension-header">
-                  <el-icon :size="24" :color="dim.color"><component :is="dim.icon" /></el-icon>
+                  <el-icon :size="24" :color="dim.color">
+                    <component :is="dim.icon"/>
+                  </el-icon>
                   <span class="dimension-label">{{ dim.label }}</span>
                 </div>
                 <div class="dimension-value">{{ reportData[dim.field] || 0 }} / 5</div>
                 <el-progress
-                  :percentage="(reportData[dim.field] || 0) * 20"
-                  :color="dim.color"
-                  :stroke-width="8"
-                  :show-text="false"
-                  striped
-                  striped-flow
+                    :percentage="(reportData[dim.field] || 0) * 20"
+                    :color="dim.color"
+                    :stroke-width="8"
+                    :show-text="false"
+                    striped
+                    striped-flow
                 />
               </el-card>
             </el-col>
@@ -142,12 +154,16 @@
         <!-- 改进建议卡片 -->
         <el-card shadow="never" class="suggestions-card">
           <div class="suggestions-header">
-            <el-icon><ChatLineSquare /></el-icon>
+            <el-icon>
+              <ChatLineSquare/>
+            </el-icon>
             <h3>改进建议</h3>
           </div>
           <ul>
             <li v-for="(item, index) in reportData.suggestions" :key="index">
-              <el-icon><Check /></el-icon>
+              <el-icon>
+                <Check/>
+              </el-icon>
               {{ item }}
             </li>
           </ul>
@@ -157,9 +173,9 @@
       <!-- 无报告时的空状态（企业有但无报告） -->
       <div v-else-if="!loadingReport && showNoReport" class="no-report">
         <el-result
-          icon="info"
-          title="该企业暂无诊断报告"
-          sub-title="请先完成诊断问卷"
+            icon="info"
+            title="该企业暂无诊断报告"
+            sub-title="请先完成诊断问卷"
         >
           <template #extra>
             <el-button type="primary" @click="goToQuestionnaire" round>前往诊断问卷</el-button>
@@ -170,9 +186,9 @@
       <!-- 多个企业但未选择时的占位提示（可选） -->
       <div v-else-if="!loadingReport && enterpriseOptions.length > 1 && !showNoReport" class="no-report">
         <el-result
-          icon="info"
-          title="请先选择企业"
-          sub-title="从上方下拉框选择企业后点击查看报告"
+            icon="info"
+            title="请先选择企业"
+            sub-title="从上方下拉框选择企业后点击查看报告"
         />
       </div>
     </el-card>
@@ -180,9 +196,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed, watch, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import {ref, onMounted, nextTick, computed, watch, onBeforeUnmount} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {ElMessage} from 'element-plus'
 import * as echarts from 'echarts'
 import {
   DataLine,
@@ -198,11 +214,11 @@ import {
   DataBoard,
   Connection,
 } from '@element-plus/icons-vue'
-import { getDiagnosisResult, getLatestDiagnosis } from '@/api/diagnosis'
-import { getManufactureList } from '@/api/manufacture'
-import { getMyManufactureList } from '@/api/enterprise'
-import { useUserStore } from '@/stores/user'
-import { createTimeConverter } from '@/composables/date'
+import {getDiagnosisResult, getLatestDiagnosis} from '@/api/diagnosis'
+import {getManufactureList} from '@/api/manufacture'
+import {getMyManufactureList} from '@/api/enterprise'
+import {useUserStore} from '@/stores/user'
+import {createTimeConverter} from '@/composables/date'
 
 const route = useRoute()
 const router = useRouter()
@@ -231,22 +247,13 @@ const fetchEnterprises = async () => {
 
     if (userRole === 'admin') {
       // 管理员使用公共列表
-      res = await getManufactureList({ page: 1, size: 100 })
+      res = await getManufactureList({page: 1, size: 100})
       enterprises.value = (res.records || []).filter(item => item.auditStatus === 'approved')
     } else {
       // 普通用户：优先使用个人企业接口
-      res = await getMyManufactureList({ page: 1, size: 100 })
+      res = await getMyManufactureList({page: 1, size: 100})
       let enterprisesTemp = (res.records || [])
-        .filter(item => item.userId === currentUserId)
-        .filter(item => item.auditStatus === 'approved')
-
-      // 如果个人接口返回为空，回退到公共接口（再次按 userId 过滤）
-      if (enterprisesTemp.length === 0) {
-        const publicRes = await getManufactureList({ page: 1, size: 100 })
-        enterprisesTemp = (publicRes.records || [])
-          .filter(item => item.userId === currentUserId)
           .filter(item => item.auditStatus === 'approved')
-      }
 
       enterprises.value = enterprisesTemp
     }
@@ -269,10 +276,10 @@ const enterpriseOptions = computed(() => enterprises.value)
 
 // ---------- 报告详情 ----------
 const dimensions = [
-  { name: 'info', label: '信息化水平', field: 'infoScore', icon: Aim, color: '#409EFF' },
-  { name: 'auto', label: '自动化水平', field: 'autoScore', icon: Monitor, color: '#67C23A' },
-  { name: 'data', label: '数据应用', field: 'dataScore', icon: DataBoard, color: '#E6A23C' },
-  { name: 'service', label: '服务协同', field: 'serviceScore', icon: Connection, color: '#F56C6C' },
+  {name: 'info', label: '信息化水平', field: 'infoScore', icon: Aim, color: '#409EFF'},
+  {name: 'auto', label: '自动化水平', field: 'autoScore', icon: Monitor, color: '#67C23A'},
+  {name: 'data', label: '数据应用', field: 'dataScore', icon: DataBoard, color: '#E6A23C'},
+  {name: 'service', label: '服务协同', field: 'serviceScore', icon: Connection, color: '#F56C6C'},
 ]
 
 const getLevelType = (level) => {
@@ -309,8 +316,8 @@ const formatDate = (dateStr) => {
  */
 const handleReportError = (error) => {
   const status =
-    error?.response?.status ||
-    error?.code
+      error?.response?.status ||
+      error?.code
 
   if (status === 403) {
     router.push('/403')
@@ -340,7 +347,6 @@ const fetchReportById = async (id) => {
     loadingReport.value = false
   }
 }
-
 
 
 const fetchLatestReportByManuId = async (manuId) => {
@@ -376,14 +382,14 @@ const loadReport = () => {
   }
 }
 
- watch(
-  () => [route.query.id, route.query.manuId, route.params.id, route.params.manuId],
-  () => {
-    // 如果当前正在自动加载或手动加载报告，则跳过（避免重复）
-    if (loadingReport.value) return
-    loadReport()
-  },
-  { immediate: true }
+watch(
+    () => [route.query.id, route.query.manuId, route.params.id, route.params.manuId],
+    () => {
+      // 如果当前正在自动加载或手动加载报告，则跳过（避免重复）
+      if (loadingReport.value) return
+      loadReport()
+    },
+    {immediate: true}
 )
 
 
@@ -458,7 +464,7 @@ const initRadarChart = () => {
 const updateRadarChart = () => {
   if (!radarChartInstance || !reportData.value) return
 
-  const indicator = dimensions.map(d => ({ name: d.label, max: 5 }))
+  const indicator = dimensions.map(d => ({name: d.label, max: 5}))
   const value = dimensions.map(d => reportData.value[d.field] || 0)
 
   const option = {
@@ -467,15 +473,15 @@ const updateRadarChart = () => {
       center: ['50%', '50%'],
       radius: '65%',
       shape: 'circle',
-      axisName: { color: '#606266', fontSize: 12 },
-      splitArea: { areaStyle: { color: ['rgba(64,158,255,0.02)', 'rgba(64,158,255,0.05)'] } }
+      axisName: {color: '#606266', fontSize: 12},
+      splitArea: {areaStyle: {color: ['rgba(64,158,255,0.02)', 'rgba(64,158,255,0.05)']}}
     },
     series: [{
       type: 'radar',
       data: [value],
-      areaStyle: { color: 'rgba(64,158,255,0.2)' },
-      lineStyle: { color: '#409EFF', width: 2 },
-      itemStyle: { color: '#409EFF' }
+      areaStyle: {color: 'rgba(64,158,255,0.2)'},
+      lineStyle: {color: '#409EFF', width: 2},
+      itemStyle: {color: '#409EFF'}
     }]
   }
 
@@ -499,7 +505,7 @@ watch(reportData, async (newVal) => {
   } else {
     destroyRadarChart()
   }
-}, { immediate: false })  // 如果不需要立即执行，可以不写 immediate
+}, {immediate: false})  // 如果不需要立即执行，可以不写 immediate
 
 // 组件卸载时清理
 onBeforeUnmount(() => {
@@ -552,6 +558,7 @@ onMounted(() => {
   overflow: hidden;
   transition: transform 0.3s, box-shadow 0.3s;
 }
+
 .fancy-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1) !important;
@@ -561,6 +568,7 @@ onMounted(() => {
   margin-bottom: 20px;
   border: none;
 }
+
 .enterprise-selector {
   display: flex;
   align-items: center;
@@ -568,15 +576,18 @@ onMounted(() => {
   gap: 16px;
   padding: 8px 0;
 }
+
 .selector-left {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .selector-left .label {
   font-weight: 500;
   color: #303133;
 }
+
 .tip {
   display: inline-flex;
   align-items: center;
@@ -588,6 +599,7 @@ onMounted(() => {
 .report-card {
   border: none;
 }
+
 .report-content {
   display: flex;
   flex-direction: column;
@@ -599,23 +611,28 @@ onMounted(() => {
   border: 1px solid #ebeef5;
   border-radius: 12px;
 }
+
 .basic-info {
   display: flex;
   gap: 40px;
   padding: 8px 0;
 }
+
 .info-item {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .info-item .el-icon {
   color: #409EFF;
   font-size: 18px;
 }
+
 .info-item .label {
   color: #909399;
 }
+
 .info-item .value {
   font-weight: 500;
   color: #303133;
@@ -632,11 +649,13 @@ onMounted(() => {
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
+
 .score-value {
   font-size: 32px;
   font-weight: 700;
   color: #409EFF;
 }
+
 .level-tag .el-tag {
   font-size: 28px;
   padding: 12px 32px;
@@ -649,6 +668,7 @@ onMounted(() => {
   border-radius: 12px;
   padding: 16px;
 }
+
 .chart-title {
   display: flex;
   align-items: center;
@@ -657,6 +677,7 @@ onMounted(() => {
   font-weight: 600;
   color: #1f2f3d;
 }
+
 .chart-title .el-icon {
   font-size: 20px;
   color: #409EFF;
@@ -665,23 +686,28 @@ onMounted(() => {
 .dimension-scores {
   margin: 16px 0;
 }
+
 .dimension-card {
   border-radius: 12px;
   transition: transform 0.2s;
 }
+
 .dimension-card:hover {
   transform: scale(1.02);
 }
+
 .dimension-header {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
 }
+
 .dimension-label {
   font-weight: 600;
   color: #303133;
 }
+
 .dimension-value {
   font-size: 24px;
   font-weight: 600;
@@ -695,27 +721,32 @@ onMounted(() => {
   border-radius: 12px;
   padding: 16px;
 }
+
 .suggestions-header {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
 }
+
 .suggestions-header .el-icon {
   font-size: 20px;
   color: #409EFF;
 }
+
 .suggestions-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: #1f2f3d;
 }
+
 .suggestions-card ul {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+
 .suggestions-card li {
   display: flex;
   align-items: center;
@@ -724,6 +755,7 @@ onMounted(() => {
   color: #606266;
   font-size: 15px;
 }
+
 .suggestions-card li .el-icon {
   color: #67C23A;
   font-size: 16px;
