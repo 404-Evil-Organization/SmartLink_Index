@@ -133,7 +133,7 @@ export default [
       const { manuId, infoScore, autoScore, dataScore, serviceScore } = body;
       const manuName = manufactureMap[manuId] || `企业${manuId}`;
       const totalScore = Math.round(
-        (infoScore + autoScore + dataScore + serviceScore) * 5
+        (infoScore + autoScore + dataScore + serviceScore) * 5,
       );
       let level = "";
       if (totalScore < 40) level = "起步期";
@@ -144,10 +144,8 @@ export default [
       const suggestions = [];
       if (infoScore < 3)
         suggestions.push("建议加强信息化建设，引入ERP/MES系统");
-      if (autoScore < 3)
-        suggestions.push("建议提升自动化水平，引入自动化设备");
-      if (dataScore < 3)
-        suggestions.push("建议加强数据采集与分析能力");
+      if (autoScore < 3) suggestions.push("建议提升自动化水平，引入自动化设备");
+      if (dataScore < 3) suggestions.push("建议加强数据采集与分析能力");
       if (serviceScore < 3)
         suggestions.push("建议拓展外部服务合作，提升协同能力");
       if (suggestions.length === 0)
@@ -247,7 +245,7 @@ export default [
     response: ({ query }) => {
       const manuId = parseInt(query.manuId);
       console.log("[mock] 请求企业最新报告，manuId:", manuId);
-      console.log('mock latest 被调用');
+      console.log("mock latest 被调用");
 
       if (isNaN(manuId)) {
         return {
@@ -258,7 +256,7 @@ export default [
       }
 
       const records = diagnosisRecords.filter(
-        (record) => record.manuId === manuId
+        (record) => record.manuId === manuId,
       );
       if (records.length === 0) {
         // 无报告时返回 200 且 data:null
@@ -270,7 +268,7 @@ export default [
       }
 
       const sorted = [...records].sort(
-        (a, b) => new Date(b.diagnosisDate) - new Date(a.diagnosisDate)
+        (a, b) => new Date(b.diagnosisDate) - new Date(a.diagnosisDate),
       );
       const latest = sorted[0];
 

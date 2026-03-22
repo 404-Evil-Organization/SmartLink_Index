@@ -1,64 +1,102 @@
 <template>
   <div class="forbidden-container">
-    <div class="content">
-      <h1>403</h1>
-      <h2>无权限访问</h2>
-      <p>抱歉，您没有权限访问该页面，请确认您的账号角色或联系管理员。</p>
-      <div class="actions">
-        <el-button type="primary" @click="goHome">返回首页</el-button>
-        <el-button @click="goBack">返回上一页</el-button>
+    <el-card class="forbidden-card" shadow="hover">
+      <div class="content">
+        <!-- 错误代码 403 -->
+        <h1 class="error-code">403</h1>
+        <!-- 标题 -->
+        <h2 class="error-title">抱歉，您无权访问此页面</h2>
+        <!-- 描述 -->
+        <p class="error-desc">
+          您的账号权限不足，无法查看当前内容。请联系管理员或切换账号后重试。
+        </p>
+        <!-- 操作按钮组 -->
+        <div class="actions">
+          <el-button type="primary" @click="goHome">返回首页</el-button>
+          <el-button @click="goLogin">重新登录</el-button>
+        </div>
       </div>
-    </div>
+    </el-card>
   </div>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
+import { useRouter } from "vue-router";
+import { useUserStore } from "@/stores/user";
 
-const router = useRouter()
+const router = useRouter();
 
+// 返回首页
 const goHome = () => {
-  router.push('/')
-}
+  router.push("/");
+};
 
-const goBack = () => {
-  router.go(-1)
-}
+// 跳转登录页
+const goLogin = () => {
+  const userStore = useUserStore();
+  userStore.clearToken();
+  router.push("/login");
+};
 </script>
 
 <style scoped>
 .forbidden-container {
   display: flex;
-  align-items: center;
   justify-content: center;
-  height: 100vh;
-  background-color: #f0f2f5;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding: 20px;
+}
+
+.forbidden-card {
+  max-width: 500px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+.content {
   text-align: center;
+  padding: 30px 20px;
 }
 
-.content h1 {
-  font-size: 72px;
-  color: #f56c6c;
-  margin: 0;
-  line-height: 1.2;
+.error-code {
+  font-size: 80px;
+  font-weight: 600;
+  color: #f56c6c; /* Element Plus 危险色 */
+  margin: 0 0 10px;
+  line-height: 1;
 }
 
-.content h2 {
+.error-title {
   font-size: 24px;
-  color: #606266;
-  margin: 16px 0 8px;
   font-weight: 500;
+  color: #303133;
+  margin: 0 0 15px;
 }
 
-.content p {
-  color: #909399;
-  margin-bottom: 24px;
-  font-size: 14px;
+.error-desc {
+  font-size: 16px;
+  color: #606266;
+  margin: 0 0 30px;
 }
 
 .actions {
   display: flex;
-  gap: 16px;
   justify-content: center;
+  gap: 15px;
+}
+
+/* 小屏幕适配 */
+@media (max-width: 480px) {
+  .error-code {
+    font-size: 60px;
+  }
+  .error-title {
+    font-size: 20px;
+  }
+  .error-desc {
+    font-size: 14px;
+  }
 }
 </style>

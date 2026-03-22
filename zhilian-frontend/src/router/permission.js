@@ -1,4 +1,5 @@
 import { ElMessage } from "element-plus";
+
 /**
  * 检查当前用户是否有权限访问目标路由
  * @param {Object} to - Vue Router 的目标路由对象
@@ -33,9 +34,10 @@ export function checkRoleAccess(to, userStore) {
  */
 export function enforceRoles(to, from, next, userStore) {
   // 查找匹配路由中是否配置了 roles
-  const roleRecord = to.matched.slice().reverse().find(
-    (record) => record.meta && Array.isArray(record.meta.roles)
-  );
+  const roleRecord = to.matched
+    .slice()
+    .reverse()
+    .find((record) => record.meta && Array.isArray(record.meta.roles));
 
   if (!roleRecord) {
     return false; // 没有配置 roles 限制，直接放行
@@ -46,13 +48,15 @@ export function enforceRoles(to, from, next, userStore) {
 
   if (!userRole || !allowedRoles.includes(userRole)) {
     ElMessage.error("当前账号无权限访问该页面");
-    
+
     // 判断来源是否也没有权限（防止循环跳转）
-    const fromRoleRecord = from.matched.slice().reverse().find(
-      (record) => record.meta && Array.isArray(record.meta.roles)
-    );
+    const fromRoleRecord = from.matched
+      .slice()
+      .reverse()
+      .find((record) => record.meta && Array.isArray(record.meta.roles));
     const fromAllowedRoles = fromRoleRecord ? fromRoleRecord.meta.roles : null;
-    const fromIsForbidden = fromAllowedRoles && (!userRole || !fromAllowedRoles.includes(userRole));
+    const fromIsForbidden =
+      fromAllowedRoles && (!userRole || !fromAllowedRoles.includes(userRole));
 
     if (fromIsForbidden || !from.fullPath || from.fullPath === to.fullPath) {
       next({ path: "/", replace: true });
