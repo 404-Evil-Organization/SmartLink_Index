@@ -58,8 +58,7 @@ public class CreditScoreAlgorithm {
         ServiceProvider serviceProvider = serviceProviderMapper.selectById(serviceId);
         if (serviceProvider == null) {
             log.warn("服务商不存在，serviceId: {}", serviceId);
-            // 保持评价底分 60，按权重 0*0.3 + 0*0.3 + 60*0.4 = 24
-            return new CreditScoreResult((byte) 24, (byte) 0, (byte) 0, (byte) 60);
+            throw new BusinessException(404, "服务商不存在");
         }
 
         return calculate(serviceProvider);
@@ -197,7 +196,7 @@ public class CreditScoreAlgorithm {
         Integer count = evaluationMapper.getCountByServiceId(serviceId, notDeletedTime);
 
         // 没有评价时给基础分60
-        if (avgScore == null || avgScore == 0) {
+        if (avgScore == null || Double.compare(avgScore, 0d) <= 0) {
             return (byte) 60;
         }
 

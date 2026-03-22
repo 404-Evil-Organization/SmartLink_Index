@@ -69,6 +69,11 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
         if (size == null || size <= 0) {
             size = 10;
         }
+        // 增加最大分页大小限制，防止一次性查询过多数据
+        int maxPageSize = 100;
+        if (size > maxPageSize) {
+            size = maxPageSize;
+        }
         
         log.info("查询服务商评价列表，serviceId: {}, page: {}, size: {}", serviceId, page, size);
 

@@ -7,13 +7,14 @@ import com.zhilian.zhilianbackend.mapper.CreditScoreMapper;
 import com.zhilian.zhilianbackend.mapper.ServiceProviderMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
-import java.util.Date;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 /**
@@ -25,7 +26,6 @@ import java.util.List;
  **/
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class CreditScoreScheduler {
 
@@ -70,10 +70,10 @@ public class CreditScoreScheduler {
             }
 
             long batchStart = System.currentTimeMillis();
-            // 使用 LIMIT 控制单批数据量，避免一次性全表扫描加载到内存
-            List<ServiceProvider> providers = serviceProviderMapper.selectList(
-                    wrapper.last("LIMIT " + pageSize)
-            );
+            // 使用 selectPage 进行分页，配合游标 lastId
+            Page<ServiceProvider> page = new Page<>(1, pageSize);
+            Page<ServiceProvider> providerPage = serviceProviderMapper.selectPage(page, wrapper);
+            List<ServiceProvider> providers = providerPage.getRecords();
 
             if (providers == null || providers.isEmpty()) {
                 // 没有更多数据，结束循环
@@ -123,6 +123,18 @@ public class CreditScoreScheduler {
     public void calculateAndSaveCreditScoreWithTransaction(ServiceProvider serviceProvider) {
         transactionTemplate.executeWithoutResult(status -> {
             Long serviceId = serviceProvider.getId();
+            
+            // 0. 幂等性控制：删除该服务商当天已存在的信用分记录
+            LocalDate today = LocalDate.now();
+            java.util.Date startOfDay = java.util.Date.from(today.atStartOfDay(ZoneId.systemDefault()).toInstant());
+            java.util.Date endOfDay = java.util.Date.from(today.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+            
+            LambdaQueryWrapper<CreditScore> deleteWrapper = new LambdaQueryWrapper<>();
+            deleteWrapper.eq(CreditScore::getServiceId, serviceId)
+                    .ge(CreditScore::getCalcTime, startOfDay)
+                    .lt(CreditScore::getCalcTime, endOfDay);
+            creditScoreMapper.delete(deleteWrapper);
+            
             // 1. 调用算法类计算信用分
             CreditScoreAlgorithm.CreditScoreResult result = creditScoreAlgorithm.calculate(serviceProvider);
 
@@ -133,7 +145,7 @@ public class CreditScoreScheduler {
                     .setQualScore(result.getQualScore())
                     .setCaseScore(result.getCaseScore())
                     .setEvalScore(result.getEvalScore())
-                    .setCalcTime(new Date());
+                    .setCalcTime(new java.util.Date());
 
             // 3. 保存到数据库
             creditScoreMapper.insert(creditScore);
