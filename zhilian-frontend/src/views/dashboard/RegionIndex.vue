@@ -75,13 +75,23 @@
                     :value="value"
                   />
                 </el-select>
-                <el-button type="primary" size="small" @click="handleLeftFilter">
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="handleLeftFilter"
+                >
                   查询
                 </el-button>
-                <el-button size="small" @click="resetLeftFilter">重置</el-button>
+                <el-button size="small" @click="resetLeftFilter"
+                  >重置</el-button
+                >
               </div>
             </div>
-            <div ref="barChartRef" class="chart-placeholder" style="height: 300px"></div>
+            <div
+              ref="barChartRef"
+              class="chart-placeholder"
+              style="height: 300px"
+            ></div>
           </el-card>
         </el-col>
 
@@ -134,14 +144,26 @@
                     :value="value"
                   />
                 </el-select>
-                <el-button type="primary" size="small" @click="handleRightFilter">
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="handleRightFilter"
+                >
                   查询
                 </el-button>
-                <el-button size="small" @click="resetRightFilter">重置</el-button>
+                <el-button size="small" @click="resetRightFilter"
+                  >重置</el-button
+                >
               </div>
             </div>
             <!-- 区域选择下拉 -->
-            <div style="padding: 0 20px 10px; display: flex; justify-content: flex-end">
+            <div
+              style="
+                padding: 0 20px 10px;
+                display: flex;
+                justify-content: flex-end;
+              "
+            >
               <el-select
                 v-model="selectedRegion"
                 placeholder="请选择区域"
@@ -158,7 +180,11 @@
               </el-select>
             </div>
             <!-- 详情卡片 -->
-            <div v-if="regionDetail" class="detail-card" style="margin: 0 20px 20px">
+            <div
+              v-if="regionDetail"
+              class="detail-card"
+              style="margin: 0 20px 20px"
+            >
               <h4>{{ selectedRegion }} 最新指数</h4>
               <div class="detail-grid">
                 <div class="detail-item">
@@ -189,7 +215,11 @@
                 （计算时间：{{ regionDetail.calcTime }}）
               </div>
             </div>
-            <div v-else class="detail-card" style="margin: 0 20px 20px; text-align: center; color: #999;">
+            <div
+              v-else
+              class="detail-card"
+              style="margin: 0 20px 20px; text-align: center; color: #999"
+            >
               请选择区域并查询
             </div>
           </el-card>
@@ -216,7 +246,9 @@
                     :value="item"
                   />
                 </el-select>
-                <span style="margin-right: 4px; color: #606266;">开始日期：</span>
+                <span style="margin-right: 4px; color: #606266"
+                  >开始日期：</span
+                >
                 <el-date-picker
                   v-model="trendStartDate"
                   type="date"
@@ -226,7 +258,9 @@
                   value-format="YYYY-MM-DD"
                   :disabled-date="disabledStartDate"
                 />
-                <span style="margin-right: 4px; color: #606266;">结束日期：</span>
+                <span style="margin-right: 4px; color: #606266"
+                  >结束日期：</span
+                >
                 <el-date-picker
                   v-model="trendEndDate"
                   type="date"
@@ -236,13 +270,27 @@
                   value-format="YYYY-MM-DD"
                   :disabled-date="disabledEndDate"
                 />
-                <el-button type="primary" size="small" @click="fetchTrendByDateRange">
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="fetchTrendByDateRange"
+                >
                   查询
                 </el-button>
               </div>
             </div>
-            <div v-loading="trendLoading" class="chart-placeholder" style="height: 350px">
-              <div ref="trendChartRef" style="width: 100%; height: 100%;"></div>
+            <div
+              v-loading="trendLoading"
+              class="chart-placeholder"
+              style="height: 350px; position: relative"
+            >
+              <div ref="trendChartRef" style="width: 100%; height: 100%"></div>
+              <div
+                v-if="trendData.length === 0 && !trendLoading"
+                class="chart-placeholder-text"
+              >
+                暂无趋势数据
+              </div>
             </div>
           </el-card>
         </el-col>
@@ -479,6 +527,24 @@ const initBarChart = (force = false) => {
   const xAxisData = regionList.value.map((item) => item.region);
   const seriesData = regionList.value.map((item) => item.totalIndex);
 
+  // 动态计算 y 轴最小值
+  let yMin = Math.min(...seriesData);
+  let yMax = Math.max(...seriesData);
+  // 如果最小值大于 0，为最小值留出 10% 的下边距
+  if (yMin > 0) {
+    const padding = (yMax - yMin) * 0.1;
+    yMin = Math.max(0, yMin - padding); // 确保不变成负数
+  } else {
+    // 如果最小值 <= 0，则下边距使用绝对值的一定比例
+    const padding = (yMax - yMin) * 0.1;
+    yMin = yMin - padding;
+  }
+  // 避免所有数据相等时范围过窄
+  if (yMin === yMax) {
+    yMin = yMin - 1;
+    yMax = yMax + 1;
+  }
+
   const option = {
     tooltip: {
       trigger: "item",
@@ -497,7 +563,12 @@ const initBarChart = (force = false) => {
       data: xAxisData,
       axisLabel: { rotate: 30 },
     },
-    yAxis: { type: "value", name: "综合指数", min: 50 },
+    yAxis: {
+      type: "value",
+      name: "综合指数",
+      min: yMin,
+      max: yMax,
+    },
     series: [
       {
         name: "综合指数",
@@ -520,18 +591,36 @@ const initBarChart = (force = false) => {
     }
   });
 };
-
 // 初始化趋势折线图
 const initTrendChart = (force = false) => {
-  if (!trendChartRef.value || trendData.value.length === 0) return;
+  if (!trendChartRef.value) return;
+
+  // 如果强制重建且已有实例，先销毁
   if (force && trendChart) {
     trendChart.dispose();
     trendChart = null;
   }
+
+  // 数据为空时的处理
+  if (trendData.value.length === 0) {
+    // 如果图表实例存在，则清空数据，不销毁实例
+    if (trendChart) {
+      trendChart.setOption({
+        series: [],
+        xAxis: { data: [] },
+        yAxis: { data: [] },
+      });
+    }
+    // 占位层由模板中的 v-if 显示，这里直接返回
+    return;
+  }
+
+  // 有数据时，确保实例存在
   if (!trendChart) {
     trendChart = echarts.init(trendChartRef.value);
   }
 
+  // 正常绘制折线图
   const xAxisData = trendData.value.map((item) => item.date);
   const seriesData = trendData.value.map((item) => item.totalIndex);
 
@@ -576,13 +665,17 @@ const handleRefresh = async () => {
 };
 
 // 监听趋势数据变化，自动更新折线图
-watch(trendData, (newVal) => {
-  if (newVal.length > 0 && trendChartRef.value) {
-    nextTick(() => {
-      initTrendChart(true);
-    });
-  }
-}, { immediate: true });
+watch(
+  trendData,
+  (newVal) => {
+    if (newVal.length > 0 && trendChartRef.value) {
+      nextTick(() => {
+        initTrendChart(true);
+      });
+    }
+  },
+  { immediate: true },
+);
 
 // 窗口大小变化调整图表
 const handleResize = () => {
@@ -736,5 +829,20 @@ onUnmounted(() => {
   font-size: 12px;
   color: #999;
   text-align: right;
+}
+.chart-placeholder-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fafbfc;
+  color: #909399;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 1;
 }
 </style>

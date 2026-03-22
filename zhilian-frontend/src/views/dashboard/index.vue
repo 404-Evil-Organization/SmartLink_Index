@@ -251,12 +251,12 @@ const fetchAllData = async () => {
       })),
     };
 
+    // 数据准备完成后先关闭 loading，让图表容器通过 v-if/v-show 挂载到 DOM
+    loading.value = false;
+    // 等待视图更新完成再进行图表渲染，避免容器未挂载导致的竞态问题
     await nextTick();
-    // 延迟一点点确保 DOM 已渲染
-    setTimeout(() => {
-      renderHeatmapChart();
-      renderNetworkChart();
-    }, 50);
+    renderHeatmapChart();
+    renderNetworkChart();
 
     ElMessage.success("数据更新成功");
   } catch (error) {
@@ -270,17 +270,17 @@ const fetchAllData = async () => {
 // 渲染区域合作热力图（柱状图）
 const renderHeatmapChart = () => {
   try {
-    if (!heatmapChartRef.value) {
-      console.warn("热力图容器未找到");
-      return;
-    }
-
-    // 数据为空时销毁图表
+    // 数据为空时销毁图表（即使容器已卸载）
     if (!heatmap.value.length) {
       if (heatmapChart) {
         heatmapChart.dispose();
         heatmapChart = null;
       }
+      return;
+    }
+
+    if (!heatmapChartRef.value) {
+      console.warn("热力图容器未找到");
       return;
     }
 
@@ -375,16 +375,17 @@ const renderHeatmapChart = () => {
 // 渲染合作网络关系图（力导向图）
 const renderNetworkChart = () => {
   try {
-    if (!networkChartRef.value) {
-      console.warn("网络图容器未找到");
-      return;
-    }
-
+    // 数据为空时销毁图表（即使容器已卸载）
     if (!network.value.nodes.length) {
       if (networkChart) {
         networkChart.dispose();
         networkChart = null;
       }
+      return;
+    }
+
+    if (!networkChartRef.value) {
+      console.warn("网络图容器未找到");
       return;
     }
 
