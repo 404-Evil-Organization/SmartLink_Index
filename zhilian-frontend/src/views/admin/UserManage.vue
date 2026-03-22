@@ -234,23 +234,35 @@ const handlePageSizeChange = (val) => {
   fetchList()
 }
 
-// 处理时间显示的函数，兼容不同格式的时间字符串，并且在无法解析时返回 '-'
+// 处理时间显示的函数，优先复用全局时间转换工具 createTimeConverter(...).toLocalYMDHMS()
+// 在无法获取工具或解析失败时，统一返回 '-'，避免出现 Invalid Date
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '-'
-  // 将 "YYYY-MM-DD HH:mm:ss" 转换为 "YYYY-MM-DDTHH:mm:ss" 以便解析
-  let normalized = dateStr
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
-    normalized = dateStr.replace(' ', 'T')
+
+  try {
+    // 兼容多种挂载方式：直接存在的 createTimeConverter，或挂在 window 上的 createTimeConverter
+    const converterFactory =
+      typeof createTimeConverter === 'function'
+        ? createTimeConverter
+        : typeof window !== 'undefined' && typeof window.createTimeConverter === 'function'
+          ? window.createTimeConverter
+          : null
+
+    if (converterFactory) {
+      const converter = converterFactory()
+      if (converter && typeof converter.toLocalYMDHMS === 'function') {
+        const formatted = converter.toLocalYMDHMS(dateStr)
+        // 统一兜底：工具返回空值或无效值时，使用 '-'
+        return formatted || '-'
+      }
+    }
+  } catch (e) {
+    // 工具调用异常时仅记录日志，不影响页面其他逻辑
+    console.error('时间格式化失败：', e)
   }
-  const date = new Date(normalized)
-  if (isNaN(date.getTime())) return '-'
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  const seconds = String(date.getSeconds()).padStart(2, '0')
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+
+  // 未能使用统一工具时的兜底策略：避免抛错，统一返回 '-'
+  return '-'
 }
 
 // 启用/禁用
