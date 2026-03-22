@@ -8,5 +8,5 @@ export default [
     path: "admin/user",
     name: "UserManage",
     component: () => import("@/views/admin/UserManage.vue"),
-  }
+  },
 ];

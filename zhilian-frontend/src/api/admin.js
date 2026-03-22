@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import request from "@/utils/request";
 
 // 获取用户列表（管理员）
 export function getUserList(params) {

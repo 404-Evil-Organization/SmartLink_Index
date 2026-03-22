@@ -282,17 +282,25 @@ const resetPassword = (row) => {
   }).then(async () => {
     try {
       const res = await resetUserPassword(row.id)
-      // 兼容两种返回：如果有 newPassword 字段则直接使用；如果有 data.newPassword 则使用
       const newPassword = res?.newPassword || res?.data?.newPassword
       if (newPassword) {
         passwordDialog.newPassword = newPassword
         passwordDialog.visible = true
         ElMessage.success('密码重置成功')
       } else {
+        // 接口成功但未返回新密码 → 提示异常
+        console.error('重置密码失败，返回数据异常:', res)
+        ElMessage.error('重置密码失败，响应数据异常，请稍后重试')
       }
     } catch (error) {
+      // 拦截器已处理错误提示，这里只做日志记录和兜底（避免用户无反馈）
+      console.error('重置密码请求异常:', error)
+      // 如果拦截器未弹出错误（如自定义情况），可兜底提示
+      if (!error.response) {
+        ElMessage.error('网络错误，请稍后重试')
+      }
     }
-  }).catch(() => {})
+  }).catch(() => {}) // 用户取消确认，无需处理
 }
 
 // 复制密码
@@ -310,33 +318,48 @@ const copyPassword = async () => {
       ElMessage.success('密码已复制到剪贴板')
     } catch (err) {
       console.error('Clipboard API 复制失败', err)
-      // 降级到传统方法
       fallbackCopyTextToClipboard(text)
     }
   } else {
-    // 不支持 Clipboard API，直接降级
     fallbackCopyTextToClipboard(text)
   }
 }
 
-// 降级方案（使用废弃的 execCommand，但作为后备）
+// 降级方案（使用传统 execCommand）
 const fallbackCopyTextToClipboard = (text) => {
   const textarea = document.createElement('textarea')
   textarea.value = text
+  // 样式：完全不可见，不占位，不影响布局
+  textarea.style.position = 'fixed'
+  textarea.style.left = '-9999px'
+  textarea.style.top = '0'
+  textarea.style.opacity = '0'
   document.body.appendChild(textarea)
+
+  // 保存当前聚焦元素
+  const activeElement = document.activeElement
+
+  // 选中文本
   textarea.select()
+  textarea.setSelectionRange(0, text.length) // 移动端兼容
+
+  let success = false
   try {
-    const successful = document.execCommand('copy')
-    if (successful) {
-      ElMessage.success('密码已复制到剪贴板')
-    } else {
-      ElMessage.error('复制失败，请手动复制')
-    }
+    success = document.execCommand('copy')
   } catch (err) {
     console.error('降级复制失败', err)
-    ElMessage.error('复制失败，请手动复制')
   } finally {
     document.body.removeChild(textarea)
+    // 恢复焦点
+    if (activeElement && activeElement.focus) {
+      activeElement.focus()
+    }
+  }
+
+  if (success) {
+    ElMessage.success('密码已复制到剪贴板')
+  } else {
+    ElMessage.error('复制失败，请手动复制')
   }
 }
 
