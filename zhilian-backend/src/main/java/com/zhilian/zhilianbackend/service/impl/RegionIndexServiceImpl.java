@@ -60,9 +60,13 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Date: 2026/3/18 23:12
      * @Param:
      * @Return:
-     * @Description: 定时任务，每天凌晨2点计算上一季度的区域指数
+     * @Description: 定时任务，每季度首月1日凌晨2点计算上一季度的区域指数
+     *
+     * 说明：
+     * - 使用 cron "0 0 2 1 1,4,7,10 ?" 表示每年 1、4、7、10 月 1 日 02:00 执行一次，
+     *   配合方法内部“推算上一季度”的逻辑，确保每个自然季度只计算一次，避免整个季度期间重复重算。
      */
-    @Scheduled(cron = "0 0 2 * * ?")
+    @Scheduled(cron = "0 0 2 1 1,4,7,10 ?")
     @Transactional(rollbackFor = Exception.class)
     public void scheduledCalculateQuarter() {
         log.info("开始定时计算季度区域指数");
@@ -97,6 +101,12 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void calculateAndSaveQuarterIndex(Short year, Byte quarter) {
+        // 重置服务商区域缓存，确保本次计算使用最新的服务商数据
+        synchronized (serviceProviderRegionCache) {
+            serviceProviderRegionCache.clear();
+            cacheLoaded = false;
+        }
+
         log.info("计算季度区域指数 - 年份: {}, 季度: {}", year, quarter);
 
         // 1. 获取季度起止日期
@@ -247,15 +257,6 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Param: coop 合作记录  manuRegion 制造企业区域
      * @Return: boolean 是否跨区域
      * @Description: 判断是否是跨区域合作
-     * <p>
-     * 性能说明：
-     * - 为避免在循环中对每条合作记录都执行一次 serviceProviderMapper.selectById 造成 N+1 查询，
-     *   本方法不再直接访问数据库，而是依赖预先构建的 serviceProviderRegionCache 本地缓存。
-     * - 缓存采用懒加载策略：首次调用时一次性加载所有 ServiceProvider 的区域信息到内存，
-     *   后续调用直接从 Map 中获取，不再触发 DB 访问，从而显著降低季度任务的数据库压力。
-     */
-    /**
-     * 判断是否是跨区域合作（线程安全缓存版本）
      */
     private boolean isCrossRegionCooperation(Cooperation coop, String manuRegion) {
         if (coop == null || coop.getServiceId() == null || manuRegion == null) {
