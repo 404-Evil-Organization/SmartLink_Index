@@ -294,20 +294,11 @@ const getLevelType = (level) => {
 const formatDate = (dateStr) => {
   if (!dateStr) return '-'
   let normalized = dateStr
-  // 如果是 "YYYY-MM-DD HH:mm:ss" 格式，将空格替换为 T 以便 Safari 解析
   if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
     normalized = dateStr.replace(' ', 'T')
   }
   const converter = createTimeConverter(normalized)
-  const date = converter.toDate()
-  if (!date) return '-'
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  const seconds = String(date.getSeconds()).padStart(2, '0')
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  return converter.toLocalYMDHMS() || '-'
 }
 /**
  * 统一错误处理（403 跳转，404 显示无报告，其他弹窗）
