@@ -1,3 +1,4 @@
+import { ElMessage } from "element-plus";
 /**
  * 检查当前用户是否有权限访问目标路由
  * @param {Object} to - Vue Router 的目标路由对象

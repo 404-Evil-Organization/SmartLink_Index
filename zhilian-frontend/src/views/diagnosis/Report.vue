@@ -202,6 +202,7 @@ import { getDiagnosisResult, getLatestDiagnosis } from '@/api/diagnosis'
 import { getManufactureList } from '@/api/manufacture'
 import { getMyManufactureList } from '@/api/enterprise'
 import { useUserStore } from '@/stores/user'
+import { createTimeConverter } from '@/composables/date'
 
 const route = useRoute()
 const router = useRouter()
@@ -286,8 +287,17 @@ const getLevelType = (level) => {
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  const converter = createTimeConverter(dateStr)
+  const date = converter.toDate()
+  if (!date) return '-'
+  // 返回 YYYY-MM-DD HH:mm:ss 格式
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 /**
@@ -322,7 +332,6 @@ const fetchReportById = async (id) => {
       selectedManuId.value = res.manuId
     }
     localStorage.setItem('latestDiagnosisId', id)
-    nextTick(() => renderRadarChart())
   } catch (error) {
     handleReportError(error)
   } finally {
@@ -343,7 +352,6 @@ const fetchLatestReportByManuId = async (manuId) => {
       selectedManuId.value = res.manuId
     }
     localStorage.setItem('latestDiagnosisId', res.diagnosisId)
-    nextTick(() => renderRadarChart())
   } catch (error) {
     handleReportError(error)
   } finally {
@@ -391,7 +399,6 @@ const handleViewReport = async () => {
       selectedManuId.value = latest.manuId
     }
     localStorage.setItem('latestDiagnosisId', latest.diagnosisId)
-    nextTick(() => renderRadarChart())
   } catch (error) {
     const status = error?.response?.status || error?.code
     if (status === 404) {
@@ -421,48 +428,86 @@ const goToEnterpriseManage = () => {
 }
 
 // ---------- 雷达图实例管理 ----------
+
 let radarChartInstance = null
+
+// 窗口大小改变时让图表自适应
 const handleRadarResize = () => {
   radarChartInstance?.resize()
 }
 
-const renderRadarChart = () => {
+// 初始化雷达图（创建实例、绑定事件、绘制）
+const initRadarChart = () => {
   if (!radarChartRef.value || !reportData.value) return
 
-  let chart = echarts.getInstanceByDom(radarChartRef.value)
-  if (!chart) {
-    chart = echarts.init(radarChartRef.value)
-    radarChartInstance = chart
-    window.addEventListener('resize', handleRadarResize)
-  } else {
-    radarChartInstance = chart
+  // 如果已有实例，先销毁
+  if (radarChartInstance) {
+    radarChartInstance.dispose()
+    radarChartInstance = null
   }
+
+  // 创建新实例
+  radarChartInstance = echarts.init(radarChartRef.value)
+
+  // 确保 resize 事件只绑定一次
+  window.removeEventListener('resize', handleRadarResize)
+  window.addEventListener('resize', handleRadarResize)
+
+  // 绘制图表
+  updateRadarChart()
+}
+
+// 更新图表配置（仅用于绘制，不改变实例）
+const updateRadarChart = () => {
+  if (!radarChartInstance || !reportData.value) return
 
   const indicator = dimensions.map(d => ({ name: d.label, max: 5 }))
   const value = dimensions.map(d => reportData.value[d.field] || 0)
+
   const option = {
     radar: {
       indicator,
       center: ['50%', '50%'],
       radius: '65%',
       shape: 'circle',
-      // 使用新版配置 axisName 避免弃用警告
-      axisName: {
-        color: '#606266',
-        fontSize: 12,
-      },
-      splitArea: { areaStyle: { color: ['rgba(64,158,255,0.02)', 'rgba(64,158,255,0.05)'] } },
+      axisName: { color: '#606266', fontSize: 12 },
+      splitArea: { areaStyle: { color: ['rgba(64,158,255,0.02)', 'rgba(64,158,255,0.05)'] } }
     },
     series: [{
       type: 'radar',
       data: [value],
       areaStyle: { color: 'rgba(64,158,255,0.2)' },
       lineStyle: { color: '#409EFF', width: 2 },
-      itemStyle: { color: '#409EFF' },
-    }],
+      itemStyle: { color: '#409EFF' }
+    }]
   }
-  chart.setOption(option)
+
+  radarChartInstance.setOption(option)
 }
+
+// 销毁雷达图实例，移除监听
+const destroyRadarChart = () => {
+  if (radarChartInstance) {
+    radarChartInstance.dispose()
+    radarChartInstance = null
+  }
+  window.removeEventListener('resize', handleRadarResize)
+}
+
+// 监听 reportData 的变化，自动管理雷达图
+watch(reportData, async (newVal) => {
+  if (newVal) {
+    await nextTick()      // 等待 DOM 更新
+    initRadarChart()
+  } else {
+    destroyRadarChart()
+  }
+}, { immediate: false })  // 如果不需要立即执行，可以不写 immediate
+
+// 组件卸载时清理
+onBeforeUnmount(() => {
+  destroyRadarChart()
+})
 
 onMounted(() => {
   //  if (route.query.id || route.query.manuId || route.params.id || route.params.manuId) {
@@ -470,14 +515,6 @@ onMounted(() => {
   // }
   fetchEnterprises();
 });
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleRadarResize)
-  if (radarChartInstance) {
-    radarChartInstance.dispose()
-    radarChartInstance = null
-  }
-})
 </script>
 
 <style scoped>
