@@ -12,32 +12,38 @@
       </div>
     </div>
 
-    <!-- 搜索卡片 -->
-    <div class="search-bar">
-      <el-form :model="searchForm" label-width="80px" inline>
-        <el-form-item label="角色" >
-          <el-select v-model="searchForm.role" placeholder="全部" clearable style="width: 400px">
-            <el-option label="制造企业" value="manufacture" />
-            <el-option label="服务商" value="service" />
-            <el-option label="园区/政府" value="park" />
-            <el-option label="管理员" value="admin" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态" >
-          <el-select v-model="searchForm.status" placeholder="全部"  clearable style="width: 400px">
-            <el-option label="正常" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="关键词">
-          <el-input v-model="searchForm.keyword" placeholder="用户名" clearable style="width: 500px" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="resetSearch">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
+<!-- 搜索卡片 -->
+<div class="search-bar">
+  <el-row :gutter="16" class="search-row">
+    <el-col :span="6">
+      <el-form-item label="角色">
+        <el-select v-model="searchForm.role" placeholder="全部" clearable style="width: 100%">
+          <el-option label="制造企业" value="manufacture" />
+          <el-option label="服务商" value="service" />
+          <el-option label="园区/政府" value="park" />
+          <el-option label="管理员" value="admin" />
+        </el-select>
+      </el-form-item>
+    </el-col>
+    <el-col :span="6">
+      <el-form-item label="状态">
+        <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 100%">
+          <el-option label="正常" :value="1" />
+          <el-option label="禁用" :value="0" />
+        </el-select>
+      </el-form-item>
+    </el-col>
+    <el-col :span="6">
+      <el-form-item label="关键词">
+        <el-input v-model="searchForm.keyword" placeholder="用户名/手机号" clearable style="width: 100%" />
+      </el-form-item>
+    </el-col>
+    <el-col :span="6" style="display: flex; align-items: center;">
+      <el-button type="primary" @click="handleSearch">查询</el-button>
+      <el-button @click="resetSearch">重置</el-button>
+    </el-col>
+  </el-row>
+</div>
 
     <!-- 表格卡片 -->
     <el-card class="table-card" shadow="hover">
@@ -69,7 +75,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160">
+        <el-table-column label="创建时间" width="160">
           <template #default="{ row }">
             {{ formatDateTime(row.createTime) }}
           </template>
@@ -147,6 +153,7 @@ import { ref, reactive, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Check, Close, Key, View, Refresh } from "@element-plus/icons-vue";
 import { getUserList, updateUserStatus, resetUserPassword } from "@/api/admin";
+import { createTimeConverter } from "@/composables/date";
 
 // 角色映射
 const roleMap = {
@@ -236,33 +243,19 @@ const handlePageSizeChange = (val) => {
 
 // 处理时间显示的函数，优先复用全局时间转换工具 createTimeConverter(...).toLocalYMDHMS()
 // 在无法获取工具或解析失败时，统一返回 '-'，避免出现 Invalid Date
+// 格式化日期时间（兼容 "YYYY-MM-DD HH:mm:ss" 格式）
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '-'
-
-  try {
-    // 兼容多种挂载方式：直接存在的 createTimeConverter，或挂在 window 上的 createTimeConverter
-    const converterFactory =
-      typeof createTimeConverter === 'function'
-        ? createTimeConverter
-        : typeof window !== 'undefined' && typeof window.createTimeConverter === 'function'
-          ? window.createTimeConverter
-          : null
-
-    if (converterFactory) {
-      const converter = converterFactory()
-      if (converter && typeof converter.toLocalYMDHMS === 'function') {
-        const formatted = converter.toLocalYMDHMS(dateStr)
-        // 统一兜底：工具返回空值或无效值时，使用 '-'
-        return formatted || '-'
-      }
-    }
-  } catch (e) {
-    // 工具调用异常时仅记录日志，不影响页面其他逻辑
-    console.error('时间格式化失败：', e)
+  // 将空格格式转换为 ISO 格式（兼容 Safari）
+  let normalized = dateStr
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+    normalized = dateStr.replace(' ', 'T')
   }
-
-  // 未能使用统一工具时的兜底策略：避免抛错，统一返回 '-'
-  return '-'
+  const converter = createTimeConverter(normalized)
+  const date = converter.toDate()
+  if (!date) return '-'
+  // 直接使用工具提供的 toLocalYMDHMS 方法（无需传参）
+  return converter.toLocalYMDHMS()
 }
 
 // 启用/禁用
@@ -285,12 +278,6 @@ const toggleStatus = (row) => {
       }
     } catch (error) {
       console.error(`${action}请求异常:`, error)
-      // 判断是否为网络/超时错误（而非业务错误）
-      const isNetworkError =
-        error?.code === 'ECONNABORTED' ||
-        error?.code === 'ERR_NETWORK' ||
-        error?.message === 'Network Error' ||
-        (error?.message && error.message.includes('timeout'))
       if (isNetworkError) {
         ElMessage.error('网络异常，请检查连接后重试')
       }
@@ -461,5 +448,17 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   padding: 0 20px 20px;
+}
+
+.search-bar {
+  margin-bottom: 16px;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  overflow-x: auto; /* 当屏幕过窄时出现横向滚动条，保证内容不换行 */
+}
+.search-row {
+  min-width: 800px; /* 可根据实际内容调整，确保一行显示的最小宽度 */
 }
 </style>
