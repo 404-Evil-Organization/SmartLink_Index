@@ -44,7 +44,6 @@
                 v-model="searchForm.status"
                 placeholder="请选择状态"
                 clearable
-                @change="handleSearch"
               >
                 <el-option label="进行中" value="ongoing" />
                 <el-option label="已完成" value="completed" />
