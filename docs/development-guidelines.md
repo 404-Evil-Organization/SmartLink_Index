@@ -263,14 +263,16 @@ zhilian-frontend/
 │   │   │   └── List.vue                    # 服务商列表页（供所有用户浏览）
 │   │   ├── enterprise/         # 个人企业管理
 │   │   │   └── index.vue                   # 我的企业页面（制造企业/服务商选项卡，含审核状态）
-│   │   └── admin/              # 管理员后台
-│   │       ├── TagList.vue                 # 标签管理（增删改查标签）
-│   │       ├── UserManage.vue              # 用户管理（启用/禁用、重置密码）
-│   │       ├── DemandAudit.vue             # 需求审核（通过/驳回需求）
-│   │       ├── EnterpriseAudit.vue         # 企业审核（制造企业/服务商入驻审核）
-│   │       ├── RegionIndexManage.vue       # 区域指数管理（发布/编辑区域指数）
-│   │       ├── AbroadCaseManage.vue        # 出海案例管理（增删改查出海案例）
-│   │       └── LogList.vue                 # 操作日志查看
+│   │   ├── admin/              # 管理员后台
+│   │   │   ├── TagList.vue                 # 标签管理（增删改查标签）
+│   │   │   ├── UserManage.vue              # 用户管理（启用/禁用、重置密码）
+│   │   │   ├── DemandAudit.vue             # 需求审核（通过/驳回需求）
+│   │   │   ├── EnterpriseAudit.vue         # 企业审核（制造企业/服务商入驻审核）
+│   │   │   ├── RegionIndexManage.vue       # 区域指数管理（发布/编辑区域指数）
+│   │   │   ├── AbroadCaseManage.vue        # 出海案例管理（增删改查出海案例）
+│   │   │   └── LogList.vue                 # 操作日志查看
+│   │   └── error/                     		# 错误页面文件夹
+│   │       └── Forbidden.vue           	# 403 无权限页面
 │   ├── App.vue                 # 根组件
 │   └── main.js                 # 入口文件
 ├── index.html                  # 项目入口 HTML
