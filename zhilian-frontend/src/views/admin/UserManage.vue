@@ -14,8 +14,8 @@
 
 <!-- 搜索卡片 -->
 <div class="search-bar">
-  <el-row :gutter="16" class="search-row">
-    <el-col :span="6">
+  <el-row :gutter="16" class="search-row" :wrap="false">
+    <el-col :span="5">
       <el-form-item label="角色">
         <el-select v-model="searchForm.role" placeholder="全部" clearable style="width: 100%">
           <el-option label="制造企业" value="manufacture" />
@@ -25,7 +25,7 @@
         </el-select>
       </el-form-item>
     </el-col>
-    <el-col :span="6">
+    <el-col :span="5">
       <el-form-item label="状态">
         <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 100%">
           <el-option label="正常" :value="1" />
@@ -33,12 +33,12 @@
         </el-select>
       </el-form-item>
     </el-col>
-    <el-col :span="6">
+    <el-col :span="10">
       <el-form-item label="关键词">
         <el-input v-model="searchForm.keyword" placeholder="用户名/手机号" clearable style="width: 100%" />
       </el-form-item>
     </el-col>
-    <el-col :span="6" style="display: flex; align-items: center;">
+    <el-col :span="4" style="display: flex; align-items: center;">
       <el-button type="primary" @click="handleSearch">查询</el-button>
       <el-button @click="resetSearch">重置</el-button>
     </el-col>
@@ -456,9 +456,22 @@ onMounted(() => {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  overflow-x: auto; /* 当屏幕过窄时出现横向滚动条，保证内容不换行 */
+  overflow-x: auto; /* 窄屏时横向滚动 */
 }
+
 .search-row {
-  min-width: 800px; /* 可根据实际内容调整，确保一行显示的最小宽度 */
+  flex-wrap: nowrap; /* 强制一行 */
+  min-width: 800px; /* 可根据实际内容调整最小宽度 */
+}
+
+/* 可选：为每个列设置最小宽度，防止内容被压缩（根据实际需求调整） */
+.search-row .el-col {
+  min-width: 140px;
+}
+.search-row .el-col:nth-child(3) {
+  min-width: 220px;
+}
+.search-row .el-col:last-child {
+  min-width: 160px;
 }
 </style>
