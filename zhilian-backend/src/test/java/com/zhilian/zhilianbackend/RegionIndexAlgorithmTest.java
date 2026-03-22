@@ -1,4 +1,4 @@
-package service.algorithm;
+package com.zhilian.zhilianbackend;
 
 import com.zhilian.zhilianbackend.service.algorithm.RegionIndexAlgorithm;
 import com.zhilian.zhilianbackend.service.algorithm.impl.RegionIndexAlgorithmImpl;
