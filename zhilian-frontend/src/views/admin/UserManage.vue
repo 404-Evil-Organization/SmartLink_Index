@@ -12,6 +12,7 @@
       </div>
     </div>
 
+
 <!-- 搜索卡片 -->
 <div class="search-bar">
   <el-row :gutter="16" class="search-row">
@@ -35,7 +36,7 @@
     </el-col>
     <el-col :span="10">
       <el-form-item label="关键词">
-        <el-input v-model="searchForm.keyword" placeholder="用户名/手机号" clearable style="width: 100%" />
+        <el-input v-model="searchForm.keyword" placeholder="用户名" clearable style="width: 100%" />
       </el-form-item>
     </el-col>
     <el-col :span="4" style="display: flex; align-items: center;">
@@ -278,7 +279,10 @@ const toggleStatus = (row) => {
       }
     } catch (error) {
       console.error(`${action}请求异常:`, error)
-      // 业务错误（含网络异常）均由拦截器统一提示，此处不重复弹窗
+      if (isNetworkError) {
+        ElMessage.error('网络异常，请检查连接后重试')
+      }
+      // 业务错误由拦截器统一提示，此处不重复
     }
   }).catch(() => {}) // 用户取消确认，无需处理
 }
