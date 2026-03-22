@@ -156,14 +156,20 @@ public class DashboardServiceImpl implements DashboardService {
         List<NetworkDataResponse.LinkDTO> links = new ArrayList<>();
         
         // 用于收集参与了 TopN 连接的节点 ID
-        java.util.Set<String> activeNodeIds = new java.util.HashSet<>();
+        java.util.Set<Long> manuIds = new java.util.HashSet<>();
+        java.util.Set<Long> serviceIds = new java.util.HashSet<>();
 
         for (Map<String, Object> map : linkMaps) {
             String source = (String) map.get("source");
             String target = (String) map.get("target");
 
-            activeNodeIds.add(source);
-            activeNodeIds.add(target);
+            // source 格式为 'm' + id，target 格式为 's' + id
+            if (source != null && source.startsWith("m")) {
+                manuIds.add(Long.parseLong(source.substring(1)));
+            }
+            if (target != null && target.startsWith("s")) {
+                serviceIds.add(Long.parseLong(target.substring(1)));
+            }
 
             Object valueObj = map.get("value");
             Long value = 0L;
@@ -193,15 +199,14 @@ public class DashboardServiceImpl implements DashboardService {
                     .links(links)
                     .build();
         }
-        List<NetworkDataResponse.NodeDTO> allNodes = new ArrayList<>();
-        allNodes.addAll(networkMapper.getManufactureNodes(notDeletedTime));
-        allNodes.addAll(networkMapper.getServiceNodes(notDeletedTime));
-        
+
+        // 2. 根据收集到的实际参与连接的节点 ID 集合，向数据库精确查询对应的节点信息，避免全量查询
         List<NetworkDataResponse.NodeDTO> filteredNodes = new ArrayList<>();
-        for (NetworkDataResponse.NodeDTO node : allNodes) {
-            if (activeNodeIds.contains(node.getId())) {
-                filteredNodes.add(node);
-            }
+        if (!manuIds.isEmpty()) {
+            filteredNodes.addAll(networkMapper.getManufactureNodesByIds(notDeletedTime, manuIds));
+        }
+        if (!serviceIds.isEmpty()) {
+            filteredNodes.addAll(networkMapper.getServiceNodesByIds(notDeletedTime, serviceIds));
         }
 
         return NetworkDataResponse.builder()

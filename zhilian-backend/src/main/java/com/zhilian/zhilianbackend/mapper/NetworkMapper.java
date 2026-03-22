@@ -23,43 +23,41 @@ public interface NetworkMapper extends BaseMapper<Cooperation> {
      * @Author: 6017
      * @Date: 2026/3/20 21:41
      * @Param: notDeletedTime 逻辑删除时间标记
+     * @Param: manuIds 制造企业ID集合
      * @Return: List<NetworkDataResponse.NodeDTO> 制造企业节点列表
-     * @Description: 获取制造企业节点列表（只返回有有效合作关系的企业）
+     * @Description: 获取指定的制造企业节点列表
      */
-    @Select("SELECT CONCAT('m', m.id) AS id, m.company_name AS name, 'manufacture' AS type " +
-            "FROM manufacture m " +
-            "WHERE m.deleted = #{notDeletedTime} " +
-            "AND m.audit_status = 'approved' " +
-            "AND EXISTS (" +
-            "   SELECT 1 FROM cooperation c " +
-            "   INNER JOIN service_provider s ON c.service_id = s.id " +
-            "   WHERE c.manu_id = m.id " +
-            "   AND c.deleted = #{notDeletedTime} " +
-            "   AND s.deleted = #{notDeletedTime} " +
-            "   AND s.audit_status = 'approved'" +
-            ")")
-    List<NetworkDataResponse.NodeDTO> getManufactureNodes(@Param("notDeletedTime") LocalDateTime notDeletedTime);
+    @Select("<script>" +
+            "SELECT CONCAT('m', id) AS id, company_name AS name, 'manufacture' AS type " +
+            "FROM manufacture " +
+            "WHERE deleted = #{notDeletedTime} " +
+            "AND audit_status = 'approved' " +
+            "AND id IN " +
+            "<foreach collection='manuIds' item='id' open='(' separator=',' close=')'>" +
+            "#{id}" +
+            "</foreach>" +
+            "</script>")
+    List<NetworkDataResponse.NodeDTO> getManufactureNodesByIds(@Param("notDeletedTime") LocalDateTime notDeletedTime, @Param("manuIds") java.util.Collection<Long> manuIds);
 
     /**
      * @Author: 6017
      * @Date: 2026/3/20 21:41
      * @Param: notDeletedTime 逻辑删除时间标记
+     * @Param: serviceIds 服务商ID集合
      * @Return: List<NetworkDataResponse.NodeDTO> 服务商节点列表
-     * @Description: 获取服务商节点列表（只返回有有效合作关系的服务商）
+     * @Description: 获取指定的服务商节点列表
      */
-    @Select("SELECT CONCAT('s', s.id) AS id, s.company_name AS name, 'service' AS type " +
-            "FROM service_provider s " +
-            "WHERE s.deleted = #{notDeletedTime} " +
-            "AND s.audit_status = 'approved' " +
-            "AND EXISTS (" +
-            "   SELECT 1 FROM cooperation c " +
-            "   INNER JOIN manufacture m ON c.manu_id = m.id " +
-            "   WHERE c.service_id = s.id " +
-            "   AND c.deleted = #{notDeletedTime} " +
-            "   AND m.deleted = #{notDeletedTime} " +
-            "   AND m.audit_status = 'approved'" +
-            ")")
-    List<NetworkDataResponse.NodeDTO> getServiceNodes(@Param("notDeletedTime") LocalDateTime notDeletedTime);
+    @Select("<script>" +
+            "SELECT CONCAT('s', id) AS id, company_name AS name, 'service' AS type " +
+            "FROM service_provider " +
+            "WHERE deleted = #{notDeletedTime} " +
+            "AND audit_status = 'approved' " +
+            "AND id IN " +
+            "<foreach collection='serviceIds' item='id' open='(' separator=',' close=')'>" +
+            "#{id}" +
+            "</foreach>" +
+            "</script>")
+    List<NetworkDataResponse.NodeDTO> getServiceNodesByIds(@Param("notDeletedTime") LocalDateTime notDeletedTime, @Param("serviceIds") java.util.Collection<Long> serviceIds);
 
     /**
      * @Author: 6017
