@@ -320,7 +320,14 @@ const handleReportError = (error) => {
     reportData.value = null
     showNoReport.value = true
   } else {
-    ElMessage.error(error.message || '获取报告失败，请稍后重试')
+    if (!error?.response) {
+      const rawMessage = error?.message || ''
+      const friendlyMessage =
+        rawMessage && rawMessage !== 'Network Error'
+          ? rawMessage
+          : '获取诊断报告失败，请检查网络后重试'
+      ElMessage.error(friendlyMessage)
+    }
     reportData.value = null
   }
 }
@@ -331,7 +338,6 @@ const fetchReportById = async (id) => {
   showNoReport.value = false
   try {
     const res = await getDiagnosisResult(id)
-    console.log(res);
     
     if (!res) {
       // 无报告

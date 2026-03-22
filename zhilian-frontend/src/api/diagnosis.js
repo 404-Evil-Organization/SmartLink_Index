@@ -44,6 +44,7 @@ export function getDiagnosisResult(id) {
   return request({
     url: `/diagnosis/${id}`,
     method: "get",
+    silent: true // 对于无报告的404及其他错误静默处理，由页面接管
   });
 }
 
@@ -56,7 +57,8 @@ export function getLatestDiagnosis(manuId) {
   return request({
     url: "/diagnosis/latest",
     method: "get",
-    params: { manuId }
+    params: { manuId },
+    silent: true // 对于无报告的404及其他错误静默处理，由页面接管
   });
 }
 

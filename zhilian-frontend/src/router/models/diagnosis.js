@@ -17,7 +17,7 @@ export default [
   },
   {
     path: "diagnosis/:id",
-    name: "DiagnosisReport",
+    name: "DiagnosisReportID",
     component: () => import("@/views/diagnosis/Report.vue"),
     meta: {
       roles: ["manufacture", "admin"],
