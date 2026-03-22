@@ -1,4 +1,21 @@
-import request from '@/utils/request'
+import request from "@/utils/request";
+
+/**
+ * 提交评价
+ * @param {Object} data - 评价数据
+ * @param {number} data.coopId - 合作记录ID
+ * @param {number} data.score - 评分（1-5星）
+ * @param {string} [data.content] - 评价内容
+ * @param {boolean} [data.isAnonymous] - 是否匿名
+ * @returns {Promise}
+ */
+export function submitEvaluation(data) {
+  return request({
+    url: "/evaluation/submit",
+    method: "post",
+    data,
+  });
+}
 
 /**
  * 获取服务商评价列表
@@ -11,7 +28,7 @@ import request from '@/utils/request'
 export function getEvaluationList(serviceId, params) {
   return request({
     url: `/evaluation/list/${serviceId}`,
-    method: 'get',
-    params
-  })
+    method: "get",
+    params,
+  });
 }
