@@ -22,6 +22,7 @@ public interface EvaluationMapper extends BaseMapper<Evaluation> {
     @Select("SELECT e.* FROM evaluation e " +
             "JOIN cooperation c ON e.coop_id = c.id " +
             "WHERE c.service_id = #{serviceId} " +
+            "AND e.evaluator_role = 'manufacture' " +
             "AND e.deleted = #{notDeletedTime} " +
             "AND c.deleted = #{notDeletedTime} " +
             "ORDER BY e.create_time DESC")
