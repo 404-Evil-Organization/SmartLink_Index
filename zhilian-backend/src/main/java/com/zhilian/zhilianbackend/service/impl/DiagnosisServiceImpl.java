@@ -1,10 +1,31 @@
 package com.zhilian.zhilianbackend.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.zhilian.zhilianbackend.dto.request.DiagnosisSubmitRequest;
+import com.zhilian.zhilianbackend.dto.response.DiagnosisReportVO;
 import com.zhilian.zhilianbackend.entity.Diagnosis;
+import com.zhilian.zhilianbackend.entity.Manufacture;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.DiagnosisMapper;
+import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
 import com.zhilian.zhilianbackend.service.DiagnosisService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhilian.zhilianbackend.service.algorithm.DiagnosisAlgorithm;
+import com.zhilian.zhilianbackend.utils.SecurityUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataAccessException;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Date;
+import java.util.Collections;
 
 /**
  * @Author: 6017
@@ -13,7 +34,303 @@ import org.springframework.stereotype.Service;
  * @Return: 
  * @Description: 诊断记录表业务逻辑实现类，实现诊断相关的业务方法
 **/
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis> implements DiagnosisService {
 
+    private final ObjectMapper objectMapper;
+
+    private final ManufactureMapper manufactureMapper;
+    private final DiagnosisAlgorithm diagnosisAlgorithm;
+    private final SecurityUtils securityUtils;
+
+    /**
+     * 校验单个诊断维度得分是否合法（1-5 分），并安全转换为 byte。
+     * 说明：即使 Controller 已做校验，这里仍在 Service 层进行兜底校验，
+     * 防止其他调用方绕过 Controller 直接调用 Service 时写入脏数据。
+     *
+     * @param score   维度得分（来自请求）
+     * @param field   维度字段名（用于日志打印）
+     * @param manuId  企业ID（用于日志打印）
+     * @param userId  当前用户ID（用于日志打印）
+     * @return        合法的 byte 值（1-5）
+     */
+    private byte validateDimensionScore(Integer score, String field, Long manuId, Long userId) {
+        if (score == null) {
+            log.error("诊断维度得分为空 - 字段: {}, 用户ID: {}, 企业ID: {}", field, userId, manuId);
+            throw new BusinessException(400, "诊断问卷各维度得分不能为空，请填写完整后重试");
+        }
+        if (score < 1 || score > 5) {
+            log.error("诊断维度得分超出合法范围[1,5] - 字段: {}, 得分: {}, 用户ID: {}, 企业ID: {}",
+                    field, score, userId, manuId);
+            throw new BusinessException(400, "诊断问卷各维度得分必须在 1-5 分之间，请检查后重试");
+        }
+        return score.byteValue();
+    }
+
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/3/21 14:00
+     * @Param: manuId 制造企业ID
+     * @Param userId 当前用户ID
+     * @Param errorMsg 权限不足时的错误提示信息
+     * @Return: void
+     * @Description: 校验制造企业是否存在，并检查当前用户是否有操作权限（企业创建者或管理员）
+    **/
+    private void checkManufactureAndPermission(Long manuId, Long userId, String errorMsg) {
+        Manufacture manufacture = manufactureMapper.selectById(manuId);
+        if (manufacture == null) {
+            throw new BusinessException(404, "关联的制造企业不存在");
+        }
+
+        // 只从 SecurityContext 获取一次当前用户角色，后续复用，避免重复读取
+        String currentRole = securityUtils.getCurrentUserRole();
+        boolean isAdmin = "admin".equals(currentRole);
+        boolean isOwner = manufacture.getUserId().equals(userId);
+
+        if (!isOwner && !isAdmin) {
+            log.warn("权限不足 - 用户ID: {}, 企业创建者ID: {}, 用户角色: {}",
+                    userId, manufacture.getUserId(), currentRole);
+            throw new BusinessException(403, errorMsg);
+        }
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/17 22:47
+     * @Param: request 诊断提交请求参数（包含企业ID和各维度得分）
+     * @Return: DiagnosisReportVO 诊断报告数据
+     * @Description: 提交诊断问卷，计算总分、等级和建议，保存诊断记录
+    **/
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public DiagnosisReportVO submitDiagnosis(DiagnosisSubmitRequest request) {
+        Long userId = securityUtils.getCurrentUserId();
+        // 先对请求对象做空校验，避免在访问字段前触发 NPE
+        if (request == null) {
+            throw new BusinessException(400, "诊断提交参数不能为空");
+        }
+        // 提前获取并校验制造企业ID，缺失或非法时返回 400，而不是伪装成 404
+        Long manuId = request.getManuId();
+        if (manuId == null) {
+            throw new BusinessException(400, "制造企业ID不能为空");
+        }
+        // manuId 必须为正数，避免传入 0 或负数导致后续 selectById 返回 404，语义不准确
+        if (manuId <= 0) {
+            throw new BusinessException(400, "制造企业ID必须为正数");
+        }
+
+        log.info("提交诊断问卷 - 用户ID: {}, 企业ID: {}", userId, manuId);
+
+        // 1. 验证制造企业是否存在并检查权限
+        checkManufactureAndPermission(manuId, userId, "无权为此企业提交诊断");
+
+        // 3. 先对四个维度得分做非空及 1-5 范围校验，再将校验通过的结果传给算法和持久化层
+        byte infoScore = validateDimensionScore(request.getInfoScore(), "infoScore",
+                manuId, userId);
+        byte autoScore = validateDimensionScore(request.getAutoScore(), "autoScore",
+                manuId, userId);
+        byte dataScore = validateDimensionScore(request.getDataScore(), "dataScore",
+                manuId, userId);
+        byte serviceScore = validateDimensionScore(request.getServiceScore(), "serviceScore",
+                manuId, userId);
+
+        int totalScore = diagnosisAlgorithm.calculateTotalScore(
+                infoScore,
+                autoScore,
+                dataScore,
+                serviceScore
+        );
+
+        String level = diagnosisAlgorithm.getLevel(totalScore);
+        List<String> suggestions = diagnosisAlgorithm.generateSuggestions(
+                infoScore,
+                autoScore,
+                dataScore,
+                serviceScore
+        );
+
+        // 4. 校验总分范围，避免违反数据库 total_score 0-100 CHECK 约束
+        // 说明：如果算法或输入异常导致总分超出 [0,100]，这里抛出明确的业务异常，
+        // 而不是让底层数据库约束异常冒泡为通用 500，便于前端提示和问题排查。
+        if (totalScore < 0 || totalScore > 100) {
+            log.error("诊断总分超出合法范围[0,100] - 计算结果: {}, 用户ID: {}, 企业ID: {}",
+                    totalScore, userId, request.getManuId());
+            throw new BusinessException(400, "诊断总分计算异常，请检查各维度评分是否在合法范围内（1-5 分）");
+        }
+
+        // 5. 使用全局 ObjectMapper 将诊断建议列表序列化为 JSON 字符串，避免与反序列化时的 Jackson 配置不一致
+        String suggestionsJson;
+        try {
+            suggestionsJson = objectMapper.writeValueAsString(suggestions);
+        } catch (JsonProcessingException e) {
+            // 序列化失败视为服务异常，记录详细日志便于排查
+            log.error("诊断建议序列化为 JSON 失败 - 用户ID: {}, 企业ID: {}, 建议列表: {}",
+                    userId, request.getManuId(), suggestions, e);
+            throw new BusinessException(500, "诊断建议序列化异常，请稍后重试");
+        }
+
+        // 6. 保存诊断记录
+        Diagnosis diagnosis = new Diagnosis();
+        diagnosis.setManuId(request.getManuId())
+                // 在 Service 层对各维度得分做 1-5 范围校验后再转换为 byte，避免 Integer 溢出为 Byte 及数据库 CHECK 异常
+                .setInfoScore(infoScore)
+                .setAutoScore(autoScore)
+                .setDataScore(dataScore)
+                .setServiceScore(serviceScore)
+                .setTotalScore((byte) totalScore)
+                .setLevel(level)
+                .setSuggestions(suggestionsJson)
+                .setDiagnosisDate(new Date());
+
+        try {
+            boolean saved = this.save(diagnosis);
+            if (!saved) {
+                // MyBatis Plus save 返回 false 说明未成功插入任何记录，此时不应继续后续逻辑
+                log.error("诊断记录保存失败（save 返回 false）- 企业ID: {}, 总分: {}, 等级: {}",
+                        request.getManuId(), totalScore, level);
+                throw new BusinessException(500, "诊断记录保存失败，请稍后重试");
+            }
+        } catch (DataAccessException e) {
+            // 捕获底层数据库访问异常（如 CHECK 约束、外键约束、连接异常等），统一转换为业务异常
+            log.error("诊断记录持久化异常 - 企业ID: {}, 总分: {}, 等级: {}",
+                    request.getManuId(), totalScore, level, e);
+            throw new BusinessException(500, "诊断记录保存异常，请稍后重试");
+        }
+
+        log.info("诊断记录保存成功 - 诊断ID: {}, 企业ID: {}, 总分: {}, 等级: {}",
+                diagnosis.getId(), request.getManuId(), totalScore, level);
+
+        // 7. 构建返回结果
+        return buildDiagnosisReportVO(diagnosis);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/17 22:48
+     * @Param: id 诊断记录ID
+     * @Return: DiagnosisReportVO 诊断报告数据
+     * @Description: 根据ID获取诊断报告，并验证权限
+    **/
+    @Override
+    public DiagnosisReportVO getDiagnosisById(Long id) {
+        Long userId = securityUtils.getCurrentUserId();
+        // 参数校验
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "无效的诊断记录ID");
+        }
+
+        log.info("获取诊断报告 - 诊断ID: {}, 用户ID: {}", id, userId);
+
+        // 1. 查询诊断记录
+        Diagnosis diagnosis = this.getById(id);
+        if (diagnosis == null) {
+            throw new BusinessException(404, "诊断记录不存在");
+        }
+
+        // 2. 验证权限
+        checkManufactureAndPermission(diagnosis.getManuId(), userId, "无权查看此诊断记录");
+
+        // 3. 构建返回结果
+        return buildDiagnosisReportVO(diagnosis);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/17 22:49
+     * @Param: manuId 制造企业ID
+     * @Return: DiagnosisReportVO 最新诊断报告数据
+     * @Description: 获取企业最新诊断报告，并验证权限
+    **/
+    @Override
+    public DiagnosisReportVO getLatestDiagnosis(Long manuId) {
+        Long userId = securityUtils.getCurrentUserId();
+        log.info("获取企业最新诊断报告 - 企业ID: {}, 用户ID: {}", manuId, userId);
+
+        // 参数校验：制造企业ID 不能为空，且必须为正数，防止出现 selectById(null/<=0) 等不确定或误导行为
+        if (manuId == null) {
+            throw new BusinessException(400, "制造企业ID不能为空");
+        }
+        if (manuId <= 0) {
+            throw new BusinessException(400, "制造企业ID必须为正数");
+        }
+
+        // 1. 验证制造企业是否存在并检查权限
+        checkManufactureAndPermission(manuId, userId, "无权查看此企业的诊断记录");
+
+        // 3. 查询最新诊断记录
+        LambdaQueryWrapper<Diagnosis> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Diagnosis::getManuId, manuId)
+                .orderByDesc(Diagnosis::getDiagnosisDate)
+                .last("LIMIT 1");
+
+        Diagnosis diagnosis = this.getOne(wrapper);
+        if (diagnosis == null) {
+            throw new BusinessException(404, "该企业暂无诊断记录");
+        }
+
+        // 4. 构建返回结果
+        return buildDiagnosisReportVO(diagnosis);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/17 22:49
+     * @Param: diagnosis 诊断记录实体
+     * @Return: DiagnosisReportVO 格式化后的诊断报告
+     * @Description: 构建诊断报告响应（将 Byte 转为 Integer，日期字段保持 Date 类型，由 @JsonFormat 控制序列化）
+    **/
+    private DiagnosisReportVO buildDiagnosisReportVO(Diagnosis diagnosis) {
+        DiagnosisReportVO vo = new DiagnosisReportVO();
+        vo.setDiagnosisId(diagnosis.getId());
+        vo.setManuId(diagnosis.getManuId());
+        vo.setInfoScore(diagnosis.getInfoScore() != null ? diagnosis.getInfoScore().intValue() : null);
+        vo.setAutoScore(diagnosis.getAutoScore() != null ? diagnosis.getAutoScore().intValue() : null);
+        vo.setDataScore(diagnosis.getDataScore() != null ? diagnosis.getDataScore().intValue() : null);
+        vo.setServiceScore(diagnosis.getServiceScore() != null ? diagnosis.getServiceScore().intValue() : null);
+        vo.setTotalScore(diagnosis.getTotalScore() != null ? diagnosis.getTotalScore().intValue() : null);
+        vo.setLevel(diagnosis.getLevel());
+
+        // 解析JSON格式的建议列表，防御历史脏数据/非法JSON，避免因单条坏数据导致接口整体500
+        if (diagnosis.getSuggestions() != null) {
+            try {
+                // 使用 Jackson 统一解析 suggestions 字段，避免与 submitDiagnosis 中的 JSON 处理库不一致
+                List<String> suggestions = objectMapper.readValue(
+                        diagnosis.getSuggestions(),
+                        new TypeReference<List<String>>() {}
+                );
+                // 注意：当原始 JSON 为字符串 "null" 时，readValue 会返回 Java 层面的 null，这里做一次兜底，保持响应结构稳定
+                if (suggestions == null) {
+                    vo.setSuggestions(Collections.emptyList());
+                } else {
+                    vo.setSuggestions(suggestions);
+                }
+            } catch (Exception e) {
+                // 不中断整体诊断报告查询，仅记录错误并降级为空列表，后续可根据日志排查并修复脏数据
+                log.error("解析诊断建议JSON失败，diagnosisId={}, suggestions={}", diagnosis.getId(), diagnosis.getSuggestions(), e);
+                vo.setSuggestions(Collections.emptyList());
+            }
+        } else {
+            // 当历史数据中建议字段为 null 时，同样返回空列表，保证响应结构稳定
+            vo.setSuggestions(Collections.emptyList());
+        }
+
+        // 获取雷达图数据
+        if (diagnosis.getInfoScore() != null && diagnosis.getAutoScore() != null &&
+                diagnosis.getDataScore() != null && diagnosis.getServiceScore() != null) {
+            Map<String, Integer> radarData = diagnosisAlgorithm.getRadarData(
+                    diagnosis.getInfoScore().intValue(),
+                    diagnosis.getAutoScore().intValue(),
+                    diagnosis.getDataScore().intValue(),
+                    diagnosis.getServiceScore().intValue()
+            );
+            vo.setRadarData(radarData);
+        }
+
+        // 格式化诊断日期
+        vo.setDiagnosisDate(diagnosis.getDiagnosisDate());
+
+        return vo;
+    }
 }
