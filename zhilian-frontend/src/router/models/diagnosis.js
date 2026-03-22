@@ -16,7 +16,7 @@ export default [
     },
   },
   {
-    path: /\/api\/diagnosis\/\d+$/,
+    path: "diagnosis/:id(\\d+)",
     name: "DiagnosisReportID",
     component: () => import("@/views/diagnosis/Report.vue"),
     meta: {

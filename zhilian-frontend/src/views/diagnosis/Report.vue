@@ -375,14 +375,20 @@ const formatDate = (dateStr) => {
   return converter.toLocalYMDHMS() || "-";
 };
 /**
- * 统一错误处理（403 跳转，404 显示无报告，其他弹窗）
+ * 统一错误处理（401 直接返回，403 跳转，404 显示无报告，其他弹窗）
  *
  * 说明：当前 axios 封装在业务码非 200 时会抛出 Error 对象，
  * 我们已经修改 request.js 将后端的 code 附加在了 error.code 上。
  */
 const handleReportError = (error) => {
   const status = error?.response?.status || error?.code;
-  if (status === 403) {
+  if (status === 401) {
+    // 401 token过期，request.js 的拦截器会负责清除 token 和跳转登录，
+    // 因为诊断接口配置了 silent: true，全局拦截器不会弹窗。
+    // 为了防止下面 catch-all 分支弹出不友好的 "Request failed with status code 401"，这里直接提示并 return
+    ElMessage.error("登录已过期，请重新登录");
+    return;
+  } else if (status === 403) {
     router.push("/403");
   } else if (status === 404) {
     // 处理无报告的特殊状态
