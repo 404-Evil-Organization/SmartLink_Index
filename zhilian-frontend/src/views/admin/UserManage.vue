@@ -267,16 +267,10 @@ const toggleStatus = (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const res = await updateUserStatus(row.id, newStatus)
-      // 成功条件：响应为 null（代表操作成功且无返回数据）或响应包含 code 且为 200
-      if (res === null || (res && (res.code === undefined || res.code === 200))) {
-        ElMessage.success(`${action}成功`)
-        fetchList()
-      } else {
-        // 非预期响应（如 res 有 code 且不是 200）
-        console.error(`${action}失败，响应数据异常:`, res)
-        ElMessage.error(`${action}失败，请稍后重试`)
-      }
+      // 按拦截器约定：code != 200 已在拦截器中抛错并统一提示，这里只要请求 resolve 即视为成功
+      await updateUserStatus(row.id, newStatus)
+      ElMessage.success(`${action}成功`)
+      fetchList()
     } catch (error) {
       console.error(`${action}请求异常:`, error)
       if (isNetworkError) {
@@ -452,12 +446,7 @@ onMounted(() => {
 }
 
 .search-bar {
-  margin-bottom: 16px;
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  overflow-x: auto; /* 窄屏时横向滚动 */
+  overflow-x: auto; /* 窄屏时横向滚动，其他基础样式在前一个 .search-bar 定义中统一维护 */
 }
 
 .search-row {
