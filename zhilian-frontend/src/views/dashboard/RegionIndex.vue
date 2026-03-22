@@ -446,7 +446,7 @@ const fetchRegionList = async (params = {}) => {
     }
   } catch (error) {
     console.error("获取区域指数失败", error);
-    ElMessage.error("获取区域指数失败");
+    ElMessage.error(error.message || "获取区域指数失败");
     loading.value = false;
   }
 };
@@ -459,6 +459,7 @@ const fetchRegionDetail = async (region, params = {}) => {
     regionDetail.value = res;
   } catch (error) {
     console.error("获取区域详情失败", error);
+    ElMessage.error(error.message || "获取区域详情失败");
   }
 };
 
@@ -508,7 +509,7 @@ const fetchTrendByDateRange = async () => {
     trendData.value = res;
   } catch (error) {
     console.error("获取趋势数据失败", error);
-    ElMessage.error("获取趋势数据失败");
+    ElMessage.error(error.message || "获取趋势数据失败");
   } finally {
     trendLoading.value = false;
   }

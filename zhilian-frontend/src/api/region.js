@@ -13,6 +13,7 @@ export function getRegionIndexList(params) {
     url: "/index/region/list",
     method: "get",
     params,
+    silent: true // 由页面捕获错误并统一提示
   });
 }
 
@@ -30,6 +31,7 @@ export function getRegionIndex(region, params) {
     url: `/index/region/${region}`,
     method: "get",
     params,
+    silent: true // 由页面捕获错误并统一提示
   });
 }
 
@@ -46,5 +48,6 @@ export function getTrendData(params) {
     url: "/index/trend",
     method: "get",
     params,
+    silent: true // 由页面捕获错误并统一提示
   });
 }

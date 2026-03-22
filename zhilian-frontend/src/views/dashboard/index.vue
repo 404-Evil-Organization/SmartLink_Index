@@ -239,9 +239,9 @@ const fetchAllData = async () => {
     network.value = {
       nodes: rawNodes.map((node) => ({
         name: node.name,
-        symbolSize: node.symbolSize || 30,
+        symbolSize: node.symbolSize ?? 30,
         category: node.category || 0,
-        value: node.value || 1,
+        value: node.value ?? 1,
         id: node.id,
       })),
       links: rawLinks.map((link) => ({
