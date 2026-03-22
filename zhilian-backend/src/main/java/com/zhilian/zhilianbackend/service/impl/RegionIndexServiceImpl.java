@@ -46,6 +46,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * - 若未来有服务商区域数据变动场景，可在相关更新逻辑中主动清空该缓存或重建。
      */
     private final Map<Long, String> serviceProviderRegionCache = new HashMap<>();
+    private volatile boolean cacheLoaded = false;
 
     private final ManufactureMapper manufactureMapper;
     private final ServiceProviderMapper serviceProviderMapper;
@@ -210,9 +211,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         Set<Long> serviceUserSet = new HashSet<>();
 
         for (Cooperation coop : regionCooperations) {
-            totalCoopCount++; // 这里 totalCoopCount 已经是 size，无需重复加，但为了逻辑清晰，直接用 size 即可
-            // 实际上面已经使用 size 得到总数，这里只需要统计跨区域和服务用户数
-            // 为避免重复计数，移除 totalCoopCount++，直接使用 size
+            // totalCoopCount 已通过 size() 统计总合作次数，这里仅统计跨区域合作和参与服务的制造企业数
             if (isCrossRegionCooperation(coop, region)) {
                 crossRegionCoopCount++;
             }
@@ -255,67 +254,39 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * - 缓存采用懒加载策略：首次调用时一次性加载所有 ServiceProvider 的区域信息到内存，
      *   后续调用直接从 Map 中获取，不再触发 DB 访问，从而显著降低季度任务的数据库压力。
      */
+    /**
+     * 判断是否是跨区域合作（线程安全缓存版本）
+     */
     private boolean isCrossRegionCooperation(Cooperation coop, String manuRegion) {
         if (coop == null || coop.getServiceId() == null || manuRegion == null) {
             return false;
         }
 
-        Long serviceIdKey;
-        try {
-            serviceIdKey = Long.valueOf(String.valueOf(coop.getServiceId()));
-        } catch (NumberFormatException ex) {
-            log.warn("服务商 ID 解析失败，serviceId={}, coopId={}", coop.getServiceId(), coop.getId(), ex);
-            return false;
-        }
+        Long serviceIdKey = coop.getServiceId();
 
-        String serviceRegion;
-        synchronized (serviceProviderRegionCache) {
-            if (!serviceProviderRegionCache.containsKey(-1L)) {
-                List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(null);
-                serviceProviderRegionCache.clear();
-                if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
-                    for (ServiceProvider sp : allServiceProviders) {
-                        if (sp != null && sp.getId() != null && sp.getRegion() != null) {
-                            serviceProviderRegionCache.put(sp.getId(), sp.getRegion());
+        // 双重检查锁，保证加载标记与缓存数据一致
+        if (!cacheLoaded) {
+            synchronized (serviceProviderRegionCache) {
+                if (!cacheLoaded) {
+                    List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(null);
+                    serviceProviderRegionCache.clear();
+                    if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
+                        for (ServiceProvider sp : allServiceProviders) {
+                            if (sp != null && sp.getId() != null && sp.getRegion() != null) {
+                                serviceProviderRegionCache.put(sp.getId(), sp.getRegion());
+                            }
                         }
                     }
+                    cacheLoaded = true;
                 }
-                serviceProviderRegionCache.put(-1L, "LOADED");
             }
-            serviceRegion = serviceProviderRegionCache.get(serviceIdKey);
         }
+
+        String serviceRegion = serviceProviderRegionCache.get(serviceIdKey);
         if (serviceRegion == null) {
             return false;
         }
-
         return !manuRegion.equals(serviceRegion);
-    }
-
-    /**
-     * @Author: 6017
-     * @Date: 2026/3/18 23:15
-     * @Param:
-     * @Return: List<String> 区域列表
-     * @Description: 获取所有区域列表（从数据库中动态查询 DISTINCT region，避免硬编码）
-     * 注：此方法目前仅在测试或旧代码中可能被用到，实际计算已改用 regionManufacturesMap 的 keySet
-     */
-    private List<String> getAllRegions() {
-        LambdaQueryWrapper<Manufacture> manuWrapper = new LambdaQueryWrapper<>();
-        manuWrapper.select(Manufacture::getRegion).isNotNull(Manufacture::getRegion).groupBy(Manufacture::getRegion);
-        List<Object> manuRegionObjs = manufactureMapper.selectObjs(manuWrapper);
-
-        LambdaQueryWrapper<ServiceProvider> spWrapper = new LambdaQueryWrapper<>();
-        spWrapper.select(ServiceProvider::getRegion).isNotNull(ServiceProvider::getRegion).groupBy(ServiceProvider::getRegion);
-        List<Object> spRegionObjs = serviceProviderMapper.selectObjs(spWrapper);
-
-        Set<String> regionSet = new LinkedHashSet<>();
-        if (manuRegionObjs != null) {
-            regionSet.addAll(manuRegionObjs.stream().filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toList()));
-        }
-        if (spRegionObjs != null) {
-            regionSet.addAll(spRegionObjs.stream().filter(Objects::nonNull).map(String::valueOf).collect(Collectors.toList()));
-        }
-        return new ArrayList<>(regionSet);
     }
 
     /**
