@@ -242,7 +242,6 @@ const fetchEnterprises = async () => {
   loadingEnterprises.value = true
   try {
     const userRole = userStore.userInfo?.role
-    const currentUserId = userStore.userInfo?.id   // 获取当前用户 ID
     let res
 
     if (userRole === 'admin') {
@@ -511,10 +510,11 @@ const destroyRadarChart = () => {
   window.removeEventListener('resize', handleRadarResize)
 }
 
-// 监听 reportData 的变化，自动管理雷达图
+// 监听 reportData 的变化，自动更新雷达图；实例的创建/销毁由外部逻辑控制
 watch(reportData, async (newVal) => {
   if (newVal) {
-    await nextTick()      // 等待 DOM 更新
+    // 等待 DOM 更新后，仅更新图表配置，避免重复 dispose/init 与重复绑定 resize 事件
+    await nextTick()     
     initRadarChart()
   } else {
     destroyRadarChart()

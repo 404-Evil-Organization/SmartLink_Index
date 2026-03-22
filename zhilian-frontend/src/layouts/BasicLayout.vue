@@ -89,9 +89,8 @@
     <el-container>
       <el-header>
         <div class="header-content">
-          <span class="welcome"
-          >欢迎，{{ userStore.userInfo?.username || "用户" }}</span
-          >
+          <span class="welcome">欢迎，{{ userStore.userInfo?.username || "用户" }}</span>
+          
           <el-button type="info" @click="handleLogout">退出登录</el-button>
         </div>
       </el-header>
