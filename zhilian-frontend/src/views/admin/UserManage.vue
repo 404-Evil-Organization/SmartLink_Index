@@ -14,9 +14,9 @@
 
     <!-- 搜索卡片 -->
     <div class="search-bar">
-      <el-form :model="searchForm" label-width="150px" inline>
+      <el-form :model="searchForm" label-width="80px" inline>
         <el-form-item label="角色" >
-          <el-select v-model="searchForm.role" placeholder="全部" clearable style="width: 200px">
+          <el-select v-model="searchForm.role" placeholder="全部" clearable style="width: 400px">
             <el-option label="制造企业" value="manufacture" />
             <el-option label="服务商" value="service" />
             <el-option label="园区/政府" value="park" />
@@ -24,13 +24,13 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态" >
-          <el-select v-model="searchForm.status" placeholder="全部"  clearable style="width: 200px">
+          <el-select v-model="searchForm.status" placeholder="全部"  clearable style="width: 400px">
             <el-option label="正常" :value="1" />
             <el-option label="禁用" :value="0" />
           </el-select>
         </el-form-item>
         <el-form-item label="关键词">
-          <el-input v-model="searchForm.keyword" placeholder="用户名" clearable style="width: 200px" />
+          <el-input v-model="searchForm.keyword" placeholder="用户名" clearable style="width: 500px" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">查询</el-button>
@@ -296,6 +296,15 @@ const resetPassword = (row) => {
       // 拦截器已处理错误提示，这里只做日志记录和兜底（避免用户无反馈）
       console.error('重置密码请求异常:', error)
       // 如果拦截器未弹出错误（如自定义情况），可兜底提示
+
+      // 判断是否为网络/超时等典型异常（而非业务错误）
+      const isNetworkError =
+        error?.code === 'ECONNABORTED' ||
+        error?.code === 'ERR_NETWORK' ||
+        error?.message === 'Network Error' ||
+        (error?.message && error.message.includes('timeout'))
+
+
       if (!error.response) {
         ElMessage.error('网络错误，请稍后重试')
       }
