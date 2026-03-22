@@ -58,7 +58,8 @@ public class CreditScoreAlgorithm {
         ServiceProvider serviceProvider = serviceProviderMapper.selectById(serviceId);
         if (serviceProvider == null) {
             log.warn("服务商不存在，serviceId: {}", serviceId);
-            return new CreditScoreResult((byte) 0, (byte) 0, (byte) 0, (byte) 60);
+            // 保持评价底分 60，按权重 0*0.3 + 0*0.3 + 60*0.4 = 24
+            return new CreditScoreResult((byte) 24, (byte) 0, (byte) 0, (byte) 60);
         }
 
         return calculate(serviceProvider);

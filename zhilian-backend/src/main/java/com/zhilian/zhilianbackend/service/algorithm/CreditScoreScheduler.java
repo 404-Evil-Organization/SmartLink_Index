@@ -10,7 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.util.Date;
 import java.util.List;
@@ -24,13 +25,14 @@ import java.util.List;
  **/
 @Slf4j
 @Component
-@EnableScheduling
+@ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class CreditScoreScheduler {
 
     private final ServiceProviderMapper serviceProviderMapper;
     private final CreditScoreMapper creditScoreMapper;
     private final CreditScoreAlgorithm creditScoreAlgorithm;
+    private final TransactionTemplate transactionTemplate;
 
     /**
      * @Author: 6017
@@ -118,27 +120,28 @@ public class CreditScoreScheduler {
      * @Return:
      * @Description: 带事务的计算并保存单个服务商的信用分，每个服务商独立事务
      **/
-    @Transactional
     public void calculateAndSaveCreditScoreWithTransaction(ServiceProvider serviceProvider) {
-        Long serviceId = serviceProvider.getId();
-        // 1. 调用算法类计算信用分
-        CreditScoreAlgorithm.CreditScoreResult result = creditScoreAlgorithm.calculate(serviceProvider);
+        transactionTemplate.executeWithoutResult(status -> {
+            Long serviceId = serviceProvider.getId();
+            // 1. 调用算法类计算信用分
+            CreditScoreAlgorithm.CreditScoreResult result = creditScoreAlgorithm.calculate(serviceProvider);
 
-        // 2. 创建信用分记录
-        CreditScore creditScore = new CreditScore();
-        creditScore.setServiceId(serviceId)
-                .setScore(result.getTotalScore())
-                .setQualScore(result.getQualScore())
-                .setCaseScore(result.getCaseScore())
-                .setEvalScore(result.getEvalScore())
-                .setCalcTime(new Date());
+            // 2. 创建信用分记录
+            CreditScore creditScore = new CreditScore();
+            creditScore.setServiceId(serviceId)
+                    .setScore(result.getTotalScore())
+                    .setQualScore(result.getQualScore())
+                    .setCaseScore(result.getCaseScore())
+                    .setEvalScore(result.getEvalScore())
+                    .setCalcTime(new Date());
 
-        // 3. 保存到数据库
-        creditScoreMapper.insert(creditScore);
+            // 3. 保存到数据库
+            creditScoreMapper.insert(creditScore);
 
-        log.debug("信用分保存完成，serviceId: {}, 综合分: {}, 资质分: {}, 案例分: {}, 评价分: {}",
-                serviceId, result.getTotalScore(), result.getQualScore(),
-                result.getCaseScore(), result.getEvalScore());
+            log.debug("信用分保存完成，serviceId: {}, 综合分: {}, 资质分: {}, 案例分: {}, 评价分: {}",
+                    serviceId, result.getTotalScore(), result.getQualScore(),
+                    result.getCaseScore(), result.getEvalScore());
+        });
     }
 
 }
