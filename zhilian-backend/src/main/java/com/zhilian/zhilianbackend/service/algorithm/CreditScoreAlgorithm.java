@@ -5,6 +5,7 @@ import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.entity.Certification;
 import com.zhilian.zhilianbackend.entity.AbroadCase;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.CertificationMapper;
 import com.zhilian.zhilianbackend.mapper.AbroadCaseMapper;
 import com.zhilian.zhilianbackend.mapper.EvaluationMapper;
@@ -50,7 +51,7 @@ public class CreditScoreAlgorithm {
         // 入参校验：serviceId 不能为空且必须为正数，防止后续 Mapper 调用触发难以定位的异常
         if (serviceId == null || serviceId <= 0) {
             log.warn("计算服务商信用分入参非法，serviceId: {}", serviceId);
-            throw new IllegalArgumentException("serviceId 不能为空且必须为正数");
+            throw new BusinessException(400, "serviceId 不能为空且必须为正数");
         }
         log.debug("开始计算服务商信用分，serviceId: {}", serviceId);
 

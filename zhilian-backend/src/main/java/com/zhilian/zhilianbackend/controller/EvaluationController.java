@@ -8,6 +8,7 @@ import com.zhilian.zhilianbackend.service.EvaluationService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -69,10 +70,11 @@ public class EvaluationController {
      * @Description: 获取服务商评价列表
     **/
     @GetMapping("/list/{serviceId}")
+    @Operation(summary = "获取服务商评价列表", description = "分页获取指定服务商的所有评价信息")
     public Result<Page<EvaluationVO>> listEvaluations(
-            @PathVariable Long serviceId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
+            @Parameter(description = "服务商ID", required = true) @PathVariable Long serviceId,
+            @Parameter(description = "页码，默认1") @RequestParam(defaultValue = "1") Integer page,
+            @Parameter(description = "每页条数，默认10") @RequestParam(defaultValue = "10") Integer size) {
 
         // 分页参数合法性校验与范围限制，防止 page/size 为 0、负数或过大导致分页异常或一次性返回过多数据
         if (page == null || page < 1) {

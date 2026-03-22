@@ -1,5 +1,7 @@
 package com.zhilian.zhilianbackend.service.impl;
 
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
+import java.util.Date;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -59,30 +61,12 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
     public Page<EvaluationVO> getEvaluationPage(Long serviceId, Integer page, Integer size) {
         log.info("查询服务商评价列表，serviceId: {}, page: {}, size: {}", serviceId, page, size);
 
-        // ==================== 第一步：查询该服务商的所有合作记录ID ====================
-        LambdaQueryWrapper<Cooperation> coopWrapper = new LambdaQueryWrapper<>();
-        coopWrapper.eq(Cooperation::getServiceId, serviceId)
-                .select(Cooperation::getId);
-        List<Long> coopIds = cooperationMapper.selectList(coopWrapper)
-                .stream()
-                .map(Cooperation::getId)
-                .collect(Collectors.toList());
-
-        // ==================== 第二步：分页查询评价 ====================
+        // ==================== 第一步：分页查询评价 ====================
         Page<Evaluation> evaluationPage = new Page<>(page, size);
-        LambdaQueryWrapper<Evaluation> wrapper = new LambdaQueryWrapper<>();
-
-        // 如果有合作记录，才添加 coopId 过滤条件
-        if (!coopIds.isEmpty()) {
-            wrapper.in(Evaluation::getCoopId, coopIds);
-        } else {
-            // 如果没有合作记录，添加一个永远不成立的条件，使查询结果为空，但仍保留分页信息
-            wrapper.eq(Evaluation::getId, -1L);
-        }
-        wrapper.orderByDesc(Evaluation::getCreateTime);
-
-        // 执行分页查询，pageResult 始终包含正确的分页信息（total/current/size）
-        Page<Evaluation> pageResult = this.page(evaluationPage, wrapper);
+        Date notDeletedTime = DateConstants.getNotDeletedTime();
+        
+        // 直接在数据库层面通过 JOIN 过滤 serviceId
+        Page<Evaluation> pageResult = this.baseMapper.selectEvaluationPageByServiceId(evaluationPage, serviceId, notDeletedTime);
         List<Evaluation> evaluations = pageResult.getRecords();
 
         // ==================== 始终基于 pageResult 构造返回，保留分页信息 ====================
@@ -96,7 +80,7 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
             return emptyVoPage;
         }
 
-        // ==================== 第三步：批量查询合作记录（获取 manuId） ====================
+        // ==================== 第二步：批量查询合作记录（获取 manuId） ====================
         List<Long> evalCoopIds = evaluations.stream()
                 .map(Evaluation::getCoopId)
                 .collect(Collectors.toList());
@@ -109,7 +93,7 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
         Map<Long, Long> coopToManuMap = cooperations.stream()
                 .collect(Collectors.toMap(Cooperation::getId, Cooperation::getManuId));
 
-        // ==================== 第四步：批量查询制造企业名称 ====================
+        // ==================== 第三步：批量查询制造企业名称 ====================
         List<Long> manuIds = cooperations.stream()
                 .map(Cooperation::getManuId)
                 .distinct()
@@ -127,7 +111,7 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
             manuIdToNameMap = Map.of();
         }
 
-        // ==================== 第五步：转换为VO ====================
+        // ==================== 第四步：转换为VO ====================
         List<EvaluationVO> voList = evaluations.stream()
                 .map(eval -> convertToVO(eval, coopToManuMap, manuIdToNameMap))
                 .collect(Collectors.toList());
