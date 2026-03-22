@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
  * 优化点：
  * 1. 批量查询避免 N+1 问题
  * 2. 使用参数绑定防止 SQL 注入
+ * 3. 正确保留分页信息（total/current/size）
  */
 @Slf4j
 @Service
@@ -61,23 +62,31 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
                 .map(Cooperation::getId)
                 .collect(Collectors.toList());
 
-        // 如果没有合作记录，直接返回空页
-        if (coopIds.isEmpty()) {
-            log.info("服务商没有合作记录，serviceId: {}", serviceId);
-            return new Page<>(page, size);
-        }
-
         // ==================== 第二步：分页查询评价（通过 coopId 过滤） ====================
         Page<Evaluation> evaluationPage = new Page<>(page, size);
         LambdaQueryWrapper<Evaluation> wrapper = new LambdaQueryWrapper<>();
-        wrapper.in(Evaluation::getCoopId, coopIds)  // 通过 coopId 过滤
-                .orderByDesc(Evaluation::getCreateTime);
 
+        // 如果有合作记录，才添加 coopId 过滤条件
+        if (!coopIds.isEmpty()) {
+            wrapper.in(Evaluation::getCoopId, coopIds);
+        } else {
+            // 如果没有合作记录，添加一个永远不成立的条件，使查询结果为空，但仍保留分页信息
+            wrapper.eq(Evaluation::getId, -1L);
+        }
+        wrapper.orderByDesc(Evaluation::getCreateTime);
+
+        // 执行分页查询，pageResult 始终包含正确的分页信息（total/current/size）
         Page<Evaluation> pageResult = this.page(evaluationPage, wrapper);
         List<Evaluation> evaluations = pageResult.getRecords();
 
+        // ==================== 如果当前页没有记录，直接返回带分页信息的空页 ====================
         if (evaluations.isEmpty()) {
-            return new Page<>(page, size);
+            log.info("服务商没有评价记录或当前页无数据，serviceId: {}, total: {}", serviceId, pageResult.getTotal());
+
+            // 始终基于 pageResult 构造返回，保留 total/current/size
+            Page<EvaluationVO> emptyVoPage = new Page<>(pageResult.getCurrent(), pageResult.getSize(), pageResult.getTotal());
+            emptyVoPage.setRecords(List.of());
+            return emptyVoPage;
         }
 
         // ==================== 第三步：批量查询合作记录（获取 manuId） ====================
@@ -121,11 +130,11 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
                 .map(eval -> convertToVO(eval, coopToManuMap, manuIdToNameMap))
                 .collect(Collectors.toList());
 
-        // 封装分页结果
+        // 封装分页结果，始终基于 pageResult 保留分页信息
         Page<EvaluationVO> voPage = new Page<>(pageResult.getCurrent(), pageResult.getSize(), pageResult.getTotal());
         voPage.setRecords(voList);
 
-        log.info("查询到 {} 条评价记录", voList.size());
+        log.info("查询到 {} 条评价记录，总记录数: {}", voList.size(), pageResult.getTotal());
         return voPage;
     }
 
