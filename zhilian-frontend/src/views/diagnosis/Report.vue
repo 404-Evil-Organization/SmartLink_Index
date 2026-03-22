@@ -293,10 +293,14 @@ const getLevelType = (level) => {
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '-'
-  const converter = createTimeConverter(dateStr)
+  let normalized = dateStr
+  // 如果是 "YYYY-MM-DD HH:mm:ss" 格式，将空格替换为 T 以便 Safari 解析
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+    normalized = dateStr.replace(' ', 'T')
+  }
+  const converter = createTimeConverter(normalized)
   const date = converter.toDate()
   if (!date) return '-'
-  // 返回 YYYY-MM-DD HH:mm:ss 格式
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -305,7 +309,6 @@ const formatDate = (dateStr) => {
   const seconds = String(date.getSeconds()).padStart(2, '0')
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
-
 /**
  * 统一错误处理（403 跳转，404 显示无报告，其他弹窗）
  *
@@ -515,7 +518,7 @@ watch(reportData, async (newVal) => {
   if (newVal) {
     // 等待 DOM 更新后，仅更新图表配置，避免重复 dispose/init 与重复绑定 resize 事件
     await nextTick()     
-    initRadarChart()
+    updateRadarChart()
   } else {
     destroyRadarChart()
   }
