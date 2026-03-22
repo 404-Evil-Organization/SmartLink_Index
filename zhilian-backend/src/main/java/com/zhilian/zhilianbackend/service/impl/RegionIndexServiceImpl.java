@@ -135,14 +135,14 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         // 2. 一次性加载该季度所有合作记录
         LambdaQueryWrapper<Cooperation> coopWrapper = new LambdaQueryWrapper<>();
         coopWrapper.between(Cooperation::getCreateTime, start, end)
-                .eq(Cooperation::getDeleted, DateConstants.getNotDeletedLocalDateTime());
+                .eq(Cooperation::getDeleted, DateConstants.getNotDeletedTime());
         List<Cooperation> allCooperations = cooperationMapper.selectList(coopWrapper);
         log.debug("加载本季度合作记录数量: {}", allCooperations.size());
 
         // 3. 一次性加载所有制造企业，只查询必要字段（id, region）
         LambdaQueryWrapper<Manufacture> manufactureWrapper = new LambdaQueryWrapper<>();
         manufactureWrapper.select(Manufacture::getId, Manufacture::getRegion)
-                .eq(Manufacture::getDeleted, DateConstants.getNotDeletedLocalDateTime());
+                .eq(Manufacture::getDeleted, DateConstants.getNotDeletedTime());
         List<Manufacture> allManufactures = manufactureMapper.selectList(manufactureWrapper);
         Map<String, List<Manufacture>> regionManufacturesMap = allManufactures.stream()
                 .filter(m -> m.getRegion() != null && !m.getRegion().isEmpty())
@@ -152,7 +152,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         // 3.5 每次计算时，一次性加载所有服务商区域信息到局部变量中，作为缓存传递，保证数据新鲜度
         LambdaQueryWrapper<ServiceProvider> spWrapper = new LambdaQueryWrapper<>();
         spWrapper.select(ServiceProvider::getId, ServiceProvider::getRegion)
-                .eq(ServiceProvider::getDeleted, DateConstants.getNotDeletedLocalDateTime());
+                .eq(ServiceProvider::getDeleted, DateConstants.getNotDeletedTime());
         List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(spWrapper);
         Map<Long, String> serviceProviderRegionMap = new HashMap<>();
         if (allServiceProviders != null) {
@@ -232,7 +232,6 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Description: 手动触发计算（用于测试）
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void manualCalculate(Short year, Byte quarter) {
         // 参数校验
         if (year == null) {
