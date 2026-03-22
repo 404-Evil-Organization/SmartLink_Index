@@ -18,6 +18,20 @@
           </el-icon>
           <span>首页</span>
         </el-menu-item>
+        <el-sub-menu index="3">
+          <template #title>
+            <el-icon><DataBoard /></el-icon>
+            <span>可视化看板</span>
+          </template>
+          <el-menu-item index="/dashboard/index">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>数据看板</span>
+          </el-menu-item>
+          <el-menu-item index="/dashboard/region">
+            <el-icon><DataLine /></el-icon>
+            <span>区域协同指数看板</span>
+          </el-menu-item>
+        </el-sub-menu>
 
         <!-- 数字化诊断菜单栏 -->
         <el-sub-menu v-if="isManufacture || isAdmin" index="diagnosis">
@@ -126,6 +140,8 @@ import {
   HomeFilled,
   Avatar,
   Collection,
+  DataBoard,
+  DataAnalysis,
   Tickets,
   OfficeBuilding,
   DataLine,
