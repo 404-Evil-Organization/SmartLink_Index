@@ -141,7 +141,6 @@ router.beforeEach(async (to, from, next) => {
       next(); // 注意这里用 next() 而不是 return true
     }
   }
-  
 });
 
 export default router;
