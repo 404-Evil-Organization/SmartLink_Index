@@ -80,9 +80,6 @@ request.interceptors.response.use(
 
       if (!isSilent(status)) {
         switch (status) {
-          case 400:
-            ElMessage.error("请求错误");
-            break;
           case 401:
             ElMessage.error("登录已过期，请重新登录");
             break;

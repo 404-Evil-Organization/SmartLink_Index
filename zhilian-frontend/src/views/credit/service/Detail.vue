@@ -148,7 +148,13 @@
               /></el-tooltip>
             </div>
           </template>
-          <el-table :data="evalList" v-loading="evalLoading" border stripe>
+          <el-table
+            :data="evalList"
+            :row-key="(row) => row.id"
+            v-loading="evalLoading"
+            border
+            stripe
+          >
             <el-table-column
               prop="manufactureName"
               label="评价企业"
