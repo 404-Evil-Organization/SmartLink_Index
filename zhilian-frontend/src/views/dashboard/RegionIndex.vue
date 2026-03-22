@@ -654,16 +654,28 @@ const handleRegionChange = async () => {
 
 // 刷新全部数据
 const handleRefresh = async () => {
-  await fetchRegionList(getLeftParams());
-  if (selectedRegion.value) {
-    await fetchRegionDetail(selectedRegion.value, getRightParams());
+  try {
+    // 左侧区域列表
+    await fetchRegionList(getLeftParams());
+    // 右侧详情（如已选中区域）
+    if (selectedRegion.value) {
+      await fetchRegionDetail(selectedRegion.value, getRightParams());
+    }
+    // 趋势数据（条件完整时才请求）
+    if (trendRegion.value && trendStartDate.value && trendEndDate.value) {
+      await fetchTrendByDateRange();
+    } else {
+      ElMessage.warning("请补全筛选条件");
+    }
+    // 仅在以上操作全部成功时提示刷新成功
+    ElMessage.success("刷新成功");
+  } catch (error) {
+    // 统一捕获刷新过程中的异常，避免“失败提示 + 成功提示”并存
+    // 在控制台记录详细错误信息，便于排查
+    // eslint-disable-next-line no-console
+    console.error("区域协同指数看板刷新失败：", error);
+    ElMessage.error("刷新失败，请稍后重试");
   }
-  if (trendRegion.value && trendStartDate.value && trendEndDate.value) {
-    await fetchTrendByDateRange();
-  } else {
-    // 如果趋势筛选条件不全，可以选择不清求或提示
-  }
-  ElMessage.success("刷新成功");
 };
 
 // 监听趋势数据变化，无论是否为空都重新渲染
