@@ -15,35 +15,37 @@
 
 <!-- 搜索卡片 -->
 <div class="search-bar">
-  <el-row :gutter="16" class="search-row">
-    <el-col :span="5">
-      <el-form-item label="角色">
-        <el-select v-model="searchForm.role" placeholder="全部" clearable style="width: 100%">
-          <el-option label="制造企业" value="manufacture" />
-          <el-option label="服务商" value="service" />
-          <el-option label="园区/政府" value="park" />
-          <el-option label="管理员" value="admin" />
-        </el-select>
-      </el-form-item>
-    </el-col>
-    <el-col :span="5">
-      <el-form-item label="状态">
-        <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 100%">
-          <el-option label="正常" :value="1" />
-          <el-option label="禁用" :value="0" />
-        </el-select>
-      </el-form-item>
-    </el-col>
-    <el-col :span="10">
-      <el-form-item label="关键词">
-        <el-input v-model="searchForm.keyword" placeholder="用户名" clearable style="width: 100%" />
-      </el-form-item>
-    </el-col>
-    <el-col :span="4" style="display: flex; align-items: center;">
-      <el-button type="primary" @click="handleSearch">查询</el-button>
-      <el-button @click="resetSearch">重置</el-button>
-    </el-col>
-  </el-row>
+  <el-form :model="searchForm" label-width="80px" class="search-form">
+    <el-row :gutter="16" class="search-row">
+      <el-col :span="5">
+        <el-form-item label="角色">
+          <el-select v-model="searchForm.role" placeholder="全部" clearable style="width: 100%">
+            <el-option label="制造企业" value="manufacture" />
+            <el-option label="服务商" value="service" />
+            <el-option label="园区/政府" value="park" />
+            <el-option label="管理员" value="admin" />
+          </el-select>
+        </el-form-item>
+      </el-col>
+      <el-col :span="5">
+        <el-form-item label="状态">
+          <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 100%">
+            <el-option label="正常" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
+      </el-col>
+      <el-col :span="10">
+        <el-form-item label="关键词">
+          <el-input v-model="searchForm.keyword" placeholder="用户名" clearable style="width: 100%" />
+        </el-form-item>
+      </el-col>
+      <el-col :span="4" style="display: flex; align-items: center;">
+        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <el-button @click="resetSearch">重置</el-button>
+      </el-col>
+    </el-row>
+  </el-form>
 </div>
 
     <!-- 表格卡片 -->
