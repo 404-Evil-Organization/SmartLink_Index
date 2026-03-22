@@ -275,10 +275,7 @@ const toggleStatus = (row) => {
       fetchList()
     } catch (error) {
       console.error(`${action}请求异常:`, error)
-      if (isNetworkError) {
-        ElMessage.error('网络异常，请检查连接后重试')
-      }
-      // 业务错误由拦截器统一提示，此处不重复
+      // 网络异常和业务错误均由请求拦截器统一提示，这里仅记录日志，避免重复弹窗
     }
   }).catch(() => {}) // 用户取消确认，无需处理
 }
