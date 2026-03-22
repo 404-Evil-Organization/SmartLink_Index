@@ -16,7 +16,7 @@ import java.util.Map;
  * @Description: 诊断算法实现类，实现DiagnosisAlgorithm接口，提供总分计算、等级判断、改进建议生成和雷达图数据转换的实现。
  **/
 @Component
-public class DiagnosisAlgorithmTempImpl implements DiagnosisAlgorithm {
+public class DiagnosisAlgorithmSimpleImpl implements DiagnosisAlgorithm {
 
     @Override
     public int calculateTotalScore(int infoScore, int autoScore, int dataScore, int serviceScore) {

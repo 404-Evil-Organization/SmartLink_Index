@@ -202,7 +202,7 @@ public class DiagnosisServiceImpl extends ServiceImpl<DiagnosisMapper, Diagnosis
         log.info("诊断记录保存成功 - 诊断ID: {}, 企业ID: {}, 总分: {}, 等级: {}",
                 diagnosis.getId(), request.getManuId(), totalScore, level);
 
-        // 6. 构建返回结果
+        // 7. 构建返回结果
         return buildDiagnosisReportVO(diagnosis);
     }
 
