@@ -194,7 +194,8 @@ const fetchList = async () => {
       page: pagination.current,
       size: pagination.size,
       ...(searchForm.role && { role: searchForm.role }),
-      ...(searchForm.status !== '' && { status: searchForm.status }),
+      // 同时排除空字符串/null/undefined，确保 0 等有效状态值可以正常传递
+      ...(searchForm.status !== '' && searchForm.status !== null && searchForm.status !== undefined && { status: searchForm.status }),
       ...(searchForm.keyword && { keyword: searchForm.keyword })
     }
     const res = await getUserList(params)
