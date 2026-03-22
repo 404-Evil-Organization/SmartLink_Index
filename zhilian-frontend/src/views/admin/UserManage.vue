@@ -415,6 +415,7 @@ onMounted(() => {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
 }
 
 .table-card {
@@ -445,10 +446,6 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   padding: 0 20px 20px;
-}
-
-.search-bar {
-  overflow-x: auto; /* 窄屏时横向滚动，其他基础样式在前一个 .search-bar 定义中统一维护 */
 }
 
 .search-row {
