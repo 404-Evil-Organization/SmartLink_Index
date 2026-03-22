@@ -13,6 +13,7 @@ export function getStatistics() {
   return request({
     url: "/dashboard/statistics",
     method: "get",
+    silent: true,
   });
 }
 
@@ -28,6 +29,7 @@ export function getHeatmap(params) {
     url: "/dashboard/heatmap",
     method: "get",
     params,
+    silent: true,
   });
 }
 
@@ -42,6 +44,7 @@ export function getTopDemands(params) {
     url: "/dashboard/topDemands",
     method: "get",
     params,
+    silent: true,
   });
 }
 
@@ -56,5 +59,6 @@ export function getNetwork() {
   return request({
     url: "/dashboard/network",
     method: "get",
+    silent: true,
   });
 }

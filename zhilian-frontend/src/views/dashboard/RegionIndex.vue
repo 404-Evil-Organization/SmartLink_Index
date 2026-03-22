@@ -18,12 +18,12 @@
     </div>
 
     <!-- 加载状态（整体骨架屏） -->
-    <div v-if="loading" class="loading-overlay">
+    <div v-show="loading" class="loading-overlay">
       <el-skeleton :rows="10" animated />
     </div>
 
     <!-- 主要内容 -->
-    <template v-else>
+    <div v-show="!loading">
       <!-- 第一行：左侧柱状图 + 右侧详情卡片 -->
       <el-row :gutter="20" class="chart-row">
         <!-- 左侧：各区域综合指数（柱状图） -->
@@ -295,7 +295,7 @@
           </el-card>
         </el-col>
       </el-row>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -665,7 +665,7 @@ const handleRefresh = async () => {
     if (trendRegion.value && trendStartDate.value && trendEndDate.value) {
       await fetchTrendByDateRange();
     } else {
-      ElMessage.warning("请补全筛选条件");
+      return;
     }
     // 仅在以上操作全部成功时提示刷新成功
     ElMessage.success("刷新成功");
