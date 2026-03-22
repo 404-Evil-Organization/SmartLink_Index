@@ -30,7 +30,7 @@ request.interceptors.response.use(
     const res = response.data;
     // 假设后端返回格式为 { code: 200, message: 'success', data: ... }
     if (res.code !== 200) {
-      // 通过 config.silent 控制是否静默报错，支持 boolean 或状态码白名单数组
+      // 通过 config.silent 控制是否静默报错，支持 boolean 或状态码/错误类型白名单数组（例如：[404, 'network']）
       const silent = response.config?.silent;
       const isSilent = silent === true || (Array.isArray(silent) && silent.includes(res.code));
       
@@ -47,8 +47,9 @@ request.interceptors.response.use(
   },
   (error) => {
     const userStore = useUserStore();
+    // silent 配置：可以为 true（全部静默），也可以是状态码/错误类型的数组（如 [404, 500, 'network']）
     const silent = error.config?.silent;
-    const isSilent = (status) => silent === true || (Array.isArray(silent) && silent.includes(status));
+    const isSilent = (codeOrType) => silent === true || (Array.isArray(silent) && silent.includes(codeOrType));
 
     // 处理HTTP错误状态码
     if (error.response) {
