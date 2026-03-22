@@ -251,10 +251,6 @@ const fetchAllData = async () => {
       })),
     };
 
-    // 调试输出
-    console.log("热力图数据解析后：", heatmap.value);
-    console.log("网络图数据解析后：", network.value);
-
     await nextTick();
     // 延迟一点点确保 DOM 已渲染
     setTimeout(() => {
@@ -416,11 +412,25 @@ const renderNetworkChart = () => {
       value: link.value || 1,
     }));
 
-    // 可选：去重分类（如果 category 存在且需要不同颜色）
+    /**
+     * 基于 category 生成确定性的 HSL 颜色，避免每次渲染颜色随机变化
+     * 使用简单字符串哈希将类别映射到 0-359 的色相值
+     */
+    const getCategoryColor = (category) => {
+      const str = String(category);
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0; // 保持为 32 位整数
+      }
+      const hue = Math.abs(hash) % 360;
+      return `hsl(${hue}, 70%, 60%)`;
+    };
+    // 去重分类，并为每个分类分配稳定的颜色
     const categories = [...new Set(nodes.map((n) => n.category))].map(
       (cat) => ({
         name: String(cat),
-        itemStyle: { color: `hsl(${Math.random() * 360}, 70%, 60%)` },
+        itemStyle: { color: getCategoryColor(cat) },
       }),
     );
 

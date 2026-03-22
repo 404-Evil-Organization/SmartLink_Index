@@ -1,12 +1,12 @@
 export default [
   {
     path: "dashboard/index",
-    name: "data",
+    name: "DashboardHome",
     component: () => import("@/views/dashboard/index.vue"),
   },
   {
     path: "dashboard/region",
-    name: "region",
+    name: "DashboardRegionIndex",
     component: () => import("@/views/dashboard/RegionIndex.vue"),
   },
 ];
