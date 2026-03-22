@@ -33,6 +33,8 @@ public interface CooperationMapper extends BaseMapper<Cooperation> {
             "AND c.deleted = '1970-01-01 00:00:00' " +
             "AND m.deleted = '1970-01-01 00:00:00' " +
             "AND m.audit_status = 'approved' " +
+            "AND m.deleted = '1970-01-01 00:00:00' " +
+            "AND m.audit_status = 'approved' " +
             "<if test='startDate != null and startDate != \"\"'>" +
             "AND c.create_time >= #{startDate} " +
             "</if>" +

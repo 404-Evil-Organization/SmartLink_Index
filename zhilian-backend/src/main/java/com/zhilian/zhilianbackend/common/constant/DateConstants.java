@@ -33,10 +33,7 @@ public final class DateConstants {
     /**
      * 逻辑删除字段的"未删除"标记时间常量（LocalDateTime 实例，用于 MyBatis 参数）
      */
-    private static final LocalDateTime NOT_DELETED_LOCAL_DATE_TIME = LocalDateTime.parse(
-            "1970-01-01T00:00:00"
-    );
-
+    private static final LocalDateTime NOT_DELETED_LOCAL_DATE_TIME = NOT_DELETED_TIME.toLocalDateTime();
     /**
      * 日期时间格式化器（yyyy-MM-dd HH:mm:ss）
      */
