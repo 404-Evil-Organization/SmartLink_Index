@@ -308,7 +308,7 @@ const openDetailDialog = async (coopId) => {
 const goToEvaluation = (coopId) => {
   router.push({
     path: "/evaluation/add",
-    query: { coopId },
+    query: { coopId: coopId },
   });
 };
 

@@ -28,10 +28,14 @@
           <span>服务企业列表</span>
         </el-menu-item>
 
-        <el-menu-item index="/cooperation/my">
+        <el-menu-item
+          v-if="isAdmin || isManufacture || isService"
+          index="/cooperation/my"
+        >
           <el-icon><List /></el-icon>
           <span>我的合作</span>
         </el-menu-item>
+
         <el-menu-item
           v-if="isAdmin || isManufacture || isService"
           index="/enterprise"

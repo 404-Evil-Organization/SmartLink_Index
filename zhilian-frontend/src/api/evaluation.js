@@ -32,4 +32,3 @@ export function getEvaluationList(serviceId, params) {
     params,
   });
 }
-import request from "@/utils/request";
