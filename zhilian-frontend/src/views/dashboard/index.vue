@@ -250,8 +250,6 @@ const fetchAllData = async () => {
         value: link.value ?? 1,
       })),
     };
-
-    ElMessage.success("数据更新成功");
   } catch (error) {
     console.error("获取看板数据失败", error);
     ElMessage.error("获取数据失败");
@@ -297,7 +295,9 @@ const renderHeatmapChart = () => {
         axisPointer: { type: "shadow" },
         formatter: (params) => {
           const data = params[0];
-          return `${data.name}<br/>合作热度: ${data.value}`;
+          // 使用 ECharts 提供的 encodeHTML 对区域名称进行 HTML 转义，防止 XSS
+          const safeName = echarts.format.encodeHTML(data?.name ?? "");
+          return `${safeName}<br/>合作热度: ${data.value}`;
         },
       },
       grid: {
@@ -431,11 +431,12 @@ const renderNetworkChart = () => {
     const option = {
       tooltip: {
         trigger: "item",
+        renderMode: "richText", // 关键配置
         formatter: (params) => {
           if (params.dataType === "node") {
-            return `企业/机构: ${params.name}<br/>合作次数: ${params.value || "-"}`;
+            return `企业/机构: ${params.name}\n合作次数: ${params.value || "-"}`;
           } else if (params.dataType === "edge") {
-            return `合作关联: ${params.data.source} → ${params.data.target}<br/>强度: ${params.data.value}`;
+            return `合作关联: ${params.data.source} → ${params.data.target}\n强度: ${params.data.value}`;
           }
           return "";
         },

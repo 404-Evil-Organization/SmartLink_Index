@@ -13,7 +13,7 @@ export function getRegionIndexList(params) {
     url: "/index/region/list",
     method: "get",
     params,
-    silent: true // 由页面捕获错误并统一提示
+    silent: true, // 由页面捕获错误并统一提示
   });
 }
 
@@ -28,10 +28,10 @@ export function getRegionIndexList(params) {
  */
 export function getRegionIndex(region, params) {
   return request({
-    url: `/index/region/${region}`,
+    url: "/index/region",
     method: "get",
-    params,
-    silent: true // 由页面捕获错误并统一提示
+    params: { ...params, region },
+    silent: true,
   });
 }
 
@@ -48,6 +48,6 @@ export function getTrendData(params) {
     url: "/index/trend",
     method: "get",
     params,
-    silent: true // 由页面捕获错误并统一提示
+    silent: true, // 由页面捕获错误并统一提示
   });
 }

@@ -550,13 +550,18 @@ const initBarChart = (force = false) => {
   const option = {
     tooltip: {
       trigger: "item",
+      // 使用 richText 渲染模式，避免直接插入 HTML，降低 XSS 风险
+      renderMode: "richText",
       formatter: (params) => {
         const data = regionList.value[params.dataIndex];
-        return `${data.region}<br/>
-                综合指数：${data.totalIndex}<br/>
-                合作密度：${data.coopDensity}<br/>
-                服务渗透率：${data.serviceRate}<br/>
-                跨域协同度：${data.crossRate}`;
+        // 返回纯文本内容
+        return [
+          `${data.region}`,
+          `综合指数：${data.totalIndex}`,
+          `合作密度：${data.coopDensity}`,
+          `服务渗透率：${data.serviceRate}`,
+          `跨域协同度：${data.crossRate}`,
+        ].join("\n");
       },
     },
     grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
@@ -654,27 +659,17 @@ const handleRegionChange = async () => {
 
 // 刷新全部数据
 const handleRefresh = async () => {
-  try {
-    // 左侧区域列表
-    await fetchRegionList(getLeftParams());
-    // 右侧详情（如已选中区域）
-    if (selectedRegion.value) {
-      await fetchRegionDetail(selectedRegion.value, getRightParams());
-    }
-    // 趋势数据（条件完整时才请求）
-    if (trendRegion.value && trendStartDate.value && trendEndDate.value) {
-      await fetchTrendByDateRange();
-    } else {
-      return;
-    }
-    // 仅在以上操作全部成功时提示刷新成功
-    ElMessage.success("刷新成功");
-  } catch (error) {
-    // 统一捕获刷新过程中的异常，避免“失败提示 + 成功提示”并存
-    // 在控制台记录详细错误信息，便于排查
-    // eslint-disable-next-line no-console
-    console.error("区域协同指数看板刷新失败：", error);
-    ElMessage.error("刷新失败，请稍后重试");
+  // 左侧区域列表
+  await fetchRegionList(getLeftParams());
+  // 右侧详情（如已选中区域）
+  if (selectedRegion.value) {
+    await fetchRegionDetail(selectedRegion.value, getRightParams());
+  }
+  // 趋势数据（条件完整时才请求）
+  if (trendRegion.value && trendStartDate.value && trendEndDate.value) {
+    await fetchTrendByDateRange();
+  } else {
+    return;
   }
 };
 
