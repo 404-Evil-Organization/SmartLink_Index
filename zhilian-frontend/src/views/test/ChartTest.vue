@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { RadarChart, BarChart, LineChart } from '@/components/chart'
+import { RadarChart, BarChart, LineChart } from "@/components/chart";
 </script>
 
 <style scoped>
