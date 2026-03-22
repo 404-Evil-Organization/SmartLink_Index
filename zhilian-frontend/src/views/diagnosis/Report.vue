@@ -302,13 +302,15 @@ const formatDate = (dateStr) => {
 
 /**
  * 统一错误处理（403 跳转，404 显示无报告，其他弹窗）
+ *
+ * 说明：当前 axios 封装在业务码非 200 时仅抛出 Error 对象，
+ * 不会附带 response.data.code / data.code 等字段，
+ * 因此这里只能依赖 HTTP status 或 error.code 进行判断。
  */
 const handleReportError = (error) => {
   const status =
     error?.response?.status ||
-    error?.code ||
-    error?.response?.data?.code ||
-    error?.data?.code
+    error?.code
 
   if (status === 403) {
     router.push('/403')
@@ -400,13 +402,8 @@ const handleViewReport = async () => {
     }
     localStorage.setItem('latestDiagnosisId', latest.diagnosisId)
   } catch (error) {
-    const status = error?.response?.status || error?.code
-    if (status === 404) {
-      reportData.value = null
-      showNoReport.value = true
-    } else {
-      ElMessage.error('获取报告失败，请稍后重试')
-    }
+    // 复用统一错误处理逻辑，内部根据 axios 错误结构识别业务码 404 等场景
+    handleReportError(error)
   } finally {
     viewLoading.value = false
   }
