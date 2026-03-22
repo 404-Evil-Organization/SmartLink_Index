@@ -143,37 +143,37 @@
   </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Check, Close, Key, View, Refresh } from '@element-plus/icons-vue'
-import { getUserList, updateUserStatus, resetUserPassword } from '@/api/admin'
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { Check, Close, Key, View, Refresh } from "@element-plus/icons-vue";
+import { getUserList, updateUserStatus, resetUserPassword } from "@/api/admin";
 
 // 角色映射
 const roleMap = {
-  manufacture: '制造企业',
-  service: '服务商',
-  park: '园区/政府',
-  admin: '管理员'
-}
-const getRoleName = (role) => roleMap[role] || role
+  manufacture: "制造企业",
+  service: "服务商",
+  park: "园区/政府",
+  admin: "管理员",
+};
+const getRoleName = (role) => roleMap[role] || role;
 
 // 搜索表单
 const searchForm = reactive({
-  role: '',
-  status: '',
-  keyword: ''
-})
+  role: "",
+  status: "",
+  keyword: "",
+});
 
 // 表格数据
-const tableData = ref([])
-const loading = ref(false)
+const tableData = ref([]);
+const loading = ref(false);
 
 // 分页
 const pagination = reactive({
   current: 1,
   size: 10,
-  total: 0
-})
+  total: 0,
+});
 
 // 重置密码弹窗
 const passwordDialog = reactive({
