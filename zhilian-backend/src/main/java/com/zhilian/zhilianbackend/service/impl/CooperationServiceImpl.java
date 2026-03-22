@@ -101,14 +101,13 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
     }
 
     @Override
-    public CooperationDetailVO getCooperationDetailAdmin(Long cooperationId) {
+    public CooperationDetailVO getCooperationDetailAdmin(Long cooperationId, Long userId) {
         Cooperation cooperation = cooperationMapper.selectById(cooperationId);
         if (cooperation == null) {
             throw new BusinessException(404, "合作记录不存在");
         }
         // 管理员查看时，userId 为当前登录的管理员 ID，用于计算 hasEvaluated
-        Long currentUserId = securityUtils.getCurrentUserId();
-        return buildCooperationDetail(cooperation, currentUserId);
+        return buildCooperationDetail(cooperation, userId);
     }
 
     // ==================== 私有辅助方法 ====================

@@ -34,5 +34,5 @@ public interface CooperationService extends IService<Cooperation> {
     /**
      * 获取合作记录详情（管理员专用，无权限校验）
      */
-    CooperationDetailVO getCooperationDetailAdmin(Long cooperationId);
+    CooperationDetailVO getCooperationDetailAdmin(Long cooperationId, Long userId);
 }

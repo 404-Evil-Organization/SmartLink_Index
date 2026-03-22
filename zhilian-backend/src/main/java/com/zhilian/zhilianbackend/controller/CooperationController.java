@@ -72,7 +72,7 @@ public class CooperationController {
 
         // 管理员可以直接查看任何详情
         if (securityUtils.isAdmin()) {
-            CooperationDetailVO detail = cooperationService.getCooperationDetailAdmin(id);
+            CooperationDetailVO detail = cooperationService.getCooperationDetailAdmin(id, userId);
             return Result.success(detail);
         }
 

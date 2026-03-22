@@ -2,8 +2,8 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zhilian.zhilianbackend.mapper.CooperationMapper">
 
-    <!-- 逻辑删除未删除条件常量 -->
-    <sql id="notDeleted">deleted = '1970-01-01 00:00:00'</sql>
+    <!-- 逻辑删除未删除条件常量：通过参数 notDeletedTime 传入，调用方使用 DateConstants.getNotDeletedLocalDateTime() 提供 -->
+    <sql id="notDeleted">deleted = #{notDeletedTime}</sql>
 
     <!-- 通用结果映射 -->
     <resultMap id="CooperationRecordVOMap" type="com.zhilian.zhilianbackend.dto.response.CooperationRecordVO">
