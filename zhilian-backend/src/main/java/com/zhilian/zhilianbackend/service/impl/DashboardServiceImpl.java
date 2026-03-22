@@ -145,6 +145,11 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     /**
+     * 网络关系图最大返回边数限制，防止数据量过大导致前端渲染崩溃和网络传输压力
+     */
+    private static final int MAX_NETWORK_LINKS = 200;
+
+    /**
      * @Author: 6017
      * @Date: 2026/3/20 21:41
      * @Param:
@@ -155,20 +160,22 @@ public class DashboardServiceImpl implements DashboardService {
     public NetworkDataResponse getNetworkData() {
         log.debug("获取网络关系数据");
 
-        String notDeletedTime = DateConstants.getNotDeletedTimeStr();
+        // 统一使用 LocalDateTime 类型，避免数据库隐式转换导致无法命中索引
+        LocalDateTime notDeletedTime = DateConstants.getNotDeletedLocalDateTime();
 
-        // 获取节点数据（只返回有有效合作关系的节点）
-        List<NetworkDataResponse.NodeDTO> nodes = new ArrayList<>();
-        nodes.addAll(networkMapper.getManufactureNodes(notDeletedTime));
-        nodes.addAll(networkMapper.getServiceNodes(notDeletedTime));
-
-        // 获取连接数据（只返回双方都有效的合作记录）
-        List<Map<String, Object>> linkMaps = networkMapper.getCooperationLinks(notDeletedTime);
+        // 1. 先获取受限的连接数据（按合作次数倒序取 TopN）
+        List<Map<String, Object>> linkMaps = networkMapper.getCooperationLinks(notDeletedTime, MAX_NETWORK_LINKS);
         List<NetworkDataResponse.LinkDTO> links = new ArrayList<>();
+        
+        // 用于收集参与了 TopN 连接的节点 ID
+        java.util.Set<String> activeNodeIds = new java.util.HashSet<>();
 
         for (Map<String, Object> map : linkMaps) {
             String source = (String) map.get("source");
             String target = (String) map.get("target");
+
+            activeNodeIds.add(source);
+            activeNodeIds.add(target);
 
             Object valueObj = map.get("value");
             Long value = 0L;
@@ -191,8 +198,20 @@ public class DashboardServiceImpl implements DashboardService {
             links.add(link);
         }
 
+        // 2. 获取节点数据并过滤，只保留参与了 TopN 连接的节点，避免前端渲染孤立节点
+        List<NetworkDataResponse.NodeDTO> allNodes = new ArrayList<>();
+        allNodes.addAll(networkMapper.getManufactureNodes(notDeletedTime));
+        allNodes.addAll(networkMapper.getServiceNodes(notDeletedTime));
+        
+        List<NetworkDataResponse.NodeDTO> filteredNodes = new ArrayList<>();
+        for (NetworkDataResponse.NodeDTO node : allNodes) {
+            if (activeNodeIds.contains(node.getId())) {
+                filteredNodes.add(node);
+            }
+        }
+
         return NetworkDataResponse.builder()
-                .nodes(nodes)
+                .nodes(filteredNodes)
                 .links(links)
                 .build();
     }

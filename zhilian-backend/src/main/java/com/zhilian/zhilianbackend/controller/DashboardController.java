@@ -116,7 +116,7 @@ public class DashboardController {
 
         // 对 top 参数做合理区间约束，防止恶意传入超大值导致数据库压力过大
         int validTop;
-        if (top == null || top < 1) {
+        if (top < 1) {
             validTop = 5;
             log.debug("top 参数无效（null 或 <1），使用默认值: {}", validTop);
         } else if (top > 50) {
