@@ -13,21 +13,67 @@
         :collapse="false"
       >
         <el-menu-item index="/">
-          <el-icon><HomeFilled /></el-icon>
+          <el-icon>
+            <HomeFilled />
+          </el-icon>
           <span>首页</span>
         </el-menu-item>
 
+        <!-- 可视化看板菜单栏 -->
+        <el-sub-menu v-if="isAdmin || isPark" index="dashboard">
+          <template #title>
+            <el-icon><DataBoard /></el-icon>
+            <span>可视化看板</span>
+          </template>
+          <el-menu-item index="/dashboard/index">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>数据看板</span>
+          </el-menu-item>
+          <el-menu-item index="/dashboard/region">
+            <el-icon><DataLine /></el-icon>
+            <span>区域协同指数看板</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <!-- 数字化诊断菜单栏 -->
+        <el-sub-menu v-if="isManufacture || isAdmin" index="diagnosis">
+          <template #title>
+            <el-icon>
+              <Avatar />
+            </el-icon>
+            <span>数字化诊断</span>
+          </template>
+          <el-menu-item index="/diagnosis/questionnaire">
+            <el-icon>
+              <Tickets />
+            </el-icon>
+            <span>诊断问卷</span>
+          </el-menu-item>
+          <el-menu-item index="/diagnosis/report">
+            <el-icon>
+              <DataLine />
+            </el-icon>
+            <span>诊断报告</span>
+          </el-menu-item>
+        </el-sub-menu>
+
+        <!-- 制造企业列表页面 -->
         <el-menu-item index="/manufacture/list">
-          <el-icon><OfficeBuilding /></el-icon>
+          <el-icon>
+            <OfficeBuilding />
+          </el-icon>
           <span>制造企业列表</span>
         </el-menu-item>
 
-        <!-- 新增服务企业列表菜单项 -->
+        <!-- 服务企业列表页面 -->
         <el-menu-item index="/service/list">
-          <el-icon><OfficeBuilding /></el-icon>
+          <el-icon>
+            <OfficeBuilding />
+          </el-icon>
           <span>服务企业列表</span>
         </el-menu-item>
 
+        <!-- 我的企业页面 -->
         <el-menu-item
           v-if="isAdmin || isManufacture || isService"
           index="/cooperation/my"
@@ -40,17 +86,24 @@
           v-if="isAdmin || isManufacture || isService"
           index="/enterprise"
         >
-          <el-icon><OfficeBuilding /></el-icon>
+          <el-icon>
+            <OfficeBuilding />
+          </el-icon>
           <span>我的企业</span>
         </el-menu-item>
 
-        <el-sub-menu v-if="isAdmin" index="1">
+        <!-- 管理员菜单栏 -->
+        <el-sub-menu v-if="isAdmin" index="admin">
           <template #title>
-            <el-icon><Avatar /></el-icon>
+            <el-icon>
+              <Avatar />
+            </el-icon>
             <span>管理员</span>
           </template>
           <el-menu-item index="/admin/tag">
-            <el-icon><Collection /></el-icon>
+            <el-icon>
+              <Collection />
+            </el-icon>
             <span>标签管理</span>
           </el-menu-item>
         </el-sub-menu>
@@ -65,6 +118,7 @@
           <span class="welcome"
             >欢迎，{{ userStore.userInfo?.username || "用户" }}</span
           >
+
           <el-button type="info" @click="handleLogout">退出登录</el-button>
         </div>
       </el-header>
@@ -92,8 +146,12 @@ import {
   HomeFilled,
   Avatar,
   Collection,
+  DataBoard,
+  DataAnalysis,
+  Tickets,
   OfficeBuilding,
   List,
+  DataLine,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
@@ -110,6 +168,7 @@ const isManufacture = computed(
   () => userStore.userInfo?.role === "manufacture",
 );
 const isService = computed(() => userStore.userInfo?.role === "service");
+const isPark = computed(() => userStore.userInfo?.role === "park");
 
 // 退出登录
 const handleLogout = async () => {
@@ -129,6 +188,7 @@ const handleLogout = async () => {
   background-color: #304156;
   min-height: 98vh;
 }
+
 .logo {
   height: 60px;
   line-height: 60px;
@@ -138,13 +198,16 @@ const handleLogout = async () => {
   font-weight: bold;
   background-color: #1f2d3d;
 }
+
 .sidebar-menu {
   border-right: none;
 }
+
 .el-header {
   background-color: rgb(252, 252, 252);
   border-bottom: 1px solid #e6e9f0;
 }
+
 .header-content {
   display: flex;
   justify-content: flex-end;
@@ -153,6 +216,7 @@ const handleLogout = async () => {
   padding-right: 20px;
   gap: 15px;
 }
+
 .welcome {
   font-size: 14px;
   color: #606266;
