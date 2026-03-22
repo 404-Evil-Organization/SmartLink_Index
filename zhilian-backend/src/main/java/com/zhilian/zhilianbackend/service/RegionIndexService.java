@@ -40,8 +40,8 @@ public interface RegionIndexService extends IService<RegionIndex> {
      * @Description: 手动触发计算（用于测试）
      **/
     void manualCalculate(Short year, Byte quarter);
-}
-public interface RegionIndexService extends IService<RegionIndex> {
+
+    // ============== 查询方法 ==============
 
     /**
      * @Author: xiaodengyou

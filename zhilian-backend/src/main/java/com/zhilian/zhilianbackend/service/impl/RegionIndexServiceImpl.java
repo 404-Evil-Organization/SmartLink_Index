@@ -3,6 +3,9 @@ package com.zhilian.zhilianbackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhilian.zhilianbackend.dto.request.RegionDetailQuery;
+import com.zhilian.zhilianbackend.dto.request.RegionListQuery;
+import com.zhilian.zhilianbackend.dto.request.TrendQuery;
 import com.zhilian.zhilianbackend.dto.response.RegionDetailVO;
 import com.zhilian.zhilianbackend.dto.response.RegionListItemVO;
 import com.zhilian.zhilianbackend.dto.response.TrendItemVO;
@@ -22,6 +25,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -44,6 +48,7 @@ import java.util.stream.Collectors;
  * @Return:
  * @Description: 区域指数服务实现类，实现区域指数相关的业务方法
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, RegionIndex> implements RegionIndexService {
@@ -349,6 +354,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                 throw new BusinessException("季度参数不合法，必须为 1-4，实际值为: " + quarter);
         }
         return new LocalDate[]{startDate, endDate};
+    }
 
     private String cleanedNotDeletedValue;
 
@@ -368,6 +374,8 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         }
         return raw;
     }
+
+    // ============== 查询方法 ==============
 
     /**
      * @Author: xiaodengyou
