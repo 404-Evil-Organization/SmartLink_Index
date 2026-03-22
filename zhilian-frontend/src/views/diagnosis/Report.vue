@@ -222,30 +222,48 @@ const selectedManuId = ref(null)
  * 获取当前用户拥有的所有审核通过的企业
  */
 const fetchEnterprises = async () => {
-  loadingEnterprises.value = true;
-  const userRole = userStore.userInfo?.role;
+  loadingEnterprises.value = true
   try {
-    let res = {};
-    if (userRole === "admin") {
-      res = await getManufactureList({ page: 1, size: 100 });
+    const userRole = userStore.userInfo?.role
+    const currentUserId = userStore.userInfo?.id   // 获取当前用户 ID
+    let res
+
+    if (userRole === 'admin') {
+      // 管理员使用公共列表
+      res = await getManufactureList({ page: 1, size: 100 })
+      enterprises.value = (res.records || []).filter(item => item.auditStatus === 'approved')
     } else {
-      res = await getMyManufactureList({ page: 1, size: 100 });
+      // 普通用户：优先使用个人企业接口
+      res = await getMyManufactureList({ page: 1, size: 100 })
+      let enterprisesTemp = (res.records || [])
+        .filter(item => item.userId === currentUserId)
+        .filter(item => item.auditStatus === 'approved')
+
+      // 如果个人接口返回为空，回退到公共接口（再次按 userId 过滤）
+      if (enterprisesTemp.length === 0) {
+        const publicRes = await getManufactureList({ page: 1, size: 100 })
+        enterprisesTemp = (publicRes.records || [])
+          .filter(item => item.userId === currentUserId)
+          .filter(item => item.auditStatus === 'approved')
+      }
+
+      enterprises.value = enterprisesTemp
     }
-    // 如果需要过滤审核状态，取消下一行注释
-    enterprises.value = (res.records || []).filter(item => item.auditStatus === 'approved');
-    // 新增：单企业自动加载报告
-    if (enterprises.value.length === 1 && !loadingReport.value && !route.query.id && !route.query.manuId && !route.params.id && !route.params.manuId) {
-      const singleManuId = enterprises.value[0].id;
-      selectedManuId.value = singleManuId;
-      await fetchLatestReportByManuId(singleManuId);
+
+
+    // 单企业自动加载（仅当没有通过 URL 参数加载报告时）
+    const hasUrlParams = !!(route.query.id || route.query.manuId || route.params.id || route.params.manuId)
+    if (enterprises.value.length === 1 && !hasUrlParams && !reportData.value && !loadingReport.value) {
+      const singleManuId = enterprises.value[0].id
+      selectedManuId.value = singleManuId
+      await fetchLatestReportByManuId(singleManuId)
     }
   } catch (error) {
-    console.error("获取企业列表失败", error);
-    ElMessage.error("获取企业列表失败，请稍后重试");
+    ElMessage.error('获取企业列表失败')
   } finally {
-    loadingEnterprises.value = false;
+    loadingEnterprises.value = false
   }
-};
+}
 const enterpriseOptions = computed(() => enterprises.value)
 
 // ---------- 报告详情 ----------
@@ -348,27 +366,44 @@ const loadReport = () => {
   }
 }
 
+ watch(
+  () => [route.query.id, route.query.manuId, route.params.id, route.params.manuId],
+  () => {
+    // 如果当前正在自动加载或手动加载报告，则跳过（避免重复）
+    if (loadingReport.value) return
+    loadReport()
+  },
+  { immediate: true }
+)
+
 
 const handleViewReport = async () => {
   if (!selectedManuId.value) {
-    ElMessage.warning('请先选择企业');
-    return;
+    ElMessage.warning('请先选择企业')
+    return
   }
-  viewLoading.value = true;
+  viewLoading.value = true
   try {
-    const latest = await getLatestDiagnosis(selectedManuId.value);
-    if (latest && latest.diagnosisId) {
-      router.push(`/diagnosis/report?id=${latest.diagnosisId}`);
-    } else {
-      reportData.value = null;
-      showNoReport.value = true;
+    const latest = await getLatestDiagnosis(selectedManuId.value)
+    // 直接使用返回的数据，不跳转
+    reportData.value = latest
+    if (latest.manuId) {
+      selectedManuId.value = latest.manuId
     }
+    localStorage.setItem('latestDiagnosisId', latest.diagnosisId)
+    nextTick(() => renderRadarChart())
   } catch (error) {
-    handleReportError(error);
+    const status = error?.response?.status || error?.code
+    if (status === 404) {
+      reportData.value = null
+      showNoReport.value = true
+    } else {
+      ElMessage.error('获取报告失败，请稍后重试')
+    }
   } finally {
-    viewLoading.value = false;
+    viewLoading.value = false
   }
-};
+}
 
 const goToQuestionnaire = () => {
   ElMessage.info('诊断问卷功能开发中，请稍后再试')
@@ -429,19 +464,10 @@ const renderRadarChart = () => {
   chart.setOption(option)
 }
 
-// 监听路由参数变化（优先于企业列表加载）
-watch(
-  () => [route.query.id, route.query.manuId, route.params.id, route.params.manuId],
-  () => {
-    loadReport()
-  },
-  { immediate: true }
-)
-
 onMounted(() => {
-   if (route.query.id || route.query.manuId || route.params.id || route.params.manuId) {
-    router.replace({ query: {} });
-  }
+  //  if (route.query.id || route.query.manuId || route.params.id || route.params.manuId) {
+  //   router.replace({ query: {} });
+  // }
   fetchEnterprises();
 });
 

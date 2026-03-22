@@ -1,6 +1,8 @@
 // mock/diagnosis.js
 // 数字化诊断模块模拟数据（增强版）
 
+import { number } from "echarts";
+
 const manufactureMap = {
   1001: "深圳电子科技",
   1002: "东莞精密机械",
@@ -196,10 +198,10 @@ export default [
 
   // 2.2 获取诊断报告（根据ID）
   {
-    url: "/api/diagnosis/:id",
+    url: /\/api\/diagnosis\/\d+$/,
     method: "get",
-    response: ({ params, query }) => {
-      const id = parseInt(params?.id || query?.id);
+    response: ({ url }) => {
+      const id = Number(url.match(/\/api\/diagnosis\/(\d+)$/)?.[1]);
       console.log("[mock] 请求诊断报告 ID:", id);
 
       if (isNaN(id)) {
