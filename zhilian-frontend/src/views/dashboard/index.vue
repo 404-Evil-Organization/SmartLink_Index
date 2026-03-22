@@ -359,7 +359,6 @@ const renderHeatmapChart = () => {
 
     heatmapChart.setOption(option, true);
     heatmapChart.resize();
-    console.log("热力图渲染成功", { regions, values });
   } catch (error) {
     console.error("热力图渲染失败:", error);
   }
@@ -491,10 +490,6 @@ const renderNetworkChart = () => {
 
     networkChart.setOption(option, true);
     networkChart.resize();
-    console.log("网络图渲染成功", {
-      nodesCount: nodes.length,
-      linksCount: links.length,
-    });
   } catch (error) {
     console.error("网络图渲染失败:", error);
   }
@@ -506,13 +501,19 @@ const handleResize = () => {
   if (networkChart) networkChart.resize();
 };
 
-// 监听数据变化重新渲染
-watch(heatmap, () => {
-  nextTick(() => renderHeatmapChart());
+// 监听 loading 与数据变化，确保在加载完成且容器挂载后再渲染图表
+watch([loading, heatmap], ([loadingVal, heatmapVal]) => {
+  // 加载中或数据不存在时不渲染，避免容器未挂载
+  if (loadingVal || !heatmapVal) return;
+  nextTick(() => {
+    renderHeatmapChart();
+  });
 });
-
-watch(network, () => {
-  nextTick(() => renderNetworkChart());
+watch([loading, network], ([loadingVal, networkVal]) => {
+  if (loadingVal || !networkVal) return;
+  nextTick(() => {
+    renderNetworkChart();
+  });
 });
 
 onMounted(() => {
