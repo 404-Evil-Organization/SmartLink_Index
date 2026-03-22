@@ -25,5 +25,5 @@ public class TopDemandResponse {
     /**
      * 需求数量
      */
-    private Integer count;
+    private Long count;
 }

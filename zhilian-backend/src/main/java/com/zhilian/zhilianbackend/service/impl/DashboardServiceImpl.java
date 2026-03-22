@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.dto.response.*;
 import com.zhilian.zhilianbackend.entity.Cooperation;
 import com.zhilian.zhilianbackend.entity.Demand;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +35,6 @@ public class DashboardServiceImpl implements DashboardService {
     private final CooperationMapper cooperationMapper;
     private final NetworkMapper networkMapper;
 
-    // 逻辑删除的默认时间常量
-    private static final String NOT_DELETED_TIME = "1970-01-01 00:00:00";
-
     /**
      * @Author: 6017
      * @Date: 2026/3/20 21:41
@@ -53,27 +50,27 @@ public class DashboardServiceImpl implements DashboardService {
         Long manufactureCount = manufactureMapper.selectCount(
                 new LambdaQueryWrapper<Manufacture>()
                         .eq(Manufacture::getAuditStatus, "approved")
-                        .eq(Manufacture::getDeleted, NOT_DELETED_TIME)
+                        .eq(Manufacture::getDeleted, DateConstants.getNotDeletedTimeStr())
         );
 
         // 统计服务商数量（审核通过的）
         Long serviceCount = serviceProviderMapper.selectCount(
                 new LambdaQueryWrapper<ServiceProvider>()
                         .eq(ServiceProvider::getAuditStatus, "approved")
-                        .eq(ServiceProvider::getDeleted, NOT_DELETED_TIME)
+                        .eq(ServiceProvider::getDeleted, DateConstants.getNotDeletedTimeStr())
         );
 
         // 统计需求数量（审核通过的）
         Long demandCount = demandMapper.selectCount(
                 new LambdaQueryWrapper<Demand>()
                         .eq(Demand::getAuditStatus, "approved")
-                        .eq(Demand::getDeleted, NOT_DELETED_TIME)
+                        .eq(Demand::getDeleted, DateConstants.getNotDeletedTimeStr())
         );
 
         // 统计合作数量
         Long cooperationCount = cooperationMapper.selectCount(
                 new LambdaQueryWrapper<Cooperation>()
-                        .eq(Cooperation::getDeleted, NOT_DELETED_TIME)
+                        .eq(Cooperation::getDeleted, DateConstants.getNotDeletedTimeStr())
         );
 
         return DashboardStatisticsResponse.builder()
@@ -103,13 +100,13 @@ public class DashboardServiceImpl implements DashboardService {
         if (startDate != null) {
             // 开始日期取当天 00:00:00
             startDateTime = startDate.atStartOfDay()
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    .format(DateConstants.DATETIME_FORMATTER);
         }
 
         if (endDate != null) {
             // 结束日期取当天 23:59:59
             endDateTime = endDate.atTime(LocalTime.MAX)
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    .format(DateConstants.DATETIME_FORMATTER);
         }
 
         return cooperationMapper.getHeatmapData(startDateTime, endDateTime);
@@ -128,7 +125,7 @@ public class DashboardServiceImpl implements DashboardService {
             top = 5;
         }
         log.debug("获取热门需求，top: {}", top);
-        return demandMapper.getTopDemands(top, NOT_DELETED_TIME);
+        return demandMapper.getTopDemands(top, DateConstants.getNotDeletedLocalDateTime());
     }
 
     /**
@@ -142,13 +139,15 @@ public class DashboardServiceImpl implements DashboardService {
     public NetworkDataResponse getNetworkData() {
         log.debug("获取网络关系数据");
 
-        // 获取节点数据
-        List<NetworkDataResponse.NodeDTO> nodes = new ArrayList<>();
-        nodes.addAll(networkMapper.getManufactureNodes());
-        nodes.addAll(networkMapper.getServiceNodes());
+        String notDeletedTime = DateConstants.getNotDeletedTimeStr();
 
-        // 获取连接数据 - 使用传统 for 循环
-        List<Map<String, Object>> linkMaps = networkMapper.getCooperationLinks();
+        // 获取节点数据（只返回有有效合作关系的节点）
+        List<NetworkDataResponse.NodeDTO> nodes = new ArrayList<>();
+        nodes.addAll(networkMapper.getManufactureNodes(notDeletedTime));
+        nodes.addAll(networkMapper.getServiceNodes(notDeletedTime));
+
+        // 获取连接数据（只返回双方都有效的合作记录）
+        List<Map<String, Object>> linkMaps = networkMapper.getCooperationLinks(notDeletedTime);
         List<NetworkDataResponse.LinkDTO> links = new ArrayList<>();
 
         for (Map<String, Object> map : linkMaps) {
@@ -156,10 +155,10 @@ public class DashboardServiceImpl implements DashboardService {
             String target = (String) map.get("target");
 
             Object valueObj = map.get("value");
-            Long value = 0L;  // 改为 Long 类型，匹配 LinkDTO.value 的类型
+            Long value = 0L;
 
             if (valueObj instanceof Number) {
-                value = ((Number) valueObj).longValue();  // 使用 longValue() 获取 Long
+                value = ((Number) valueObj).longValue();
             } else if (valueObj instanceof String) {
                 try {
                     value = Long.parseLong((String) valueObj);

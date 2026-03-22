@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.zhilian.zhilianbackend.dto.response.NetworkDataResponse;
 import com.zhilian.zhilianbackend.entity.Cooperation;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -20,45 +21,65 @@ public interface NetworkMapper extends BaseMapper<Cooperation> {
     /**
      * @Author: 6017
      * @Date: 2026/3/20 21:41
-     * @Param:
+     * @Param: notDeletedTime 逻辑删除时间标记
      * @Return: List<NetworkDataResponse.NodeDTO> 制造企业节点列表
-     * @Description: 获取制造企业节点列表
+     * @Description: 获取制造企业节点列表（只返回有有效合作关系的企业）
      */
     @Select("SELECT CONCAT('m', m.id) AS id, m.company_name AS name, 'manufacture' AS type " +
             "FROM manufacture m " +
-            "WHERE m.deleted = '1970-01-01 00:00:00' " +
+            "WHERE m.deleted = #{notDeletedTime} " +
             "AND m.audit_status = 'approved' " +
-            "AND EXISTS (SELECT 1 FROM cooperation c WHERE c.manu_id = m.id AND c.deleted = '1970-01-01 00:00:00')")
-    List<NetworkDataResponse.NodeDTO> getManufactureNodes();
+            "AND EXISTS (" +
+            "   SELECT 1 FROM cooperation c " +
+            "   INNER JOIN service_provider s ON c.service_id = s.id " +
+            "   WHERE c.manu_id = m.id " +
+            "   AND c.deleted = #{notDeletedTime} " +
+            "   AND s.deleted = #{notDeletedTime} " +
+            "   AND s.audit_status = 'approved'" +
+            ")")
+    List<NetworkDataResponse.NodeDTO> getManufactureNodes(@Param("notDeletedTime") String notDeletedTime);
 
     /**
      * @Author: 6017
      * @Date: 2026/3/20 21:41
-     * @Param:
+     * @Param: notDeletedTime 逻辑删除时间标记
      * @Return: List<NetworkDataResponse.NodeDTO> 服务商节点列表
-     * @Description: 获取服务商节点列表
+     * @Description: 获取服务商节点列表（只返回有有效合作关系的服务商）
      */
     @Select("SELECT CONCAT('s', s.id) AS id, s.company_name AS name, 'service' AS type " +
             "FROM service_provider s " +
-            "WHERE s.deleted = '1970-01-01 00:00:00' " +
+            "WHERE s.deleted = #{notDeletedTime} " +
             "AND s.audit_status = 'approved' " +
-            "AND EXISTS (SELECT 1 FROM cooperation c WHERE c.service_id = s.id AND c.deleted = '1970-01-01 00:00:00')")
-    List<NetworkDataResponse.NodeDTO> getServiceNodes();
+            "AND EXISTS (" +
+            "   SELECT 1 FROM cooperation c " +
+            "   INNER JOIN manufacture m ON c.manu_id = m.id " +
+            "   WHERE c.service_id = s.id " +
+            "   AND c.deleted = #{notDeletedTime} " +
+            "   AND m.deleted = #{notDeletedTime} " +
+            "   AND m.audit_status = 'approved'" +
+            ")")
+    List<NetworkDataResponse.NodeDTO> getServiceNodes(@Param("notDeletedTime") String notDeletedTime);
 
     /**
      * @Author: 6017
      * @Date: 2026/3/20 21:41
-     * @Param:
+     * @Param: notDeletedTime 逻辑删除时间标记
      * @Return: List<Map<String, Object>> 连接关系列表
-     * @Description: 获取合作关系连接列表
+     * @Description: 获取合作关系连接列表（只返回双方都有效的合作记录）
      */
     @Select("SELECT " +
             "CONCAT('m', c.manu_id) AS source, " +
             "CONCAT('s', c.service_id) AS target, " +
-            "CAST(COUNT(*) AS UNSIGNED) AS value " +
+            "COUNT(*) AS value " +
             "FROM cooperation c " +
-            "WHERE c.deleted = '1970-01-01 00:00:00' " +
+            "INNER JOIN manufacture m ON c.manu_id = m.id " +
+            "INNER JOIN service_provider s ON c.service_id = s.id " +
+            "WHERE c.deleted = #{notDeletedTime} " +
+            "AND m.deleted = #{notDeletedTime} " +
+            "AND m.audit_status = 'approved' " +
+            "AND s.deleted = #{notDeletedTime} " +
+            "AND s.audit_status = 'approved' " +
             "GROUP BY c.manu_id, c.service_id " +
             "ORDER BY value DESC")
-    List<Map<String, Object>> getCooperationLinks();
+    List<Map<String, Object>> getCooperationLinks(@Param("notDeletedTime") String notDeletedTime);
 }

@@ -6,12 +6,12 @@ import com.zhilian.zhilianbackend.dto.response.HeatmapDataResponse;
 import com.zhilian.zhilianbackend.dto.response.NetworkDataResponse;
 import com.zhilian.zhilianbackend.dto.response.TopDemandResponse;
 import com.zhilian.zhilianbackend.service.DashboardService;
+import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -32,6 +32,7 @@ import java.util.List;
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final SecurityUtils securityUtils;
 
     /**
      * @Author: 6017
@@ -42,9 +43,16 @@ public class DashboardController {
      **/
     @GetMapping("/statistics")
     @Operation(summary = "获取统计卡片数据", description = "返回制造企业数、服务商数、需求数、合作数")
-    @PreAuthorize("isAuthenticated()")
     public Result<DashboardStatisticsResponse> getStatistics() {
-        log.info("获取统计卡片数据");
+        // 手动校验登录态
+        try {
+            securityUtils.getCurrentUserId();
+            log.info("获取统计卡片数据，用户已登录");
+        } catch (Exception e) {
+            log.warn("获取统计卡片数据失败，用户未登录");
+            return Result.unauthorized("请先登录");
+        }
+
         DashboardStatisticsResponse statistics = dashboardService.getStatistics();
         return Result.success(statistics);
     }
@@ -58,10 +66,18 @@ public class DashboardController {
      **/
     @GetMapping("/heatmap")
     @Operation(summary = "获取热力图数据", description = "按区域统计合作次数，支持日期范围筛选")
-    @PreAuthorize("isAuthenticated()")
     public Result<List<HeatmapDataResponse>> getHeatmapData(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
+
+        // 手动校验登录态
+        try {
+            securityUtils.getCurrentUserId();
+            log.info("获取热力图数据，用户已登录");
+        } catch (Exception e) {
+            log.warn("获取热力图数据失败，用户未登录");
+            return Result.unauthorized("请先登录");
+        }
 
         // 参数校验：如果同时传了 startDate 和 endDate，确保 startDate <= endDate
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
@@ -83,9 +99,18 @@ public class DashboardController {
      **/
     @GetMapping("/topDemands")
     @Operation(summary = "获取热门需求", description = "按服务类型统计需求数量，返回Top N")
-    @PreAuthorize("isAuthenticated()")
     public Result<List<TopDemandResponse>> getTopDemands(
             @RequestParam(required = false, defaultValue = "5") Integer top) {
+
+        // 手动校验登录态
+        try {
+            securityUtils.getCurrentUserId();
+            log.info("获取热门需求，用户已登录");
+        } catch (Exception e) {
+            log.warn("获取热门需求失败，用户未登录");
+            return Result.unauthorized("请先登录");
+        }
+
         // 对 top 参数做合理区间约束，防止恶意传入超大值导致数据库压力过大
         if (top == null || top < 1) {
             top = 1;
@@ -106,8 +131,16 @@ public class DashboardController {
      **/
     @GetMapping("/network")
     @Operation(summary = "获取网络关系数据", description = "返回制造企业和服务商之间的合作关系图数据")
-    @PreAuthorize("isAuthenticated()")
     public Result<NetworkDataResponse> getNetworkData() {
+        // 手动校验登录态
+        try {
+            securityUtils.getCurrentUserId();
+            log.info("获取网络关系数据，用户已登录");
+        } catch (Exception e) {
+            log.warn("获取网络关系数据失败，用户未登录");
+            return Result.unauthorized("请先登录");
+        }
+
         log.info("获取网络关系数据");
         NetworkDataResponse networkData = dashboardService.getNetworkData();
         return Result.success(networkData);
