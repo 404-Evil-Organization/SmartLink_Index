@@ -19,6 +19,22 @@
           <span>首页</span>
         </el-menu-item>
 
+        <!-- 可视化看板菜单栏 -->
+        <el-sub-menu v-if="isAdmin || isPark" index="dashboard">
+          <template #title>
+            <el-icon><DataBoard /></el-icon>
+            <span>可视化看板</span>
+          </template>
+          <el-menu-item index="/dashboard/index">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>数据看板</span>
+          </el-menu-item>
+          <el-menu-item index="/dashboard/region">
+            <el-icon><DataLine /></el-icon>
+            <span>区域协同指数看板</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 数字化诊断菜单栏 -->
         <el-sub-menu v-if="isManufacture || isAdmin" index="diagnosis">
           <template #title>
@@ -122,6 +138,8 @@ import {
   HomeFilled,
   Avatar,
   Collection,
+  DataBoard,
+  DataAnalysis,
   Tickets,
   OfficeBuilding,
   DataLine,
@@ -141,20 +159,7 @@ const isManufacture = computed(
   () => userStore.userInfo?.role === "manufacture",
 );
 const isService = computed(() => userStore.userInfo?.role === "service");
-
-// // 跳转到最新诊断报告
-// const goToLatestReport = () => {
-//   const latestId = localStorage.getItem('latestDiagnosisId')
-//   if (latestId) {
-//     router.push(`/diagnosis/report?id=${latestId}`);
-//   } else {
-//     ElMessage.warning('暂无诊断报告，请先提交问卷')
-//   }
-// }
-// // 判断当前用户是否为制造企业
-// const isManufacture = computed(
-//   () => userStore.userInfo?.role === "manufacture",
-// );
+const isPark = computed(() => userStore.userInfo?.role === "park");
 
 // 退出登录
 const handleLogout = async () => {

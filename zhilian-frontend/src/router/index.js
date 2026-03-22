@@ -28,6 +28,11 @@ const routes = [
     component: () => import("@/layouts/BasicLayout.vue"),
     meta: { requiresAuth: true },
     children: [
+      {
+        path: "",
+        name: "Home",
+        component: () => import("@/views/home.vue"),
+      },
       ...dashboardRoutes,
       ...diagnosisRoutes,
       ...serviceListRoutes,
