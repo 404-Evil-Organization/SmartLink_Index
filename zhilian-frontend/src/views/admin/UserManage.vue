@@ -260,17 +260,18 @@ const toggleStatus = (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const res = await updateUserStatus(row.id, newStatus)
-
-      // 成功条件：响应为 null（代表操作成功且无返回数据）或响应包含 code 且为 200
-      if (res === null || (res && (res.code === undefined || res.code === 200))) {
-        ElMessage.success(`${action}成功`)
-        fetchList()
-      } else {
-      }
+      // 使用统一的 axios 封装：失败会在拦截器中 reject，这里只处理成功路径
+      await updateUserStatus(row.id, newStatus)
+      ElMessage.success(`${action}成功`)
+      // 操作成功后刷新列表
+      fetchList()
     } catch (error) {
+      // 兜底错误提示，补充拦截器之外的本地提示
+      ElMessage.error('操作失败，请稍后重试')
     }
-  }).catch(() => {})
+  }).catch(() => {
+    // 用户取消操作，不需要额外处理
+  })
 }
 
 // 重置密码
