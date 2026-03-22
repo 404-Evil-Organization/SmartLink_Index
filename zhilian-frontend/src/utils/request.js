@@ -77,7 +77,7 @@ request.interceptors.response.use(
         userStore.clearToken();
         router.push("/login");
       }
-      
+
       if (!isSilent(status)) {
         switch (status) {
           case 401:
@@ -94,7 +94,7 @@ request.interceptors.response.use(
         }
       }
     } else {
-      ElMessage.error("网络连接失败");
+      if (!isSilent("network")) ElMessage.error("网络连接失败");
     }
     return Promise.reject(error);
   },
