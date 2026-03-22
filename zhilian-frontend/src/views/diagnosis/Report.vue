@@ -398,11 +398,28 @@ const handleReportError = (error) => {
     // 其他错误（含 400/500 等），无论是否有 response 都给出友好提示
     const backendMessage =
       error?.response?.data?.message || error?.response?.data?.msg || "";
-    const rawMessage = backendMessage || error?.message || "";
-    const friendlyMessage =
-      rawMessage && rawMessage !== "Network Error"
-        ? rawMessage
-        : "获取诊断报告失败，请检查网络后重试";
+    
+    // 如果后端明确返回了业务 message，则优先使用；
+    // 否则判断 error.message 是否为 Axios 默认的技术提示，如果是则统一替换为友好的中文兜底文案。
+    let friendlyMessage = "获取诊断报告失败，请检查网络后重试";
+    if (backendMessage) {
+      friendlyMessage = backendMessage;
+    } else if (error?.message) {
+      const msg = error.message;
+      // 过滤常见的 Axios 默认技术提示
+      if (
+        msg.includes("Network Error") ||
+        msg.includes("timeout") ||
+        msg.includes("Request failed with status code") ||
+        msg === "Error"
+      ) {
+        friendlyMessage = "服务器开小差了，请稍后重试";
+      } else {
+        // 如果是其他非默认错误（可能是前端自定义抛出的业务错误），则透传
+        friendlyMessage = msg;
+      }
+    }
+    
     ElMessage.error(friendlyMessage);
     reportData.value = null;
   }

@@ -30,10 +30,11 @@ request.interceptors.response.use(
     const res = response.data;
     // 假设后端返回格式为 { code: 200, message: 'success', data: ... }
     if (res.code !== 200) {
-      // 通过 config.silent 控制是否静默报错，支持 boolean 或状态码/错误类型白名单数组（例如：[404, 'network']）
+      // 业务错误拦截：通过 config.silent 控制是否静默报错，支持 boolean 或业务状态码（数字）白名单数组（例如：[404, 500]）
       const silent = response.config?.silent;
-      const isSilent = silent === true || (Array.isArray(silent) && silent.includes(res.code));
-      
+      const isSilent =
+        silent === true || (Array.isArray(silent) && silent.includes(res.code));
+
       if (!isSilent) {
         ElMessage.error(res.message || "请求失败");
       }
@@ -49,29 +50,33 @@ request.interceptors.response.use(
     const userStore = useUserStore();
     // silent 配置：可以为 true（全部静默），也可以是状态码/错误类型的数组（如 [404, 500, 'network']）
     const silent = error.config?.silent;
-    const isSilent = (codeOrType) => silent === true || (Array.isArray(silent) && silent.includes(codeOrType));
+    const isSilent = (codeOrType) =>
+      silent === true || (Array.isArray(silent) && silent.includes(codeOrType));
 
     // 处理HTTP错误状态码
+
     if (error.response) {
       const status = error.response.status;
-      switch (status) {
-        case 401:
-          // token过期或未认证，清除token并跳转到登录页
-          userStore.clearToken();
-          router.push("/login");
-          if (!isSilent(status)) ElMessage.error("登录已过期，请重新登录");
-          break;
-        case 403:
-          if (!isSilent(status)) ElMessage.error("没有权限访问");
-          break;
-        case 404:
-          if (!isSilent(status)) ElMessage.error("请求的资源不存在");
-          break;
-        default:
-          if (!isSilent(status)) ElMessage.error("服务器错误");
+      if (!isSilent(status)) {
+        switch (status) {
+          case 401:
+            // token过期或未认证，清除token并跳转到登录页
+            userStore.clearToken();
+            router.push("/login");
+            ElMessage.error("登录已过期，请重新登录");
+            break;
+          case 403:
+            ElMessage.error("没有权限访问");
+            break;
+          case 404:
+            ElMessage.error("请求的资源不存在");
+            break;
+          default:
+            ElMessage.error("服务器错误");
+        }
       }
     } else {
-      if (!isSilent('network')) ElMessage.error("网络连接失败");
+      ElMessage.error("网络连接失败");
     }
     return Promise.reject(error);
   },
