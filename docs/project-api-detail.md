@@ -48,7 +48,7 @@
   "code": 200,
   "message": "success",
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "token": "eyJhbGciOiJIUzI1NiIs..."
   }
 }
 ```
@@ -99,7 +99,7 @@
 }
 ```
 
-------
+---
 
 ### 1.2 制造企业管理接口
 
@@ -166,7 +166,7 @@
     "contactPhone": "13800138001",
     "scale": "medium",
     "employeeCount": 500,
-    "annualRevenue": 8000.00,
+    "annualRevenue": 8000.0,
     "productType": "PCB",
     "description": "专业PCB制造商",
     "logo": "https://...",
@@ -268,7 +268,7 @@
 }
 ```
 
-------
+---
 
 ### 1.3 服务商管理接口
 
@@ -440,7 +440,7 @@
 }
 ```
 
-------
+---
 
 ### 1.4 资质证书管理接口
 
@@ -550,7 +550,7 @@
 }
 ```
 
-------
+---
 
 ### 1.5 辅助接口
 
@@ -565,7 +565,17 @@
 {
   "code": 200,
   "message": "success",
-  "data": ["深圳", "东莞", "惠州", "广州", "佛山", "中山", "珠海", "江门", "肇庆"]
+  "data": [
+    "深圳",
+    "东莞",
+    "惠州",
+    "广州",
+    "佛山",
+    "中山",
+    "珠海",
+    "江门",
+    "肇庆"
+  ]
 }
 ```
 
@@ -933,10 +943,13 @@
 - **请求头**: `Authorization: Bearer <token>`（需登录）
 - **请求参数**（Query）:
 
-| 参数名 | 类型 | 必填 | 描述             |
-| :----- | :--- | :--- | :--------------- |
-| page   | int  | 否   | 页码，默认1      |
-| size   | int  | 否   | 每页条数，默认10 |
+| 参数名      | 类型   | 必填 | 描述                                       |
+| :---------- | :----- | :--- | :----------------------------------------- |
+| page        | int    | 否   | 页码，默认1                                |
+| size        | int    | 否   | 每页条数，默认10                           |
+| region      | string | 否   | 区域筛选（如“深圳”）                       |
+| scale       | string | 否   | 规模筛选：`micro`/`small`/`medium`/`large` |
+| productType | string | 否   | 主营产品类型（模糊匹配）                   |
 
 - **返回数据**:
 
@@ -956,7 +969,7 @@
         "contactPerson": "张三",
         "contactPhone": "13800138001",
         "auditStatus": "approved",
-        "auditRemark": null,                // 审核通过时无意见
+        "auditRemark": null, // 审核通过时无意见
         "auditTime": "2026-03-17 15:44:52",
         "createTime": "2026-03-01 10:00:00"
       },
@@ -987,10 +1000,12 @@
 - **请求头**: `Authorization: Bearer <token>`（需登录）
 - **请求参数**（Query）:
 
-| 参数名 | 类型 | 必填 | 描述             |
-| :----- | :--- | :--- | :--------------- |
-| page   | int  | 否   | 页码，默认1      |
-| size   | int  | 否   | 每页条数，默认10 |
+| 参数名      | 类型   | 必填 | 描述                         |
+| :---------- | :----- | :--- | :--------------------------- |
+| page        | int    | 否   | 页码，默认1                  |
+| size        | int    | 否   | 每页条数，默认10             |
+| region      | string | 否   | 区域筛选（如“深圳”）         |
+| serviceType | string | 否   | 服务大类筛选（如“检测认证”） |
 
 - **返回数据**:
 
@@ -1130,7 +1145,7 @@
 }
 ```
 
-------
+---
 
 ## 三、区域协同指数模块
 
@@ -1239,7 +1254,7 @@
 }
 ```
 
-------
+---
 
 ## 四、智能供需匹配模块
 
@@ -1323,7 +1338,7 @@
 }
 ```
 
-------
+---
 
 ## 五、信用评价体系模块
 
@@ -1382,7 +1397,13 @@
 - **Method**: `GET`
 - **请求头**: `Authorization: Bearer <token>`
 - **路径参数**: `serviceId` (服务商ID)
-- **请求参数**（可选分页）: `page`, `size`
+- **请求参数**: 
+
+| 参数名 | 类型 | 必填 | 描述             |
+| :----- | :--- | :--- | :--------------- |
+| page   | int  | 否   | 页码，默认1      |
+| size   | int  | 否   | 每页条数，默认10 |
+
 - **返回数据**:
 
 ```json
@@ -1406,7 +1427,86 @@
 }
 ```
 
-------
+### 5.4 获取我的合作记录列表
+
+- **URL**: `/api/cooperation/my-list`
+
+- **Method**: `GET`
+
+- **请求头**: `Authorization: Bearer <token>`（需登录）
+
+- **请求参数**（Query）:
+
+  | 参数名       | 类型   | 必填 | 描述                                                         |
+  | :----------- | :----- | :--- | :----------------------------------------------------------- |
+  | status       | string | 否   | 合作状态筛选：`ongoing`/`completed`/`cancelled`，默认返回所有 |
+  | enterpriseId | long   | 否   | 企业ID（制造企业ID 或 服务商ID），不传时自动关联当前用户的默认企业 |
+  | page         | int    | 否   | 页码，默认1                                                  |
+  | size         | int    | 否   | 每页条数，默认10                                             |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 20,
+    "records": [
+      {
+        "id": 5001,
+        "opponentName": "华测检测",              // 合作对方企业名称
+        "demandTitle": "寻求PCB设计服务",       // 需求标题
+        "amount": 10.0,                         // 合作金额（万元）
+        "startDate": "2026-03-01",               // 开始日期
+        "endDate": "2026-06-30",                 // 结束日期
+        "status": "ongoing",                    // 合作状态
+        "createTime": "2026-03-01 10:00:00",    // 创建时间
+        "hasEvaluated": false                   // 当前用户是否已评价
+      }
+    ]
+  }
+}
+```
+
+> **说明**：
+> - 若传入 `enterpriseId`，后端需校验该企业是否属于当前用户（通过 `manufacture` 或 `service_provider` 表的 `user_id` 字段）。
+> - 根据企业ID对应的类型（制造企业/服务商），自动使用 `manu_id` 或 `service_id` 进行合作记录查询。
+> - 若未传入 `enterpriseId`，后端根据当前用户的角色（从token中获取）自动选择其关联的第一个企业（若同一用户有多个同类型企业，可返回默认企业，或由业务逻辑决定，推荐返回最近创建或审核通过的企业）。
+
+### 5.5 获取合作记录详情
+
+- **URL**: `/api/cooperation/{id}`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **路径参数**: `id` (合作记录ID)
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 5001,
+    "manuId": 1001,
+    "manuName": "深圳电子科技",
+    "serviceId": 2001,
+    "serviceName": "华测检测",
+    "demandId": 3001,
+    "demandTitle": "寻求PCB设计服务",
+    "demandDescription": "需要专业PCB设计公司，有高速PCB设计经验者优先。",  // 需求详情
+    "amount": 10.0,
+    "startDate": "2026-03-01",
+    "endDate": "2026-06-30",
+    "description": "合作内容简述：提供PCB设计服务...",                // 合作内容描述
+    "status": "ongoing",
+    "createTime": "2026-03-01 10:00:00",
+    "hasEvaluated": false
+  }
+}
+```
+
+---
 
 ## 六、出海服务专区模块
 
@@ -1492,7 +1592,7 @@
 }
 ```
 
-------
+---
 
 ## 七、数据可视化看板模块
 
@@ -1578,9 +1678,7 @@
       { "id": "m1001", "name": "深圳电子", "type": "manufacture" },
       { "id": "s2001", "name": "华测检测", "type": "service" }
     ],
-    "links": [
-      { "source": "m1001", "target": "s2001", "value": 3 }
-    ]
+    "links": [{ "source": "m1001", "target": "s2001", "value": 3 }]
   }
 }
 ```
@@ -1654,7 +1752,8 @@
     "email": "test@example.com",
     "status": 1,
     "createTime": "2026-03-01 10:00:00",
-    "manufactureInfo": {  // 如果是制造企业，返回关联的企业信息
+    "manufactureInfo": {
+      // 如果是制造企业，返回关联的企业信息
       "id": 2001,
       "companyName": "深圳电子科技",
       "region": "深圳",
@@ -1709,12 +1808,12 @@
   "code": 200,
   "message": "success",
   "data": {
-    "newPassword": "temp123456"  // 系统生成的临时密码
+    "newPassword": "temp123456" // 系统生成的临时密码
   }
 }
 ```
 
-------
+---
 
 ### 8.2 需求审核接口
 
@@ -1745,7 +1844,7 @@
         "manuName": "深圳电子科技",
         "title": "寻求PCB设计服务",
         "description": "需要专业PCB设计公司，有高速PCB设计经验者优先。",
-        "expectedBudget": 10.00,
+        "expectedBudget": 10.0,
         "deadline": "2026-04-01",
         "createTime": "2026-03-07 14:30:00",
         "tags": [
@@ -1786,7 +1885,7 @@
 }
 ```
 
-------
+---
 
 ### 8.3 区域指数管理接口
 
@@ -1914,7 +2013,7 @@
 }
 ```
 
-------
+---
 
 ### 8.4 出海案例管理接口
 
@@ -2045,7 +2144,7 @@
 }
 ```
 
-------
+---
 
 ### 8.5 操作日志接口
 

@@ -18,6 +18,10 @@
         <result column="established_date" property="establishedDate" />
         <result column="employee_count" property="employeeCount" />
         <result column="qualification" property="qualification" />
+        <result column="audit_status" property="auditStatus" />
+        <result column="audit_remark" property="auditRemark" />
+        <result column="audit_time" property="auditTime" />
+        <result column="audit_user_id" property="auditUserId" />
         <result column="deleted" property="deleted" />
         <result column="create_time" property="createTime" />
         <result column="update_time" property="updateTime" />
@@ -25,7 +29,7 @@
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, user_id, company_name, region, address, contact_person, contact_phone, service_type, description, logo, website, established_date, employee_count, qualification, deleted, create_time, update_time
+        id, user_id, company_name, region, address, contact_person, contact_phone, service_type, description, logo, website, established_date, employee_count, qualification, audit_status, audit_remark, audit_time, audit_user_id, deleted, create_time, update_time
     </sql>
 
 </mapper>
