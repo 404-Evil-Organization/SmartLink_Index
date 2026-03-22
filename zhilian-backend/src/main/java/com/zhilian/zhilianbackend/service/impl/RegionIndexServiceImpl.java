@@ -49,6 +49,8 @@ import java.util.stream.Collectors;
  * @Return:
  * @Description: 区域指数服务实现类，实现区域指数相关的业务方法
  */
+import org.springframework.transaction.support.TransactionTemplate;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -60,6 +62,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
     private final ServiceProviderMapper serviceProviderMapper;
     private final CooperationMapper cooperationMapper;
     private final RegionIndexAlgorithm regionIndexAlgorithm;
+    private final TransactionTemplate transactionTemplate;
 
     // ============== 计算和定时任务方法 ==============
 
@@ -75,7 +78,6 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      *   配合方法内部“推算上一季度”的逻辑，确保每个自然季度只计算一次，避免整个季度期间重复重算。
      */
     @Scheduled(cron = "0 0 2 1 1,4,7,10 ?")
-    @Transactional(rollbackFor = Exception.class)
     public void scheduledCalculateQuarter() {
         log.info("开始定时计算季度区域指数");
 
@@ -96,7 +98,10 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             quarter = 3;
         }
 
-        calculateAndSaveQuarterIndex(year, quarter);
+        // 调用当前代理对象的方法，确保 @Transactional 能够生效（虽然此处已不再需要大事务，但通过代理调用是好习惯）
+        // 更优做法是将调度入口剥离到单独组件，或者依赖注入自身（如 @Autowired @Lazy RegionIndexService self）
+        // 由于这里我们取消了 calculateAndSaveQuarterIndex 的大事务，直接调用即可
+        this.calculateAndSaveQuarterIndex(year, quarter);
     }
 
     /**
@@ -104,10 +109,9 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Date: 2026/3/18 23:12
      * @Param: year 年份  quarter 季度
      * @Return:
-     * @Description: 计算并保存季度区域指数（优化版，避免重复查询合作记录）
+     * @Description: 计算并保存季度区域指数（优化版，避免重复查询合作记录，不再使用大事务）
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void calculateAndSaveQuarterIndex(Short year, Byte quarter) {
         // 参数校验
         if (year == null) {
@@ -185,29 +189,37 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                 RegionIndex index = calculateQuarterIndexForRegion(region, year, quarter,
                         regionManufactures, regionCooperations, serviceProviderRegionMap);
                 if (index != null) {
-                    // 保证幂等：先逻辑删除旧记录，再插入新记录
-                    LambdaQueryWrapper<RegionIndex> removeWrapper = new LambdaQueryWrapper<>();
-                    removeWrapper.eq(RegionIndex::getRegion, index.getRegion())
-                            .eq(RegionIndex::getYear, index.getYear())
-                            .eq(RegionIndex::getPeriodType, index.getPeriodType())
-                            .eq(RegionIndex::getPeriodValue, index.getPeriodValue());
-                    this.remove(removeWrapper);
+                    // 使用 TransactionTemplate 将每个区域的删除和插入操作包裹在独立的小事务中
+                    transactionTemplate.execute(status -> {
+                        try {
+                            // 保证幂等：先逻辑删除旧记录，再插入新记录
+                            LambdaQueryWrapper<RegionIndex> removeWrapper = new LambdaQueryWrapper<>();
+                            removeWrapper.eq(RegionIndex::getRegion, index.getRegion())
+                                    .eq(RegionIndex::getYear, index.getYear())
+                                    .eq(RegionIndex::getPeriodType, index.getPeriodType())
+                                    .eq(RegionIndex::getPeriodValue, index.getPeriodValue());
+                            this.remove(removeWrapper);
 
-                    try {
-                        this.save(index);
-                        log.info("区域 {} 季度指数计算完成: {}", region, index.getTotalIndex());
-                    } catch (DuplicateKeyException e) {
-                        log.warn("区域 {} 季度指数插入触发唯一键冲突，可能由并发任务导致，当前计算结果将被忽略", region, e);
-                    }
+                            this.save(index);
+                            log.info("区域 {} 季度指数计算完成: {}", region, index.getTotalIndex());
+                            return true;
+                        } catch (DuplicateKeyException e) {
+                            log.warn("区域 {} 季度指数插入触发唯一键冲突，可能由并发任务导致，当前计算结果将被忽略", region, e);
+                            status.setRollbackOnly();
+                            return false;
+                        } catch (Exception e) {
+                            log.error("区域 {} 季度指数保存失败", region, e);
+                            status.setRollbackOnly();
+                            throw e;
+                        }
+                    });
                 }
             } catch (BusinessException e) {
-                // 业务异常直接透传
+                // 业务异常记录日志，不中断其他区域计算
                 log.warn("区域 {} 季度指数计算发生业务异常: {}", region, e.getMessage(), e);
-                throw e;
             } catch (Exception e) {
-                // 系统异常：记录并抛出，触发事务回滚
-                log.error("区域 {} 季度指数计算失败", region, e);
-                throw new RuntimeException(String.format("区域 %s 季度指数计算失败，事务已回滚", region), e);
+                // 系统异常：记录日志，不抛出，避免单区域失败导致整个大批次全盘崩溃
+                log.error("区域 {} 季度指数计算及保存过程发生未知异常", region, e);
             }
         }
     }
