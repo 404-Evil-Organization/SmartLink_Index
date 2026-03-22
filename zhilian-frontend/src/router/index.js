@@ -1,12 +1,13 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
-import { enforceAdminOnly } from "@/router/permission";
+import { enforceAdminOnly, enforceRoles } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
 import serviceListRoutes from "./models/service";
 import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
+import enterpriseRoutes from "./models/enterprise";
 
 const routes = [
   {
@@ -31,8 +32,9 @@ const routes = [
         component: () => import("@/views/home.vue"),
       },
       ...dashboardRoutes,
-      ...serviceListRoutes, 
+      ...serviceListRoutes,
       ...manufactureRoutes,
+      ...enterpriseRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,
@@ -56,13 +58,17 @@ router.beforeEach(async (to, from, next) => {
 
   if (token) {
     if (to.path === "/login") {
-      next("/"); 
+      next("/");
     } else {
       if (!userStore.userInfo || Object.keys(userStore.userInfo).length === 0) {
         try {
           await userStore.fetchUserInfo();
           // 加载完用户信息后再做管理员路由权限判断
           if (enforceAdminOnly(to, from, next, userStore)) {
+            return;
+          }
+          // 基于角色的权限校验
+          if (enforceRoles(to, from, next, userStore)) {
             return;
           }
           next();
@@ -85,6 +91,9 @@ router.beforeEach(async (to, from, next) => {
         }
       } else {
         if (enforceAdminOnly(to, from, next, userStore)) {
+          return;
+        }
+        if (enforceRoles(to, from, next, userStore)) {
           return;
         }
         next();

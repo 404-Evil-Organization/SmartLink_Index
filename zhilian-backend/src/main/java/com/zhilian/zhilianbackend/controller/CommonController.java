@@ -338,9 +338,11 @@ public class CommonController {
             return "非法的文件URL";
         }
 
-        // 安全校验：防止目录穿越和非法路径（统一校验所有危险模式）
-        // 检查的危险模式包括：.. 、 ./ 、 /. 、 // 、 \ 等
-        String[] dangerousPatterns = {"..", "./", "/.", "//", "\\", "%2e", "%2f"};
+        // 安全校验：防止目录穿越和非法路径
+        // 注意：合法的 URL 中必然包含 "//"（如 https://...）和 "/."（如文件名为 xxx/.png 扩展名前或普通路径），
+        // 甚至可能包含 "%2f"（URL编码的斜杠）。
+        // 因此这里只校验可能导致目录穿越的 ".." 和 "\"
+        String[] dangerousPatterns = {"..", "\\", "%2e%2e"};
         for (String pattern : dangerousPatterns) {
             if (fileUrl.toLowerCase().contains(pattern)) {
                 log.warn("检测到非法路径模式[{}]，fileUrl={}", pattern, fileUrl);
@@ -350,10 +352,10 @@ public class CommonController {
 
         // 路径规范：确保URL格式符合OSS的预期格式
         // 这里使用正则表达式进行严格校验，确保URL格式正确且只包含允许的字符
-        if (!OSS_URL_PATTERN.matcher(fileUrl).matches()) {
-            log.warn("URL格式不符合OSS规范，fileUrl={}", fileUrl);
-            return "非法的文件URL";
-        }
+//        if (!OSS_URL_PATTERN.matcher(fileUrl).matches()) {
+//            log.warn("URL格式不符合OSS规范，fileUrl={}", fileUrl);
+//            return "非法的文件URL";
+//        }
 
         // 可以添加更多业务相关的校验，例如：
         // - 校验文件是否属于当前用户

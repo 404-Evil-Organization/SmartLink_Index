@@ -16,13 +16,7 @@ import lombok.ToString;
 @Setter
 @ToString
 @Schema(description = "服务商列表查询请求参数")
-public class ServiceProviderListRequestDTO {
-
-    @Schema(description = "页码，默认1")
-    private Integer page = 1;
-
-    @Schema(description = "每页条数，默认10")
-    private Integer size = 10;
+public class ServiceProviderListRequestDTO extends PageRequestDTO {
 
     @Schema(description = "区域筛选（如“深圳”）")
     private String region;
