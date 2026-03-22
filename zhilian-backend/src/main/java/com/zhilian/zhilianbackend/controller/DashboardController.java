@@ -42,7 +42,7 @@ public class DashboardController {
      * @Return: void
      * @Description: 校验用户登录态，管理员和园区角色可访问看板数据
      **/
-    private void checkLoginAndAdmin() {
+    private void checkLoginAndDashboardRole() {
         Long userId = securityUtils.getCurrentUserId();
         String role = securityUtils.getCurrentUserRole();
 
@@ -65,7 +65,7 @@ public class DashboardController {
     @Operation(summary = "获取统计卡片数据", description = "返回制造企业数、服务商数、需求数、合作数")
     public Result<DashboardStatisticsResponse> getStatistics() {
         // 校验登录态和角色权限
-        checkLoginAndAdmin();
+        checkLoginAndDashboardRole();
 
         log.info("获取统计卡片数据");
         DashboardStatisticsResponse statistics = dashboardService.getStatistics();
@@ -86,7 +86,7 @@ public class DashboardController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
 
         // 校验登录态和角色权限
-        checkLoginAndAdmin();
+        checkLoginAndDashboardRole();
 
         // 参数校验：如果同时传了 startDate 和 endDate，确保 startDate <= endDate
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
@@ -112,7 +112,7 @@ public class DashboardController {
             @RequestParam(required = false, defaultValue = "5") Integer top) {
 
         // 校验登录态和角色权限
-        checkLoginAndAdmin();
+        checkLoginAndDashboardRole();
 
         // 对 top 参数做合理区间约束，防止恶意传入超大值导致数据库压力过大
         int validTop;
@@ -142,7 +142,7 @@ public class DashboardController {
     @Operation(summary = "获取网络关系数据", description = "返回制造企业和服务商之间的合作关系图数据")
     public Result<NetworkDataResponse> getNetworkData() {
         // 校验登录态和角色权限
-        checkLoginAndAdmin();
+        checkLoginAndDashboardRole();
 
         log.info("获取网络关系数据");
         NetworkDataResponse networkData = dashboardService.getNetworkData();

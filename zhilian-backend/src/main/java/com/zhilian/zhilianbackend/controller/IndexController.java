@@ -53,7 +53,12 @@ public class IndexController {
         }
         if (StringUtils.hasText(quarter)) {
             try {
-                QuarterMonthUtils.parseQuarter(quarter);
+                // 假设 QuarterMonthUtils.parseQuarter 返回包含年份和季度的对象
+                QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(quarter);
+                // 新增：year 与 quarter 中的年份必须一致
+                if (year != null && !year.equals(quarterInfo.getYear())) {
+                    return "时间参数不合法，year 与 quarter 中的年份不一致";
+                }
             } catch (BusinessException e) {
                 return e.getMessage();
             }
