@@ -51,13 +51,11 @@ public class IndexController {
         if (month != null && (month < 1 || month > 12)) {
             return "月份参数不合法，month 必须在 1-12 之间";
         }
+        // quarter 解析和校验：如果解析失败将抛出 BusinessException
         if (StringUtils.hasText(quarter)) {
-            // 先对 quarter 做 trim，避免前后空格导致 parseQuarter 误判格式错误
-            String trimmedQuarter = quarter.trim();
             try {
-                // 假设 QuarterMonthUtils.parseQuarter 返回包含年份和季度的对象
-                QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(trimmedQuarter);
-                // 新增：year 与 quarter 中的年份必须一致
+                QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(quarter.trim());
+                // 校验年份是否一致
                 if (year != null && !year.equals(quarterInfo.getYear())) {
                     return "时间参数不合法，year 与 quarter 中的年份不一致";
                 }
@@ -79,13 +77,6 @@ public class IndexController {
      * @Description: 校验 RegionListQuery 的字符串季度参数
      **/
     private String validateRegionListQuery(RegionListQuery query) {
-        // 先对 quarter 做 trim 并回写，保证与 Service 层处理逻辑一致
-        String rawQuarter = query.getQuarter();
-        if (rawQuarter != null) {
-            String trimmedQuarter = rawQuarter.trim();
-            query.setQuarter(trimmedQuarter);
-        }
-
         // quarter 与 year/month 互斥
         boolean hasQuarter = StringUtils.hasText(query.getQuarter());
         boolean hasYearMonth = query.getYear() != null && query.getMonth() != null;
@@ -93,13 +84,16 @@ public class IndexController {
         if (hasQuarter && hasYearMonth) {
             return "不能同时使用 quarter 和 year/month 组合";
         }
+        
         if (hasQuarter) {
-            // 校验 quarter 格式
             try {
-                QuarterMonthUtils.parseQuarter(query.getQuarter());
-                // 可选：校验年份范围（例如不能为负数）
+                // 在这里进行格式校验，如果格式不对，parseQuarter 会抛出 BusinessException
+                QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(query.getQuarter().trim());
+                // 如果传入了 year，还需要校验与 quarter 里的年份是否一致
+                if (query.getYear() != null && !query.getYear().equals(quarterInfo.getYear())) {
+                    return "时间参数不合法，year 与 quarter 中的年份不一致";
+                }
             } catch (BusinessException e) {
-                // 仅捕获业务异常，直接返回具体的参数错误提示
                 return e.getMessage();
             }
         } else if (query.getYear() != null || query.getMonth() != null) {
