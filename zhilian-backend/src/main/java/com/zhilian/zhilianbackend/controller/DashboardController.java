@@ -40,15 +40,15 @@ public class DashboardController {
      * @Date: 2026/3/22
      * @Param:
      * @Return: void
-     * @Description: 校验用户登录态，仅管理员可访问看板数据
+     * @Description: 校验用户登录态，管理员和园区角色可访问看板数据
      **/
     private void checkLoginAndAdmin() {
         Long userId = securityUtils.getCurrentUserId();
         String role = securityUtils.getCurrentUserRole();
 
-        if (!"admin".equalsIgnoreCase(role)) {
+        if (!"admin".equalsIgnoreCase(role) && !"park".equalsIgnoreCase(role)) {
             log.warn("用户 {} 角色 {} 无权访问看板数据", userId, role);
-            throw new BusinessException(403, "权限不足，仅管理员可访问");
+            throw new BusinessException(403, "权限不足，仅管理员或园区角色可访问");
         }
 
         log.debug("用户 {} 权限校验通过", userId);
@@ -59,12 +59,12 @@ public class DashboardController {
      * @Date: 2026/3/20 21:53
      * @Param:
      * @Return: Result<DashboardStatisticsResponse> 统计卡片数据
-     * @Description: 获取统计卡片数据（需要登录且管理员权限）
+     * @Description: 获取统计卡片数据（需要登录且具备管理员或园区角色）
      **/
     @GetMapping("/statistics")
     @Operation(summary = "获取统计卡片数据", description = "返回制造企业数、服务商数、需求数、合作数")
     public Result<DashboardStatisticsResponse> getStatistics() {
-        // 校验登录态和管理员权限
+        // 校验登录态和角色权限
         checkLoginAndAdmin();
 
         log.info("获取统计卡片数据");
@@ -77,7 +77,7 @@ public class DashboardController {
      * @Date: 2026/3/20 21:53
      * @Param: startDate 开始日期（可选）  endDate 结束日期（可选）
      * @Return: Result<List<HeatmapDataResponse>> 热力图数据列表
-     * @Description: 获取热力图数据（需要登录且管理员权限）
+     * @Description: 获取热力图数据（需要登录且具备管理员或园区角色）
      **/
     @GetMapping("/heatmap")
     @Operation(summary = "获取热力图数据", description = "按区域统计合作次数，支持日期范围筛选")
@@ -85,7 +85,7 @@ public class DashboardController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
 
-        // 校验登录态和管理员权限
+        // 校验登录态和角色权限
         checkLoginAndAdmin();
 
         // 参数校验：如果同时传了 startDate 和 endDate，确保 startDate <= endDate
@@ -104,14 +104,14 @@ public class DashboardController {
      * @Date: 2026/3/20 21:53
      * @Param: top 返回数量，默认5
      * @Return: Result<List<TopDemandResponse>> 热门需求列表
-     * @Description: 获取热门需求（需要登录且管理员权限）
+     * @Description: 获取热门需求（需要登录且具备管理员或园区角色）
      **/
     @GetMapping("/topDemands")
     @Operation(summary = "获取热门需求", description = "按服务类型统计需求数量，返回Top N")
     public Result<List<TopDemandResponse>> getTopDemands(
             @RequestParam(required = false, defaultValue = "5") Integer top) {
 
-        // 校验登录态和管理员权限
+        // 校验登录态和角色权限
         checkLoginAndAdmin();
 
         // 对 top 参数做合理区间约束，防止恶意传入超大值导致数据库压力过大
@@ -136,12 +136,12 @@ public class DashboardController {
      * @Date: 2026/3/20 21:54
      * @Param:
      * @Return: Result<NetworkDataResponse> 网络关系数据
-     * @Description: 获取网络关系数据（需要登录且管理员权限）
+     * @Description: 获取网络关系数据（需要登录且具备管理员或园区角色）
      **/
     @GetMapping("/network")
     @Operation(summary = "获取网络关系数据", description = "返回制造企业和服务商之间的合作关系图数据")
     public Result<NetworkDataResponse> getNetworkData() {
-        // 校验登录态和管理员权限
+        // 校验登录态和角色权限
         checkLoginAndAdmin();
 
         log.info("获取网络关系数据");

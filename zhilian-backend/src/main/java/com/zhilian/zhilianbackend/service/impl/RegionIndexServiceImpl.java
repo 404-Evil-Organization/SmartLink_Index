@@ -440,10 +440,12 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         wrapper.eq("region", region);
 
         // 处理时间参数
-        if (query.getYear() != null && query.getQuarter() != null) {
-            wrapper.eq("year", query.getYear())
+        if (StringUtils.hasText(query.getQuarter())) {
+            String quarterStr = query.getQuarter().trim();
+            QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(quarterStr);
+            wrapper.eq("year", quarterInfo.getYear())
                     .eq("period_type", "quarter")
-                    .eq("period_value", query.getQuarter());
+                    .eq("period_value", quarterInfo.getQuarter());
         } else if (query.getYear() != null && query.getMonth() != null) {
             wrapper.eq("year", query.getYear())
                     .eq("period_type", "month")

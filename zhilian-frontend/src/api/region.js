@@ -28,9 +28,9 @@ export function getRegionIndexList(params) {
  */
 export function getRegionIndex(region, params) {
   return request({
-    url: "/index/region",
+    url: `/index/region/${encodeURIComponent(region)}`,
     method: "get",
-    params: { ...params, region },
+    params,
     silent: true,
   });
 }

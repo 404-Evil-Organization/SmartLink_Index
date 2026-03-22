@@ -39,22 +39,26 @@ public class IndexController {
      * @Return: 错误信息字符串，无错误则返回null
      * @Description: 校验整数型时间参数（用于 RegionDetailQuery）
      **/
-    private String validateIntegerTimeParams(Integer year, Integer month, Integer quarter) {
+    private String validateIntegerTimeParams(Integer year, Integer month, String quarter) {
         // 当指定了 month 或 quarter 时，必须同时指定 year，避免 Service 默认取最新一期导致语义偏差
-        if ((month != null || quarter != null) && year == null) {
+        if ((month != null || StringUtils.hasText(quarter)) && year == null) {
             return "时间参数不合法，当指定 month 或 quarter 时，year 不能为空";
         }
         // 仅传 year 而未指定 month 或 quarter 也视为非法，避免 year 被 Service 层忽略导致语义与结果不一致
-        if (year != null && month == null && quarter == null) {
+        if (year != null && month == null && !StringUtils.hasText(quarter)) {
             return "时间参数不合法，不能仅指定 year，必须配合 month 或 quarter，或完全不传时间参数";
         }
         if (month != null && (month < 1 || month > 12)) {
             return "月份参数不合法，month 必须在 1-12 之间";
         }
-        if (quarter != null && (quarter < 1 || quarter > 4)) {
-            return "季度参数不合法，quarter 必须在 1-4 之间";
+        if (StringUtils.hasText(quarter)) {
+            try {
+                QuarterMonthUtils.parseQuarter(quarter);
+            } catch (BusinessException e) {
+                return e.getMessage();
+            }
         }
-        if (month != null && quarter != null) {
+        if (month != null && StringUtils.hasText(quarter)) {
             return "时间参数不合法，month 与 quarter 不能同时指定";
         }
         return null;
