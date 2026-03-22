@@ -172,7 +172,7 @@
             <el-table-column prop="content" label="评价内容" min-width="200" />
             <el-table-column prop="createTime" label="评价时间" width="160">
               <template #default="{ row }">
-                {{ formatEstablishedDate(row.createTime) }}
+                {{ createTimeConverter(row.createTime).toLocalYMDHMS() }}
               </template>
             </el-table-column>
             <!-- <el-table-column prop="isAnonymous" label="匿名" width="60" align="center">
@@ -197,14 +197,14 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
+import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Refresh } from "@element-plus/icons-vue";
 import { getServiceProviderDetail } from "@/api/service-provider";
 import { getCertList } from "@/api/certification";
 import { getEvaluationList } from "@/api/evaluation";
-import { formatEstablishedDate } from "@/composables/date";
+import { createTimeConverter } from "@/composables/date";
 
 // 预览相关
 const previewVisible = ref(false);
