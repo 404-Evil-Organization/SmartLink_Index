@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.response.CooperationDetailVO;
 import com.zhilian.zhilianbackend.dto.response.CooperationRecordVO;
@@ -16,6 +17,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+/**
+ * @Author: xiaodengyou
+ * @Date: 2026/3/22 22:00
+ * @Description: 合作记录业务逻辑实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -54,7 +60,9 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
         }
 
         Page<CooperationRecordVO> pageParam = new Page<>(page, size);
-        IPage<CooperationRecordVO> iPage = cooperationMapper.selectMyCooperations(pageParam, companyId, role, userId, status);
+        IPage<CooperationRecordVO> iPage = cooperationMapper.selectMyCooperations(
+                pageParam, companyId, role, userId, status, DateConstants.getNotDeletedLocalDateTime()
+        );
         return PageResult.from(iPage);
     }
 
@@ -96,7 +104,9 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
     @Override
     public PageResult<CooperationRecordVO> pageMyCooperationsAdmin(Long userId, Long enterpriseId, String status, Integer page, Integer size) {
         Page<CooperationRecordVO> pageParam = new Page<>(page, size);
-        IPage<CooperationRecordVO> iPage = cooperationMapper.selectMyCooperationsAdmin(pageParam, enterpriseId, status, userId);
+        IPage<CooperationRecordVO> iPage = cooperationMapper.selectMyCooperationsAdmin(
+                pageParam, enterpriseId, status, userId, DateConstants.getNotDeletedLocalDateTime()
+        );
         return PageResult.from(iPage);
     }
 
@@ -106,7 +116,6 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
         if (cooperation == null) {
             throw new BusinessException(404, "合作记录不存在");
         }
-        // 管理员查看时，userId 为当前登录的管理员 ID，用于计算 hasEvaluated
         return buildCooperationDetail(cooperation, userId);
     }
 
@@ -190,7 +199,7 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
             }
         }
 
-        // 查询当前用户是否已评价该合作（仅筛选未被逻辑删除的记录，逻辑删除由 @TableLogic 自动处理）
+        // 查询当前用户是否已评价该合作（逻辑删除由 @TableLogic 自动处理，无需手动添加 deleted 条件）
         LambdaQueryWrapper<Evaluation> evaluationWrapper = new LambdaQueryWrapper<>();
         evaluationWrapper.eq(Evaluation::getCoopId, cooperation.getId())
                 .eq(Evaluation::getEvaluatorId, currentUserId);
