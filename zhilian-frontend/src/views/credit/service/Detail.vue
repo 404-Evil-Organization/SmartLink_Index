@@ -216,7 +216,7 @@ const openCertPreview = (url) => {
 };
 
 const route = useRoute();
-const serviceId = computed(() => route.params.id);
+const serviceId = ref(route.params.id);
 
 // ---------- 基本信息 ----------
 const detailData = ref({});
@@ -238,12 +238,11 @@ const certTotal = ref(0);
 
 // 修正 fetchCertList
 const fetchCertList = async () => {
-  if (!serviceId) return;
+  if (!serviceId.value) return;
   certLoading.value = true;
-  const id = serviceId.value;
   try {
     const res = await getCertList({
-      id,
+      serviceId: serviceId.value,
       page: certPage.value,
       size: certPageSize.value,
     });
@@ -271,11 +270,10 @@ const evalPageSize = ref(5);
 const evalTotal = ref(0);
 
 const fetchEvalList = async () => {
-  if (!serviceId) return;
+  if (!serviceId.value) return;
   evalLoading.value = true;
-  const id = serviceId.value;
   try {
-    const res = await getEvaluationList(id, {
+    const res = await getEvaluationList(serviceId.value, {
       page: evalPage.value,
       size: evalPageSize.value,
     });
