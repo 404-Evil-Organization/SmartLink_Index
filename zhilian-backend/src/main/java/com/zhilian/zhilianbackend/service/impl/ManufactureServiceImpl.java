@@ -19,6 +19,7 @@ import com.zhilian.zhilianbackend.mapper.ManufactureTagMapper;
 import com.zhilian.zhilianbackend.service.ManufactureService;
 import com.zhilian.zhilianbackend.service.ManufactureTagService;
 import com.zhilian.zhilianbackend.service.TagService;
+import com.zhilian.zhilianbackend.utils.SqlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -58,22 +59,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
     /**
      * @Author: xiaodengyou
      * @Date: 2026-03-12 23:32
-     * @Param: param 需要转义的字符串
-     * @Return: java.lang.String 转义后的字符串
-     * @Description: 对进行 SQL LIKE 查询的入参进行通配符转义，避免用户输入 % 或 _ 被数据库当作通配符使用，导致查询结果范围异常放大。
-     **/
-    private String escapeSqlLike(String param) {
-        if (StringUtils.isBlank(param)) {
-            return param;
-        }
-        return param.replace("\\", "\\\\")
-                .replace("%", "\\%")
-                .replace("_", "\\_");
-    }
-
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-12 23:32
      * @Param: requestDTO 查询请求参数
      * @Return: com.baomidou.mybatisplus.core.metadata.IPage<com.zhilian.zhilianbackend.dto.response.ManufactureListVO> 分页结果
      * @Description: 分页查询制造企业列表
@@ -90,7 +75,7 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             queryWrapper.eq(Manufacture::getScale, requestDTO.getScale());
         }
         if (StringUtils.isNotBlank(requestDTO.getProductType())) {
-            String escaped = escapeSqlLike(requestDTO.getProductType());
+            String escaped = SqlUtils.escapeSqlLike(requestDTO.getProductType());
             // 使用 ESCAPE '\\' 显式指定反斜杠为 LIKE 转义字符，提升跨数据库兼容性
             queryWrapper.apply("product_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
         }
@@ -180,8 +165,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
                 requestDTO.getAnnualRevenue(),
                 requestDTO.getEmployeeCount(),
                 null);
-
-        checkUserHasManufacture(userId);
 
         Manufacture manufacture = new Manufacture();
         BeanUtils.copyProperties(requestDTO, manufacture);
@@ -401,20 +384,6 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
         }
     }
 
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026-03-12 23:32
-     * @Param: userId 用户ID
-     * @Return: void
-     * @Description: 检查用户是否已创建过企业
-     **/
-    private void checkUserHasManufacture(Long userId) {
-        LambdaQueryWrapper<Manufacture> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Manufacture::getUserId, userId);
-        if (this.count(queryWrapper) > 0) {
-            throw new BusinessException(409, "该用户已创建过制造企业，不可重复创建");
-        }
-    }
 
     /**
      * @Author: xiaodengyou

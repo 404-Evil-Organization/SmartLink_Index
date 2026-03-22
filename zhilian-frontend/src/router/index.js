@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
-import { enforceAdminOnly } from "@/router/permission";
+import { enforceAdminOnly, enforceRoles } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
 import serviceListRoutes from "./models/service";
@@ -9,6 +9,7 @@ import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
 import cooperationRoutes from "./models/cooperation";
 import evaluationRoutes from "./models/evaluation";
+import enterpriseRoutes from "./models/enterprise";
 
 const routes = [
   {
@@ -31,6 +32,7 @@ const routes = [
       ...manufactureRoutes,
       ...cooperationRoutes,
       ...evaluationRoutes,
+      ...enterpriseRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,
@@ -63,6 +65,10 @@ router.beforeEach(async (to, from, next) => {
           if (enforceAdminOnly(to, from, next, userStore)) {
             return;
           }
+          // 基于角色的权限校验
+          if (enforceRoles(to, from, next, userStore)) {
+            return;
+          }
           next();
         } catch (error) {
           if (error.response?.status === 401) {
@@ -83,6 +89,9 @@ router.beforeEach(async (to, from, next) => {
         }
       } else {
         if (enforceAdminOnly(to, from, next, userStore)) {
+          return;
+        }
+        if (enforceRoles(to, from, next, userStore)) {
           return;
         }
         next();

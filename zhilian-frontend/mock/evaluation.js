@@ -1,28 +1,13 @@
 export default [
-  // 5.2 提交评价
-  {
-    url: "/api/evaluation/submit",
-    method: "post",
-    response: ({ body }) => {
-      // 模拟成功，返回随机评价ID
-      return {
-        code: 200,
-        message: "success",
-        data: {
-          evaluationId: Math.floor(Math.random() * 10000) + 4000,
-        },
-      };
-    },
-  },
-  // 5.3 获取评价列表
   {
     url: "/api/evaluation/list/:serviceId",
     method: "get",
     response: ({ params, query }) => {
-      const { serviceId } = params;
+      // 兼容从 params 或 query 获取 serviceId
+      const serviceId = parseInt(params?.serviceId || query?.serviceId);
       const { page = 1, size = 10 } = query;
-      // 模拟评价数据，可根据 serviceId 过滤（这里简化为不过滤）
-      const allEvaluations = [
+
+      const allEvals = [
         {
           id: 4001,
           coopId: 5001,
@@ -36,38 +21,33 @@ export default [
           id: 4002,
           coopId: 5002,
           score: 4,
-          content: "服务态度好，但交付稍慢",
+          content: "响应迅速，技术能力强",
           isAnonymous: true,
-          createTime: "2026-03-07 10:15:00",
-          manufactureName: "匿名用户",
+          createTime: "2026-03-07 09:10:00",
+          manufactureName: "东莞精密制造",
         },
         {
           id: 4003,
           coopId: 5003,
           score: 5,
-          content: "设计超出预期，非常满意",
+          content: "非常满意，下次继续合作",
           isAnonymous: false,
-          createTime: "2026-03-08 09:45:00",
-          manufactureName: "广州电子",
-        },
-        {
-          id: 4004,
-          coopId: 5004,
-          score: 3,
-          content: "沟通不够顺畅",
-          isAnonymous: false,
-          createTime: "2026-03-09 14:20:00",
-          manufactureName: "深圳电子科技",
+          createTime: "2026-03-08 11:30:00",
+          manufactureName: "广州汽车配件",
         },
       ];
+
+      // 暂时返回全部数据，不按 serviceId 过滤（便于测试）
+      const filtered = allEvals;
       const start = (page - 1) * size;
-      const end = start + size;
-      const records = allEvaluations.slice(start, end);
+      const end = start + parseInt(size);
+      const records = filtered.slice(start, end);
+
       return {
         code: 200,
         message: "success",
         data: {
-          total: allEvaluations.length,
+          total: filtered.length,
           records,
         },
       };
