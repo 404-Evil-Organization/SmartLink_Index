@@ -3,18 +3,8 @@ package com.zhilian.zhilianbackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.zhilian.zhilianbackend.dto.response.EvaluationVO;
-import com.zhilian.zhilianbackend.entity.Cooperation;
-import com.zhilian.zhilianbackend.entity.Evaluation;
-import com.zhilian.zhilianbackend.entity.Manufacture;
-import com.zhilian.zhilianbackend.mapper.CooperationMapper;
-import com.zhilian.zhilianbackend.mapper.EvaluationMapper;
-import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
-import com.zhilian.zhilianbackend.service.EvaluationService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.dto.request.EvaluationSubmitRequest;
+import com.zhilian.zhilianbackend.dto.response.EvaluationVO;
 import com.zhilian.zhilianbackend.entity.Cooperation;
 import com.zhilian.zhilianbackend.entity.Evaluation;
 import com.zhilian.zhilianbackend.entity.Manufacture;
@@ -37,18 +27,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * @Author: 6017
- * @Date: 2026/3/20 20:37
- * @Param:
- * @Return:
+ * @Author: 6017 & xiaodengyou
+ * @Date: 2026/3/20
  * @Description: 评价表业务逻辑实现类，实现评价相关的业务方法
  * 优化点：
  * 1. 批量查询避免 N+1 问题
  * 2. 使用参数绑定防止 SQL 注入
  * 3. 正确保留分页信息（total/current/size），即使当前页无记录
- * @Author: xiaodengyou
- * @Date: 2026/3/20 21:33
- * @Description: 评价表业务逻辑实现类，实现评价相关的业务方法
  */
 @Slf4j
 @Service
@@ -57,6 +42,8 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
 
     private final CooperationMapper cooperationMapper;
     private final ManufactureMapper manufactureMapper;
+    private final ServiceProviderMapper serviceProviderMapper;
+    private final SecurityUtils securityUtils;
 
     /**
      * @Author: 6017
@@ -186,8 +173,7 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
             }
         }
         return vo;
-    private final ServiceProviderMapper serviceProviderMapper;
-    private final SecurityUtils securityUtils;
+    }
 
     /**
      * @Author: xiaodengyou

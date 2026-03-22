@@ -3,7 +3,9 @@ package com.zhilian.zhilianbackend.controller;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.EvaluationSubmitRequest;
 import com.zhilian.zhilianbackend.dto.response.EvaluationSubmitResponse;
+import com.zhilian.zhilianbackend.dto.response.EvaluationVO;
 import com.zhilian.zhilianbackend.service.EvaluationService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +28,6 @@ public class EvaluationController {
 
     private final EvaluationService evaluationService;
     private final SecurityUtils securityUtils;
-    private final EvaluationService evaluationService;
 
     /**
      * @Author: xiaodengyou
