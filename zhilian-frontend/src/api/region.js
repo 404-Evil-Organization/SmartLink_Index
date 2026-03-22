@@ -22,7 +22,7 @@ export function getRegionIndexList(params) {
  * @param {string} region - 区域名称，如 "深圳"
  * @param {Object} params - 查询参数（可选）
  * @param {number} params.year - 年份，与 quarter 或 month 配合使用
- * @param {number} params.quarter - 季度（1-4），与 year 配合使用
+ * @param {string} params.quarter - 季度，格式为 "YYYYQn"，如 "2026Q1"，需与 year 配合使用
  * @param {number} params.month - 月份（1-12），与 year 配合使用
  * @returns {Promise}
  */

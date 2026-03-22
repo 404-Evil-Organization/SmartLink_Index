@@ -37,9 +37,9 @@ public class IndexController {
      * @Param: month 月份
      * @Param: quarter 季度
      * @Return: 错误信息字符串，无错误则返回null
-     * @Description: 校验整数型时间参数（用于 RegionDetailQuery）
+     * @Description: 校验时间参数（用于 RegionDetailQuery）
      **/
-    private String validateIntegerTimeParams(Integer year, Integer month, String quarter) {
+    private String validateTimeParams(Integer year, Integer month, String quarter) {
         // 当指定了 month 或 quarter 时，必须同时指定 year，避免 Service 默认取最新一期导致语义偏差
         if ((month != null || StringUtils.hasText(quarter)) && year == null) {
             return "时间参数不合法，当指定 month 或 quarter 时，year 不能为空";
@@ -52,9 +52,11 @@ public class IndexController {
             return "月份参数不合法，month 必须在 1-12 之间";
         }
         if (StringUtils.hasText(quarter)) {
+            // 先对 quarter 做 trim，避免前后空格导致 parseQuarter 误判格式错误
+            String trimmedQuarter = quarter.trim();
             try {
                 // 假设 QuarterMonthUtils.parseQuarter 返回包含年份和季度的对象
-                QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(quarter);
+                QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(trimmedQuarter);
                 // 新增：year 与 quarter 中的年份必须一致
                 if (year != null && !year.equals(quarterInfo.getYear())) {
                     return "时间参数不合法，year 与 quarter 中的年份不一致";
@@ -146,7 +148,7 @@ public class IndexController {
             @Parameter(description = "区域名称", required = true, example = "深圳")
             @PathVariable String region,
             RegionDetailQuery query) {
-        String error = validateIntegerTimeParams(query.getYear(), query.getMonth(), query.getQuarter());
+        String error = validateTimeParams(query.getYear(), query.getMonth(), query.getQuarter());
         if (error != null) {
             return Result.badRequest(error);
         }
