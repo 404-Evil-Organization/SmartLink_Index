@@ -50,7 +50,7 @@
         </div>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" border stripe>
+      <el-table :data="tableData" row-key="id" v-loading="loading" border stripe>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column label="角色" width="100">
@@ -294,7 +294,8 @@ const resetPassword = (row) => {
   }).then(async () => {
     try {
       const res = await resetUserPassword(row.id)
-      const newPassword = res?.newPassword || res?.data?.newPassword
+      // 按拦截器约定，成功时直接返回 data，即 { newPassword }
+      const newPassword = res?.newPassword
       if (newPassword) {
         passwordDialog.newPassword = newPassword
         passwordDialog.visible = true
