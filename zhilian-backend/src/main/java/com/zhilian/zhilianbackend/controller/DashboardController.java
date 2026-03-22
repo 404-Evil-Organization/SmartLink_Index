@@ -11,17 +11,19 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
  * @Author: 6017
  * @Date: 2026/3/20 21:53
- * @Param: 
- * @Return: 
+ * @Param:
+ * @Return:
  * @Description: 数据可视化看板控制器
-**/
+ **/
 @Slf4j
 @RestController
 @RequestMapping("/dashboard")
@@ -36,10 +38,11 @@ public class DashboardController {
      * @Date: 2026/3/20 21:53
      * @Param:
      * @Return: Result<DashboardStatisticsResponse> 统计卡片数据
-     * @Description: 获取统计卡片数据
-    **/
+     * @Description: 获取统计卡片数据（需要登录）
+     **/
     @GetMapping("/statistics")
     @Operation(summary = "获取统计卡片数据", description = "返回制造企业数、服务商数、需求数、合作数")
+    @PreAuthorize("isAuthenticated()")
     public Result<DashboardStatisticsResponse> getStatistics() {
         log.info("获取统计卡片数据");
         DashboardStatisticsResponse statistics = dashboardService.getStatistics();
@@ -51,13 +54,21 @@ public class DashboardController {
      * @Date: 2026/3/20 21:53
      * @Param: startDate 开始日期（可选）  endDate 结束日期（可选）
      * @Return: Result<List<HeatmapDataResponse>> 热力图数据列表
-     * @Description: 获取热力图数据
-    **/
+     * @Description: 获取热力图数据（需要登录）
+     **/
     @GetMapping("/heatmap")
     @Operation(summary = "获取热力图数据", description = "按区域统计合作次数，支持日期范围筛选")
+    @PreAuthorize("isAuthenticated()")
     public Result<List<HeatmapDataResponse>> getHeatmapData(
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") String startDate,
-            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") String endDate) {
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate) {
+
+        // 参数校验：如果同时传了 startDate 和 endDate，确保 startDate <= endDate
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            log.warn("开始日期 {} 大于结束日期 {}", startDate, endDate);
+            return Result.badRequest("开始日期不能大于结束日期");
+        }
+
         log.info("获取热力图数据，startDate: {}, endDate: {}", startDate, endDate);
         List<HeatmapDataResponse> heatmapData = dashboardService.getHeatmapData(startDate, endDate);
         return Result.success(heatmapData);
@@ -68,10 +79,11 @@ public class DashboardController {
      * @Date: 2026/3/20 21:53
      * @Param: top 返回数量，默认5
      * @Return: Result<List<TopDemandResponse>> 热门需求列表
-     * @Description: 获取热门需求
-    **/
-    @GetMapping("/top-demands")
+     * @Description: 获取热门需求（需要登录）
+     **/
+    @GetMapping("/topDemands")
     @Operation(summary = "获取热门需求", description = "按服务类型统计需求数量，返回Top N")
+    @PreAuthorize("isAuthenticated()")
     public Result<List<TopDemandResponse>> getTopDemands(
             @RequestParam(required = false, defaultValue = "5") Integer top) {
         // 对 top 参数做合理区间约束，防止恶意传入超大值导致数据库压力过大
@@ -88,12 +100,13 @@ public class DashboardController {
     /**
      * @Author: 6017
      * @Date: 2026/3/20 21:54
-     * @Param: 
+     * @Param:
      * @Return: Result<NetworkDataResponse> 网络关系数据
-     * @Description: 获取网络关系数据
-    **/
+     * @Description: 获取网络关系数据（需要登录）
+     **/
     @GetMapping("/network")
     @Operation(summary = "获取网络关系数据", description = "返回制造企业和服务商之间的合作关系图数据")
+    @PreAuthorize("isAuthenticated()")
     public Result<NetworkDataResponse> getNetworkData() {
         log.info("获取网络关系数据");
         NetworkDataResponse networkData = dashboardService.getNetworkData();
