@@ -101,11 +101,15 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void calculateAndSaveQuarterIndex(Short year, Byte quarter) {
-        // 重置服务商区域缓存，确保本次计算使用最新的服务商数据
-        synchronized (serviceProviderRegionCache) {
-            serviceProviderRegionCache.clear();
-            cacheLoaded = false;
+        // 参数校验
+        if (year == null) {
+            throw new BusinessException("年份参数不能为空");
         }
+        if (quarter == null) {
+            throw new BusinessException("季度参数不能为空");
+        }
+
+        // 这里不再重置实例级服务商区域缓存，避免并发计算时出现跨线程共享状态被清空的竞态问题
 
         log.info("计算季度区域指数 - 年份: {}, 季度: {}", year, quarter);
 
@@ -122,8 +126,10 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         List<Cooperation> allCooperations = cooperationMapper.selectList(coopWrapper);
         log.debug("加载本季度合作记录数量: {}", allCooperations.size());
 
-        // 3. 一次性加载所有制造企业，并按区域分组
-        List<Manufacture> allManufactures = manufactureMapper.selectList(null);
+        // 3. 一次性加载所有制造企业，只查询必要字段（id, region）
+        LambdaQueryWrapper<Manufacture> manufactureWrapper = new LambdaQueryWrapper<>();
+        manufactureWrapper.select(Manufacture::getId, Manufacture::getRegion);
+        List<Manufacture> allManufactures = manufactureMapper.selectList(manufactureWrapper);
         Map<String, List<Manufacture>> regionManufacturesMap = allManufactures.stream()
                 .filter(m -> m.getRegion() != null && !m.getRegion().isEmpty())
                 .collect(Collectors.groupingBy(Manufacture::getRegion));
@@ -192,6 +198,13 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void manualCalculate(Short year, Byte quarter) {
+        // 参数校验
+        if (year == null) {
+            throw new BusinessException("年份参数不能为空");
+        }
+        if (quarter == null) {
+            throw new BusinessException("季度参数不能为空");
+        }
         log.info("手动触发季度计算 - 年份: {}, 季度: {}", year, quarter);
         calculateAndSaveQuarterIndex(year, quarter);
     }
@@ -269,7 +282,10 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         if (!cacheLoaded) {
             synchronized (serviceProviderRegionCache) {
                 if (!cacheLoaded) {
-                    List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(null);
+                    // 只查询必要字段 id 和 region
+                    LambdaQueryWrapper<ServiceProvider> spWrapper = new LambdaQueryWrapper<>();
+                    spWrapper.select(ServiceProvider::getId, ServiceProvider::getRegion);
+                    List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(spWrapper);
                     serviceProviderRegionCache.clear();
                     if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
                         for (ServiceProvider sp : allServiceProviders) {
