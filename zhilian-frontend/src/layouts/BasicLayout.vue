@@ -4,89 +4,81 @@
     <el-aside width="200px">
       <div class="logo">智链指数</div>
       <el-menu
-          :default-active="activeMenu"
-          class="sidebar-menu"
-          background-color="#304156"
-          text-color="#bfcbd9"
-          active-text-color="#409EFF"
-          :router="true"
-          :collapse="false"
+        :default-active="activeMenu"
+        class="sidebar-menu"
+        background-color="#304156"
+        text-color="#bfcbd9"
+        active-text-color="#409EFF"
+        :router="true"
+        :collapse="false"
       >
         <el-menu-item index="/">
           <el-icon>
-            <HomeFilled/>
+            <HomeFilled />
           </el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-sub-menu v-if="isAdmin || isManufacture" index="2">
-          <template #title>
-            <el-icon><Avatar /></el-icon>
-            <span>数字化诊断</span>
-          </template>
-          <el-menu-item index="/diagnosis/questionnaire">
-            <el-icon><Tickets /></el-icon>
-            <span>诊断问卷</span>
-          </el-menu-item>
-        </el-sub-menu>
 
+        <!-- 数字化诊断菜单栏 -->
         <el-sub-menu v-if="isManufacture || isAdmin" index="diagnosis">
           <template #title>
             <el-icon>
-              <Avatar/>
+              <Avatar />
             </el-icon>
             <span>数字化诊断</span>
           </template>
           <el-menu-item index="/diagnosis/questionnaire">
             <el-icon>
-              <Tickets/>
+              <Tickets />
             </el-icon>
             <span>诊断问卷</span>
           </el-menu-item>
-
           <el-menu-item index="/diagnosis/report">
             <el-icon>
-              <DataLine/>
+              <DataLine />
             </el-icon>
             <span>诊断报告</span>
           </el-menu-item>
         </el-sub-menu>
 
-
+        <!-- 制造企业列表页面 -->
         <el-menu-item index="/manufacture/list">
           <el-icon>
-            <OfficeBuilding/>
+            <OfficeBuilding />
           </el-icon>
           <span>制造企业列表</span>
         </el-menu-item>
 
-        <!-- 新增服务企业列表菜单项 -->
+        <!-- 服务企业列表页面 -->
         <el-menu-item index="/service/list">
           <el-icon>
-            <OfficeBuilding/>
+            <OfficeBuilding />
           </el-icon>
           <span>服务企业列表</span>
         </el-menu-item>
 
+        <!-- 我的企业页面 -->
         <el-menu-item
-            v-if="isAdmin || isManufacture || isService"
-            index="/enterprise"
+          v-if="isAdmin || isManufacture || isService"
+          index="/enterprise"
         >
           <el-icon>
-            <OfficeBuilding/>
+            <OfficeBuilding />
           </el-icon>
           <span>我的企业</span>
         </el-menu-item>
 
+        <!-- 管理员菜单栏 -->
         <el-sub-menu v-if="isAdmin" index="admin">
           <template #title>
             <el-icon>
-              <Avatar/>
+              <Avatar />
             </el-icon>
             <span>管理员</span>
           </template>
           <el-menu-item index="/admin/tag">
             <el-icon>
-              <Collection/>
+              <Collection />
             </el-icon>
             <span>标签管理</span>
           </el-menu-item>
@@ -99,22 +91,24 @@
     <el-container>
       <el-header>
         <div class="header-content">
-          <span class="welcome">欢迎，{{ userStore.userInfo?.username || "用户" }}</span>
-          
+          <span class="welcome"
+            >欢迎，{{ userStore.userInfo?.username || "用户" }}</span
+          >
+
           <el-button type="info" @click="handleLogout">退出登录</el-button>
         </div>
       </el-header>
       <el-main>
-        <router-view/>
+        <router-view />
       </el-main>
     </el-container>
   </el-container>
 </template>
 
 <script setup>
-import {computed} from "vue";
-import {useRoute, useRouter} from "vue-router";
-import {useUserStore} from "@/stores/user";
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useUserStore } from "@/stores/user";
 import {
   ElContainer,
   ElAside,
@@ -132,7 +126,7 @@ import {
   OfficeBuilding,
   DataLine,
 } from "@element-plus/icons-vue";
-import {ElMessage} from "element-plus";
+import { ElMessage } from "element-plus";
 
 const route = useRoute();
 const router = useRouter();
@@ -144,7 +138,7 @@ const activeMenu = computed(() => route.path);
 // 判断当前用户是否为管理员
 const isAdmin = computed(() => userStore.userInfo?.role === "admin");
 const isManufacture = computed(
-    () => userStore.userInfo?.role === "manufacture",
+  () => userStore.userInfo?.role === "manufacture",
 );
 const isService = computed(() => userStore.userInfo?.role === "service");
 
