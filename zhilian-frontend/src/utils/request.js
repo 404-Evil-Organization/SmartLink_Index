@@ -35,9 +35,24 @@ request.interceptors.response.use(
       const isSilent =
         silent === true || (Array.isArray(silent) && silent.includes(res.code));
 
-      if (!isSilent) {
-        ElMessage.error(res.message || "请求失败");
+      if (res.code === 401) {
+        // 处理业务层面的 token 过期或未认证
+        const userStore = useUserStore();
+        userStore.clearToken();
+        router.push("/login");
+        if (!isSilent) {
+          ElMessage.error(res.message || "登录已过期，请重新登录");
+        }
+      } else if (res.code === 403) {
+        if (!isSilent) {
+          ElMessage.error(res.message || "没有权限访问");
+        }
+      } else {
+        if (!isSilent) {
+          ElMessage.error(res.message || "请求失败");
+        }
       }
+
       // 返回带有 code 和 message 的错误对象，方便组件 catch 后判断处理
       const error = new Error(res.message || "Error");
       error.code = res.code;
@@ -57,12 +72,15 @@ request.interceptors.response.use(
 
     if (error.response) {
       const status = error.response.status;
+      // 鉴权相关的副作用（如清 token 和跳转登录）必须无条件执行，不受 silent 控制
+      if (status === 401) {
+        userStore.clearToken();
+        router.push("/login");
+      }
+      
       if (!isSilent(status)) {
         switch (status) {
           case 401:
-            // token过期或未认证，清除token并跳转到登录页
-            userStore.clearToken();
-            router.push("/login");
             ElMessage.error("登录已过期，请重新登录");
             break;
           case 403:
