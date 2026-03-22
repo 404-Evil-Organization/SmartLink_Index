@@ -308,16 +308,19 @@ const formatDate = (dateStr) => {
 /**
  * 统一错误处理（403 跳转，404 显示无报告，其他弹窗）
  *
- * 说明：当前 axios 封装在业务码非 200 时仅抛出 Error 对象，
- * 不会附带 response.data.code / data.code 等字段，
- * 因此这里只能依赖 HTTP status 或 error.code 进行判断。
+ * 说明：当前 axios 封装在业务码非 200 时会抛出 Error 对象，
+ * 我们已经修改 request.js 将后端的 code 附加在了 error.code 上。
  */
 const handleReportError = (error) => {
   const status = error?.response?.status || error?.code
   if (status === 403) {
     router.push('/403')
+  } else if (status === 404) {
+    // 处理无报告的特殊状态
+    reportData.value = null
+    showNoReport.value = true
   } else {
-    ElMessage.error('获取报告失败，请稍后重试')
+    ElMessage.error(error.message || '获取报告失败，请稍后重试')
     reportData.value = null
   }
 }
@@ -328,6 +331,8 @@ const fetchReportById = async (id) => {
   showNoReport.value = false
   try {
     const res = await getDiagnosisResult(id)
+    console.log(res);
+    
     if (!res) {
       // 无报告
       reportData.value = null
@@ -339,7 +344,7 @@ const fetchReportById = async (id) => {
       }
       localStorage.setItem('latestDiagnosisId', id)
       await nextTick()
-      initRadarChart()   // 假设你保留了 initRadarChart，这里调一下
+      initRadarChart()
     }
   } catch (error) {
     handleReportError(error)
@@ -376,8 +381,14 @@ const fetchLatestReportByManuId = async (manuId) => {
 // /**
 //  * 根据 URL 参数加载报告（优先于企业列表自动加载）
 const loadReport = () => {
-  const id = route.query.id || route.params.id
-  const manuId = route.query.manuId || route.params.manuId
+  let id = route.query.id || route.params.id
+  let manuId = route.query.manuId || route.params.manuId
+
+  // 如果路由路径是 /diagnosis/report，Vue Router 的动态参数（如 path: '/diagnosis/:id'）
+  // 可能会错误地把 'report' 当作 id 的值
+  if (id === 'report') {
+    id = null
+  }
 
   if (id) {
     fetchReportById(id)
@@ -428,18 +439,15 @@ const handleViewReport = async () => {
   }
 }
 const goToQuestionnaire = () => {
-  ElMessage.info('诊断问卷功能开发中，请稍后再试')
-  // 恢复后：
-  // if (selectedManuId.value) {
-  //   router.push(`/diagnosis/questionnaire?manuId=${selectedManuId.value}`)
-  // } else {
-  //   router.push('/diagnosis/questionnaire')
-  // }
+  if (selectedManuId.value) {
+    router.push(`/diagnosis/questionnaire?manuId=${selectedManuId.value}`)
+  } else {
+    router.push('/diagnosis/questionnaire')
+  }
 }
 
 const goToEnterpriseManage = () => {
-  ElMessage.info('企业管理页面开发中，即将跳转')
-  // router.push('/enterprise')
+  router.push('/enterprise')
 }
 
 // ---------- 雷达图实例管理 ----------

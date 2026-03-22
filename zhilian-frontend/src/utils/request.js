@@ -30,8 +30,15 @@ request.interceptors.response.use(
     const res = response.data;
     // 假设后端返回格式为 { code: 200, message: 'success', data: ... }
     if (res.code !== 200) {
-      ElMessage.error(res.message || "请求失败");
-      return Promise.reject(new Error(res.message || "Error"));
+      // 业务层如果是 404，通常代表"资源不存在/暂无数据"，某些页面(如诊断报告)需要自己处理空状态，不应强行全局弹窗报错
+      if (res.code !== 404) {
+        ElMessage.error(res.message || "请求失败");
+      }
+      // 返回带有 code 和 message 的错误对象，方便组件 catch 后判断处理
+      const error = new Error(res.message || "Error");
+      error.code = res.code;
+      error.data = res.data;
+      return Promise.reject(error);
     }
     return res.data; // 直接返回业务数据，使用时更方便
   },

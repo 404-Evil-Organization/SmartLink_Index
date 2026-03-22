@@ -15,4 +15,12 @@ export default [
       roles: ["manufacture", "admin"],
     },
   },
+  {
+    path: "diagnosis/:id",
+    name: "DiagnosisReport",
+    component: () => import("@/views/diagnosis/Report.vue"),
+    meta: {
+      roles: ["manufacture", "admin"],
+    },
+  },
 ];
