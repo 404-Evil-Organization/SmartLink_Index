@@ -1,7 +1,18 @@
 export default [
   {
-    path: "", // 空路径表示父路径 '/' 时默认显示该子路由
-    name: "Dashboard",
+    path: "dashboard/index",
+    name: "DashboardHome",
     component: () => import("@/views/dashboard/index.vue"),
+    meta: {
+      roles: ["park", "admin"],
+    },
+  },
+  {
+    path: "dashboard/region",
+    name: "DashboardRegionIndex",
+    component: () => import("@/views/dashboard/RegionIndex.vue"),
+    meta: {
+      roles: ["park", "admin"],
+    },
   },
 ];
