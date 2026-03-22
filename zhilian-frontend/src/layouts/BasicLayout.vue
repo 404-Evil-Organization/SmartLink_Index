@@ -113,11 +113,6 @@ const isManufacture = computed(
 );
 const isService = computed(() => userStore.userInfo?.role === "service");
 
-// 判断当前用户是否为制造企业
-const isManufacture = computed(
-  () => userStore.userInfo?.role === "manufacture",
-);
-
 // 退出登录
 const handleLogout = async () => {
   try {

@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { ElMessage } from "element-plus";
 import { checkRoleAccess } from "@/router/permission";
-import { enforceAdminOnly, enforceRoles } from "@/router/permission";
+import { enforceRoles } from "@/router/permission";
 
 import dashboardRoutes from "./models/dashboard";
 import serviceListRoutes from "./models/service";
@@ -31,7 +31,6 @@ const routes = [
     children: [
       ...dashboardRoutes,
       ...diagnosisRoutes,
-      ...serviceListRoutes,
       ...serviceListRoutes,
       ...manufactureRoutes,
       ...enterpriseRoutes,
