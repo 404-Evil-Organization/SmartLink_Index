@@ -120,28 +120,16 @@ public class DashboardServiceImpl implements DashboardService {
     /**
      * @Author: 6017
      * @Date: 2026/3/20 21:41
-     * @Param: top 返回数量（会被限制在 1-50 之间）
+     * @Param: top 返回数量
      * @Return: List<TopDemandResponse> 热门需求列表
      * @Description: 获取热门需求
      */
     @Override
     public List<TopDemandResponse> getTopDemands(Integer top) {
-        // 对 top 参数做合理区间约束，防止恶意传入超大值导致数据库压力过大
-        int validTop;
-        if (top == null || top < 1) {
-            validTop = 5;  // 默认值
-            log.debug("top 参数无效（null 或 <1），使用默认值: {}", validTop);
-        } else if (top > MAX_TOP_LIMIT) {
-            validTop = MAX_TOP_LIMIT;
-            log.warn("top 参数 {} 超过最大限制 {}，已截断为 {}", top, MAX_TOP_LIMIT, validTop);
-        } else {
-            validTop = top;
-        }
-
-        log.debug("获取热门需求，有效 top: {}", validTop);
+        log.debug("获取热门需求，有效 top: {}", top);
 
         // 传入两个参数：top 和 逻辑删除时间常量（使用 LocalDateTime 类型，与 Mapper 签名匹配）
-        return demandMapper.getTopDemands(validTop, DateConstants.getNotDeletedLocalDateTime());
+        return demandMapper.getTopDemands(top, DateConstants.getNotDeletedLocalDateTime());
     }
 
     /**
@@ -198,7 +186,13 @@ public class DashboardServiceImpl implements DashboardService {
             links.add(link);
         }
 
-        // 2. 获取节点数据并过滤，只保留参与了 TopN 连接的节点，避免前端渲染孤立节点
+        // 如果没有任何 TopN 边，则不需要去数据库查询所有节点，直接返回空网络数据，避免不必要的全量查询
+        if (links.isEmpty()) {
+            return NetworkDataResponse.builder()
+                    .nodes(new ArrayList<>())
+                    .links(links)
+                    .build();
+        }
         List<NetworkDataResponse.NodeDTO> allNodes = new ArrayList<>();
         allNodes.addAll(networkMapper.getManufactureNodes(notDeletedTime));
         allNodes.addAll(networkMapper.getServiceNodes(notDeletedTime));

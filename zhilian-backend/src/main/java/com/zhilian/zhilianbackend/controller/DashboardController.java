@@ -118,7 +118,7 @@ public class DashboardController {
         int validTop;
         if (top < 1) {
             validTop = 5;
-            log.debug("top 参数无效（null 或 <1），使用默认值: {}", validTop);
+            log.debug("top 参数无效（<1），使用默认值: {}", validTop);
         } else if (top > 50) {
             validTop = 50;
             log.warn("top 参数 {} 超过最大限制 50，已截断为 {}", top, validTop);
