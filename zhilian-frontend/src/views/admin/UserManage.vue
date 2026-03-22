@@ -318,21 +318,8 @@ const resetPassword = (row) => {
         ElMessage.error('重置密码失败，响应数据异常，请稍后重试')
       }
     } catch (error) {
-      // 拦截器已处理错误提示，这里只做日志记录和兜底（避免用户无反馈）
+      // 拦截器已处理错误提示，这里只做日志记录，避免重复弹窗
       console.error('重置密码请求异常:', error)
-      // 如果拦截器未弹出错误（如自定义情况），可兜底提示
-
-      // 判断是否为网络/超时等典型异常（而非业务错误）
-      const isNetworkError =
-        error?.code === 'ECONNABORTED' ||
-        error?.code === 'ERR_NETWORK' ||
-        error?.message === 'Network Error' ||
-        (error?.message && error.message.includes('timeout'))
-
-      // 仅在网络异常时兜底提示，业务错误由拦截器统一处理
-      if (isNetworkError) {
-        ElMessage.error('网络异常，请检查连接后重试')
-      }
     }
   }).catch(() => {}) // 用户取消确认，无需处理
 }
