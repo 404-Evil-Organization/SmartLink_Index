@@ -26,7 +26,6 @@ import java.util.List;
  **/
 @Slf4j
 @Component
-@ConditionalOnProperty(name = "app.scheduling.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class CreditScoreScheduler {
 
