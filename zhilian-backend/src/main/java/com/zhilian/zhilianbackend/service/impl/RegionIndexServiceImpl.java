@@ -13,6 +13,7 @@ import com.zhilian.zhilianbackend.entity.Cooperation;
 import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.entity.RegionIndex;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.CooperationMapper;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
@@ -54,16 +55,6 @@ import java.util.stream.Collectors;
 public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, RegionIndex> implements RegionIndexService {
     @Value("${mybatis-plus.global-config.db-config.logic-not-delete-value:1970-01-01 00:00:00}")
     private String logicNotDeletedDatetime;
-
-    /**
-     * 本地缓存 ServiceProvider 的区域映射，key 为服务商主键 ID，value 为其所属区域 region。
-     * 说明：
-     * - 季度定时任务在单线程环境执行，一次性加载所有服务商区域信息到内存，可以有效避免
-     *   isCrossRegionCooperation 在循环中对每条合作记录都执行一次 selectById 造成的 N+1 查询问题。
-     * - 若未来有服务商区域数据变动场景，可在相关更新逻辑中主动清空该缓存或重建。
-     */
-    private final Map<Long, String> serviceProviderRegionCache = new HashMap<>();
-    private volatile boolean cacheLoaded = false;
 
     private final ManufactureMapper manufactureMapper;
     private final ServiceProviderMapper serviceProviderMapper;
@@ -139,18 +130,34 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
 
         // 2. 一次性加载该季度所有合作记录
         LambdaQueryWrapper<Cooperation> coopWrapper = new LambdaQueryWrapper<>();
-        coopWrapper.between(Cooperation::getCreateTime, start, end);
+        coopWrapper.between(Cooperation::getCreateTime, start, end)
+                .eq(Cooperation::getDeleted, DateConstants.getNotDeletedLocalDateTime());
         List<Cooperation> allCooperations = cooperationMapper.selectList(coopWrapper);
         log.debug("加载本季度合作记录数量: {}", allCooperations.size());
 
         // 3. 一次性加载所有制造企业，只查询必要字段（id, region）
         LambdaQueryWrapper<Manufacture> manufactureWrapper = new LambdaQueryWrapper<>();
-        manufactureWrapper.select(Manufacture::getId, Manufacture::getRegion);
+        manufactureWrapper.select(Manufacture::getId, Manufacture::getRegion)
+                .eq(Manufacture::getDeleted, DateConstants.getNotDeletedLocalDateTime());
         List<Manufacture> allManufactures = manufactureMapper.selectList(manufactureWrapper);
         Map<String, List<Manufacture>> regionManufacturesMap = allManufactures.stream()
                 .filter(m -> m.getRegion() != null && !m.getRegion().isEmpty())
                 .collect(Collectors.groupingBy(Manufacture::getRegion));
         log.debug("区域制造企业分组完成，区域数: {}", regionManufacturesMap.size());
+
+        // 3.5 每次计算时，一次性加载所有服务商区域信息到局部变量中，作为缓存传递，保证数据新鲜度
+        LambdaQueryWrapper<ServiceProvider> spWrapper = new LambdaQueryWrapper<>();
+        spWrapper.select(ServiceProvider::getId, ServiceProvider::getRegion)
+                .eq(ServiceProvider::getDeleted, DateConstants.getNotDeletedLocalDateTime());
+        List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(spWrapper);
+        Map<Long, String> serviceProviderRegionMap = new HashMap<>();
+        if (allServiceProviders != null) {
+            for (ServiceProvider sp : allServiceProviders) {
+                if (sp.getId() != null && sp.getRegion() != null) {
+                    serviceProviderRegionMap.put(sp.getId(), sp.getRegion());
+                }
+            }
+        }
 
         // 4. 构建制造企业 id -> region 映射（用于合作记录分组）
         Map<Long, String> manufactureIdToRegion = allManufactures.stream()
@@ -176,7 +183,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
 
             try {
                 RegionIndex index = calculateQuarterIndexForRegion(region, year, quarter,
-                        regionManufactures, regionCooperations);
+                        regionManufactures, regionCooperations, serviceProviderRegionMap);
                 if (index != null) {
                     // 保证幂等：先逻辑删除旧记录，再插入新记录
                     LambdaQueryWrapper<RegionIndex> removeWrapper = new LambdaQueryWrapper<>();
@@ -234,11 +241,13 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @param quarter              季度
      * @param manufactures         该区域所有制造企业列表
      * @param regionCooperations   该区域所有合作记录列表
+     * @param serviceProviderRegionMap 服务商区域映射缓存
      * @return RegionIndex 区域指数实体，如果该区域没有制造企业则返回 null
      */
     private RegionIndex calculateQuarterIndexForRegion(String region, Short year, Byte quarter,
                                                        List<Manufacture> manufactures,
-                                                       List<Cooperation> regionCooperations) {
+                                                       List<Cooperation> regionCooperations,
+                                                       Map<Long, String> serviceProviderRegionMap) {
         int manufactureCount = manufactures.size();
         if (manufactureCount == 0) {
             log.warn("区域 {} 没有制造企业，跳过计算", region);
@@ -252,7 +261,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
 
         for (Cooperation coop : regionCooperations) {
             // totalCoopCount 已通过 size() 统计总合作次数，这里仅统计跨区域合作和参与服务的制造企业数
-            if (isCrossRegionCooperation(coop, region)) {
+            if (isCrossRegionCooperation(coop, region, serviceProviderRegionMap)) {
                 crossRegionCoopCount++;
             }
             serviceUserSet.add(coop.getManuId());
@@ -284,39 +293,18 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
     /**
      * @Author: 6017
      * @Date: 2026/3/18 23:14
-     * @Param: coop 合作记录  manuRegion 制造企业区域
+     * @Param: coop 合作记录  manuRegion 制造企业区域  serviceProviderRegionMap 服务商区域缓存
      * @Return: boolean 是否跨区域
      * @Description: 判断是否是跨区域合作
      */
-    private boolean isCrossRegionCooperation(Cooperation coop, String manuRegion) {
+    private boolean isCrossRegionCooperation(Cooperation coop, String manuRegion, Map<Long, String> serviceProviderRegionMap) {
         if (coop == null || coop.getServiceId() == null || manuRegion == null) {
             return false;
         }
 
         Long serviceIdKey = coop.getServiceId();
-
-        // 双重检查锁，保证加载标记与缓存数据一致
-        if (!cacheLoaded) {
-            synchronized (serviceProviderRegionCache) {
-                if (!cacheLoaded) {
-                    // 只查询必要字段 id 和 region
-                    LambdaQueryWrapper<ServiceProvider> spWrapper = new LambdaQueryWrapper<>();
-                    spWrapper.select(ServiceProvider::getId, ServiceProvider::getRegion);
-                    List<ServiceProvider> allServiceProviders = serviceProviderMapper.selectList(spWrapper);
-                    serviceProviderRegionCache.clear();
-                    if (allServiceProviders != null && !allServiceProviders.isEmpty()) {
-                        for (ServiceProvider sp : allServiceProviders) {
-                            if (sp != null && sp.getId() != null && sp.getRegion() != null) {
-                                serviceProviderRegionCache.put(sp.getId(), sp.getRegion());
-                            }
-                        }
-                    }
-                    cacheLoaded = true;
-                }
-            }
-        }
-
-        String serviceRegion = serviceProviderRegionCache.get(serviceIdKey);
+        String serviceRegion = serviceProviderRegionMap.get(serviceIdKey);
+        
         if (serviceRegion == null) {
             return false;
         }
