@@ -261,18 +261,30 @@ const toggleStatus = (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      // 使用统一的 axios 封装：失败会在拦截器中 reject，这里只处理成功路径
-      await updateUserStatus(row.id, newStatus)
-      ElMessage.success(`${action}成功`)
-      // 操作成功后刷新列表
-      fetchList()
+      const res = await updateUserStatus(row.id, newStatus)
+      // 成功条件：响应为 null（代表操作成功且无返回数据）或响应包含 code 且为 200
+      if (res === null || (res && (res.code === undefined || res.code === 200))) {
+        ElMessage.success(`${action}成功`)
+        fetchList()
+      } else {
+        // 非预期响应（如 res 有 code 且不是 200）
+        console.error(`${action}失败，响应数据异常:`, res)
+        ElMessage.error(`${action}失败，请稍后重试`)
+      }
     } catch (error) {
-      // 兜底错误提示，补充拦截器之外的本地提示
-      ElMessage.error('操作失败，请稍后重试')
+      console.error(`${action}请求异常:`, error)
+      // 判断是否为网络/超时错误（而非业务错误）
+      const isNetworkError =
+        error?.code === 'ECONNABORTED' ||
+        error?.code === 'ERR_NETWORK' ||
+        error?.message === 'Network Error' ||
+        (error?.message && error.message.includes('timeout'))
+      if (isNetworkError) {
+        ElMessage.error('网络异常，请检查连接后重试')
+      }
+      // 业务错误由拦截器统一提示，此处不重复
     }
-  }).catch(() => {
-    // 用户取消操作，不需要额外处理
-  })
+  }).catch(() => {}) // 用户取消确认，无需处理
 }
 
 // 重置密码
@@ -304,9 +316,9 @@ const resetPassword = (row) => {
         error?.message === 'Network Error' ||
         (error?.message && error.message.includes('timeout'))
 
-
-      if (!error.response) {
-        ElMessage.error('网络错误，请稍后重试')
+      // 仅在网络异常时兜底提示，业务错误由拦截器统一处理
+      if (isNetworkError) {
+        ElMessage.error('网络异常，请检查连接后重试')
       }
     }
   }).catch(() => {}) // 用户取消确认，无需处理
