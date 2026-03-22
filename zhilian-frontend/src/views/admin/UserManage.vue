@@ -23,8 +23,8 @@
             <el-option label="管理员" value="admin" />
           </el-select>
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="全部" clearable>
+        <el-form-item label="状态" >
+          <el-select v-model="searchForm.status" placeholder="全部"  clearable style="width: 200px">
             <el-option label="正常" :value="1" />
             <el-option label="禁用" :value="0" />
           </el-select>
