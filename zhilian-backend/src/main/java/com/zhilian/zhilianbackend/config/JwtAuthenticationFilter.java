@@ -1,5 +1,7 @@
 package com.zhilian.zhilianbackend.config;
 
+import com.zhilian.zhilianbackend.dto.response.UserInfoResponse;
+import com.zhilian.zhilianbackend.service.UserService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -9,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -40,6 +43,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Lazy
+    @Autowired
+    private UserService userService;  // 新增注入，使用 @Lazy 避免潜在循环依赖
 
     @Value("${jwt.header:Authorization}")
     private String header;
@@ -120,6 +127,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String role = claims.get(JwtUtil.CLAIM_ROLE, String.class);
 
                     if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+                        // ========== 新增：校验用户状态 ==========
+                        // 查询用户信息，确保用户存在且状态为正常（status=1）
+                        try {
+                            UserInfoResponse userInfo = userService.getCurrentUser(userId);
+                            if (userInfo == null || userInfo.getStatus() != 1) {
+                                log.warn("用户已被禁用或不存在，userId: {}, 请求: {} {}", userId, request.getMethod(), requestURI);
+                                sendUnauthorizedResponse(response, "账号已被禁用");
+                                return;
+                            }
+                        } catch (Exception e) {
+                            log.error("查询用户状态失败，userId: {}", userId, e);
+                            sendUnauthorizedResponse(response, "用户状态校验失败");
+                            return;
+                        }
+                        // =====================================
 
                         // 构建角色（Spring Security 需要 ROLE_ 前缀）
                         String springRole = role != null ? "ROLE_" + role.toUpperCase() : "ROLE_USER";
