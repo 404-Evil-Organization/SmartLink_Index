@@ -339,11 +339,9 @@ const submitForm = async () => {
       serviceScore: form.serviceScore,
     });
     ElMessage.success("诊断提交成功，正在生成报告...");
-    // 如果后端返回了诊断ID且报告页面路由存在，则跳转报告页
     if (res.diagnosisId && router.hasRoute("DiagnosisReport")) {
       router.push(`/diagnosis/${res.diagnosisId}`);
     } else {
-      // 否则跳转至首页（或诊断记录列表）
       router.push("/");
     }
   } catch (error) {
@@ -366,7 +364,6 @@ const resetForm = () => {
 
 // 跳转至企业创建页面（需根据实际路由调整）
 const goToEnterprise = () => {
-  // TODO: 根据实际路由配置，跳转到我的企业页面
   router.push("/enterprise");
 };
 
