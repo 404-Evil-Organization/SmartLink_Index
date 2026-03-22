@@ -142,6 +142,7 @@ public class IndexController {
             return Result.badRequest(error);
         }
         RegionDetailVO vo = regionIndexService.getRegionDetail(region, query);
+        // Service 层查无数据时会抛出 BusinessException，由全局异常处理器统一处理，此处无需额外判断
         return Result.success(vo);
     }
 

@@ -13,11 +13,12 @@ import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.RegionIndexMapper;
 import com.zhilian.zhilianbackend.service.RegionIndexService;
 import com.zhilian.zhilianbackend.utils.QuarterMonthUtils;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,6 +32,16 @@ import java.util.stream.Collectors;
 public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, RegionIndex> implements RegionIndexService {
     @Value("${mybatis-plus.global-config.db-config.logic-not-delete-value:1970-01-01 00:00:00}")
     private String logicNotDeletedDatetime;
+
+    /**
+     * 清洗后的逻辑删除未删除标记值，用于 SQL 拼接（避免每次请求重复清洗）
+     */
+    private String cleanedNotDeletedValue;
+
+    @PostConstruct
+    public void init() {
+        cleanedNotDeletedValue = cleanLogicNotDeletedDatetime(logicNotDeletedDatetime);
+    }
 
     /**
      * 清理逻辑未删除值，去除可能存在的首尾单引号
@@ -75,14 +86,13 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         } else {
             // 为避免全表排序+内存去重，改为在数据库侧通过窗口函数一次性取出每个 region 的最新记录
             // 使用 apply 方法，{0} 占位符会被替换为清理后的参数值，并由 JDBC 自动处理类型
-            String cleanValue = cleanLogicNotDeletedDatetime(logicNotDeletedDatetime);
             wrapper.isNotNull("region")
                     .apply("id IN (SELECT t.id FROM (" +
                             "  SELECT id, region, calc_time, " +
                             "         ROW_NUMBER() OVER (PARTITION BY region ORDER BY calc_time DESC, id DESC) AS rn " +
                             "  FROM region_index " +
                             "  WHERE region IS NOT NULL AND deleted = {0}" +
-                            ") t WHERE t.rn = 1)", cleanValue)
+                            ") t WHERE t.rn = 1)", cleanedNotDeletedValue)
                     .orderByAsc("region");
         }
 
@@ -127,7 +137,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
 
         RegionIndex entity = getOne(wrapper);
         if (entity == null) {
-            // 查无数据时抛出业务异常，由全局异常处理器统一转换为 404 响应，避免调用方出现 NPE
+            // 查无数据时抛出业务异常，由全局异常处理器统一转换为 code=404 的统一响应，避免调用方出现 NPE
             throw new BusinessException(404, "未找到地区【" + region + "】的指数数据");
         }
 
