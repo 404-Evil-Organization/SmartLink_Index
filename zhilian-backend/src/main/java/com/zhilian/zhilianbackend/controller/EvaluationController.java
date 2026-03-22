@@ -76,6 +76,10 @@ public class EvaluationController {
             @Parameter(description = "页码，默认1") @RequestParam(defaultValue = "1") Integer page,
             @Parameter(description = "每页条数，默认10") @RequestParam(defaultValue = "10") Integer size) {
 
+        if (serviceId == null || serviceId <= 0) {
+            return Result.error(400, "服务商ID不合法");
+        }
+
         // 分页参数合法性校验与范围限制，防止 page/size 为 0、负数或过大导致分页异常或一次性返回过多数据
         if (page == null || page < 1) {
             log.warn("收到非法分页参数 page: {}，已重置为 1，serviceId: {}", page, serviceId);

@@ -48,9 +48,15 @@ public class CreditScoreAlgorithmTest {
 
     @Test
     void testCalculate_InvalidParam() {
-        assertThrows(BusinessException.class, () -> creditScoreAlgorithm.calculate(null));
+        assertThrows(BusinessException.class, () -> creditScoreAlgorithm.calculate((Long) null));
         assertThrows(BusinessException.class, () -> creditScoreAlgorithm.calculate(0L));
         assertThrows(BusinessException.class, () -> creditScoreAlgorithm.calculate(-1L));
+        
+        assertThrows(BusinessException.class, () -> creditScoreAlgorithm.calculate((ServiceProvider) null));
+        ServiceProvider invalidSp = new ServiceProvider();
+        assertThrows(BusinessException.class, () -> creditScoreAlgorithm.calculate(invalidSp));
+        invalidSp.setId(0L);
+        assertThrows(BusinessException.class, () -> creditScoreAlgorithm.calculate(invalidSp));
     }
 
     @Test

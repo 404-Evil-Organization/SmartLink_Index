@@ -85,7 +85,7 @@ public class CreditScoreScheduler {
             for (ServiceProvider provider : providers) {
                 try {
                     // 每个服务商独立事务，互不影响
-                    calculateAndSaveCreditScoreWithTransaction(provider.getId());
+                    calculateAndSaveCreditScoreWithTransaction(provider);
                     successCount++;
                     batchSuccess++;
                 } catch (Exception e) {
@@ -114,14 +114,15 @@ public class CreditScoreScheduler {
     /**
      * @Author: 6017
      * @Date: 2026/3/21 10:00
-     * @Param: serviceId 服务商ID
+     * @Param: serviceProvider 服务商对象
      * @Return:
      * @Description: 带事务的计算并保存单个服务商的信用分，每个服务商独立事务
      **/
     @Transactional
-    public void calculateAndSaveCreditScoreWithTransaction(Long serviceId) {
+    public void calculateAndSaveCreditScoreWithTransaction(ServiceProvider serviceProvider) {
+        Long serviceId = serviceProvider.getId();
         // 1. 调用算法类计算信用分
-        CreditScoreAlgorithm.CreditScoreResult result = creditScoreAlgorithm.calculate(serviceId);
+        CreditScoreAlgorithm.CreditScoreResult result = creditScoreAlgorithm.calculate(serviceProvider);
 
         // 2. 创建信用分记录
         CreditScore creditScore = new CreditScore();

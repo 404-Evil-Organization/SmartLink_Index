@@ -54,12 +54,36 @@ public class CreditScoreAlgorithm {
             throw new BusinessException(400, "serviceId 不能为空且必须为正数");
         }
         log.debug("开始计算服务商信用分，serviceId: {}", serviceId);
+        
+        ServiceProvider serviceProvider = serviceProviderMapper.selectById(serviceId);
+        if (serviceProvider == null) {
+            log.warn("服务商不存在，serviceId: {}", serviceId);
+            return new CreditScoreResult((byte) 0, (byte) 0, (byte) 0, (byte) 60);
+        }
+
+        return calculate(serviceProvider);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/23
+     * @Param: serviceProvider 服务商对象
+     * @Return: CreditScoreResult 信用分计算结果
+     * @Description: 计算服务商信用分，支持直接传入 ServiceProvider 对象以避免重复查询
+     **/
+    public CreditScoreResult calculate(ServiceProvider serviceProvider) {
+        if (serviceProvider == null || serviceProvider.getId() == null || serviceProvider.getId() <= 0) {
+            log.warn("计算服务商信用分入参非法，serviceProvider 或其 id 无效");
+            throw new BusinessException(400, "serviceProvider 及其 id 不能为空且必须为正数");
+        }
+        Long serviceId = serviceProvider.getId();
+        log.debug("开始计算服务商信用分，serviceId: {}", serviceId);
 
         // 1. 计算资质分
         Byte qualScore = calculateQualScore(serviceId);
 
         // 2. 计算案例分
-        Byte caseScore = calculateCaseScore(serviceId);
+        Byte caseScore = calculateCaseScore(serviceProvider);
 
         // 3. 计算评价分
         Byte evalScore = calculateEvalScore(serviceId);
@@ -115,23 +139,16 @@ public class CreditScoreAlgorithm {
     /**
      * @Author: 6017
      * @Date: 2026/3/20 20:42
-     * @Param: serviceId 服务商ID
+     * @Param: serviceProvider 服务商对象
      * @Return: Byte 案例分（0-100）
      * @Description: 计算案例分，基于出海案例的数量和时效性
-     * 修复：先通过 serviceProviderMapper.selectById(serviceId) 获取服务商信息，判空后取 companyName
+     * 修复：先通过 serviceProvider 获取服务商信息，判空后取 companyName
      **/
-    private Byte calculateCaseScore(Long serviceId) {
-        // 1. 先查询服务商信息
-        ServiceProvider serviceProvider = serviceProviderMapper.selectById(serviceId);
-        if (serviceProvider == null) {
-            log.warn("服务商不存在，serviceId: {}", serviceId);
-            return (byte) 0;
-        }
-
-        // 2. 获取公司名称
+    private Byte calculateCaseScore(ServiceProvider serviceProvider) {
+        // 1. 获取公司名称
         String companyName = serviceProvider.getCompanyName();
         if (companyName == null || companyName.isEmpty()) {
-            log.warn("服务商公司名称为空，serviceId: {}", serviceId);
+            log.warn("服务商公司名称为空，serviceId: {}", serviceProvider.getId());
             return (byte) 0;
         }
 

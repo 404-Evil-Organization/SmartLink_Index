@@ -59,6 +59,17 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
      */
     @Override
     public Page<EvaluationVO> getEvaluationPage(Long serviceId, Integer page, Integer size) {
+        // 参数校验与兜底，保证 Service 层公共方法的健壮性
+        if (serviceId == null || serviceId <= 0) {
+            throw new BusinessException(400, "服务商ID不合法");
+        }
+        if (page == null || page < 1) {
+            page = 1;
+        }
+        if (size == null || size <= 0) {
+            size = 10;
+        }
+        
         log.info("查询服务商评价列表，serviceId: {}, page: {}, size: {}", serviceId, page, size);
 
         // ==================== 第一步：分页查询评价 ====================
