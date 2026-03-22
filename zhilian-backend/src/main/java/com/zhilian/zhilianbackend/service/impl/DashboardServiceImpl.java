@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,24 +99,22 @@ public class DashboardServiceImpl implements DashboardService {
     public List<HeatmapDataResponse> getHeatmapData(LocalDate startDate, LocalDate endDate) {
         log.debug("获取热力图数据，startDate: {}, endDate: {}", startDate, endDate);
 
-        // 将 LocalDate 转换为字符串格式，用于 SQL 查询
-        String startDateTime = null;
-        String endDateTime = null;
+        // 将 LocalDate 转换为 LocalDateTime，用于 SQL 查询
+        LocalDateTime startDateTime = null;
+        LocalDateTime endDateTime = null;
 
         if (startDate != null) {
             // 开始日期取当天 00:00:00
-            startDateTime = startDate.atStartOfDay()
-                    .format(DateConstants.DATETIME_FORMATTER);
+            startDateTime = startDate.atStartOfDay();
         }
 
         if (endDate != null) {
             // 结束日期取当天 23:59:59
-            endDateTime = endDate.atTime(LocalTime.MAX)
-                    .format(DateConstants.DATETIME_FORMATTER);
+            endDateTime = endDate.atTime(LocalTime.MAX);
         }
 
-        // 传入 notDeletedTime 参数
-        return cooperationMapper.getHeatmapData(startDateTime, endDateTime, DateConstants.getNotDeletedTimeStr());
+        // 传入 notDeletedTime 参数（LocalDateTime 类型）
+        return cooperationMapper.getHeatmapData(startDateTime, endDateTime, DateConstants.getNotDeletedLocalDateTime());
     }
 
     /**
