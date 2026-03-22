@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * 优化点：
  * 1. 批量查询避免 N+1 问题
  * 2. 使用参数绑定防止 SQL 注入
- * 3. 正确保留分页信息（total/current/size）
+ * 3. 正确保留分页信息（total/current/size），即使当前页无记录
  */
 @Slf4j
 @Service
@@ -53,7 +53,6 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
         log.info("查询服务商评价列表，serviceId: {}, page: {}, size: {}", serviceId, page, size);
 
         // ==================== 第一步：查询该服务商的所有合作记录ID ====================
-        // 使用 LambdaQueryWrapper 参数绑定，防止 SQL 注入
         LambdaQueryWrapper<Cooperation> coopWrapper = new LambdaQueryWrapper<>();
         coopWrapper.eq(Cooperation::getServiceId, serviceId)
                 .select(Cooperation::getId);
@@ -62,7 +61,7 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
                 .map(Cooperation::getId)
                 .collect(Collectors.toList());
 
-        // ==================== 第二步：分页查询评价（通过 coopId 过滤） ====================
+        // ==================== 第二步：分页查询评价 ====================
         Page<Evaluation> evaluationPage = new Page<>(page, size);
         LambdaQueryWrapper<Evaluation> wrapper = new LambdaQueryWrapper<>();
 
@@ -79,40 +78,36 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
         Page<Evaluation> pageResult = this.page(evaluationPage, wrapper);
         List<Evaluation> evaluations = pageResult.getRecords();
 
-        // ==================== 如果当前页没有记录，直接返回带分页信息的空页 ====================
+        // ==================== 始终基于 pageResult 构造返回，保留分页信息 ====================
+        // 即使 evaluations 为空，也要返回正确的 total/current/size
         if (evaluations.isEmpty()) {
-            log.info("服务商没有评价记录或当前页无数据，serviceId: {}, total: {}", serviceId, pageResult.getTotal());
+            log.info("服务商没有评价记录或当前页无数据，serviceId: {}, total: {}, current: {}, size: {}",
+                    serviceId, pageResult.getTotal(), pageResult.getCurrent(), pageResult.getSize());
 
-            // 始终基于 pageResult 构造返回，保留 total/current/size
             Page<EvaluationVO> emptyVoPage = new Page<>(pageResult.getCurrent(), pageResult.getSize(), pageResult.getTotal());
             emptyVoPage.setRecords(List.of());
             return emptyVoPage;
         }
 
         // ==================== 第三步：批量查询合作记录（获取 manuId） ====================
-        // 提取本页所有评价的 coopId
         List<Long> evalCoopIds = evaluations.stream()
                 .map(Evaluation::getCoopId)
                 .collect(Collectors.toList());
 
-        // 批量查询合作记录，只查询需要的字段
         LambdaQueryWrapper<Cooperation> coopBatchWrapper = new LambdaQueryWrapper<>();
         coopBatchWrapper.in(Cooperation::getId, evalCoopIds)
                 .select(Cooperation::getId, Cooperation::getManuId);
         List<Cooperation> cooperations = cooperationMapper.selectList(coopBatchWrapper);
 
-        // 构建 coopId -> manuId 映射
         Map<Long, Long> coopToManuMap = cooperations.stream()
                 .collect(Collectors.toMap(Cooperation::getId, Cooperation::getManuId));
 
         // ==================== 第四步：批量查询制造企业名称 ====================
-        // 提取所有不重复的 manuId
         List<Long> manuIds = cooperations.stream()
                 .map(Cooperation::getManuId)
                 .distinct()
                 .collect(Collectors.toList());
 
-        // 批量查询制造企业名称
         Map<Long, String> manuIdToNameMap;
         if (!manuIds.isEmpty()) {
             LambdaQueryWrapper<Manufacture> manuWrapper = new LambdaQueryWrapper<>();
@@ -125,12 +120,12 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
             manuIdToNameMap = Map.of();
         }
 
-        // ==================== 第五步：转换为VO（内存组装，避免 N+1） ====================
+        // ==================== 第五步：转换为VO ====================
         List<EvaluationVO> voList = evaluations.stream()
                 .map(eval -> convertToVO(eval, coopToManuMap, manuIdToNameMap))
                 .collect(Collectors.toList());
 
-        // 封装分页结果，始终基于 pageResult 保留分页信息
+        // 基于 pageResult 构造返回结果，确保分页信息正确
         Page<EvaluationVO> voPage = new Page<>(pageResult.getCurrent(), pageResult.getSize(), pageResult.getTotal());
         voPage.setRecords(voList);
 
@@ -162,7 +157,6 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
         if (eval.getIsAnonymous() != null && eval.getIsAnonymous() == 1) {
             vo.setManufactureName("匿名用户");
         } else {
-            // 从映射表中获取企业名称
             Long manuId = coopToManuMap.get(eval.getCoopId());
             if (manuId != null) {
                 String companyName = manuIdToNameMap.get(manuId);
