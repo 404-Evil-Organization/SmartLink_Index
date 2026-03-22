@@ -251,8 +251,12 @@ zhilian-frontend/
 │   │   │   ├── DemandPublish.vue           # 需求发布页面
 │   │   │   └── Recommendation.vue          # 匹配结果页面（展示推荐服务商列表）
 │   │   ├── credit/             # 信用评价
-│   │   │   └── service/                    # 服务商详情相关
-│   │   │       └── Detail.vue              # 服务商详情页（含信用分、评价列表、评价提交）
+│   │   │   ├── service/                     # 服务商详情相关
+│   │   │   │   └── Detail.vue              # 服务商详情页（含信用分、评价列表、评价提交）
+│   │   │   ├── cooperation/            # 合作记录相关（新增）
+│   │   │   │   └── MyCooperation.vue   # 我的合作记录页面
+│   │   │   └── evaluation/             # 评价相关（新增）
+│   │   │       └── EvaluationAdd.vue   # 评价提交页面
 │   │   ├── abroad/             # 出海服务
 │   │   │   ├── ServiceList.vue             # 出海服务列表页（分类展示服务商）
 │   │   │   ├── CountryGuide.vue            # 国家准入指南页面

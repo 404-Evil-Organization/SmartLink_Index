@@ -18,7 +18,9 @@
           </el-icon>
           <span>首页</span>
         </el-menu-item>
-        <el-sub-menu index="3">
+
+        <!-- 可视化看板菜单栏 -->
+        <el-sub-menu v-if="isAdmin || isPark" index="dashboard">
           <template #title>
             <el-icon><DataBoard /></el-icon>
             <span>可视化看板</span>
@@ -72,6 +74,14 @@
         </el-menu-item>
 
         <!-- 我的企业页面 -->
+        <el-menu-item
+          v-if="isAdmin || isManufacture || isService"
+          index="/cooperation/my"
+        >
+          <el-icon><List /></el-icon>
+          <span>我的合作</span>
+        </el-menu-item>
+
         <el-menu-item
           v-if="isAdmin || isManufacture || isService"
           index="/enterprise"
@@ -144,6 +154,7 @@ import {
   DataAnalysis,
   Tickets,
   OfficeBuilding,
+  List,
   DataLine,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
@@ -161,20 +172,7 @@ const isManufacture = computed(
   () => userStore.userInfo?.role === "manufacture",
 );
 const isService = computed(() => userStore.userInfo?.role === "service");
-
-// // 跳转到最新诊断报告
-// const goToLatestReport = () => {
-//   const latestId = localStorage.getItem('latestDiagnosisId')
-//   if (latestId) {
-//     router.push(`/diagnosis/report?id=${latestId}`);
-//   } else {
-//     ElMessage.warning('暂无诊断报告，请先提交问卷')
-//   }
-// }
-// // 判断当前用户是否为制造企业
-// const isManufacture = computed(
-//   () => userStore.userInfo?.role === "manufacture",
-// );
+const isPark = computed(() => userStore.userInfo?.role === "park");
 
 // 退出登录
 const handleLogout = async () => {
