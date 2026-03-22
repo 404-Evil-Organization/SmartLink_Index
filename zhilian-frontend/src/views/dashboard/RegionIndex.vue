@@ -375,10 +375,13 @@ const handleRightPeriodTypeChange = () => {
 
 // 获取左侧筛选参数
 const getLeftParams = () => {
-  const params = { year: leftYear.value };
+  const params = {};
+  params.year = leftYear.value;
   if (leftPeriodType.value === "quarter") {
-    params.quarter = leftPeriodValue.value;
+    // 根据后端接口文档要求，quarter 为字符串，格式如 "2025Q1"
+    params.quarter = `${leftYear.value}Q${leftPeriodValue.value}`;
   } else {
+    // 月份查询保持原样，分别传 year 和 month
     params.month = leftPeriodValue.value;
   }
   return params;
@@ -386,9 +389,11 @@ const getLeftParams = () => {
 
 // 获取右侧筛选参数
 const getRightParams = () => {
-  const params = { year: rightYear.value };
+  const params = {};
+  params.year = rightYear.value;
   if (rightPeriodType.value === "quarter") {
-    params.quarter = rightPeriodValue.value;
+    // 根据后端接口文档要求，quarter 为字符串，格式如 "2025Q1"
+    params.quarter = `${rightYear.value}Q${rightPeriodValue.value}`;
   } else {
     params.month = rightPeriodValue.value;
   }
