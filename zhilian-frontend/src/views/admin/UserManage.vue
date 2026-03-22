@@ -14,7 +14,7 @@
 
 <!-- 搜索卡片 -->
 <div class="search-bar">
-  <el-row :gutter="16" class="search-row" :wrap="false">
+  <el-row :gutter="16" class="search-row">
     <el-col :span="5">
       <el-form-item label="角色">
         <el-select v-model="searchForm.role" placeholder="全部" clearable style="width: 100%">
@@ -278,10 +278,7 @@ const toggleStatus = (row) => {
       }
     } catch (error) {
       console.error(`${action}请求异常:`, error)
-      if (isNetworkError) {
-        ElMessage.error('网络异常，请检查连接后重试')
-      }
-      // 业务错误由拦截器统一提示，此处不重复
+      // 业务错误（含网络异常）均由拦截器统一提示，此处不重复弹窗
     }
   }).catch(() => {}) // 用户取消确认，无需处理
 }
