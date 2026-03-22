@@ -22,9 +22,9 @@
       <el-skeleton :rows="1" animated/>
     </el-card>
 
-    <!-- 企业选择卡片：仅当存在企业且没有报告数据时显示 -->
+    <!-- 企业选择卡片：只要存在企业列表即可显示，用于随时切换企业查看报告 -->
     <el-card
-        v-else-if="enterpriseOptions.length > 0 && !reportData && !showNoReport"
+        v-else-if="enterpriseOptions.length > 0 "
         class="enterprise-card fancy-card"
         shadow="hover"
     >
@@ -248,7 +248,7 @@ const fetchEnterprises = async () => {
     if (userRole === 'admin') {
       // 管理员使用公共列表
       res = await getManufactureList({page: 1, size: 100})
-      enterprises.value = (res.records || []).filter(item => item.auditStatus === 'approved')
+      enterprises.value = (res.records || [])
     } else {
       // 普通用户：优先使用个人企业接口
       res = await getMyManufactureList({page: 1, size: 100})
@@ -315,15 +315,9 @@ const formatDate = (dateStr) => {
  * 因此这里只能依赖 HTTP status 或 error.code 进行判断。
  */
 const handleReportError = (error) => {
-  const status =
-      error?.response?.status ||
-      error?.code
-
+  const status = error?.response?.status || error?.code
   if (status === 403) {
     router.push('/403')
-  } else if (status === 404) {
-    reportData.value = null
-    showNoReport.value = true
   } else {
     ElMessage.error('获取报告失败，请稍后重试')
     reportData.value = null
@@ -336,11 +330,19 @@ const fetchReportById = async (id) => {
   showNoReport.value = false
   try {
     const res = await getDiagnosisResult(id)
-    reportData.value = res
-    if (res.manuId) {
-      selectedManuId.value = res.manuId
+    if (!res) {
+      // 无报告
+      reportData.value = null
+      showNoReport.value = true
+    } else {
+      reportData.value = res
+      if (res.manuId) {
+        selectedManuId.value = res.manuId
+      }
+      localStorage.setItem('latestDiagnosisId', id)
+      await nextTick()
+      initRadarChart()   // 假设你保留了 initRadarChart，这里调一下
     }
-    localStorage.setItem('latestDiagnosisId', id)
   } catch (error) {
     handleReportError(error)
   } finally {
@@ -348,18 +350,24 @@ const fetchReportById = async (id) => {
   }
 }
 
-
 const fetchLatestReportByManuId = async (manuId) => {
   if (!manuId) return
   loadingReport.value = true
   showNoReport.value = false
   try {
     const res = await getLatestDiagnosis(manuId)
-    reportData.value = res
-    if (res.manuId) {
-      selectedManuId.value = res.manuId
+    if (!res) {
+      reportData.value = null
+      showNoReport.value = true
+    } else {
+      reportData.value = res
+      if (res.manuId) {
+        selectedManuId.value = res.manuId
+      }
+      localStorage.setItem('latestDiagnosisId', res.diagnosisId)
+      await nextTick()
+      initRadarChart()
     }
-    localStorage.setItem('latestDiagnosisId', res.diagnosisId)
   } catch (error) {
     handleReportError(error)
   } finally {
@@ -401,20 +409,26 @@ const handleViewReport = async () => {
   viewLoading.value = true
   try {
     const latest = await getLatestDiagnosis(selectedManuId.value)
-    // 直接使用返回的数据，不跳转
-    reportData.value = latest
-    if (latest.manuId) {
-      selectedManuId.value = latest.manuId
+    if (!latest) {
+      reportData.value = null
+      showNoReport.value = true
+    } else {
+      reportData.value = latest
+      if (latest.manuId) {
+        selectedManuId.value = latest.manuId
+      }
+      localStorage.setItem('latestDiagnosisId', latest.diagnosisId)
+      await nextTick()
+      initRadarChart()
     }
-    localStorage.setItem('latestDiagnosisId', latest.diagnosisId)
   } catch (error) {
-    // 复用统一错误处理逻辑，内部根据 axios 错误结构识别业务码 404 等场景
-    handleReportError(error)
+    // 网络错误或 403 等才会进入这里
+    ElMessage.error('获取报告失败，请稍后重试')
+    reportData.value = null
   } finally {
     viewLoading.value = false
   }
 }
-
 const goToQuestionnaire = () => {
   ElMessage.info('诊断问卷功能开发中，请稍后再试')
   // 恢复后：

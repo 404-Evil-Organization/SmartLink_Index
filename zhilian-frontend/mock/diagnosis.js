@@ -1,8 +1,6 @@
 // mock/diagnosis.js
 // 数字化诊断模块模拟数据（增强版）
 
-import { number } from "echarts";
-
 const manufactureMap = {
   1001: "深圳电子科技",
   1002: "东莞精密机械",
@@ -196,7 +194,7 @@ export default [
     },
   },
 
-  // 2.2 获取诊断报告（根据ID）
+  // 2.2 获取诊断报告（根据ID） - 无报告时返回 data:null
   {
     url: /\/api\/diagnosis\/\d+$/,
     method: "get",
@@ -232,8 +230,9 @@ export default [
           },
         };
       } else {
+        // 无报告时返回 200 且 data:null，前端通过判断 data 是否为 null 决定是否显示空状态
         return {
-          code: 404,
+          code: 200,
           message: "诊断记录不存在",
           data: null,
         };
@@ -241,15 +240,15 @@ export default [
     },
   },
 
-  // 2.3 获取企业最新诊断报告
+  // 2.3 获取企业最新诊断报告 - 无报告时返回 data:null
   {
     url: "/api/diagnosis/latest",
     method: "get",
     response: ({ query }) => {
       const manuId = parseInt(query.manuId);
       console.log("[mock] 请求企业最新报告，manuId:", manuId);
-       console.log('mock latest 被调用');
-       
+      console.log('mock latest 被调用');
+
       if (isNaN(manuId)) {
         return {
           code: 400,
@@ -262,8 +261,9 @@ export default [
         (record) => record.manuId === manuId
       );
       if (records.length === 0) {
+        // 无报告时返回 200 且 data:null
         return {
-          code: 404,
+          code: 200,
           message: "该企业暂无诊断报告",
           data: null,
         };
