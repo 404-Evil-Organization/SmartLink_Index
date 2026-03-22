@@ -22,6 +22,7 @@ public interface CooperationMapper extends BaseMapper<Cooperation> {
      * @Date: 2026/3/20 21:41
      * @Param: startDate 开始日期时间（格式：yyyy-MM-dd HH:mm:ss）
      * @Param: endDate 结束日期时间（格式：yyyy-MM-dd HH:mm:ss）
+     * @Param: notDeletedTime 逻辑删除时间标记
      * @Return: List<HeatmapDataResponse> 热力图数据列表
      * @Description: 统计各区域的合作次数（热力图数据）
      */
@@ -30,8 +31,8 @@ public interface CooperationMapper extends BaseMapper<Cooperation> {
             "FROM cooperation c " +
             "INNER JOIN manufacture m ON c.manu_id = m.id " +
             "WHERE m.region IS NOT NULL AND m.region != '' " +
-            "AND c.deleted = '1970-01-01 00:00:00' " +
-            "AND m.deleted = '1970-01-01 00:00:00' " +
+            "AND c.deleted = #{notDeletedTime} " +
+            "AND m.deleted = #{notDeletedTime} " +
             "AND m.audit_status = 'approved' " +
             "<if test='startDate != null and startDate != \"\"'>" +
             "AND c.create_time >= #{startDate} " +
@@ -43,5 +44,6 @@ public interface CooperationMapper extends BaseMapper<Cooperation> {
             "ORDER BY value DESC" +
             "</script>")
     List<HeatmapDataResponse> getHeatmapData(@Param("startDate") String startDate,
-                                             @Param("endDate") String endDate);
+                                             @Param("endDate") String endDate,
+                                             @Param("notDeletedTime") String notDeletedTime);
 }

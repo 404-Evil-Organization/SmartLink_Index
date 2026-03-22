@@ -36,6 +36,11 @@ public class DashboardServiceImpl implements DashboardService {
     private final NetworkMapper networkMapper;
 
     /**
+     * top 参数的最大限制值，防止恶意请求导致数据库压力过大
+     */
+    private static final int MAX_TOP_LIMIT = 50;
+
+    /**
      * @Author: 6017
      * @Date: 2026/3/20 21:41
      * @Param:
@@ -109,23 +114,35 @@ public class DashboardServiceImpl implements DashboardService {
                     .format(DateConstants.DATETIME_FORMATTER);
         }
 
-        return cooperationMapper.getHeatmapData(startDateTime, endDateTime);
+        // 传入 notDeletedTime 参数
+        return cooperationMapper.getHeatmapData(startDateTime, endDateTime, DateConstants.getNotDeletedTimeStr());
     }
 
     /**
      * @Author: 6017
      * @Date: 2026/3/20 21:41
-     * @Param: top 返回数量
+     * @Param: top 返回数量（会被限制在 1-50 之间）
      * @Return: List<TopDemandResponse> 热门需求列表
      * @Description: 获取热门需求
      */
     @Override
     public List<TopDemandResponse> getTopDemands(Integer top) {
-        if (top == null || top <= 0) {
-            top = 5;
+        // 对 top 参数做合理区间约束，防止恶意传入超大值导致数据库压力过大
+        int validTop;
+        if (top == null || top < 1) {
+            validTop = 5;  // 默认值
+            log.debug("top 参数无效（null 或 <1），使用默认值: {}", validTop);
+        } else if (top > MAX_TOP_LIMIT) {
+            validTop = MAX_TOP_LIMIT;
+            log.warn("top 参数 {} 超过最大限制 {}，已截断为 {}", top, MAX_TOP_LIMIT, validTop);
+        } else {
+            validTop = top;
         }
-        log.debug("获取热门需求，top: {}", top);
-        return demandMapper.getTopDemands(top, DateConstants.getNotDeletedLocalDateTime());
+
+        log.debug("获取热门需求，有效 top: {}", validTop);
+
+        // 传入两个参数：top 和 逻辑删除时间常量（使用 LocalDateTime 类型，与 Mapper 签名匹配）
+        return demandMapper.getTopDemands(validTop, DateConstants.getNotDeletedLocalDateTime());
     }
 
     /**
