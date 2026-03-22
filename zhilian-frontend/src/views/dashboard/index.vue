@@ -242,21 +242,14 @@ const fetchAllData = async () => {
         symbolSize: node.symbolSize || 30,
         category: node.category || 0,
         value: node.value || 1,
-        id: node.id, // 保留 id 供调试
+        id: node.id,
       })),
       links: rawLinks.map((link) => ({
-        source: idToName[link.source] || link.source, // 转换为 name
+        source: idToName[link.source] || link.source,
         target: idToName[link.target] || link.target,
         value: link.value ?? 1,
       })),
     };
-
-    // 数据准备完成后先关闭 loading，让图表容器通过 v-if/v-show 挂载到 DOM
-    loading.value = false;
-    // 等待视图更新完成再进行图表渲染，避免容器未挂载导致的竞态问题
-    await nextTick();
-    renderHeatmapChart();
-    renderNetworkChart();
 
     ElMessage.success("数据更新成功");
   } catch (error) {

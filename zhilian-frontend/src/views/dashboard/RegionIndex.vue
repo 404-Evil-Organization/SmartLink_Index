@@ -362,13 +362,14 @@ const rightPeriodOptions = computed(() => {
 
 // 处理左侧周期类型变化
 const handleLeftPeriodTypeChange = () => {
-  leftPeriodValue.value = leftPeriodType.value === "quarter" ? 1 : 1;
+  // 切换周期类型时将周期值重置为 1，保持与原有行为一致
+  leftPeriodValue.value = 1;
   handleLeftFilter();
 };
-
 // 处理右侧周期类型变化
 const handleRightPeriodTypeChange = () => {
-  rightPeriodValue.value = rightPeriodType.value === "quarter" ? 1 : 1;
+  // 切换周期类型时将周期值重置为 1，保持与原有行为一致
+  rightPeriodValue.value = 1;
   handleRightFilter();
 };
 
@@ -664,15 +665,13 @@ const handleRefresh = async () => {
   ElMessage.success("刷新成功");
 };
 
-// 监听趋势数据变化，自动更新折线图
+// 监听趋势数据变化，无论是否为空都重新渲染
 watch(
   trendData,
-  (newVal) => {
-    if (newVal.length > 0 && trendChartRef.value) {
-      nextTick(() => {
-        initTrendChart(true);
-      });
-    }
+  () => {
+    nextTick(() => {
+      initTrendChart(true);
+    });
   },
   { immediate: true },
 );
@@ -685,9 +684,6 @@ const handleResize = () => {
 
 onMounted(async () => {
   await fetchRegionList(getLeftParams());
-  if (selectedRegion.value) {
-    await fetchRegionDetail(selectedRegion.value, getRightParams());
-  }
   window.addEventListener("resize", handleResize);
 });
 
