@@ -142,9 +142,6 @@ public class IndexController {
             return Result.badRequest(error);
         }
         RegionDetailVO vo = regionIndexService.getRegionDetail(region, query);
-        if (vo == null) {
-            return Result.notFound("该区域指数不存在");
-        }
         return Result.success(vo);
     }
 
