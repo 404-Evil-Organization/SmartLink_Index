@@ -131,16 +131,16 @@
     </el-card>
 
     <!-- 重置密码弹窗（增加复制按钮） -->
-    <el-dialog v-model="passwordDialog.visible" title="重置密码" width="400px">
-      <p>新密码：<strong>{{ passwordDialog.newPassword }}</strong></p>
-      <p>请妥善保管，登录后请立即修改。</p>
-      <template #footer>
-        <el-button @click="passwordDialog.visible = false">关闭</el-button>
-        <el-button type="primary" @click="copyPassword">复制密码</el-button>
-      </template>
-    </el-dialog>
-  </div>
-</template>
+    <el-dialog v-model="passwordDialog.visible" title="重置密码" width="400px" @closed="clearPassword">
+        <p>新密码：<strong>{{ passwordDialog.newPassword }}</strong></p>
+        <p>请妥善保管，登录后请立即修改。</p>
+        <template #footer>
+          <el-button @click="passwordDialog.visible = false">关闭</el-button>
+          <el-button type="primary" @click="copyPassword">复制密码</el-button>
+        </template>
+      </el-dialog>
+    </div>
+  </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
@@ -181,6 +181,11 @@ const passwordDialog = reactive({
   newPassword: ''
 })
 
+// 清空弹窗中的密码（降低内存残留风险）
+const clearPassword = () => {
+  passwordDialog.newPassword = ''
+}
+
 // 获取列表
 const fetchList = async () => {
   loading.value = true
@@ -193,25 +198,13 @@ const fetchList = async () => {
       ...(searchForm.keyword && { keyword: searchForm.keyword })
     }
     const res = await getUserList(params)
-    // 打印实际返回结构，便于调试
-    console.log('用户列表响应:', res)
-
-    // 根据实际返回结构调整判断逻辑
-    if (res.code === 200 && res.data) {
-      tableData.value = res.data.records || []
-      pagination.total = res.data.total || 0
-    } else if (res.records !== undefined) {
-      // 如果响应直接是数据对象（无 code）
-      tableData.value = res.records || []
-      pagination.total = res.total || 0
-    } else {
-      // 其他情况
-      console.error('获取用户列表失败，响应结构异常:', res)
-      ElMessage.error(res.message || '获取用户列表失败')
-    }
+    // 直接使用分页数据（拦截器已剥除外层 code）
+    tableData.value = res?.records || []
+    pagination.total = res?.total || 0
   } catch (error) {
-    console.error('获取用户列表失败', error)
-    ElMessage.error('获取用户列表失败')
+    // 兜底：清空数据，错误提示已由拦截器统一处理
+    tableData.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
@@ -268,18 +261,14 @@ const toggleStatus = (row) => {
   }).then(async () => {
     try {
       const res = await updateUserStatus(row.id, newStatus)
-      console.log('updateUserStatus 响应:', res)  // 调试日志
 
       // 成功条件：响应为 null（代表操作成功且无返回数据）或响应包含 code 且为 200
       if (res === null || (res && (res.code === undefined || res.code === 200))) {
         ElMessage.success(`${action}成功`)
         fetchList()
       } else {
-        ElMessage.error(res?.message || `${action}失败`)
       }
     } catch (error) {
-      console.error(error)
-      ElMessage.error(`${action}失败`)
     }
   }).catch(() => {})
 }
@@ -298,24 +287,55 @@ const resetPassword = (row) => {
         passwordDialog.visible = true
         ElMessage.success('密码重置成功')
       } else {
-        ElMessage.error(res?.message || '重置密码失败')
       }
     } catch (error) {
-      console.log('重置密码失败', error)
-      ElMessage.error('重置密码失败')
     }
   }).catch(() => {})
 }
 
 // 复制密码
-const copyPassword = () => {
-  const input = document.createElement('input')
-  input.value = passwordDialog.newPassword
-  document.body.appendChild(input)
-  input.select()
-  document.execCommand('copy')
-  document.body.removeChild(input)
-  ElMessage.success('密码已复制到剪贴板')
+const copyPassword = async () => {
+  const text = passwordDialog.newPassword
+  if (!text) {
+    ElMessage.warning('没有可复制的密码')
+    return
+  }
+
+  // 优先使用现代 Clipboard API
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text)
+      ElMessage.success('密码已复制到剪贴板')
+    } catch (err) {
+      console.error('Clipboard API 复制失败', err)
+      // 降级到传统方法
+      fallbackCopyTextToClipboard(text)
+    }
+  } else {
+    // 不支持 Clipboard API，直接降级
+    fallbackCopyTextToClipboard(text)
+  }
+}
+
+// 降级方案（使用废弃的 execCommand，但作为后备）
+const fallbackCopyTextToClipboard = (text) => {
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  document.body.appendChild(textarea)
+  textarea.select()
+  try {
+    const successful = document.execCommand('copy')
+    if (successful) {
+      ElMessage.success('密码已复制到剪贴板')
+    } else {
+      ElMessage.error('复制失败，请手动复制')
+    }
+  } catch (err) {
+    console.error('降级复制失败', err)
+    ElMessage.error('复制失败，请手动复制')
+  } finally {
+    document.body.removeChild(textarea)
+  }
 }
 
 // 查看详情（预留）
