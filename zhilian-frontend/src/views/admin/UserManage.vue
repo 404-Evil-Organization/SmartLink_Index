@@ -1,0 +1,399 @@
+<template>
+  <div class="user-manage">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">用户管理</h2>
+        <el-breadcrumb separator="/" class="breadcrumb">
+          <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+          <el-breadcrumb-item>管理员</el-breadcrumb-item>
+          <el-breadcrumb-item>用户管理</el-breadcrumb-item>
+        </el-breadcrumb>
+      </div>
+    </div>
+
+    <!-- 搜索卡片 -->
+    <div class="search-bar">
+      <el-form :model="searchForm" label-width="150px" inline>
+        <el-form-item label="角色" >
+          <el-select v-model="searchForm.role" placeholder="全部" clearable style="width: 200px">
+            <el-option label="制造企业" value="manufacture" />
+            <el-option label="服务商" value="service" />
+            <el-option label="园区/政府" value="park" />
+            <el-option label="管理员" value="admin" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="searchForm.status" placeholder="全部" clearable>
+            <el-option label="正常" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="关键词">
+          <el-input v-model="searchForm.keyword" placeholder="用户名" clearable style="width: 200px" />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <el-button @click="resetSearch">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+
+    <!-- 表格卡片 -->
+    <el-card class="table-card" shadow="hover">
+      <div class="table-toolbar">
+        <div class="table-title">用户列表</div>
+        <div class="table-actions">
+          <el-tooltip content="刷新">
+            <el-button :icon="Refresh" circle @click="fetchList" />
+          </el-tooltip>
+        </div>
+      </div>
+
+      <el-table :data="tableData" v-loading="loading" border stripe>
+        <el-table-column prop="id" label="ID" width="80" />
+        <el-table-column prop="username" label="用户名" min-width="120" />
+        <el-table-column label="角色" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.role === 'admin' ? 'danger' : 'info'" size="small">
+              {{ getRoleName(row.role) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="phone" label="手机号" width="120" />
+        <el-table-column prop="email" label="邮箱" min-width="180" />
+        <el-table-column label="状态" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+              {{ row.status === 1 ? '正常' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="160">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="290" fixed="right">
+          <template #default="{ row }">
+            <div style="display: flex; gap: 8px; flex-wrap: nowrap;">
+            <el-button
+              v-if="row.status === 1"
+              size="small"
+              type="danger"
+              plain
+              :icon="Close"
+              @click="toggleStatus(row)"
+            >
+              禁用
+            </el-button>
+            <el-button
+              v-else
+              size="small"
+              type="success"
+              plain
+              :icon="Check"
+              @click="toggleStatus(row)"
+            >
+              启用
+            </el-button>
+            <el-button
+              size="small"
+              type="warning"
+              plain
+              :icon="Key"
+              @click="resetPassword(row)"
+            >
+              重置密码
+            </el-button>
+            <el-button
+              size="small"
+              @click="viewDetail(row)"
+            >
+              <el-icon><View /></el-icon> 查看
+            </el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.size"
+          :page-sizes="[10, 20, 30, 50]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="pagination.total"
+          @size-change="handlePageSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
+    </el-card>
+
+    <!-- 重置密码弹窗（增加复制按钮） -->
+    <el-dialog v-model="passwordDialog.visible" title="重置密码" width="400px">
+      <p>新密码：<strong>{{ passwordDialog.newPassword }}</strong></p>
+      <p>请妥善保管，登录后请立即修改。</p>
+      <template #footer>
+        <el-button @click="passwordDialog.visible = false">关闭</el-button>
+        <el-button type="primary" @click="copyPassword">复制密码</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Check, Close, Key, View, Refresh } from '@element-plus/icons-vue'
+import { getUserList, updateUserStatus, resetUserPassword } from '@/api/admin'
+
+// 角色映射
+const roleMap = {
+  manufacture: '制造企业',
+  service: '服务商',
+  park: '园区/政府',
+  admin: '管理员'
+}
+const getRoleName = (role) => roleMap[role] || role
+
+// 搜索表单
+const searchForm = reactive({
+  role: '',
+  status: '',
+  keyword: ''
+})
+
+// 表格数据
+const tableData = ref([])
+const loading = ref(false)
+
+// 分页
+const pagination = reactive({
+  current: 1,
+  size: 10,
+  total: 0
+})
+
+// 重置密码弹窗
+const passwordDialog = reactive({
+  visible: false,
+  newPassword: ''
+})
+
+// 获取列表
+const fetchList = async () => {
+  loading.value = true
+  try {
+    const params = {
+      page: pagination.current,
+      size: pagination.size,
+      ...(searchForm.role && { role: searchForm.role }),
+      ...(searchForm.status !== '' && { status: searchForm.status }),
+      ...(searchForm.keyword && { keyword: searchForm.keyword })
+    }
+    const res = await getUserList(params)
+    // 打印实际返回结构，便于调试
+    console.log('用户列表响应:', res)
+
+    // 根据实际返回结构调整判断逻辑
+    if (res.code === 200 && res.data) {
+      tableData.value = res.data.records || []
+      pagination.total = res.data.total || 0
+    } else if (res.records !== undefined) {
+      // 如果响应直接是数据对象（无 code）
+      tableData.value = res.records || []
+      pagination.total = res.total || 0
+    } else {
+      // 其他情况
+      console.error('获取用户列表失败，响应结构异常:', res)
+      ElMessage.error(res.message || '获取用户列表失败')
+    }
+  } catch (error) {
+    console.error('获取用户列表失败', error)
+    ElMessage.error('获取用户列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 搜索与重置
+const handleSearch = () => {
+  pagination.current = 1
+  fetchList()
+}
+const resetSearch = () => {
+  searchForm.role = ''
+  searchForm.status = ''
+  searchForm.keyword = ''
+  handleSearch()
+}
+
+// 分页
+const handlePageChange = (val) => {
+  pagination.current = val
+  fetchList()
+}
+const handlePageSizeChange = (val) => {
+  pagination.size = val
+  pagination.current = 1
+  fetchList()
+}
+
+// 处理时间显示的函数，兼容不同格式的时间字符串，并且在无法解析时返回 '-'
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  // 将 "YYYY-MM-DD HH:mm:ss" 转换为 "YYYY-MM-DDTHH:mm:ss" 以便解析
+  let normalized = dateStr
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+    normalized = dateStr.replace(' ', 'T')
+  }
+  const date = new Date(normalized)
+  if (isNaN(date.getTime())) return '-'
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+// 启用/禁用
+const toggleStatus = (row) => {
+  const newStatus = row.status === 1 ? 0 : 1
+  const action = newStatus === 1 ? '启用' : '禁用'
+  ElMessageBox.confirm(`确定${action}用户 "${row.username}" 吗？`, '提示', {
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const res = await updateUserStatus(row.id, newStatus)
+      console.log('updateUserStatus 响应:', res)  // 调试日志
+
+      // 成功条件：响应为 null（代表操作成功且无返回数据）或响应包含 code 且为 200
+      if (res === null || (res && (res.code === undefined || res.code === 200))) {
+        ElMessage.success(`${action}成功`)
+        fetchList()
+      } else {
+        ElMessage.error(res?.message || `${action}失败`)
+      }
+    } catch (error) {
+      console.error(error)
+      ElMessage.error(`${action}失败`)
+    }
+  }).catch(() => {})
+}
+
+// 重置密码
+const resetPassword = (row) => {
+  ElMessageBox.confirm(`确定重置用户 "${row.username}" 的密码吗？`, '提示', {
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const res = await resetUserPassword(row.id)
+      // 兼容两种返回：如果有 newPassword 字段则直接使用；如果有 data.newPassword 则使用
+      const newPassword = res?.newPassword || res?.data?.newPassword
+      if (newPassword) {
+        passwordDialog.newPassword = newPassword
+        passwordDialog.visible = true
+        ElMessage.success('密码重置成功')
+      } else {
+        ElMessage.error(res?.message || '重置密码失败')
+      }
+    } catch (error) {
+      console.log('重置密码失败', error)
+      ElMessage.error('重置密码失败')
+    }
+  }).catch(() => {})
+}
+
+// 复制密码
+const copyPassword = () => {
+  const input = document.createElement('input')
+  input.value = passwordDialog.newPassword
+  document.body.appendChild(input)
+  input.select()
+  document.execCommand('copy')
+  document.body.removeChild(input)
+  ElMessage.success('密码已复制到剪贴板')
+}
+
+// 查看详情（预留）
+const viewDetail = (row) => {
+  ElMessage.info(`查看用户 ${row.username} 详情功能开发中`)
+}
+
+onMounted(() => {
+  fetchList()
+})
+</script>
+
+<style scoped>
+.user-manage {
+  padding: 24px;
+  background-color: #f0f2f5;
+  min-height: 100vh;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2f3d;
+  line-height: 1.2;
+}
+
+.breadcrumb :deep(.el-breadcrumb__inner) {
+  font-weight: 400;
+  color: #8590a6;
+}
+
+/* 搜索卡片样式（与标签管理一致） */
+.search-bar {
+  margin-bottom: 16px;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+.table-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.table-title {
+  font-weight: 600;
+  color: #1f2f3d;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px 20px;
+}
+</style>
