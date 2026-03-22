@@ -79,8 +79,13 @@
       </el-result>
     </el-card>
 
-    <!-- 报告卡片（始终存在，通过 v-if 控制内部显示） -->
-    <el-card class="report-card fancy-card" shadow="hover" v-loading="loadingReport">
+    <!-- 报告卡片：仅在有报告数据或需要显示“无报告”提示时渲染 -->
+    <el-card
+        v-if="reportData || showNoReport"
+        class="report-card fancy-card"
+        shadow="hover"
+        v-loading="loadingReport"
+    >
       <!-- 有报告时显示报告内容 -->
       <div class="report-content" v-if="reportData">
         <!-- 基本信息卡片 -->
