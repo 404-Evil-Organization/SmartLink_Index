@@ -1,15 +1,38 @@
 package com.zhilian.zhilianbackend.service;
 
-import com.zhilian.zhilianbackend.entity.Cooperation;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.zhilian.zhilianbackend.common.result.PageResult;
+import com.zhilian.zhilianbackend.dto.response.CooperationDetailVO;
+import com.zhilian.zhilianbackend.dto.response.CooperationRecordVO;
+import com.zhilian.zhilianbackend.entity.Cooperation;
 
 /**
- * @Author: 6017
- * @Date: 2026/3/9 21:24
- * @Param: 
- * @Return: 
- * @Description: 合作记录表业务逻辑接口，定义合作相关的业务方法
+ * @Author: xiaodengyou
+ * @Date: 2026/3/20 23:17
+ * @Param:
+ * @Return:
+ * @Description: 合作记录业务逻辑接口，定义合作记录的列表查询和详情查询方法
 **/
+
 public interface CooperationService extends IService<Cooperation> {
 
+    /**
+     * 分页查询当前用户的合作记录（非管理员）
+     */
+    PageResult<CooperationRecordVO> pageMyCooperations(Long userId, String userRole, Long enterpriseId, String status, Integer page, Integer size);
+
+    /**
+     * 分页查询合作记录（管理员专用，不限制企业）
+     */
+    PageResult<CooperationRecordVO> pageMyCooperationsAdmin(Long userId, Long enterpriseId, String status, Integer page, Integer size);
+
+    /**
+     * 获取合作记录详情（非管理员，需校验权限）
+     */
+    CooperationDetailVO getCooperationDetail(Long cooperationId, Long userId, String userRole);
+
+    /**
+     * 获取合作记录详情（管理员专用，无权限校验）
+     */
+    CooperationDetailVO getCooperationDetailAdmin(Long cooperationId, Long userId);
 }

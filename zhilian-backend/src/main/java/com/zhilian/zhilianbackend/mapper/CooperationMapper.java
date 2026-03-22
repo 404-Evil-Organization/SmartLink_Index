@@ -1,6 +1,9 @@
 package com.zhilian.zhilianbackend.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zhilian.zhilianbackend.dto.response.CooperationRecordVO;
 import com.zhilian.zhilianbackend.dto.response.HeatmapDataResponse;
 import com.zhilian.zhilianbackend.entity.Cooperation;
 import org.apache.ibatis.annotations.Mapper;
@@ -47,4 +50,40 @@ public interface CooperationMapper extends BaseMapper<Cooperation> {
     List<HeatmapDataResponse> getHeatmapData(@Param("startDate") LocalDateTime startDate,
                                              @Param("endDate") LocalDateTime endDate,
                                              @Param("notDeletedTime") LocalDateTime notDeletedTime);
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: page 分页参数
+     * @Param: companyId 企业ID（根据角色决定是 manu_id 或 service_id）
+     * @Param: role 角色（manufacture/service）
+     * @Param: userId 当前用户ID（用于计算 hasEvaluated）
+     * @Param: status 状态筛选
+     * @Param: notDeletedTime 逻辑删除时间标记
+     * @Return: 分页的合作记录视图对象
+     * @Description: 分页查询当前用户的合作记录（非管理员）
+     */
+    IPage<CooperationRecordVO> selectMyCooperations(Page<?> page,
+                                                    @Param("companyId") Long companyId,
+                                                    @Param("role") String role,
+                                                    @Param("userId") Long userId,
+                                                    @Param("status") String status,
+                                                    @Param("notDeletedTime") LocalDateTime notDeletedTime);
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: page 分页参数
+     * @Param: companyId 企业ID（可选，若传入则匹配 manu_id 或 service_id）
+     * @Param: status 状态筛选
+     * @Param: userId 当前用户ID（用于计算 hasEvaluated）
+     * @Param: notDeletedTime 逻辑删除时间标记
+     * @Return: 分页的合作记录视图对象
+     * @Description: 分页查询合作记录（管理员专用，不限制角色）
+     */
+    IPage<CooperationRecordVO> selectMyCooperationsAdmin(Page<?> page,
+                                                         @Param("companyId") Long companyId,
+                                                         @Param("status") String status,
+                                                         @Param("userId") Long userId,
+                                                         @Param("notDeletedTime") LocalDateTime notDeletedTime);
 }

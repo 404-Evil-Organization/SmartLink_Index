@@ -1,19 +1,16 @@
 package com.zhilian.zhilianbackend.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
-import java.io.Serializable;
-import java.util.Date;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.io.Serializable;
+import java.util.Date;
+
 /**
- * @Author: 6017
- * @Date: 2026/3/9 21:47
+ * @Author: xiaodengyou
+ * @Date: 2026/3/20 21:47
  * @Param: 
  * @Return: 
  * @Description: 信用分记录表实体类，对应credit_score表
