@@ -818,9 +818,9 @@
               :total="certPagination.total"
               @size-change="
                 (size) => {
-                  servicePagination.size = size;
-                  servicePagination.current = 1;
-                  fetchServiceList();
+                  certPagination.size = size;
+                  certPagination.current = 1;
+                  fetchCertList();
                 }
               "
               @current-change="fetchCertList"
@@ -1433,9 +1433,12 @@ const handleDeleteCert = async (certId) => {
   }
 };
 
+// 记录生成的本地预览 URL，用于后续释放以防止内存泄漏
+const currentPreviewUrl = ref("");
+
 // 处理证书文件选择
-const handleCertFileChange = (fileList) => {
-  const file = fileList.raw;
+const handleCertFileChange = (fileItem) => {
+  const file = fileItem.raw;
   if (!file) return;
 
   const allowedTypes = [
@@ -1461,14 +1464,30 @@ const handleCertFileChange = (fileList) => {
 
   certForm.file = file;
 
-  // 如果是 PDF，则不设置预览 URL，使用 Element Plus 默认文件图标；图片文件使用 blob URL 以便预览
-  if (file.type === "application/pdf") {
-    uploadFile.url = "";
-  } else {
-    uploadFile.url = URL.createObjectURL(file);
+  // 释放之前可能存在的旧 URL
+  if (currentPreviewUrl.value) {
+    URL.revokeObjectURL(currentPreviewUrl.value);
+    currentPreviewUrl.value = "";
   }
 
-  certFileList.value = [uploadFile];
+  // 构建独立的文件展示对象
+  const displayFile = {
+    name: file.name,
+    status: "success",
+    uid: file.uid,
+    raw: file
+  };
+
+  // 如果是 PDF，给定一个默认的文档图标，否则使用 blob URL 以便预览图片
+  if (file.type === "application/pdf") {
+    displayFile.url = new URL('../../assets/pdf-icon.png', import.meta.url).href;
+  } else {
+    const objectUrl = URL.createObjectURL(file);
+    displayFile.url = objectUrl;
+    currentPreviewUrl.value = objectUrl;
+  }
+
+  certFileList.value = [displayFile];
   // 清除校验错误
   if (certFormRef.value) {
     certFormRef.value.clearValidate("file");
@@ -1479,17 +1498,28 @@ const handleCertFileChange = (fileList) => {
 const handleCertFileRemove = () => {
   certForm.file = null;
   certFileList.value = [];
+  if (currentPreviewUrl.value) {
+    URL.revokeObjectURL(currentPreviewUrl.value);
+    currentPreviewUrl.value = "";
+  }
 };
 
 // 预览证书文件（本地预览）
-const handleCertFilePreview = (uploadFile) => {
-  if (!uploadFile.url) return;
-  // 如果是 pdf，直接在新窗口打开 URL
-  if (uploadFile.raw && uploadFile.raw.type === "application/pdf") {
-    window.open(uploadFile.url, "_blank");
+const handleCertFilePreview = (fileItem) => {
+  if (!fileItem.url) return;
+  // 如果是 pdf，直接在新窗口打开 URL（针对已有文件）
+  // 针对新选中的本地 PDF 文件，由于我们替换了占位图，需要根据 raw 来判断
+  if (fileItem.raw && fileItem.raw.type === "application/pdf") {
+    // 临时创建一个供预览的 URL，用完即焚
+    const tempUrl = URL.createObjectURL(fileItem.raw);
+    window.open(tempUrl, "_blank");
+    // 延迟释放，给浏览器打开窗口留点时间
+    setTimeout(() => URL.revokeObjectURL(tempUrl), 1000);
+  } else if (fileItem.name && fileItem.name.toLowerCase().endsWith(".pdf")) {
+      window.open(fileItem.url, "_blank");
   } else {
     // 图片使用已有的预览组件
-    openCertPreview(uploadFile.url);
+    openCertPreview(fileItem.url);
   }
 };
 
@@ -1553,6 +1583,10 @@ const closeCertDialog = () => {
   deletingCertId.value = null;
   previewVisible.value = false;
   previewImage.value = "";
+  if (currentPreviewUrl.value) {
+    URL.revokeObjectURL(currentPreviewUrl.value);
+    currentPreviewUrl.value = "";
+  }
 };
 
 // 编辑证书弹窗
