@@ -1,9 +1,9 @@
 package com.zhilian.zhilianbackend.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import org.hibernate.validator.constraints.Range;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -20,7 +20,7 @@ public class DemandPublishRequest {
     @Schema(description = "详细描述", example = "需要专业PCB设计公司，有高速PCB设计经验者优先。")
     private String description;
 
-    @Range(min = 0, message = "预算必须大于等于0")
+    @DecimalMin(value = "0.0", message = "预算必须大于等于0")
     @Schema(description = "预算金额（万元）", example = "10.0")
     private BigDecimal expectedBudget;
 

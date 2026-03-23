@@ -27,10 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -86,7 +83,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
 
         // 4. 保存标签关联（根据标签名称查询 ID）
         if (!CollectionUtils.isEmpty(request.getTags())) {
-            // 根据名称查询标签（不校验是否存在，存在的才插入）
+            // 根据名称查询标签（不限制类别，允许同名不同类别标签）
             List<Tag> tags = tagService.lambdaQuery()
                     .in(Tag::getName, request.getTags())
                     .list();
@@ -157,16 +154,23 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
                 tagService.listByIds(tagIds).stream()
                         .collect(Collectors.toMap(Tag::getId, Tag::getName));
 
-        // 6. 构建 demandId -> List<TagSimpleVO> 映射
+        // 6. 构建 demandId -> List<TagSimpleVO> 映射（过滤掉 name 为 null 的标签）
         Map<Long, List<DemandPendingVO.TagSimpleVO>> demandTagsMap = demandTags.stream()
+                .map(dt -> {
+                    String tagName = tagIdToNameMap.get(dt.getTagId());
+                    if (tagName == null) {
+                        log.warn("标签 ID {} 已不存在或被删除，需求 ID {} 的标签将被忽略", dt.getTagId(), dt.getDemandId());
+                        return null;
+                    }
+                    DemandPendingVO.TagSimpleVO tagVO = new DemandPendingVO.TagSimpleVO();
+                    tagVO.setId(dt.getTagId());
+                    tagVO.setName(tagName);
+                    return new AbstractMap.SimpleEntry<>(dt.getDemandId(), tagVO);
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(
-                        DemandTag::getDemandId,
-                        Collectors.mapping(dt -> {
-                            DemandPendingVO.TagSimpleVO tagVO = new DemandPendingVO.TagSimpleVO();
-                            tagVO.setId(dt.getTagId());
-                            tagVO.setName(tagIdToNameMap.get(dt.getTagId()));
-                            return tagVO;
-                        }, Collectors.toList())
+                        Map.Entry::getKey,
+                        Collectors.mapping(Map.Entry::getValue, Collectors.toList())
                 ));
 
         // 7. 填充每个需求的标签列表
@@ -224,7 +228,6 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             LambdaUpdateWrapper<DemandTag> updateWrapper = new LambdaUpdateWrapper<>();
             updateWrapper.eq(DemandTag::getDemandId, demandId)
                     .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime());
-            // 调用 delete 方法，MyBatis Plus 会根据 @TableLogic 生成 UPDATE deleted = now() WHERE ...
             boolean deletedTags = demandTagMapper.delete(updateWrapper) > 0;
             if (deletedTags) {
                 log.info("已逻辑删除需求 {} 的关联标签", demandId);
