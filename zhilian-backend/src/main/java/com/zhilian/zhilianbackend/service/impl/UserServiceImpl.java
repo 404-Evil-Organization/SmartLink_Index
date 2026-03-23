@@ -318,11 +318,13 @@ public class UserServiceImpl implements UserService {
         detail.setCreateTime(user.getCreateTime());
 
         if ("manufacture".equals(user.getRole())) {
-            // 查询该用户关联的制造企业列表，按创建时间降序，取最新一条
-            List<Manufacture> manufactureList = manufactureService.lambdaQuery()
-                    .eq(Manufacture::getUserId, user.getId())
-                    .orderByDesc(Manufacture::getCreateTime)
-                    .list();
+            // 分页查询，只取最新 2 条记录，避免全量加载
+            Page<Manufacture> page = new Page<>(1, 2);
+            LambdaQueryWrapper<Manufacture> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Manufacture::getUserId, user.getId())
+                    .orderByDesc(Manufacture::getCreateTime);
+            Page<Manufacture> manufacturePage = manufactureService.page(page, queryWrapper);
+            List<Manufacture> manufactureList = manufacturePage.getRecords();
             if (!manufactureList.isEmpty()) {
                 if (manufactureList.size() > 1) {
                     log.error("数据异常：用户ID={} 关联多条制造企业记录，取最新一条", user.getId());
@@ -336,11 +338,13 @@ public class UserServiceImpl implements UserService {
                 detail.setManufactureInfo(info);
             }
         } else if ("service".equals(user.getRole())) {
-            // 查询该用户关联的服务商列表，按创建时间降序，取最新一条
-            List<ServiceProvider> serviceList = serviceProviderService.lambdaQuery()
-                    .eq(ServiceProvider::getUserId, user.getId())
-                    .orderByDesc(ServiceProvider::getCreateTime)
-                    .list();
+            // 分页查询，只取最新 2 条记录，避免全量加载
+            Page<ServiceProvider> page = new Page<>(1, 2);
+            LambdaQueryWrapper<ServiceProvider> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(ServiceProvider::getUserId, user.getId())
+                    .orderByDesc(ServiceProvider::getCreateTime);
+            Page<ServiceProvider> servicePage = serviceProviderService.page(page, queryWrapper);
+            List<ServiceProvider> serviceList = servicePage.getRecords();
             if (!serviceList.isEmpty()) {
                 if (serviceList.size() > 1) {
                     log.error("数据异常：用户ID={} 关联多条服务商记录，取最新一条", user.getId());
@@ -398,5 +402,15 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         userMapper.updateById(user);
         return newPassword;
+    }
+
+    @Override
+    public Integer getUserStatus(Long userId) {
+        // 仅查询 status 字段，减少数据传输和对象构建开销
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.select(User::getStatus)
+                .eq(User::getId, userId);
+        User user = userMapper.selectOne(wrapper);
+        return user != null ? user.getStatus() : null;
     }
 }

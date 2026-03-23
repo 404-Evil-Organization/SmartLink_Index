@@ -91,4 +91,12 @@ public interface UserService {
      * @Description: 管理员 - 重置用户密码（生成临时密码并返回）
      */
     String resetUserPassword(Long userId);
+    /**
+      * @Author: xiaodengyou
+      * @Date: 2026/3/23 13:30
+      * @Param: userId 用户ID
+      * @Return: 用户状态：0-禁用，1-正常，若用户不存在返回 null
+      * @Description: 获取用户状态（仅查询 status 字段，不返回完整用户信息）
+     **/
+    Integer getUserStatus(Long userId);
 }

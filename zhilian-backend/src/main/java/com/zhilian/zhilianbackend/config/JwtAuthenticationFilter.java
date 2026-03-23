@@ -1,6 +1,5 @@
 package com.zhilian.zhilianbackend.config;
 
-import com.zhilian.zhilianbackend.dto.response.UserInfoResponse;
 import com.zhilian.zhilianbackend.service.UserService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -46,7 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Lazy
     @Autowired
-    private UserService userService;  // 新增注入，使用 @Lazy 避免潜在循环依赖
+    private UserService userService;
 
     @Value("${jwt.header:Authorization}")
     private String header;
@@ -128,11 +127,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                        // ========== 新增：校验用户状态 ==========
-                        // 查询用户信息，确保用户存在且状态为正常（status=1）
+                        // ========== 校验用户状态 ==========
+                        // 使用轻量级查询，仅获取 status 字段，避免加载完整用户信息
                         try {
-                            UserInfoResponse userInfo = userService.getCurrentUser(userId);
-                            if (userInfo == null || userInfo.getStatus() != 1) {
+                            Integer status = userService.getUserStatus(userId);
+                            if (status == null || status != 1) {
                                 log.warn("用户已被禁用或不存在，userId: {}, 请求: {} {}", userId, request.getMethod(), requestURI);
                                 sendUnauthorizedResponse(response, "账号已被禁用");
                                 return;
