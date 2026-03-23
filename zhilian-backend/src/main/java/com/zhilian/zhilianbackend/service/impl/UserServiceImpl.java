@@ -53,6 +53,8 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private SecurityUtils securityUtils;
 
+    static final SecureRandom random = new SecureRandom();
+
     /**
      * 通过构造器注入所有依赖，在参数上使用 @Lazy 解决与其他 Service 的循环依赖问题。
      * 保持依赖字段为 final，提高不可变性和可测试性。
@@ -254,7 +256,6 @@ public class UserServiceImpl implements UserService {
         String lower = "abcdefghijklmnopqrstuvwxyz";
         String digits = "0123456789";
         String allChars = upper + lower + digits;
-        SecureRandom random = new SecureRandom();
         // 密码长度控制在 8~12 位
         int length = 8 + random.nextInt(5);
         StringBuilder sb = new StringBuilder(length);
