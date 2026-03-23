@@ -534,7 +534,7 @@
 }
 ```
 
-- 1.4.4 删除证书
+#### 1.4.4 删除证书
 
 - **URL**: `/api/certification/{id}`
 - **Method**: `DELETE`
