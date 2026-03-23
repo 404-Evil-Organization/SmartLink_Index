@@ -76,6 +76,14 @@
         <!-- 我的企业页面 -->
         <el-menu-item
           v-if="isAdmin || isManufacture || isService"
+          index="/cooperation/my"
+        >
+          <el-icon><List /></el-icon>
+          <span>我的合作</span>
+        </el-menu-item>
+
+        <el-menu-item
+          v-if="isAdmin || isManufacture || isService"
           index="/enterprise"
         >
           <el-icon>
@@ -142,6 +150,7 @@ import {
   DataAnalysis,
   Tickets,
   OfficeBuilding,
+  List,
   DataLine,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";

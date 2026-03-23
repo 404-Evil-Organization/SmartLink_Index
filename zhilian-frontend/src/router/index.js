@@ -7,6 +7,8 @@ import dashboardRoutes from "./models/dashboard";
 import serviceListRoutes from "./models/service";
 import manufactureRoutes from "./models/manufacture";
 import adminRoutes from "./models/admin";
+import cooperationRoutes from "./models/cooperation";
+import evaluationRoutes from "./models/evaluation";
 import diagnosisRoutes from "./models/diagnosis";
 import errorRoutes from "./models/error";
 import enterpriseRoutes from "./models/enterprise";
@@ -37,6 +39,8 @@ const routes = [
       ...diagnosisRoutes,
       ...serviceListRoutes,
       ...manufactureRoutes,
+      ...cooperationRoutes,
+      ...evaluationRoutes,
       ...enterpriseRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
