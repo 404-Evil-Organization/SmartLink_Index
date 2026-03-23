@@ -9,5 +9,9 @@ export default [
     name: "EnterpriseAudit",
     component: () => import("@/views/admin/EnterpriseAudit.vue"),
   },
-
+  {
+    path: "admin/user",
+    name: "UserManage",
+    component: () => import("@/views/admin/UserManage.vue"),
+  },
 ];
