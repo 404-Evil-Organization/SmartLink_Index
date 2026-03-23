@@ -19,23 +19,14 @@ public class CooperationRecordVO {
     @Schema(description = "合作记录ID")
     private Long id;
 
-    @Schema(description = "制造企业ID")
-    private Long manuId;
-
-    @Schema(description = "制造企业名称")
-    private String manuName;
-
-    @Schema(description = "服务商ID")
-    private Long serviceId;
-
-    @Schema(description = "服务商名称")
-    private String serviceName;
-
-    @Schema(description = "需求ID")
-    private Long demandId;
+    @Schema(description = "合作对方企业名称")
+    private String opponentName;
 
     @Schema(description = "需求标题")
     private String demandTitle;
+
+    @Schema(description = "合同金额（万元）")
+    private BigDecimal amount;
 
     @Schema(description = "合作开始日期")
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -44,9 +35,6 @@ public class CooperationRecordVO {
     @Schema(description = "合作结束日期")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date endDate;
-
-    @Schema(description = "合同金额（万元）")
-    private BigDecimal amount;
 
     @Schema(description = "合作状态：ongoing/completed/cancelled")
     private String status;
