@@ -104,34 +104,34 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Check, Close } from '@element-plus/icons-vue'
-import { getAuditList, auditEnterprise } from '@/api/admin'
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { Refresh, Check, Close } from "@element-plus/icons-vue";
+import { getAuditList, auditEnterprise } from "@/api/admin";
 
 // 搜索表单
 const searchForm = reactive({
-  companyName: '',
-  type: ''
-})
+  companyName: "",
+  type: ""
+});
 
 // 表格数据
-const tableData = ref([])
-const loading = ref(false)
+const tableData = ref([]);
+const loading = ref(false);
 
 // 分页
 const pagination = reactive({
   current: 1,
   size: 10,
   total: 0
-})
+});
 
 // 驳回弹窗
 const rejectDialog = reactive({
   visible: false,
-  reason: '',
+  reason: "",
   currentRow: null
-})
+});
 
 // 获取列表
 const fetchList = async () => {
