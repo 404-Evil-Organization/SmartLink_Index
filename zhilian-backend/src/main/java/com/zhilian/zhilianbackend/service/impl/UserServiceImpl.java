@@ -50,10 +50,9 @@ public class UserServiceImpl implements UserService {
     // 使用构造器注入 + 参数级 @Lazy，避免字段注入带来的不可变性/可测试性问题
     private final ManufactureService manufactureService;
     private final ServiceProviderService serviceProviderService;
-    @Autowired
-    private SecurityUtils securityUtils;
+    private final SecurityUtils securityUtils;
 
-    static final SecureRandom random = new SecureRandom();
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     /**
      * 通过构造器注入所有依赖，在参数上使用 @Lazy 解决与其他 Service 的循环依赖问题。
@@ -62,11 +61,12 @@ public class UserServiceImpl implements UserService {
     public UserServiceImpl(UserMapper userMapper,
                            JwtUtil jwtUtil,
                            @Lazy ManufactureService manufactureService,
-                           @Lazy ServiceProviderService serviceProviderService) {
+                           @Lazy ServiceProviderService serviceProviderService, SecurityUtils securityUtils) {
         this.userMapper = userMapper;
         this.jwtUtil = jwtUtil;
         this.manufactureService = manufactureService;
         this.serviceProviderService = serviceProviderService;
+        this.securityUtils = securityUtils;
     }
 
     /**
@@ -257,20 +257,20 @@ public class UserServiceImpl implements UserService {
         String digits = "0123456789";
         String allChars = upper + lower + digits;
         // 密码长度控制在 8~12 位
-        int length = 8 + random.nextInt(5);
+        int length = 8 + RANDOM.nextInt(5);
         StringBuilder sb = new StringBuilder(length);
         // 先各选取 1 个大写、1 个小写、1 个数字，确保复杂度
-        sb.append(upper.charAt(random.nextInt(upper.length())));
-        sb.append(lower.charAt(random.nextInt(lower.length())));
-        sb.append(digits.charAt(random.nextInt(digits.length())));
+        sb.append(upper.charAt(RANDOM.nextInt(upper.length())));
+        sb.append(lower.charAt(RANDOM.nextInt(lower.length())));
+        sb.append(digits.charAt(RANDOM.nextInt(digits.length())));
         // 若长度大于 3，则用完整字符集补足剩余位数
         for (int i = 3; i < length; i++) {
-            sb.append(allChars.charAt(random.nextInt(allChars.length())));
+            sb.append(allChars.charAt(RANDOM.nextInt(allChars.length())));
         }
         // 使用 Fisher-Yates 洗牌算法随机打乱字符顺序，避免前几位模式固定
         char[] passwordChars = sb.toString().toCharArray();
         for (int i = passwordChars.length - 1; i > 0; i--) {
-            int j = random.nextInt(i + 1);
+            int j = RANDOM.nextInt(i + 1);
             char tmp = passwordChars[i];
             passwordChars[i] = passwordChars[j];
             passwordChars[j] = tmp;

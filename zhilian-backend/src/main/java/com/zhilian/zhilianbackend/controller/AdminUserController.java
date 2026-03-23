@@ -26,20 +26,6 @@ import org.springframework.web.bind.annotation.*;
 public class AdminUserController {
 
     private final UserService userService;
-    private final SecurityUtils securityUtils;
-
-    /**
-     * @Author: xiaodengyou
-     * @Date: 2026/3/21 15:04
-     * @Param:
-     * @Return: void
-     * @Description: 检查当前用户是否为管理员，若不是则抛出 403 异常
-     */
-    private void checkAdmin() {
-        if (!securityUtils.isAdmin()) {
-            throw new BusinessException(403, "无权限，仅管理员可操作");
-        }
-    }
 
     /**
      * @Author: xiaodengyou
@@ -51,7 +37,6 @@ public class AdminUserController {
     @Operation(summary = "获取用户列表（分页）")
     @GetMapping("/list")
     public Result<PageResult<UserListVO>> listUsers(@Valid UserListRequest request) {
-        checkAdmin();
         Page<UserListVO> page = userService.pageUsers(request);
         PageResult<UserListVO> pageResult = PageResult.from(page);
         return Result.success(pageResult);
@@ -67,7 +52,6 @@ public class AdminUserController {
     @Operation(summary = "获取用户详情")
     @GetMapping("/{id}")
     public Result<UserDetailVO> getUserDetail(@PathVariable Long id) {
-        checkAdmin();
         return Result.success(userService.getUserDetail(id));
     }
 
@@ -83,7 +67,6 @@ public class AdminUserController {
     @PutMapping("/status/{id}")
     public Result<Void> updateUserStatus(@PathVariable Long id,
                                          @Valid @RequestBody UserStatusUpdateRequest request) {
-        checkAdmin();
         userService.updateUserStatus(id, request.getStatus());
         return Result.success();
     }
@@ -98,7 +81,6 @@ public class AdminUserController {
     @Operation(summary = "重置用户密码")
     @PostMapping("/reset-password/{id}")
     public Result<ResetPasswordVO> resetPassword(@PathVariable Long id) {
-        checkAdmin();
         String newPassword = userService.resetUserPassword(id);
         ResetPasswordVO vo = new ResetPasswordVO();
         vo.setNewPassword(newPassword);
