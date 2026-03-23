@@ -10,10 +10,10 @@ export function getAuditList(params) {
 }
 
 // 审核企业（通过/驳回）
-export function auditEnterprise(id, status, rejectReason = '') {
+export function auditEnterprise(id, status, auditRemark = '') {
   return request({
     url: `/admin/enterprise/audit/${id}`,
     method: 'put',
-    data: { status, rejectReason }
+    data: { status, auditRemark }
   })
 }
