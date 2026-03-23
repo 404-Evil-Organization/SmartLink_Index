@@ -18,7 +18,6 @@ import com.zhilian.zhilianbackend.service.UserService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
