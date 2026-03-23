@@ -207,7 +207,8 @@ const submitReject = async () => {
   const { currentRow, reason } = rejectDialog
   if (!currentRow) return
   try {
-    await auditEnterprise(currentRow.id, 'rejected', reason)
+    // 这里将第三个参数改为对象，使用统一字段名 auditRemark，避免驳回原因丢失
+    await auditEnterprise(currentRow.id, 'rejected', { auditRemark: reason })
     ElMessage.success('已驳回')
     rejectDialog.visible = false
     fetchList()
