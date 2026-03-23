@@ -91,33 +91,82 @@
       </div>
     </el-card>
 
-    <!-- 驳回原因弹窗 -->
-    <el-dialog v-model="rejectDialog.visible" title="驳回原因" width="500px">
-      <el-input
-        v-model="rejectDialog.reason"
-        type="textarea"
-        :rows="3"
-        placeholder="请输入驳回原因（可选）"
-      />
+    <!-- 通用审核弹窗（支持通过和驳回） -->
+    <el-dialog
+      v-model="auditDialog.visible"
+      :title="auditDialog.title"
+      width="500px"
+    >
+      <el-form ref="auditFormRef" :model="auditDialog" :rules="auditRules">
+        <el-form-item label="审核意见" prop="comment">
+          <el-input
+            v-model="auditDialog.comment"
+            type="textarea"
+            :rows="3"
+            :placeholder="auditDialog.placeholder"
+          />
+        </el-form-item>
+      </el-form>
       <template #footer>
-        <el-button @click="rejectDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="submitReject">确认驳回</el-button>
+        <el-button @click="auditDialog.visible = false">取消</el-button>
+        <el-button type="primary" @click="submitAudit">{{ auditDialog.confirmText }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import { Refresh, Check, Close } from "@element-plus/icons-vue";
-import { getAuditList, auditEnterprise } from "@/api/admin";
-import { createTimeConverter } from "@/composables/date";
+import { ref, reactive, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Refresh, Check, Close } from '@element-plus/icons-vue'
+import { getAuditList, auditEnterprise } from '@/api/admin'
+import { createTimeConverter } from '@/composables/date'
 
-// 格式化日期时间（兼容空格格式和 ISO 格式）
+// 搜索表单
+const searchForm = reactive({
+  companyName: '',
+  type: ''
+})
+
+// 表格数据
+const tableData = ref([])
+const loading = ref(false)
+
+// 分页
+const pagination = reactive({
+  current: 1,
+  size: 10,
+  total: 0
+})
+
+// 审核弹窗数据
+const auditDialog = reactive({
+  visible: false,
+  mode: '',        // 'approve' 或 'reject'
+  title: '',
+  confirmText: '',
+  placeholder: '',
+  comment: '',
+  currentRow: null
+})
+
+// 表单引用
+const auditFormRef = ref(null)
+
+// 动态校验规则（驳回时必填，通过时可选）
+const auditRules = computed(() => ({
+  comment: [
+    {
+      required: auditDialog.mode === 'reject',
+      message: '请填写驳回原因',
+      trigger: 'blur'
+    }
+  ]
+}))
+
+// 格式化日期
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '-'
-  // 将空格格式转换为 ISO 格式（兼容 Safari）
   let normalized = dateStr
   if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
     normalized = dateStr.replace(' ', 'T')
@@ -125,32 +174,8 @@ const formatDateTime = (dateStr) => {
   const converter = createTimeConverter(normalized)
   const date = converter.toDate()
   if (!date) return '-'
-  return converter.toLocalYMDHMS()  // 返回 YYYY-MM-DD HH:mm:ss
+  return converter.toLocalYMDHMS()
 }
-
-// 搜索表单
-const searchForm = reactive({
-  companyName: "",
-  type: ""
-});
-
-// 表格数据
-const tableData = ref([]);
-const loading = ref(false);
-
-// 分页
-const pagination = reactive({
-  current: 1,
-  size: 10,
-  total: 0
-});
-
-// 驳回弹窗
-const rejectDialog = reactive({
-  visible: false,
-  reason: "",
-  currentRow: null
-});
 
 // 获取列表
 const fetchList = async () => {
@@ -174,13 +199,11 @@ const fetchList = async () => {
   }
 }
 
-// 搜索
+// 搜索与重置
 const handleSearch = () => {
   pagination.current = 1
   fetchList()
 }
-
-// 重置
 const resetSearch = () => {
   searchForm.companyName = ''
   searchForm.type = ''
@@ -198,41 +221,52 @@ const handleCurrentChange = (val) => {
   fetchList()
 }
 
-// 通过审核
+// 打开审核弹窗
+const openAuditDialog = (row, mode) => {
+  auditDialog.currentRow = row
+  auditDialog.mode = mode
+  auditDialog.comment = ''
+  if (mode === 'approve') {
+    auditDialog.title = '审核通过'
+    auditDialog.confirmText = '确认通过'
+    auditDialog.placeholder = '请输入审核意见（可选）'
+  } else {
+    auditDialog.title = '驳回申请'
+    auditDialog.confirmText = '确认驳回'
+    auditDialog.placeholder = '请输入驳回原因（必填）'
+  }
+  auditDialog.visible = true
+}
+
+// 通过
 const handleApprove = (row) => {
-  ElMessageBox.confirm(`确定通过企业“${row.companyName}”的审核吗？`, '提示', {
-    type: 'warning'
-  }).then(async () => {
-    try {
-      await auditEnterprise(row.id, 'approved')
-      ElMessage.success('审核通过')
-      fetchList()
-    } catch (error) {
-      console.error('审核操作失败', error)
-      ElMessage.error('操作失败，请稍后重试')
-    }
-  }).catch(() => {})
+  openAuditDialog(row, 'approve')
 }
 
-// 驳回（打开弹窗）
+// 驳回
 const handleReject = (row) => {
-  rejectDialog.currentRow = row
-  rejectDialog.reason = ''
-  rejectDialog.visible = true
+  openAuditDialog(row, 'reject')
 }
 
-// 提交驳回
-const submitReject = async () => {
-  const { currentRow, reason } = rejectDialog
-  if (!currentRow) return
+// 提交审核
+const submitAudit = async () => {
+  if (!auditFormRef.value) return
   try {
-    // 这里将第三个参数改为对象，使用统一字段名 auditRemark，避免驳回原因丢失
-    await auditEnterprise(currentRow.id, 'rejected', { auditRemark: reason })
-    ElMessage.success('已驳回')
-    rejectDialog.visible = false
+    await auditFormRef.value.validate()
+  } catch (error) {
+    return
+  }
+
+  const { currentRow, mode, comment } = auditDialog
+  if (!currentRow) return
+  const status = mode === 'approve' ? 'approved' : 'rejected'
+  try {
+    await auditEnterprise(currentRow.id, status, comment)
+    ElMessage.success(mode === 'approve' ? '审核通过' : '已驳回')
+    auditDialog.visible = false
     fetchList()
   } catch (error) {
-    console.error('驳回操作失败', error)
+    console.error('审核操作失败', error)
     ElMessage.error('操作失败，请稍后重试')
   }
 }
