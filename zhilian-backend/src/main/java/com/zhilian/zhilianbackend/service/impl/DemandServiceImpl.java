@@ -94,14 +94,19 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             // 提取标签 ID（只处理存在的标签）
             List<Long> tagIds = tags.stream().map(Tag::getId).collect(Collectors.toList());
 
-            // 批量插入 demand_tag（手动设置 deleted 字段）
-            List<DemandTag> demandTags = tagIds.stream()
-                    .map(tagId -> new DemandTag()
-                            .setDemandId(demand.getId())
-                            .setTagId(tagId)
-                            .setDeleted(DateConstants.getNotDeletedTime()))
-                    .collect(Collectors.toList());
-            demandTagMapper.insertBatch(demandTags);
+            // 如果一个匹配的标签都没有，则不进行任何关联插入，避免对空列表执行批量插入
+            if (CollectionUtils.isEmpty(tagIds)) {
+                log.warn("发布需求时未找到任何匹配的标签，demandId={}，requestTags={}", demand.getId(), request.getTags());
+            } else {
+                // 批量插入 demand_tag（手动设置 deleted 字段）
+                List<DemandTag> demandTags = tagIds.stream()
+                        .map(tagId -> new DemandTag()
+                                .setDemandId(demand.getId())
+                                .setTagId(tagId)
+                                .setDeleted(DateConstants.getNotDeletedTime()))
+                        .collect(Collectors.toList());
+                demandTagMapper.insertBatch(demandTags);
+            }
         }
 
         log.info("需求发布成功，ID：{}，制造企业：{}", demand.getId(), manufacture.getCompanyName());
