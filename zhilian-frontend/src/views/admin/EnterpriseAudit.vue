@@ -60,7 +60,11 @@
         </el-table-column>
         <el-table-column prop="contactPerson" label="联系人" width="120" />
         <el-table-column prop="contactPhone" label="联系电话" width="130" />
-        <el-table-column prop="applyTime" label="申请时间" width="160" />
+        <el-table-column label="申请时间" width="160">
+          <template #default="{ row }">
+            {{ formatDateTime(row.applyTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button size="small" type="success" plain :icon="Check" @click="handleApprove(row)">
@@ -108,6 +112,21 @@ import { ref, reactive, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Refresh, Check, Close } from "@element-plus/icons-vue";
 import { getAuditList, auditEnterprise } from "@/api/admin";
+import { createTimeConverter } from "@/composables/date";
+
+// 格式化日期时间（兼容空格格式和 ISO 格式）
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  // 将空格格式转换为 ISO 格式（兼容 Safari）
+  let normalized = dateStr
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+    normalized = dateStr.replace(' ', 'T')
+  }
+  const converter = createTimeConverter(normalized)
+  const date = converter.toDate()
+  if (!date) return '-'
+  return converter.toLocalYMDHMS()  // 返回 YYYY-MM-DD HH:mm:ss
+}
 
 // 搜索表单
 const searchForm = reactive({
