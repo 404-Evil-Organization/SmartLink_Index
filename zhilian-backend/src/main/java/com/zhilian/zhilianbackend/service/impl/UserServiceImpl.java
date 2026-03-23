@@ -370,11 +370,15 @@ public class UserServiceImpl implements UserService {
      * @Description: 管理员 - 修改用户状态（启用/禁用）
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateUserStatus(Long userId, Integer status) {
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
+        }
+        // 防御性校验：状态值只能为 0 或 1
+        if (status == null || (status != 0 && status != 1)) {
+            throw new BusinessException(400, "状态值必须为 0 或 1");
         }
         // 可选：防止管理员禁用自己
         // if (userId.equals(getCurrentUserId())) {
@@ -392,7 +396,7 @@ public class UserServiceImpl implements UserService {
      * @Description: 管理员 - 重置用户密码（生成随机临时密码）
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public String resetUserPassword(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null) {
