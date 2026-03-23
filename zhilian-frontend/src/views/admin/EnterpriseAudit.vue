@@ -62,7 +62,7 @@
         <el-table-column prop="contactPhone" label="联系电话" width="130" />
         <el-table-column label="申请时间" width="160">
           <template #default="{ row }">
-            {{ formatDateTime(row.applyTime) }}
+            {{ formatDateTime(row.createTime) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
@@ -117,7 +117,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Refresh, Check, Close } from '@element-plus/icons-vue'
 import { getAuditList, auditEnterprise } from '@/api/admin'
 import { createTimeConverter } from '@/composables/date'
