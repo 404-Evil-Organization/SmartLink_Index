@@ -116,8 +116,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
     public PageResult<DemandPendingVO> getPendingDemandList(Integer page, Integer size) {
         // 1. 分页查询需求基本信息（不含标签）
         Page<DemandPendingVO> mpPage = new Page<>(page, size);
-        IPage<DemandPendingVO> voPage = baseMapper.selectPendingDemandPage(mpPage,
-                DateConstants.getNotDeletedLocalDateTime());
+        IPage<DemandPendingVO> voPage = baseMapper.selectPendingDemandPage(mpPage);
         List<DemandPendingVO> records = voPage.getRecords();
 
         // 2. 如果没有数据，直接返回
