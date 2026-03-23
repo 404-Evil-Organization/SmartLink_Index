@@ -93,25 +93,26 @@
 
     <!-- 通用审核弹窗（支持通过和驳回） -->
     <el-dialog
-      v-model="auditDialog.visible"
-      :title="auditDialog.title"
-      width="500px"
-    >
-      <el-form ref="auditFormRef" :model="auditDialog" :rules="auditRules">
-        <el-form-item label="审核意见" prop="comment">
-          <el-input
-            v-model="auditDialog.comment"
-            type="textarea"
-            :rows="3"
-            :placeholder="auditDialog.placeholder"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="auditDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="submitAudit">{{ auditDialog.confirmText }}</el-button>
-      </template>
-    </el-dialog>
+        v-model="auditDialog.visible"
+        :title="auditDialog.title"
+        width="500px"
+        @closed="resetAuditDialog"
+      >
+        <el-form ref="auditFormRef" :model="auditDialog" :rules="auditRules">
+          <el-form-item label="审核意见" prop="comment">
+            <el-input
+              v-model="auditDialog.comment"
+              type="textarea"
+              :rows="3"
+              :placeholder="auditDialog.placeholder"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="auditDialog.visible = false">取消</el-button>
+          <el-button type="primary" @click="submitAudit">{{ auditDialog.confirmText }}</el-button>
+        </template>
+      </el-dialog>
   </div>
 </template>
 
@@ -221,11 +222,28 @@ const handleCurrentChange = (val) => {
   fetchList()
 }
 
+// 重置弹窗状态（关闭时调用）
+const resetAuditDialog = () => {
+  // 清空表单数据
+  auditDialog.comment = ''
+  auditDialog.currentRow = null
+  auditDialog.mode = ''
+  auditDialog.title = ''
+  auditDialog.confirmText = ''
+  auditDialog.placeholder = ''
+  // 清除表单校验状态
+  auditFormRef.value?.clearValidate()
+  // 重置表单字段值（可选）
+  auditFormRef.value?.resetFields()
+}
+
 // 打开审核弹窗
 const openAuditDialog = (row, mode) => {
+  // 先重置弹窗状态，确保干净
+  resetAuditDialog()
+
   auditDialog.currentRow = row
   auditDialog.mode = mode
-  auditDialog.comment = ''
   if (mode === 'approve') {
     auditDialog.title = '审核通过'
     auditDialog.confirmText = '确认通过'
