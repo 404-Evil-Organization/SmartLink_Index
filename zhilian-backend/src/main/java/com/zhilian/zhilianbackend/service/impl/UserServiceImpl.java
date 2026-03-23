@@ -245,18 +245,36 @@ public class UserServiceImpl implements UserService {
      * @Author: xiaodengyou
      * @Date: 2026/3/21 15:04
      * @Param:
-     * @Return: String 随机生成的密码（8-12位，字母数字混合）
+     * @Return: String 随机生成的密码（8-12位，字母数字混合，至少包含 1 个大写字母、1 个小写字母和 1 个数字）
      * @Description: 生成随机临时密码
      */
     private String generateRandomPassword() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        // 大写字母、小写字母、数字字符集
+        String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lower = "abcdefghijklmnopqrstuvwxyz";
+        String digits = "0123456789";
+        String allChars = upper + lower + digits;
         SecureRandom random = new SecureRandom();
-        int length = 8 + random.nextInt(5); // 8~12位
+        // 密码长度控制在 8~12 位
+        int length = 8 + random.nextInt(5);
         StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++) {
-            sb.append(chars.charAt(random.nextInt(chars.length())));
+        // 先各选取 1 个大写、1 个小写、1 个数字，确保复杂度
+        sb.append(upper.charAt(random.nextInt(upper.length())));
+        sb.append(lower.charAt(random.nextInt(lower.length())));
+        sb.append(digits.charAt(random.nextInt(digits.length())));
+        // 若长度大于 3，则用完整字符集补足剩余位数
+        for (int i = 3; i < length; i++) {
+            sb.append(allChars.charAt(random.nextInt(allChars.length())));
         }
-        return sb.toString();
+        // 使用 Fisher-Yates 洗牌算法随机打乱字符顺序，避免前几位模式固定
+        char[] passwordChars = sb.toString().toCharArray();
+        for (int i = passwordChars.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            char tmp = passwordChars[i];
+            passwordChars[i] = passwordChars[j];
+            passwordChars[j] = tmp;
+        }
+        return new String(passwordChars);
     }
 
     /**
@@ -268,6 +286,9 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public Page<UserListVO> pageUsers(UserListRequest request) {
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限执行此操作");
+        }
         Page<User> page = new Page<>(request.getPage(), request.getSize());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (request.getRole() != null && !request.getRole().isEmpty()) {
@@ -307,6 +328,9 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public UserDetailVO getUserDetail(Long userId) {
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限执行此操作");
+        }
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
@@ -376,6 +400,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateUserStatus(Long userId, Integer status) {
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限执行此操作");
+        }
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
@@ -403,6 +430,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String resetUserPassword(Long userId) {
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限执行此操作");
+        }
         User user = userMapper.selectById(userId);
         if (user == null) {
             throw new BusinessException(404, "用户不存在");
