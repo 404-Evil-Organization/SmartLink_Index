@@ -16,7 +16,9 @@ import com.zhilian.zhilianbackend.service.ManufactureService;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
 import com.zhilian.zhilianbackend.service.UserService;
 import com.zhilian.zhilianbackend.utils.JwtUtil;
+import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -48,6 +50,8 @@ public class UserServiceImpl implements UserService {
     // 使用构造器注入 + 参数级 @Lazy，避免字段注入带来的不可变性/可测试性问题
     private final ManufactureService manufactureService;
     private final ServiceProviderService serviceProviderService;
+    @Autowired
+    private SecurityUtils securityUtils;
 
     /**
      * 通过构造器注入所有依赖，在参数上使用 @Lazy 解决与其他 Service 的循环依赖问题。
@@ -380,10 +384,11 @@ public class UserServiceImpl implements UserService {
         if (status == null || (status != 0 && status != 1)) {
             throw new BusinessException(400, "状态值必须为 0 或 1");
         }
-        // 可选：防止管理员禁用自己
-        // if (userId.equals(getCurrentUserId())) {
-        //     throw new BusinessException(400, "不能禁用当前登录的管理员账号");
-        // }
+        // 防止管理员禁用自己
+        Long currentUserId = securityUtils.getCurrentUserId();  // 如果未登录会抛出 BusinessException
+        if (userId.equals(currentUserId)) {
+            throw new BusinessException(400, "不能禁用当前登录的管理员账号");
+        }
         user.setStatus(status);
         userMapper.updateById(user);
     }
