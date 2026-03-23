@@ -26,8 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -120,12 +119,62 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
      * @Param: page 页码
      * @Param: size 每页条数
      * @Return: PageResult<DemandPendingVO> 分页的待审核需求列表
-     * @Description: 分页查询待审核需求，关联企业名称和标签信息
+     * @Description: 分页查询待审核需求，先查询需求基本信息，再批量查询标签组装
      */
     @Override
     public PageResult<DemandPendingVO> getPendingDemandList(Integer page, Integer size) {
+        // 1. 分页查询需求基本信息（不含标签）
         Page<DemandPendingVO> mpPage = new Page<>(page, size);
         IPage<DemandPendingVO> voPage = baseMapper.selectPendingDemandPage(mpPage);
+        List<DemandPendingVO> records = voPage.getRecords();
+
+        // 2. 如果没有数据，直接返回
+        if (records.isEmpty()) {
+            return PageResult.from(voPage);
+        }
+
+        // 3. 收集所有需求 ID
+        List<Long> demandIds = records.stream()
+                .map(DemandPendingVO::getId)
+                .collect(Collectors.toList());
+
+        // 4. 批量查询这些需求的所有标签
+        List<DemandTag> demandTags = demandTagMapper.selectList(
+                new LambdaQueryWrapper<DemandTag>()
+                        .in(DemandTag::getDemandId, demandIds)
+                        .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime())
+        );
+
+        // 5. 提取所有标签 ID，并批量查询标签名称
+        List<Long> tagIds = demandTags.stream()
+                .map(DemandTag::getTagId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 使用 final 变量确保 effectively final
+        final Map<Long, String> tagIdToNameMap = tagIds.isEmpty() ?
+                Collections.emptyMap() :
+                tagService.listByIds(tagIds).stream()
+                        .collect(Collectors.toMap(Tag::getId, Tag::getName));
+
+        // 6. 构建 demandId -> List<TagSimpleVO> 映射
+        Map<Long, List<DemandPendingVO.TagSimpleVO>> demandTagsMap = demandTags.stream()
+                .collect(Collectors.groupingBy(
+                        DemandTag::getDemandId,
+                        Collectors.mapping(dt -> {
+                            DemandPendingVO.TagSimpleVO tagVO = new DemandPendingVO.TagSimpleVO();
+                            tagVO.setId(dt.getTagId());
+                            tagVO.setName(tagIdToNameMap.get(dt.getTagId()));
+                            return tagVO;
+                        }, Collectors.toList())
+                ));
+
+        // 7. 填充每个需求的标签列表
+        for (DemandPendingVO record : records) {
+            List<DemandPendingVO.TagSimpleVO> tags = demandTagsMap.getOrDefault(record.getId(), Collections.emptyList());
+            record.setTags(tags);
+        }
+
         return PageResult.from(voPage);
     }
 
@@ -136,7 +185,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
      * @Param: request 审核请求参数（状态、意见）
      * @Param: adminUserId 当前管理员用户ID
      * @Return: void
-     * @Description: 审核需求，更新审核状态、审核意见、审核时间和审核人，通过时同时更新业务状态为已发布
+     * @Description: 审核需求，通过时更新审核状态和业务状态；驳回时逻辑删除需求及关联的标签
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -153,28 +202,44 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
 
         String status = request.getStatus();
         if ("approved".equals(status)) {
+            // 审核通过：更新状态
             demand.setAuditStatus("approved");
-            demand.setStatus("published");  // 审核通过后变为已发布
+            demand.setStatus("published");
+            demand.setAuditRemark(request.getRemark());
+            demand.setAuditTime(new Date());
+            demand.setAuditUserId(adminUserId);
+            boolean updated = this.updateById(demand);
+            if (!updated) {
+                throw new BusinessException(500, "审核通过失败");
+            }
+            log.info("需求审核通过，ID：{}，审核人：{}", demandId, adminUserId);
+
         } else if ("rejected".equals(status)) {
-            demand.setAuditStatus("rejected");
-            demand.setStatus("draft");      // 驳回后保持草稿
-            // 驳回时建议填写审核意见
+            // 驳回时，校验审核意见
             if (request.getRemark() == null || request.getRemark().trim().isEmpty()) {
                 throw new BusinessException(400, "驳回时必须填写审核意见");
             }
+
+            // 1. 逻辑删除关联的 demand_tag 记录
+            LambdaQueryWrapper<DemandTag> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(DemandTag::getDemandId, demandId);
+            // 逻辑删除：设置 deleted 为当前时间（注意：MyBatis Plus 配置中逻辑删除值使用 now()）
+            // 这里手动更新 deleted 字段，但为了保持一致性，我们可以调用 remove 方法（逻辑删除）
+            // 如果 DemandTag 有 @TableLogic，调用 remove 会逻辑删除
+            boolean deletedTags = demandTagMapper.delete(wrapper) > 0;
+            if (deletedTags) {
+                log.info("已逻辑删除需求 {} 的关联标签", demandId);
+            }
+
+            // 2. 逻辑删除需求本身
+            boolean deletedDemand = this.removeById(demandId);
+            if (!deletedDemand) {
+                throw new BusinessException(500, "驳回删除需求失败");
+            }
+
+            log.info("需求已驳回并删除，ID：{}，原因：{}，审核人：{}", demandId, request.getRemark(), adminUserId);
         } else {
             throw new BusinessException(400, "审核状态不合法");
         }
-
-        demand.setAuditRemark(request.getRemark());
-        demand.setAuditTime(new Date());
-        demand.setAuditUserId(adminUserId);
-
-        boolean updated = this.updateById(demand);
-        if (!updated) {
-            throw new BusinessException(500, "审核操作失败");
-        }
-
-        log.info("需求审核完成，ID：{}，结果：{}，审核人：{}", demandId, status, adminUserId);
     }
 }
