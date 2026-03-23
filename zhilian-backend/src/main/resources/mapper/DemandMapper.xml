@@ -22,6 +22,11 @@
         id, manu_id, title, description, expected_budget, deadline, status, views, deleted, create_time, update_time
     </sql>
 
+    <!-- 逻辑未删除条件片段（与项目其他 Mapper 保持一致） -->
+    <sql id="notDeleted">
+        deleted = #{notDeletedTime}
+    </sql>
+
     <!-- 待审核需求分页查询结果映射（仅需求+企业） -->
     <resultMap id="PendingDemandVOMap" type="com.zhilian.zhilianbackend.dto.response.DemandPendingVO">
         <id column="id" property="id"/>
@@ -32,24 +37,26 @@
         <result column="expected_budget" property="expectedBudget"/>
         <result column="deadline" property="deadline"/>
         <result column="create_time" property="createTime"/>
-        <!-- 注意：这里不再包含 tags 的 collection，标签在 Service 层单独查询 -->
+        <!-- 标签不在 SQL 中关联，由 Service 层组装 -->
     </resultMap>
 
     <!-- 分页查询待审核需求（仅需求基本信息 + 企业名称，不含标签） -->
     <select id="selectPendingDemandPage" resultMap="PendingDemandVOMap">
         SELECT
-            d.id,
-            d.manu_id,
-            m.company_name AS manu_name,
-            d.title,
-            d.description,
-            d.expected_budget,
-            d.deadline,
-            d.create_time
+        d.id,
+        d.manu_id,
+        m.company_name AS manu_name,
+        d.title,
+        d.description,
+        d.expected_budget,
+        d.deadline,
+        d.create_time
         FROM demand d
-                 LEFT JOIN manufacture m ON d.manu_id = m.id AND m.deleted = '1970-01-01 00:00:00'
-        WHERE d.deleted = '1970-01-01 00:00:00'
-          AND d.audit_status = 'pending'
+        LEFT JOIN manufacture m ON d.manu_id = m.id
+        WHERE
+        <include refid="notDeleted" />  /* d.deleted = #{notDeletedTime} */
+        AND d.audit_status = 'pending'
+        AND <include refid="notDeleted" /> /* m.deleted = #{notDeletedTime} */
         ORDER BY d.create_time DESC
     </select>
 

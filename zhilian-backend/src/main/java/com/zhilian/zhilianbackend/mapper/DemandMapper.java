@@ -13,11 +13,6 @@ import org.apache.ibatis.annotations.Select;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * @Author: 6017
- * @Date: 2026/3/20 21:48
- * @Description: 需求 Mapper 接口
- */
 @Mapper
 public interface DemandMapper extends BaseMapper<Demand> {
 
@@ -25,7 +20,7 @@ public interface DemandMapper extends BaseMapper<Demand> {
      * @Author: 6017
      * @Date: 2026/3/20 21:48
      * @Param: top 返回数量
-     * @Param: notDeletedTime 逻辑删除时间标记（LocalDateTime 类型，避免隐式转换）
+     * @Param: notDeletedTime 逻辑删除时间标记（LocalDateTime 类型）
      * @Return: List<TopDemandResponse> 热门需求列表
      * @Description: 获取热门需求统计（按标签统计）
      */
@@ -47,8 +42,10 @@ public interface DemandMapper extends BaseMapper<Demand> {
      * @Author: xiaodengyou
      * @Date: 2026/03/23
      * @Param: page 分页对象
+     * @Param: notDeletedTime 逻辑删除时间标记
      * @Return: IPage<DemandPendingVO> 分页的待审核需求列表
-     * @Description: 分页查询待审核需求（包含企业名称和标签）
+     * @Description: 分页查询待审核需求（仅需求基本信息 + 企业名称，不含标签）
      */
-    IPage<DemandPendingVO> selectPendingDemandPage(Page<DemandPendingVO> page);
+    IPage<DemandPendingVO> selectPendingDemandPage(Page<DemandPendingVO> page,
+                                                   @Param("notDeletedTime") LocalDateTime notDeletedTime);
 }

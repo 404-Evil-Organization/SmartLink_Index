@@ -82,21 +82,12 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
 
         // 4. 保存标签关联（根据标签名称查询 ID）
         if (!CollectionUtils.isEmpty(request.getTags())) {
-            // 根据名称查询标签
+            // 根据名称查询标签（不校验是否存在，存在的才插入）
             List<Tag> tags = tagService.lambdaQuery()
                     .in(Tag::getName, request.getTags())
                     .list();
 
-            // 检查是否所有标签都存在
-            if (tags.size() != request.getTags().size()) {
-                List<String> foundNames = tags.stream().map(Tag::getName).collect(Collectors.toList());
-                List<String> missingNames = request.getTags().stream()
-                        .filter(name -> !foundNames.contains(name))
-                        .collect(Collectors.toList());
-                throw new BusinessException(400, "以下标签不存在: " + String.join(", ", missingNames));
-            }
-
-            // 提取标签 ID
+            // 提取标签 ID（只处理存在的标签）
             List<Long> tagIds = tags.stream().map(Tag::getId).collect(Collectors.toList());
 
             // 批量插入 demand_tag（手动设置 deleted 字段）
@@ -125,7 +116,8 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
     public PageResult<DemandPendingVO> getPendingDemandList(Integer page, Integer size) {
         // 1. 分页查询需求基本信息（不含标签）
         Page<DemandPendingVO> mpPage = new Page<>(page, size);
-        IPage<DemandPendingVO> voPage = baseMapper.selectPendingDemandPage(mpPage);
+        IPage<DemandPendingVO> voPage = baseMapper.selectPendingDemandPage(mpPage,
+                DateConstants.getNotDeletedLocalDateTime());
         List<DemandPendingVO> records = voPage.getRecords();
 
         // 2. 如果没有数据，直接返回

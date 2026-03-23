@@ -7,8 +7,11 @@ import com.zhilian.zhilianbackend.dto.response.DemandPendingVO;
 import com.zhilian.zhilianbackend.service.DemandService;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/admin/demand")
 @RequiredArgsConstructor
+@Validated // 启用方法参数校验
 public class AdminDemandController {
 
     private final DemandService demandService;
@@ -28,15 +32,15 @@ public class AdminDemandController {
     /**
      * @Author: xiaodengyou
      * @Date: 2026/03/23
-     * @Param: page 页码，默认1
-     * @Param: size 每页条数，默认10
+     * @Param: page 页码，默认1，最小1
+     * @Param: size 每页条数，默认10，最小1，最大100
      * @Return: Result<PageResult<DemandPendingVO>> 分页的待审核需求列表
      * @Description: 获取待审核需求列表，仅管理员可访问
      */
     @GetMapping("/pending")
     public Result<PageResult<DemandPendingVO>> getPendingDemandList(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size) {
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码最小为1") Integer page,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "每页条数最小为1") @Max(value = 100, message = "每页条数最大为100") Integer size) {
         if (!securityUtils.isAdmin()) {
             return Result.forbidden("无权限访问");
         }
