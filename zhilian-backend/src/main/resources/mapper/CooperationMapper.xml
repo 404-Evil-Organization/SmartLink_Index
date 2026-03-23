@@ -2,25 +2,115 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zhilian.zhilianbackend.mapper.CooperationMapper">
 
-    <!-- 通用查询映射结果 -->
-    <resultMap id="BaseResultMap" type="com.zhilian.zhilianbackend.entity.Cooperation">
-        <id column="id" property="id" />
-        <result column="manu_id" property="manuId" />
-        <result column="service_id" property="serviceId" />
-        <result column="demand_id" property="demandId" />
-        <result column="start_date" property="startDate" />
-        <result column="end_date" property="endDate" />
-        <result column="amount" property="amount" />
-        <result column="description" property="description" />
-        <result column="status" property="status" />
-        <result column="deleted" property="deleted" />
-        <result column="create_time" property="createTime" />
-        <result column="update_time" property="updateTime" />
+    <!-- 逻辑删除未删除条件常量：通过参数 notDeletedTime 传入，调用方使用 DateConstants.getNotDeletedLocalDateTime() 提供 -->
+    <sql id="notDeleted">deleted = #{notDeletedTime}</sql>
+
+    <!-- 通用结果映射 -->
+    <resultMap id="CooperationRecordVOMap" type="com.zhilian.zhilianbackend.dto.response.CooperationRecordVO">
+        <id column="id" property="id"/>
+        <result column="opponent_name" property="opponentName"/>
+        <result column="demand_title" property="demandTitle"/>
+        <result column="amount" property="amount"/>
+        <result column="start_date" property="startDate"/>
+        <result column="end_date" property="endDate"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="has_evaluated" property="hasEvaluated"/>
     </resultMap>
 
-    <!-- 通用查询结果列 -->
-    <sql id="Base_Column_List">
-        id, manu_id, service_id, demand_id, start_date, end_date, amount, description, status, deleted, create_time, update_time
+    <!-- 公共 SELECT 列与 JOIN 片段 -->
+    <sql id="cooperationBaseColumns">
+        c.id,
+        CASE
+            WHEN #{role} = 'manufacture' THEN sp.company_name
+            WHEN #{role} = 'service' THEN m.company_name
+            ELSE NULL
+        END AS opponent_name,
+        d.title AS demand_title,
+        c.amount,
+        c.start_date,
+        c.end_date,
+        c.status,
+        c.create_time,
+        COUNT(e.id) > 0 AS has_evaluated
     </sql>
+
+    <!-- 管理员专用的 SELECT 列 -->
+    <sql id="cooperationAdminBaseColumns">
+        c.id,
+        CONCAT(m.company_name, ' - ', sp.company_name) AS opponent_name,
+        d.title AS demand_title,
+        c.amount,
+        c.start_date,
+        c.end_date,
+        c.status,
+        c.create_time,
+        COUNT(e.id) > 0 AS has_evaluated
+    </sql>
+
+    <sql id="cooperationJoins">
+        FROM cooperation c
+        LEFT JOIN manufacture m ON c.manu_id = m.id AND m.<include refid="notDeleted"/>
+        LEFT JOIN service_provider sp ON c.service_id = sp.id AND sp.<include refid="notDeleted"/>
+        LEFT JOIN demand d ON c.demand_id = d.id AND d.<include refid="notDeleted"/>
+        LEFT JOIN evaluation e ON e.coop_id = c.id
+        AND e.evaluator_id = #{userId}
+        AND e.<include refid="notDeleted"/>
+    </sql>
+
+    <sql id="cooperationGroupBy">
+        GROUP BY
+        c.id,
+        c.manu_id,
+        m.company_name,
+        c.service_id,
+        sp.company_name,
+        c.demand_id,
+        d.title,
+        c.start_date,
+        c.end_date,
+        c.amount,
+        c.status,
+        c.create_time
+    </sql>
+
+    <!-- 非管理员查询：按角色筛选 -->
+    <select id="selectMyCooperations" resultMap="CooperationRecordVOMap">
+        SELECT
+        <include refid="cooperationBaseColumns"/>
+        <include refid="cooperationJoins"/>
+        <where>
+            c.<include refid="notDeleted"/>
+            <if test="role == 'manufacture'">
+                AND c.manu_id = #{companyId}
+            </if>
+            <if test="role == 'service'">
+                AND c.service_id = #{companyId}
+            </if>
+            <if test="status != null and status != ''">
+                AND c.status = #{status}
+            </if>
+        </where>
+        <include refid="cooperationGroupBy"/>
+        ORDER BY c.create_time DESC
+    </select>
+
+    <!-- 管理员查询：不限制角色，companyId 可选 -->
+    <select id="selectMyCooperationsAdmin" resultMap="CooperationRecordVOMap">
+        SELECT
+        <include refid="cooperationAdminBaseColumns"/>
+        <include refid="cooperationJoins"/>
+        <where>
+            c.<include refid="notDeleted"/>
+            <if test="companyId != null">
+                AND (c.manu_id = #{companyId} OR c.service_id = #{companyId})
+            </if>
+            <if test="status != null and status != ''">
+                AND c.status = #{status}
+            </if>
+        </where>
+        <include refid="cooperationGroupBy"/>
+        ORDER BY c.create_time DESC
+    </select>
 
 </mapper>
