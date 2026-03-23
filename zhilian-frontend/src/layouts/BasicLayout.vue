@@ -106,13 +106,13 @@
             </el-icon>
             <span>标签管理</span>
           </el-menu-item>
-          <el-menu-item index="/admin/enterprise-audit">
-            <el-icon><Checked /></el-icon>
-            <span>企业审核</span>
-          </el-menu-item>
           <el-menu-item index="/admin/user">
             <el-icon><Avatar /></el-icon>
             <span>用户管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/enterprise-audit">
+            <el-icon><Checked /></el-icon>
+            <span>企业审核</span>
           </el-menu-item>
         </el-sub-menu>
         <!-- 后续可继续添加其他菜单项 -->
