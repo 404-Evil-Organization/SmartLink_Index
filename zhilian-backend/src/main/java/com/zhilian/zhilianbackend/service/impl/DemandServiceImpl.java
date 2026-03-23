@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -26,7 +27,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -211,18 +215,17 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
                 throw new BusinessException(400, "驳回时必须填写审核意见");
             }
 
-            // 1. 逻辑删除关联的 demand_tag 记录
-            LambdaQueryWrapper<DemandTag> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(DemandTag::getDemandId, demandId);
-            // 逻辑删除：设置 deleted 为当前时间（注意：MyBatis Plus 配置中逻辑删除值使用 now()）
-            // 这里手动更新 deleted 字段，但为了保持一致性，我们可以调用 remove 方法（逻辑删除）
-            // 如果 DemandTag 有 @TableLogic，调用 remove 会逻辑删除
-            boolean deletedTags = demandTagMapper.delete(wrapper) > 0;
+            // 1. 逻辑删除关联的 demand_tag 记录（仅删除当前未删除的记录）
+            LambdaUpdateWrapper<DemandTag> updateWrapper = new LambdaUpdateWrapper<>();
+            updateWrapper.eq(DemandTag::getDemandId, demandId)
+                    .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime());
+            // 调用 delete 方法，MyBatis Plus 会根据 @TableLogic 生成 UPDATE deleted = now() WHERE ...
+            boolean deletedTags = demandTagMapper.delete(updateWrapper) > 0;
             if (deletedTags) {
                 log.info("已逻辑删除需求 {} 的关联标签", demandId);
             }
 
-            // 2. 逻辑删除需求本身
+            // 2. 逻辑删除需求本身（removeById 也会自动加上 deleted 条件）
             boolean deletedDemand = this.removeById(demandId);
             if (!deletedDemand) {
                 throw new BusinessException(500, "驳回删除需求失败");
