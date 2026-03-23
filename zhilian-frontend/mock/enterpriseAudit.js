@@ -73,7 +73,9 @@ export default [
     method: 'put',
     response: ({ url, body }) => {
       const id = parseInt(url.match(/\d+/)[0]);
-      const { status, rejectReason } = body;
+      const { status, auditRemark } = body;
+      // 输出简单日志，便于在开发环境查看审核状态和审核意见
+      console.log('[mock][enterpriseAudit] 审核企业', { id, status, auditRemark });
       const index = auditList.findIndex(item => item.id === id);
       if (index !== -1) {
         auditList.splice(index, 1); // 审核后从列表中移除
