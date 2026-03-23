@@ -17,4 +17,13 @@
         id, demand_id, tag_id, deleted, create_time, update_time
     </sql>
 
+    <!-- 批量插入需求标签 -->
+    <insert id="insertBatch" parameterType="list">
+        INSERT INTO demand_tag (demand_id, tag_id, deleted, create_time, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.demandId}, #{item.tagId}, #{item.deleted}, #{item.createTime}, #{item.updateTime})
+        </foreach>
+    </insert>
+
 </mapper>

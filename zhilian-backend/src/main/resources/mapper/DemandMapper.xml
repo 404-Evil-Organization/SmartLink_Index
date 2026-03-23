@@ -22,4 +22,42 @@
         id, manu_id, title, description, expected_budget, deadline, status, views, deleted, create_time, update_time
     </sql>
 
+    <!-- 待审核需求分页查询结果映射 -->
+    <resultMap id="PendingDemandVOMap" type="com.zhilian.zhilianbackend.dto.response.DemandPendingVO">
+        <id column="id" property="id"/>
+        <result column="manu_id" property="manuId"/>
+        <result column="manu_name" property="manuName"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="expected_budget" property="expectedBudget"/>
+        <result column="deadline" property="deadline"/>
+        <result column="create_time" property="createTime"/>
+        <collection property="tags" ofType="com.zhilian.zhilianbackend.dto.response.DemandPendingVO$TagSimpleVO">
+            <id column="tag_id" property="id"/>
+            <result column="tag_name" property="name"/>
+        </collection>
+    </resultMap>
+
+    <!-- 分页查询待审核需求（关联企业名称和标签） -->
+    <select id="selectPendingDemandPage" resultMap="PendingDemandVOMap">
+        SELECT
+            d.id,
+            d.manu_id,
+            m.company_name AS manu_name,
+            d.title,
+            d.description,
+            d.expected_budget,
+            d.deadline,
+            d.create_time,
+            t.id AS tag_id,
+            t.name AS tag_name
+        FROM demand d
+                 LEFT JOIN manufacture m ON d.manu_id = m.id AND m.deleted = '1970-01-01 00:00:00'
+                 LEFT JOIN demand_tag dt ON d.id = dt.demand_id AND dt.deleted = '1970-01-01 00:00:00'
+                 LEFT JOIN tag t ON dt.tag_id = t.id AND t.deleted = '1970-01-01 00:00:00'
+        WHERE d.deleted = '1970-01-01 00:00:00'
+          AND d.audit_status = 'pending'
+        ORDER BY d.create_time DESC
+    </select>
+
 </mapper>

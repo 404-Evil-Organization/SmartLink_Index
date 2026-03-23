@@ -1,6 +1,9 @@
 package com.zhilian.zhilianbackend.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zhilian.zhilianbackend.dto.response.DemandPendingVO;
 import com.zhilian.zhilianbackend.dto.response.TopDemandResponse;
 import com.zhilian.zhilianbackend.entity.Demand;
 import org.apache.ibatis.annotations.Mapper;
@@ -13,10 +16,8 @@ import java.util.List;
 /**
  * @Author: 6017
  * @Date: 2026/3/20 21:48
- * @Param:
- * @Return:
  * @Description: 需求 Mapper 接口
- **/
+ */
 @Mapper
 public interface DemandMapper extends BaseMapper<Demand> {
 
@@ -27,7 +28,7 @@ public interface DemandMapper extends BaseMapper<Demand> {
      * @Param: notDeletedTime 逻辑删除时间标记（LocalDateTime 类型，避免隐式转换）
      * @Return: List<TopDemandResponse> 热门需求列表
      * @Description: 获取热门需求统计（按标签统计）
-     **/
+     */
     @Select("SELECT t.name AS serviceType, COUNT(dt.demand_id) AS count " +
             "FROM demand_tag dt " +
             "INNER JOIN tag t ON dt.tag_id = t.id " +
@@ -41,4 +42,13 @@ public interface DemandMapper extends BaseMapper<Demand> {
             "LIMIT #{top}")
     List<TopDemandResponse> getTopDemands(@Param("top") Integer top,
                                           @Param("notDeletedTime") LocalDateTime notDeletedTime);
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/03/23
+     * @Param: page 分页对象
+     * @Return: IPage<DemandPendingVO> 分页的待审核需求列表
+     * @Description: 分页查询待审核需求（包含企业名称和标签）
+     */
+    IPage<DemandPendingVO> selectPendingDemandPage(Page<DemandPendingVO> page);
 }
