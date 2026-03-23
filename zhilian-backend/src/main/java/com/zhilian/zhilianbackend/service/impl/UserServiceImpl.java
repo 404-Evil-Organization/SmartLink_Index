@@ -384,9 +384,9 @@ public class UserServiceImpl implements UserService {
         if (status == null || (status != 0 && status != 1)) {
             throw new BusinessException(400, "状态值必须为 0 或 1");
         }
-        // 防止管理员禁用自己
+        // 防止管理员禁用自己：仅当目标状态为禁用（0）且目标用户为当前登录用户时阻止操作
         Long currentUserId = securityUtils.getCurrentUserId();  // 如果未登录会抛出 BusinessException
-        if (userId.equals(currentUserId)) {
+        if (userId.equals(currentUserId) && status == 0) {
             throw new BusinessException(400, "不能禁用当前登录的管理员账号");
         }
         user.setStatus(status);
