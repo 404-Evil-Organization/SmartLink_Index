@@ -346,6 +346,13 @@ public class CertificationController {
             }
         }
 
+        // 在进行文件校验和 OSS 上传之前，先校验服务商是否存在，避免无效上传
+        ServiceProvider serviceProvider = serviceProviderService.getById(targetServiceId);
+        if (serviceProvider == null) {
+            log.warn("上传证书失败：指定的服务商不存在，serviceId={}", targetServiceId);
+            return Result.badRequest("指定的服务商不存在");
+        }
+
         // 文件安全校验
         MultipartFile file = uploadRequest.getFile();
         validateCertificationFile(file);
