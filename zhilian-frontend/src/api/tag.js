@@ -7,7 +7,7 @@ import request from "@/utils/request";
  * @param {number} [params.page] - 页码，默认1
  * @param {number} [params.size] - 每页条数，默认10
  * @param {string} [params.name] - 标签名称（模糊匹配）
- * @param {string} [params.category] - 类别筛选：service/certification/product/rests
+ * @param {string} [params.category] - 类别筛选：service/certification/product/general
  * @returns {Promise<Object>} 返回分页数据
  * @example 返回数据示例：
  * {

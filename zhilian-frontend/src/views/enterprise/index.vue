@@ -816,11 +816,6 @@
               @current-change="fetchCertList"
             />
           </div>
-          <el-image-viewer
-            v-if="previewVisible"
-            :url-list="[previewImage]"
-            @close="previewVisible = false"
-          />
         </el-tab-pane>
 
         <!-- 上传证书标签页 -->
@@ -873,11 +868,13 @@
                 :limit="1"
                 accept=".png,.jpg,.jpeg,.pdf"
                 :file-list="certFileList"
-                :before-upload="beforeCertUpload"
-                :http-request="() => {}"
-                list-type="text"
+                :on-change="handleCertFileChange"
+                :on-remove="handleCertFileRemove"
+                :on-preview="handleCertFilePreview"
+                :auto-upload="false"
+                list-type="picture-card"
               >
-                <el-button type="primary">选择文件</el-button>
+                <el-icon><Plus /></el-icon>
                 <template #tip>
                   <div class="el-upload__tip">
                     支持jpg/png/pdf格式，文件大小不超过10MB
@@ -959,6 +956,12 @@
         >
       </template>
     </el-dialog>
+
+    <el-image-viewer
+      v-if="previewVisible"
+      :url-list="[previewImage]"
+      @close="previewVisible = false"
+    />
   </div>
 </template>
 
@@ -987,7 +990,12 @@ import {
   uploadFile,
   deleteFile,
 } from "@/api/common";
-import { getCertList, uploadCert, deleteCert } from "@/api/certification";
+import {
+  getCertList,
+  uploadCert,
+  updateCert,
+  deleteCert,
+} from "@/api/certification";
 import { useUserStore } from "@/stores/user";
 import { maskPhone } from "@/utils/desensitize";
 import { normalizeTags, joinTags } from "@/utils/tagUtils";
@@ -1348,6 +1356,20 @@ const certSubmitting = ref(false);
 const certRules = {
   certName: [{ required: true, message: "请输入证书名称", trigger: "blur" }],
   file: [{ required: true, message: "请选择证书文件", trigger: "change" }],
+  expireDate: [
+    {
+      validator: (rule, value, callback) => {
+        if (!value) return callback();
+        if (!certForm.issueDate) return callback();
+        if (new Date(value) < new Date(certForm.issueDate)) {
+          callback(new Error("有效期不能早于发证日期"));
+        } else {
+          callback();
+        }
+      },
+      trigger: "change",
+    },
+  ],
 };
 
 // 打开证书管理弹窗
@@ -1373,10 +1395,8 @@ const fetchCertList = async () => {
       page: certPagination.current,
       size: certPagination.size,
     });
-    // 接口 1.4.1 返回直接是数组，但可能分页；根据文档返回的是 data 数组（无分页元数据），但实际项目可能分页，需按实际情况处理
-    // 这里假设返回格式为 { total, records }，如不一致请调整
-    certList.value = res.records || res || [];
-    certPagination.total = res.total || certList.value.length;
+    certList.value = res.records || [];
+    certPagination.total = res.total || 0;
   } catch (error) {
     ElMessage.error("获取证书列表失败");
   } finally {
@@ -1400,7 +1420,7 @@ const handleDeleteCert = async (certId) => {
     ElMessage.success("删除成功");
     await fetchCertList(); // 刷新列表
   } catch (error) {
-    if (error !== "cancel") {
+    if (error !== "cancel" && error !== "close") {
       ElMessage.error("删除失败");
     }
   } finally {
@@ -1408,8 +1428,11 @@ const handleDeleteCert = async (certId) => {
   }
 };
 
-// 上传前校验
-const beforeCertUpload = (file) => {
+// 处理证书文件选择
+const handleCertFileChange = (uploadFile, uploadFiles) => {
+  const file = uploadFile.raw;
+  if (!file) return;
+
   const allowedTypes = [
     "image/png",
     "image/jpeg",
@@ -1419,17 +1442,50 @@ const beforeCertUpload = (file) => {
   const isAllowed = allowedTypes.includes(file.type);
   if (!isAllowed) {
     ElMessage.error("只支持jpg、jpeg、png、pdf格式文件");
-    return false;
+    certFileList.value = [];
+    certForm.file = null;
+    return;
   }
   const maxSize = 10 * 1024 * 1024;
   if (file.size > maxSize) {
     ElMessage.error("文件大小不能超过10MB");
-    return false;
+    certFileList.value = [];
+    certForm.file = null;
+    return;
   }
+  
   certForm.file = file;
-  // 更新文件列表显示
-  certFileList.value = [{ name: file.name, status: "success", uid: file.uid }];
-  return false; // 阻止自动上传
+  
+  // 如果是 PDF，给定一个默认的文档图标，否则使用 blob URL 以便预览图片
+  if (file.type === "application/pdf") {
+    uploadFile.url = new URL('../../assets/pdf-icon.png', import.meta.url).href; // 这里需要一个静态资源作为占位图，或者简单留空依赖 element-plus 默认处理
+  } else {
+    uploadFile.url = URL.createObjectURL(file);
+  }
+  
+  certFileList.value = [uploadFile];
+  // 清除校验错误
+  if (certFormRef.value) {
+    certFormRef.value.clearValidate("file");
+  }
+};
+
+// 移除证书文件
+const handleCertFileRemove = () => {
+  certForm.file = null;
+  certFileList.value = [];
+};
+
+// 预览证书文件（本地预览）
+const handleCertFilePreview = (uploadFile) => {
+  if (!uploadFile.url) return;
+  // 如果是 pdf，直接在新窗口打开 URL
+  if (uploadFile.raw && uploadFile.raw.type === "application/pdf") {
+    window.open(uploadFile.url, "_blank");
+  } else {
+    // 图片使用已有的预览组件
+    openCertPreview(uploadFile.url);
+  }
 };
 
 // 提交证书（直接使用证书上传接口，FormData）
@@ -1490,6 +1546,25 @@ const closeCertDialog = () => {
   certList.value = [];
   certPagination.total = 0;
   deletingCertId.value = null;
+  // 同时重置证书预览状态，避免遮罩残留或下次打开预览状态异常
+  if (
+    previewVisible &&
+    typeof previewVisible === "object" &&
+    "value" in previewVisible
+  ) {
+    previewVisible.value = false;
+  }
+  if (typeof previewImage !== "undefined") {
+    if (
+      previewImage &&
+      typeof previewImage === "object" &&
+      "value" in previewImage
+    ) {
+      previewImage.value = "";
+    } else if (typeof previewImage === "string") {
+      previewImage = "";
+    }
+  }
 };
 
 // 编辑证书弹窗
@@ -1510,7 +1585,20 @@ const editCertSubmitting = ref(false);
 // 编辑证书表单校验规则（与上传类似，但文件字段不需要）
 const editCertRules = {
   certName: [{ required: true, message: "请输入证书名称", trigger: "blur" }],
-  // 其他字段可选
+  expireDate: [
+    {
+      validator: (rule, value, callback) => {
+        if (!value) return callback();
+        if (!editCertForm.issueDate) return callback();
+        if (new Date(value) < new Date(editCertForm.issueDate)) {
+          callback(new Error("有效期不能早于发证日期"));
+        } else {
+          callback();
+        }
+      },
+      trigger: "change",
+    },
+  ],
 };
 
 // 打开编辑证书弹窗

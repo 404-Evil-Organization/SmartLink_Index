@@ -2,25 +2,30 @@ import request from "@/utils/request";
 
 /**
  * 获取资质证书列表
- * @description 根据服务商ID获取其所有证书（1.4.1）
+ * @description 根据服务商ID获取其所有证书（1.4.1），分页返回
  * @param {Object} params - 请求参数
  * @param {number} params.serviceId - 服务商ID（必传）
- * @returns {Promise<Array>} 返回证书列表，每个证书对象结构如下：
+ * @returns {Promise<{total:number, records:Array, page:number, size:number}>} 返回分页对象，records 为证书列表：
  * @example 返回数据示例：
- * [
- *   {
- *     "id": 3001,
- *     "serviceId": 2001,
- *     "certName": "CNAS认证",
- *     "certNo": "CNAS L1234",
- *     "issueAuthority": "中国合格评定国家认可委员会",
- *     "issueDate": "2023-01-01",
- *     "expireDate": "2026-12-31",
- *     "certFileUrl": "https://...",
- *     "status": 1,
- *     "createTime": "2026-03-01 10:00:00"
- *   }
- * ]
+ * {
+ *   "total": 1,
+ *   "page": 1,
+ *   "size": 10,
+ *   "records": [
+ *     {
+ *       "id": 3001,
+ *       "serviceId": 2001,
+ *       "certName": "CNAS认证",
+ *       "certNo": "CNAS L1234",
+ *       "issueAuthority": "中国合格评定国家认可委员会",
+ *       "issueDate": "2023-01-01",
+ *       "expireDate": "2026-12-31",
+ *       "certFileUrl": "https://...",
+ *       "status": 1,
+ *       "createTime": "2026-03-01 10:00:00"
+ *     }
+ *   ]
+ * }
  */
 export function getCertList(params) {
   return request({
@@ -41,11 +46,9 @@ export function getCertList(params) {
  *   - issueDate: 发证日期（date，可选，格式 yyyy-MM-dd）
  *   - expireDate: 有效期至（date，可选，格式 yyyy-MM-dd）
  *   - file: 证书文件（File 对象）
- * @returns {Promise<Object>} 返回上传结果，包含新证书ID
- * @example 返回数据示例：
- * {
- *   "id": 3005
- * }
+ * @returns {Promise<number>} 返回新证书ID（数字）
+ * @example 返回数据示例（request 拦截器已解包 Result<Long>）：
+ * 3005
  */
 export function uploadCert(data) {
   return request({
