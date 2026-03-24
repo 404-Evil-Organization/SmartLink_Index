@@ -1,6 +1,8 @@
 package com.zhilian.zhilianbackend.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,6 +17,8 @@ public class RegionIndexUpdateRequest {
     @Schema(description = "年份", example = "2026")
     private Integer year;
 
+    @Min(value = 1, message = "季度最小为1")
+    @Max(value = 4, message = "季度最大为4")
     @Schema(description = "季度", example = "1")
     private Integer quarter;
 

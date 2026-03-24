@@ -545,8 +545,9 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         }
         if (request.getYear() != null) {
             wrapper.eq(RegionIndex::getYear, request.getYear());
-            wrapper.eq(RegionIndex::getPeriodType, "quarter");
         }
+        // 始终限定为季度数据，避免混入 month 记录导致 VO 中 quarter 语义错误
+        wrapper.eq(RegionIndex::getPeriodType, "quarter");
         wrapper.orderByDesc(RegionIndex::getCalcTime)
                 .orderByDesc(RegionIndex::getId);
 
@@ -565,20 +566,10 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Date: 2026/3/24
      * @Param: request 新增区域指数请求参数
      * @Return: 新增记录的ID
-     * @Description: 管理员新增区域指数，需保证区域+年份+季度组合唯一，若冲突抛出409异常
+     * @Description: 管理员新增区域指数，依赖数据库唯一约束保证原子性，冲突时返回409
      */
     @Override
     public Long adminCreate(RegionIndexCreateRequest request) {
-        // 校验唯一性
-        LambdaQueryWrapper<RegionIndex> checkWrapper = new LambdaQueryWrapper<>();
-        checkWrapper.eq(RegionIndex::getRegion, request.getRegion())
-                .eq(RegionIndex::getYear, request.getYear())
-                .eq(RegionIndex::getPeriodType, "quarter")
-                .eq(RegionIndex::getPeriodValue, request.getQuarter());
-        if (this.count(checkWrapper) > 0) {
-            throw new BusinessException(409, "该区域、年份、季度的指数已存在");
-        }
-
         RegionIndex entity = new RegionIndex();
         entity.setRegion(request.getRegion());
         entity.setYear(request.getYear().shortValue());
@@ -590,8 +581,20 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         entity.setTotalIndex(request.getTotalIndex());
         entity.setCalcTime(new Date());
 
-        this.save(entity);
-        return entity.getId();
+        try {
+            boolean success = this.save(entity);
+            if (!success) {
+                // save 返回 false 通常表示未发生数据库异常但插入失败（极少见），稳妥起见转为业务异常
+                log.error("保存区域指数失败，返回false，request: {}", request);
+                throw new BusinessException(500, "保存区域指数失败");
+            }
+            return entity.getId();
+        } catch (DuplicateKeyException e) {
+            // 数据库唯一约束 uk_region_year_period_deleted 冲突
+            log.warn("新增区域指数时触发唯一键冲突，region={}, year={}, quarter={}",
+                    request.getRegion(), request.getYear(), request.getQuarter(), e);
+            throw new BusinessException(409, "该区域、年份、季度的指数已存在");
+        }
     }
 
     /**
@@ -611,8 +614,8 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
 
         // 如果修改了区域、年份、季度，需要校验新组合是否唯一
         if (request.getRegion() != null && !request.getRegion().equals(existing.getRegion())
-                || request.getYear() != null && !request.getYear().equals(existing.getYear())
-                || request.getQuarter() != null && !request.getQuarter().equals(existing.getPeriodValue())) {
+                || request.getYear() != null && request.getYear().intValue() != existing.getYear().intValue()
+                || request.getQuarter() != null && request.getQuarter().intValue() != existing.getPeriodValue().intValue()) {
 
             String newRegion = request.getRegion() != null ? request.getRegion() : existing.getRegion();
             Short newYear = request.getYear() != null ? request.getYear().shortValue() : existing.getYear();
@@ -652,8 +655,14 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             existing.setTotalIndex(request.getTotalIndex());
         }
 
-        existing.setCalcTime(new Date());
-        this.updateById(existing);
+        try {
+            this.updateById(existing);
+        } catch (DuplicateKeyException e) {
+            // 并发场景下可能触发数据库唯一约束 uk_region_year_period_deleted，统一转为 409 业务异常
+            log.warn("更新区域指数时触发唯一键冲突，id={}, region={}, year={}, quarter={}",
+                    id, existing.getRegion(), existing.getYear(), existing.getPeriodValue(), e);
+            throw new BusinessException(409, "目标区域、年份、季度的指数已存在");
+        }
     }
 
     /**
