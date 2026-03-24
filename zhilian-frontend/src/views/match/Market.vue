@@ -188,7 +188,7 @@
                   <el-icon><Connection /></el-icon> 接单
                 </el-button>
                 <span class="publish-time">
-                  {{ formatEstablishedDate(demand.createTime) }}
+                  {{ createTimeConverter(demand.createTime).toLocalYMDHMS() }}
                 </span>
               </div>
             </div>
@@ -271,7 +271,7 @@ import {
 } from "@element-plus/icons-vue";
 import { useUserStore } from "@/stores/user";
 import { maskPhone } from "@/utils/desensitize";
-import { formatEstablishedDate } from "@/composables/date";
+import { createTimeConverter } from "@/composables/date";
 // import { formatDate, truncateText } from "@/utils/format";
 
 // API 导入
@@ -475,7 +475,7 @@ const handleAccept = async (demand) => {
     if (isService.value && availableServiceProviders.value.length === 0) {
       ElMessage.warning("您还没有审核通过的服务商企业，无法接单");
     } else if (!isService.value) {
-      ElMessage.warning("仅服务商可以接单");
+      ElMessage.warning("当前角色无接单权限，仅支持浏览");
     }
     return;
   }
@@ -508,8 +508,6 @@ const confirmAccept = async () => {
     )
   ) {
     selectServiceDialog.visible = false;
-  } else {
-    ElMessage.error("接单失败");
   }
 };
 
