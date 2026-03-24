@@ -299,7 +299,7 @@ const fetchEnterprises = async () => {
   loadingEnterprises.value = true;
   let res;
   try {
-    if (userRole === "admin") {
+    if (userRole.value === "admin") {
       res = await getManufactureList({ page: 1, size: 100 });
     } else {
       res = await getMyManufactureList({ page: 1, size: 100 });

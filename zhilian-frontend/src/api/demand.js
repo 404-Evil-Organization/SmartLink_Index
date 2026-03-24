@@ -21,7 +21,7 @@ export const publishDemand = (data) => {
 };
 
 /**
- * 获取我的需求列表（仅制造企业）
+ * 获取我的需求列表
  * @param {Object} params 查询参数
  * @param {number} [params.page=1] 页码
  * @param {number} [params.size=10] 每页条数
