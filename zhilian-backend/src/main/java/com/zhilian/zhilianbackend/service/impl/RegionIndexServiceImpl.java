@@ -676,13 +676,17 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Date: 2026/3/24
      * @Param: id 记录ID
      * @Return: 无返回值
-     * @Description: 管理员删除区域指数（逻辑删除），记录不存在时抛出404异常
+     * @Description: 管理员删除区域指数（逻辑删除），仅支持删除季度数据
      */
     @Override
     public void adminDelete(Long id) {
         RegionIndex existing = this.getById(id);
         if (existing == null) {
             throw new BusinessException(404, "记录不存在，id=" + id);
+        }
+        // 校验是否为季度数据，与 adminList/adminCreate/adminUpdate 保持一致
+        if (!"quarter".equals(existing.getPeriodType())) {
+            throw new BusinessException(400, "该接口仅支持删除季度数据，当前记录类型为: " + existing.getPeriodType());
         }
         boolean deleted = this.removeById(id);
         if (!deleted) {
