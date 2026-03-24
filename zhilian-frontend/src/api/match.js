@@ -1,6 +1,6 @@
-// src/api/demand.js
+// src/api/match.js
 
-import request from '@/utils/request'; // 假设项目中有统一的axios请求实例
+import request from "@/utils/request";
 
 /**
  * 获取合作市场需求列表（服务商浏览需求）
@@ -21,8 +21,8 @@ import request from '@/utils/request'; // 假设项目中有统一的axios请求
  */
 export function getDemandMarketList(params) {
   return request({
-    url: '/demand/market',
-    method: 'get',
+    url: "/demand/market",
+    method: "get",
     params,
   });
 }
@@ -40,8 +40,8 @@ export function getDemandMarketList(params) {
  */
 export function acceptDemand(data) {
   return request({
-    url: '/demand/accept',
-    method: 'post',
+    url: "/demand/accept",
+    method: "post",
     data,
   });
 }

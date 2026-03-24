@@ -101,7 +101,11 @@
           :xl="6"
           style="margin-bottom: 20px"
         >
-          <el-card class="demand-card" shadow="hover" body-style="padding: 0">
+          <el-card
+            class="demand-card"
+            shadow="hover"
+            :body-style="{ padding: '0px' }"
+          >
             <div class="card-content">
               <!-- 需求标题和预算 -->
               <div class="card-header">
@@ -282,8 +286,6 @@ const isService = computed(() => userRole.value === "service");
 // 脱敏显示电话（服务商可看完整，其他角色脱敏）
 const showPhone = (phone) => {
   if (!phone) return "-";
-  // 服务商角色可以看到完整号码，其他角色脱敏
-  if (isService.value) return phone;
   return maskPhone(phone, userRole.value);
 };
 
@@ -498,12 +500,17 @@ const confirmAccept = async () => {
     ElMessage.warning("请选择服务商企业");
     return;
   }
-  await doAccept(
-    selectServiceDialog.demandId,
-    selectServiceDialog.selectedServiceId,
-    selectServiceDialog.demandTitle,
-  );
-  selectServiceDialog.visible = false;
+  if (
+    await doAccept(
+      selectServiceDialog.demandId,
+      selectServiceDialog.selectedServiceId,
+      selectServiceDialog.demandTitle,
+    )
+  ) {
+    selectServiceDialog.visible = false;
+  } else {
+    ElMessage.error("接单失败");
+  }
 };
 
 // 执行接单请求
@@ -517,8 +524,10 @@ const doAccept = async (demandId, serviceId, demandTitle) => {
     ElMessage.success(`已成功接取需求“${demandTitle}”`);
     // 刷新列表，移除已匹配的需求
     await fetchDemandList();
+    return true;
   } catch (error) {
     console.error("接单失败", error);
+    return false;
     // 错误消息由拦截器处理，这里不重复提示
   } finally {
     acceptingId.value = null;
