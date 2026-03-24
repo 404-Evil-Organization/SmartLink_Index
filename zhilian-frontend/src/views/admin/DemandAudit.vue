@@ -316,8 +316,11 @@ const handlePageSizeChange = (val) => {
 
 // 查看详情
 const viewDetail = (row) => {
-  detailDialog.data = { ...row }; // 复制行数据
+  // 先打开弹窗，再控制加载态，便于未来扩展为异步获取详情数据
   detailDialog.visible = true;
+  detailDialog.loading = true;
+  detailDialog.data = { ...row }; // 复制行数据
+  detailDialog.loading = false;
 };
 
 // 打开审核弹窗
@@ -369,7 +372,9 @@ const submitAudit = async () => {
 };
 
 // 初始化加载
-fetchList();
+onMounted(() => {
+  fetchList();
+});
 </script>
 
 <style scoped>
