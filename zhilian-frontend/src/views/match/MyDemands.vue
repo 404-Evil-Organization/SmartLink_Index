@@ -123,14 +123,14 @@
             >
               删除
             </el-button>
-            <el-button
+            <!-- <el-button
               v-if="row.status === 'matched'"
               link
               type="info"
               @click="viewCooperation(row)"
             >
               查看合作
-            </el-button>
+            </el-button> -->
           </template>
         </el-table-column>
       </el-table>
@@ -327,6 +327,7 @@ const initSelectedEnterprise = () => {
 
 // 切换企业时重新加载列表
 const handleEnterpriseChange = () => {
+  queryParams.page = 1;
   fetchList();
 };
 
@@ -593,10 +594,10 @@ const handleDelete = (row) => {
     .catch(() => {});
 };
 
-// 查看合作（跳转到我的合作页面）
-const viewCooperation = (row) => {
-  router.push({ path: "/cooperation/my", query: { demandId: row.id } });
-};
+// // 查看合作（跳转到我的合作页面）
+// const viewCooperation = (row) => {
+//   router.push({ path: "/cooperation/my", query: { demandId: row.id } });
+// };
 
 // 初始化
 onMounted(async () => {
