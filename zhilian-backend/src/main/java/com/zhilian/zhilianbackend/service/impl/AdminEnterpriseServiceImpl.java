@@ -48,19 +48,48 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
     **/
     @Override
     public IPage<PendingEnterpriseResponse> getPendingEnterpriseList(Integer page, Integer size) {
-        // 创建分页对象
+        // 基本参数校验，防止非法分页参数造成不必要的压力
+        if (page == null || page < 1 || size == null || size < 1) {
+            throw new BusinessException("分页参数不合法，page 和 size 必须为大于等于 1 的整数");
+        }
+
+        // 创建分页对象（仅作为返回结构封装，不直接用于数据库分页）
         Page<PendingEnterpriseResponse> pageParam = new Page<>(page, size);
 
-        // 查询待审核的制造企业
+        // 查询待审核的制造企业，仅选择列表所需字段，并在数据库侧按创建时间倒序排序
         LambdaQueryWrapper<Manufacture> manuWrapper = new LambdaQueryWrapper<>();
-        manuWrapper.eq(Manufacture::getAuditStatus, "pending")
-                .eq(Manufacture::getDeleted, NOT_DELETED);
+        manuWrapper
+                .select(
+                        Manufacture::getId,
+                        Manufacture::getCompanyName,
+                        Manufacture::getRegion,
+                        Manufacture::getContactPerson,
+                        Manufacture::getContactPhone,
+                        Manufacture::getAuditStatus,
+                        Manufacture::getCreateTime,
+                        Manufacture::getDeleted
+                )
+                .eq(Manufacture::getAuditStatus, "pending")
+                .eq(Manufacture::getDeleted, NOT_DELETED)
+                .orderByDesc(Manufacture::getCreateTime);
         List<Manufacture> manuList = manufactureMapper.selectList(manuWrapper);
 
-        // 查询待审核的服务商
+        // 查询待审核的服务商，仅选择列表所需字段，并在数据库侧按创建时间倒序排序
         LambdaQueryWrapper<ServiceProvider> serviceWrapper = new LambdaQueryWrapper<>();
-        serviceWrapper.eq(ServiceProvider::getAuditStatus, "pending")
-                .eq(ServiceProvider::getDeleted, NOT_DELETED);
+        serviceWrapper
+                .select(
+                        ServiceProvider::getId,
+                        ServiceProvider::getCompanyName,
+                        ServiceProvider::getRegion,
+                        ServiceProvider::getContactPerson,
+                        ServiceProvider::getContactPhone,
+                        ServiceProvider::getAuditStatus,
+                        ServiceProvider::getCreateTime,
+                        ServiceProvider::getDeleted
+                )
+                .eq(ServiceProvider::getAuditStatus, "pending")
+                .eq(ServiceProvider::getDeleted, NOT_DELETED)
+                .orderByDesc(ServiceProvider::getCreateTime);
         List<ServiceProvider> serviceList = serviceProviderMapper.selectList(serviceWrapper);
 
         // 转换为VO并合并
@@ -108,7 +137,7 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
         pageParam.setRecords(records);
         pageParam.setTotal(allList.size());
 
-        log.info("查询待审核企业列表成功，总数: {}, 当前页: {}", allList.size(), records.size());
+        log.info("查询待审核企业列表成功，总数: {}, 请求页码: {}, 每页大小: {}, 当前页记录数: {}", allList.size(), page, size, records.size());
         return pageParam;
     }
 
