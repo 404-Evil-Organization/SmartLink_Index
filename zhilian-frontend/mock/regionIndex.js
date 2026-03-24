@@ -44,10 +44,12 @@ export default [
     url: '/api/region-index/list',
     method: 'get',
     response: ({ query }) => {
-      const { page = 1, size = 10, region, year } = query;
+      const { page = 1, size = 10, region, year, periodType, periodValue } = query;
       let filtered = [...regionIndexList];
       if (region) filtered = filtered.filter(item => item.region.includes(region));
       if (year) filtered = filtered.filter(item => item.year === Number(year));
+      if (periodType) filtered = filtered.filter(item => item.periodType === periodType);
+      if (periodValue) filtered = filtered.filter(item => item.periodValue === Number(periodValue));
       const start = (page - 1) * size;
       const end = start + parseInt(size);
       const records = filtered.slice(start, end);

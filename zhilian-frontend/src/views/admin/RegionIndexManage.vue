@@ -15,21 +15,50 @@
       </div>
     </div>
 
-    <!-- 搜索卡片（左对齐布局） -->
+    <!-- 搜索卡片（包含区域、年份、周期类型、周期值筛选） -->
     <div class="search-bar">
       <el-form :model="searchForm" label-width="80px" class="search-form">
         <el-row :gutter="20">
-          <el-col :span="8">
+          <el-col :span="5">
             <el-form-item label="区域">
               <el-input v-model="searchForm.region" placeholder="请输入区域" clearable />
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="4">
             <el-form-item label="年份">
               <el-input v-model="searchForm.year" placeholder="请输入年份" clearable />
             </el-form-item>
           </el-col>
-          <el-col :span="8" style="text-align: right">
+          <el-col :span="4">
+            <el-form-item label="周期类型">
+              <el-select v-model="searchForm.periodType" placeholder="全部" clearable>
+                <el-option label="季度" value="quarter" />
+                <el-option label="月度" value="month" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="5">
+            <el-form-item label="周期值">
+              <el-select
+                v-model="searchForm.periodValue"
+                placeholder="全部"
+                clearable
+                :disabled="!searchForm.periodType"
+              >
+                <el-option
+                  v-for="val in periodOptions"
+                  :key="val"
+                  :label="
+                    searchForm.periodType === 'quarter'
+                      ? '第' + val + '季度'
+                      : val + '月'
+                  "
+                  :value="val"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6" style="text-align: right">
             <el-form-item label-width="0">
               <el-button type="primary" @click="handleSearch">查询</el-button>
               <el-button @click="resetSearch">重置</el-button>
@@ -166,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Edit, Delete } from '@element-plus/icons-vue'
 import { getRegionIndexList, addRegionIndex, updateRegionIndex, deleteRegionIndex } from '@/api/regionIndex'
@@ -175,7 +204,20 @@ import { createTimeConverter } from '@/composables/date'
 // 搜索表单
 const searchForm = reactive({
   region: '',
-  year: ''
+  year: '',
+  periodType: '',
+  periodValue: ''
+})
+
+// 根据周期类型动态生成周期值选项
+const periodOptions = computed(() => {
+  if (searchForm.periodType === 'quarter') {
+    return [1, 2, 3, 4]
+  } else if (searchForm.periodType === 'month') {
+    return Array.from({ length: 12 }, (_, i) => i + 1)
+  } else {
+    return []
+  }
 })
 
 // 表格数据
@@ -250,7 +292,9 @@ const fetchList = async () => {
       page: pagination.current,
       size: pagination.size,
       ...(searchForm.region && { region: searchForm.region }),
-      ...(searchForm.year && { year: searchForm.year })
+      ...(searchForm.year && { year: searchForm.year }),
+      ...(searchForm.periodType && { periodType: searchForm.periodType }),
+      ...(searchForm.periodValue && { periodValue: searchForm.periodValue })
     }
     const res = await getRegionIndexList(params)
     tableData.value = res.records || []
@@ -272,6 +316,8 @@ const handleSearch = () => {
 const resetSearch = () => {
   searchForm.region = ''
   searchForm.year = ''
+  searchForm.periodType = ''
+  searchForm.periodValue = ''
   handleSearch()
 }
 
@@ -423,12 +469,14 @@ onMounted(() => {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   overflow-x: auto;  /* 窄屏滚动，保持一行 */
 }
+
 .search-form {
   width: 100%;
 }
+
 .search-form .el-row {
   flex-wrap: nowrap; /* 强制一行显示 */
-  min-width: 800px;  /* 可根据实际内容调整 */
+  min-width: 1000px; /* 保证总宽度足够，可根据实际调整 */
 }
 
 .search-bar .el-col {
@@ -496,6 +544,7 @@ onMounted(() => {
   .search-bar .el-row {
     flex-direction: column;
     align-items: stretch;
+    min-width: auto;
   }
   .search-bar .el-col {
     margin-bottom: 12px;
