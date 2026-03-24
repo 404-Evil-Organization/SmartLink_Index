@@ -25,6 +25,6 @@ public class DemandUpdateRequest {
     @Schema(description = "期望完成日期", example = "2026-07-01")
     private Date deadline;
 
-    @Schema(description = "标签名称列表", example = "[\"新标签1\", \"新标签2\"]")
-    private List<String> tags;
+    @Schema(description = "标签ID列表", example = "[2, 3]")
+    private List<Long> tags;
 }

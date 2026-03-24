@@ -94,23 +94,25 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             throw new BusinessException(500, "发布需求失败");
         }
 
-        // 6. 保存标签关联（根据标签名称查询 ID）
+        // 6. 保存标签关联（直接使用传入的标签 ID）
         if (!CollectionUtils.isEmpty(request.getTags())) {
-            List<Tag> tags = tagService.lambdaQuery()
-                    .in(Tag::getName, request.getTags())
-                    .list();
-            List<Long> tagIds = tags.stream().map(Tag::getId).collect(Collectors.toList());
-            if (!tagIds.isEmpty()) {
-                List<DemandTag> demandTags = tagIds.stream()
-                        .map(tagId -> new DemandTag()
-                                .setDemandId(demand.getId())
-                                .setTagId(tagId)
-                                .setDeleted(DateConstants.getNotDeletedTime()))
+            // 校验标签是否存在
+            List<Tag> tags = tagService.listByIds(request.getTags());
+            if (tags.size() != request.getTags().size()) {
+                Set<Long> existingIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
+                List<Long> missingIds = request.getTags().stream()
+                        .filter(id -> !existingIds.contains(id))
                         .collect(Collectors.toList());
-                demandTagMapper.insertBatch(demandTags);
-            } else {
-                log.warn("发布需求时未找到任何匹配的标签，demandId={}，requestTags={}", demand.getId(), request.getTags());
+                throw new BusinessException(400, "以下标签 ID 不存在: " + missingIds);
             }
+
+            List<DemandTag> demandTags = request.getTags().stream()
+                    .map(tagId -> new DemandTag()
+                            .setDemandId(demand.getId())
+                            .setTagId(tagId)
+                            .setDeleted(DateConstants.getNotDeletedTime()))
+                    .collect(Collectors.toList());
+            demandTagMapper.insertBatch(demandTags);
         }
 
         log.info("需求发布成功，ID：{}，制造企业：{}", demand.getId(), manufacture.getCompanyName());
@@ -188,51 +190,59 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
      * @Param: request 审核请求参数（状态、意见）
      * @Param: adminUserId 当前管理员用户ID
      * @Return: void
-     * @Description: 审核需求，通过时更新审核状态和业务状态；驳回时更新审核状态为rejected，业务状态保持draft
+     * @Description: 审核需求，通过时更新审核状态和业务状态；驳回时更新审核状态为rejected，业务状态保持draft。
+     *               使用带条件的原子更新避免并发重复审核。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approveDemand(Long demandId, DemandApproveRequest request, Long adminUserId) {
-        Demand demand = this.getById(demandId);
-        if (demand == null) {
-            throw new BusinessException(404, "需求不存在");
-        }
-
-        if (!"pending".equals(demand.getAuditStatus())) {
-            throw new BusinessException(400, "该需求已审核过，不能重复审核");
+        // 纵深防御：在 Service 层校验管理员权限
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限操作");
         }
 
         String status = request.getStatus();
-        if ("approved".equals(status)) {
-            demand.setAuditStatus("approved");
-            demand.setStatus("published");
-            demand.setAuditRemark(request.getRemark());
-            demand.setAuditTime(new Date());
-            demand.setAuditUserId(adminUserId);
-            boolean updated = this.updateById(demand);
-            if (!updated) {
-                throw new BusinessException(500, "审核通过失败");
-            }
-            log.info("需求审核通过，ID：{}，审核人：{}", demandId, adminUserId);
+        // 构造原子更新条件：id 且 audit_status = 'pending'
+        LambdaUpdateWrapper<Demand> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Demand::getId, demandId)
+                .eq(Demand::getAuditStatus, "pending");
 
+        if ("approved".equals(status)) {
+            updateWrapper.set(Demand::getAuditStatus, "approved")
+                    .set(Demand::getStatus, "published")
+                    .set(Demand::getAuditRemark, request.getRemark())
+                    .set(Demand::getAuditTime, new Date())
+                    .set(Demand::getAuditUserId, adminUserId);
         } else if ("rejected".equals(status)) {
+            // 驳回时校验意见
             if (request.getRemark() == null || request.getRemark().trim().isEmpty()) {
                 throw new BusinessException(400, "驳回时必须填写审核意见");
             }
-
-            demand.setAuditStatus("rejected");
-            demand.setStatus("draft");
-            demand.setAuditRemark(request.getRemark());
-            demand.setAuditTime(new Date());
-            demand.setAuditUserId(adminUserId);
-            boolean updated = this.updateById(demand);
-            if (!updated) {
-                throw new BusinessException(500, "驳回操作失败");
-            }
-            log.info("需求审核驳回，ID：{}，原因：{}，审核人：{}", demandId, request.getRemark(), adminUserId);
+            updateWrapper.set(Demand::getAuditStatus, "rejected")
+                    .set(Demand::getStatus, "draft")
+                    .set(Demand::getAuditRemark, request.getRemark())
+                    .set(Demand::getAuditTime, new Date())
+                    .set(Demand::getAuditUserId, adminUserId);
         } else {
             throw new BusinessException(400, "审核状态不合法");
         }
+
+        // 执行条件更新
+        boolean updated = this.update(updateWrapper);
+
+        if (!updated) {
+            // 更新失败，可能因为需求不存在或状态已不是 pending
+            // 再查询一次，获取更精确的错误原因
+            Demand demand = this.getById(demandId);
+            if (demand == null) {
+                throw new BusinessException(404, "需求不存在");
+            }
+            // 状态已变
+            throw new BusinessException(400, "该需求已审核过，不能重复审核");
+        }
+
+        log.info("需求审核{}，ID：{}，审核人：{}",
+                "approved".equals(status) ? "通过" : "驳回", demandId, adminUserId);
     }
 
     /**
@@ -289,19 +299,23 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
 
             // 插入新标签
             if (!CollectionUtils.isEmpty(request.getTags())) {
-                List<Tag> tags = tagService.lambdaQuery()
-                        .in(Tag::getName, request.getTags())
-                        .list();
-                List<Long> tagIds = tags.stream().map(Tag::getId).collect(Collectors.toList());
-                if (!tagIds.isEmpty()) {
-                    List<DemandTag> demandTags = tagIds.stream()
-                            .map(tagId -> new DemandTag()
-                                    .setDemandId(id)
-                                    .setTagId(tagId)
-                                    .setDeleted(DateConstants.getNotDeletedTime()))
+                // 校验标签是否存在
+                List<Tag> tags = tagService.listByIds(request.getTags());
+                if (tags.size() != request.getTags().size()) {
+                    Set<Long> existingIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
+                    List<Long> missingIds = request.getTags().stream()
+                            .filter(tagId -> !existingIds.contains(tagId))
                             .collect(Collectors.toList());
-                    demandTagMapper.insertBatch(demandTags);
+                    throw new BusinessException(400, "以下标签 ID 不存在: " + missingIds);
                 }
+
+                List<DemandTag> demandTags = request.getTags().stream()
+                        .map(tagId -> new DemandTag()
+                                .setDemandId(id)
+                                .setTagId(tagId)
+                                .setDeleted(DateConstants.getNotDeletedTime()))
+                        .collect(Collectors.toList());
+                demandTagMapper.insertBatch(demandTags);
             }
         }
 

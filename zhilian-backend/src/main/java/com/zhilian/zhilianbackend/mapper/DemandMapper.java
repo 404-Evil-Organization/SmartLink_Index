@@ -45,5 +45,6 @@ public interface DemandMapper extends BaseMapper<Demand> {
      * @Return: IPage<DemandPendingVO> 分页的待审核需求列表
      * @Description: 分页查询待审核需求（仅需求基本信息 + 企业名称，不含标签）
      */
-    IPage<DemandPendingVO> selectPendingDemandPage(Page<DemandPendingVO> page);
+    IPage<DemandPendingVO> selectPendingDemandPage(Page<DemandPendingVO> page,
+                                                   @Param("notDeletedTime") LocalDateTime notDeletedTime);
 }

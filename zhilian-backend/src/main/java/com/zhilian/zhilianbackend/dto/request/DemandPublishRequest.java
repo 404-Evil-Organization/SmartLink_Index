@@ -32,6 +32,6 @@ public class DemandPublishRequest {
     @Schema(description = "期望完成日期", example = "2026-04-01")
     private Date deadline;
 
-    @Schema(description = "标签名称列表", example = "[\"检测认证\", \"PCB电路板\"]")
-    private List<String> tags;
+    @Schema(description = "标签ID列表", example = "[1, 7]")
+    private List<Long> tags;
 }
