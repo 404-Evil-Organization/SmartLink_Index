@@ -15,6 +15,8 @@ public class RegionIndexUpdateRequest {
     private String region;
 
     @Schema(description = "年份", example = "2026")
+    @Min(value = 1900, message = "年份最小为1900")
+    @Max(value = 2200, message = "年份最大为2200")
     private Integer year;
 
     @Min(value = 1, message = "季度最小为1")

@@ -655,13 +655,19 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             existing.setTotalIndex(request.getTotalIndex());
         }
 
+        boolean updated;
         try {
-            this.updateById(existing);
+            // 使用 MyBatis Plus 的返回值判断是否实际更新了记录
+            updated = this.updateById(existing);
         } catch (DuplicateKeyException e) {
             // 并发场景下可能触发数据库唯一约束 uk_region_year_period_deleted，统一转为 409 业务异常
             log.warn("更新区域指数时触发唯一键冲突，id={}, region={}, year={}, quarter={}",
                     id, existing.getRegion(), existing.getYear(), existing.getPeriodValue(), e);
             throw new BusinessException(409, "目标区域、年份、季度的指数已存在");
+        }
+        // 并发场景下，记录可能在查询与更新之间被删除，updateById 返回 false 表示未更新任何记录
+        if (!updated) {
+            throw new BusinessException(404, "更新失败，记录不存在或已被删除，id=" + id);
         }
     }
 
@@ -678,6 +684,10 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         if (existing == null) {
             throw new BusinessException(404, "记录不存在，id=" + id);
         }
-        this.removeById(id);
+        boolean deleted = this.removeById(id);
+        if (!deleted) {
+            log.error("删除区域指数失败，id={}", id);
+            throw new BusinessException(500, "删除记录失败");
+        }
     }
 }
