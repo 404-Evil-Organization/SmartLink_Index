@@ -94,19 +94,20 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             throw new BusinessException(500, "发布需求失败");
         }
 
-        // 6. 保存标签关联（直接使用传入的标签 ID）
+        // 6. 保存标签关联
         if (!CollectionUtils.isEmpty(request.getTags())) {
-            // 校验标签是否存在
-            List<Tag> tags = tagService.listByIds(request.getTags());
-            if (tags.size() != request.getTags().size()) {
+            // 先对标签 ID 去重，避免重复 ID 影响存在性校验和唯一键约束
+            Set<Long> distinctTagIds = new LinkedHashSet<>(request.getTags());
+            // 校验标签是否存在（基于去重后的 ID 集合）
+            List<Tag> tags = tagService.listByIds(distinctTagIds);
+            if (tags.size() != distinctTagIds.size()) {
                 Set<Long> existingIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
-                List<Long> missingIds = request.getTags().stream()
+                List<Long> missingIds = distinctTagIds.stream()
                         .filter(id -> !existingIds.contains(id))
                         .collect(Collectors.toList());
                 throw new BusinessException(400, "以下标签 ID 不存在: " + missingIds);
             }
-
-            List<DemandTag> demandTags = request.getTags().stream()
+            List<DemandTag> demandTags = distinctTagIds.stream()
                     .map(tagId -> new DemandTag()
                             .setDemandId(demand.getId())
                             .setTagId(tagId)
@@ -275,22 +276,34 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             throw new BusinessException(400, "当前状态不可编辑");
         }
 
-        if (request.getTitle() != null) {
+        // 记录是否有字段实际变更（用于幂等处理）
+        boolean hasChange = false;
+        if (request.getTitle() != null && !request.getTitle().equals(demand.getTitle())) {
             demand.setTitle(request.getTitle());
+            hasChange = true;
         }
-        if (request.getDescription() != null) {
+        if (request.getDescription() != null && !request.getDescription().equals(demand.getDescription())) {
             demand.setDescription(request.getDescription());
+            hasChange = true;
         }
-        if (request.getExpectedBudget() != null) {
+        if (request.getExpectedBudget() != null && (demand.getExpectedBudget() == null || !request.getExpectedBudget().equals(demand.getExpectedBudget()))) {
             demand.setExpectedBudget(request.getExpectedBudget());
+            hasChange = true;
         }
-        if (request.getDeadline() != null) {
+        if (request.getDeadline() != null && (demand.getDeadline() == null || !request.getDeadline().equals(demand.getDeadline()))) {
             demand.setDeadline(request.getDeadline());
+            hasChange = true;
         }
 
-        boolean updated = this.updateById(demand);
-        if (!updated) {
-            throw new BusinessException(500, "编辑需求失败");
+        if (hasChange) {
+            boolean updated = this.updateById(demand);
+            if (!updated) {
+                // 理论上记录已存在，更新失败可能是并发删除，抛出异常
+                throw new BusinessException(500, "编辑需求失败");
+            }
+        } else {
+            // 无字段变更，视为幂等成功
+            log.info("需求编辑无实际变更，ID：{}", id);
         }
 
         // 处理标签更新（先删后增）
@@ -303,23 +316,33 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
 
             // 插入新标签
             if (!CollectionUtils.isEmpty(request.getTags())) {
-                // 校验标签是否存在
-                List<Tag> tags = tagService.listByIds(request.getTags());
-                if (tags.size() != request.getTags().size()) {
-                    Set<Long> existingIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
-                    List<Long> missingIds = request.getTags().stream()
-                            .filter(tagId -> !existingIds.contains(tagId))
-                            .collect(Collectors.toList());
-                    throw new BusinessException(400, "以下标签 ID 不存在: " + missingIds);
-                }
-
-                List<DemandTag> demandTags = request.getTags().stream()
-                        .map(tagId -> new DemandTag()
-                                .setDemandId(id)
-                                .setTagId(tagId)
-                                .setDeleted(DateConstants.getNotDeletedTime()))
+                // 先对标签 ID 进行空值过滤与去重，避免校验误判和唯一键冲突
+                List<Long> distinctTagIds = request.getTags().stream()
+                        .filter(Objects::nonNull)
+                        .distinct()
                         .collect(Collectors.toList());
-                demandTagMapper.insertBatch(demandTags);
+                // 去重后如果没有有效标签，则无需继续校验和插入
+                if (!distinctTagIds.isEmpty()) {
+                    // 校验标签是否存在（基于去重后的标签 ID）
+                    List<Tag> tags = tagService.listByIds(distinctTagIds);
+                    if (tags.size() != distinctTagIds.size()) {
+                        Set<Long> existingIds = tags.stream()
+                                .map(Tag::getId)
+                                .collect(Collectors.toSet());
+                        List<Long> missingIds = distinctTagIds.stream()
+                                .filter(tagId -> !existingIds.contains(tagId))
+                                .collect(Collectors.toList());
+                        throw new BusinessException(400, "以下标签 ID 不存在: " + missingIds);
+                    }
+                    // 基于去重后的标签 ID 构造需求-标签关联，避免唯一键冲突
+                    List<DemandTag> demandTags = distinctTagIds.stream()
+                            .map(tagId -> new DemandTag()
+                                    .setDemandId(id)
+                                    .setTagId(tagId)
+                                    .setDeleted(DateConstants.getNotDeletedTime()))
+                            .collect(Collectors.toList());
+                    demandTagMapper.insertBatch(demandTags);
+                }
             }
         }
 
