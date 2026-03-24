@@ -246,7 +246,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { View, Edit, Refresh } from "@element-plus/icons-vue";
 import { getPendingDemands, approveDemand } from "@/api/admin";

@@ -106,13 +106,13 @@ export function getUserDetail(id) {
  *   console.log(res.records) // 需求列表
  * })
  */
-export const getPendingDemands = (params) => {
+export function getPendingDemands(params) {
   return request({
     url: "/admin/demand/pending",
     method: "get",
     params,
   });
-};
+}
 
 /**
  * 审核需求（通过/驳回）
@@ -125,10 +125,10 @@ export const getPendingDemands = (params) => {
  * approveDemand(123, { status: 'approved' })
  * approveDemand(123, { status: 'rejected', remark: '需求描述不清晰' })
  */
-export const approveDemand = (id, data) => {
+export function approveDemand(id, data) {
   return request({
     url: `/admin/demand/approve/${id}`,
     method: "post",
     data,
   });
-};
+}
