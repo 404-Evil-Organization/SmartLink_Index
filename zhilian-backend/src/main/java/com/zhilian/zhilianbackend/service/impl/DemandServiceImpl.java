@@ -263,8 +263,13 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             throw new BusinessException(404, "需求不存在");
         }
 
-        // 权限校验：如果是 admin 则跳过企业归属检查
+        // 权限校验：如果是 admin 则跳过，否则必须是制造企业且企业属于当前用户
         if (!securityUtils.isAdmin()) {
+            // 非管理员必须是制造企业
+            String role = securityUtils.getCurrentUserRole();
+            if (!"manufacture".equals(role)) {
+                throw new BusinessException(403, "只有制造企业可以操作需求");
+            }
             Manufacture manufacture = manufactureMapper.selectById(demand.getManuId());
             if (manufacture == null || !manufacture.getUserId().equals(userId)) {
                 throw new BusinessException(403, "无权操作此需求");
@@ -362,8 +367,12 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             throw new BusinessException(404, "需求不存在");
         }
 
-        // 权限校验：如果是 admin 则跳过企业归属检查
+        // 权限校验：如果是 admin 则跳过，否则必须是制造企业且企业属于当前用户
         if (!securityUtils.isAdmin()) {
+            String role = securityUtils.getCurrentUserRole();
+            if (!"manufacture".equals(role)) {
+                throw new BusinessException(403, "只有制造企业可以操作需求");
+            }
             Manufacture manufacture = manufactureMapper.selectById(demand.getManuId());
             if (manufacture == null || !manufacture.getUserId().equals(userId)) {
                 throw new BusinessException(403, "无权操作此需求");
@@ -405,9 +414,15 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             throw new BusinessException(404, "制造企业不存在");
         }
 
-        // 权限校验：如果不是 admin，则必须为企业所属用户
-        if (!securityUtils.isAdmin() && !manufacture.getUserId().equals(userId)) {
-            throw new BusinessException(403, "无权查看其他企业的需求");
+        // 权限校验：如果是 admin 则跳过，否则必须是制造企业且企业属于当前用户
+        if (!securityUtils.isAdmin()) {
+            String role = securityUtils.getCurrentUserRole();
+            if (!"manufacture".equals(role)) {
+                throw new BusinessException(403, "只有制造企业可以查看自己的需求列表");
+            }
+            if (!manufacture.getUserId().equals(userId)) {
+                throw new BusinessException(403, "无权查看其他企业的需求");
+            }
         }
 
         Page<Demand> mpPage = new Page<>(page, size);
