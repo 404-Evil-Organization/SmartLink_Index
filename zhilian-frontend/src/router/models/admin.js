@@ -9,4 +9,9 @@ export default [
     name: "UserManage",
     component: () => import("@/views/admin/UserManage.vue"),
   },
+  {
+    path: "admin/region-index",
+    name: "RegionIndexManage",
+    component: () => import("@/views/admin/RegionIndexManage.vue"),
+  },
 ];
