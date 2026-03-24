@@ -23,6 +23,7 @@ import com.zhilian.zhilianbackend.mapper.ServiceProviderMapper;
 import com.zhilian.zhilianbackend.service.RegionIndexService;
 import com.zhilian.zhilianbackend.service.algorithm.RegionIndexAlgorithm;
 import com.zhilian.zhilianbackend.utils.QuarterMonthUtils;
+import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +59,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
     private final CooperationMapper cooperationMapper;
     private final RegionIndexAlgorithm regionIndexAlgorithm;
     private final TransactionTemplate transactionTemplate;
+    private final SecurityUtils securityUtils;   // 新增注入
 
     // ============== 计算和定时任务方法 ==============
 
@@ -540,6 +542,11 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      */
     @Override
     public IPage<RegionIndexAdminVO> adminList(AdminRegionIndexListRequest request) {
+        // 防御式授权：仅管理员可调用
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限访问");
+        }
+
         Page<RegionIndex> page = new Page<>(request.getPage(), request.getSize());
 
         LambdaQueryWrapper<RegionIndex> wrapper = new LambdaQueryWrapper<>();
@@ -573,6 +580,11 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      */
     @Override
     public Long adminCreate(RegionIndexCreateRequest request) {
+        // 防御式授权：仅管理员可调用
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限访问");
+        }
+
         RegionIndex entity = new RegionIndex();
         entity.setRegion(request.getRegion());
         entity.setYear(request.getYear().shortValue());
@@ -611,6 +623,11 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      */
     @Override
     public void adminUpdate(Long id, RegionIndexUpdateRequest request) {
+        // 防御式授权：仅管理员可调用
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限访问");
+        }
+
         RegionIndex existing = this.getById(id);
         if (existing == null) {
             throw new BusinessException(404, "记录不存在，id=" + id);
@@ -686,6 +703,11 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      */
     @Override
     public void adminDelete(Long id) {
+        // 防御式授权：仅管理员可调用
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限访问");
+        }
+
         RegionIndex existing = this.getById(id);
         if (existing == null) {
             throw new BusinessException(404, "记录不存在，id=" + id);
