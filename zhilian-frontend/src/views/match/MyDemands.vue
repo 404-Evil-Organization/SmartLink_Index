@@ -72,7 +72,11 @@
         />
         <el-table-column prop="expectedBudget" label="预算(万元)" width="120">
           <template #default="{ row }">
-            {{ row.expectedBudget ? row.expectedBudget + " 万元" : "未填写" }}
+            {{
+              row.expectedBudget === null || row.expectedBudget === undefined
+                ? "未填写"
+                : row.expectedBudget + " 万元"
+            }}
           </template>
         </el-table-column>
         <el-table-column prop="deadline" label="期望完成日期" width="120">
@@ -138,8 +142,8 @@
           :total="total"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSearch"
-          @current-change="handleSearch"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
         />
       </div>
     </el-card>
@@ -420,7 +424,7 @@ const fetchList = async () => {
       keyword: queryParams.keyword,
       manuId: selectedManuId.value, // 传递选中的企业ID
     });
-    
+
     demandList.value = res.records || [];
     total.value = res.total || 0;
   } catch (error) {
@@ -431,6 +435,7 @@ const fetchList = async () => {
   }
 };
 
+// ---------- 搜索与分页 ----------
 const handleSearch = () => {
   queryParams.page = 1;
   fetchList();
@@ -440,6 +445,17 @@ const resetSearch = () => {
   queryParams.status = "";
   queryParams.keyword = "";
   handleSearch();
+};
+
+const handlePageChange = (page) => {
+  queryParams.page = page > 0 ? page : 1;
+  fetchList();
+};
+
+const handleSizeChange = (size) => {
+  queryParams.size = size;
+  queryParams.page = 1;
+  fetchList();
 };
 
 // ---------- 新增/编辑弹窗 ----------

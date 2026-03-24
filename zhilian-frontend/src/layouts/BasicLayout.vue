@@ -163,7 +163,6 @@ import {
   List,
   DataLine,
   DocumentAdd,
-  Promotion,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 

@@ -17,7 +17,7 @@ export const publishDemand = (data) => {
     url: "/demand/publish",
     method: "post",
     data,
-  }).then((res) => res.data);
+  });
 };
 
 /**
