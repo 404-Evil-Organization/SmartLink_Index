@@ -73,6 +73,12 @@
           <span>服务企业列表</span>
         </el-menu-item>
 
+        <!-- 合作市场页面 -->
+        <el-menu-item v-if="isService || isAdmin" index="/match/market">
+          <el-icon><Shop /></el-icon>
+          <span>合作市场</span>
+        </el-menu-item>
+
         <!-- 我的企业页面 -->
         <el-menu-item
           v-if="isAdmin || isManufacture || isService"
@@ -156,6 +162,7 @@ import {
   OfficeBuilding,
   List,
   DataLine,
+  Shop,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
