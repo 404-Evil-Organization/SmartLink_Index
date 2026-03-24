@@ -16,6 +16,7 @@
           v-model="selectedManuId"
           placeholder="请选择企业"
           style="width: 200px; margin-right: 12px"
+          :loading="loadingEnterprises"
           @change="handleEnterpriseChange"
         >
           <el-option
@@ -250,9 +251,13 @@ import {
   updateDemand,
 } from "@/api/demand";
 import { getMyManufactureList } from "@/api/enterprise";
+import { getManufactureList } from "@/api/manufacture";
 import { getTagList } from "@/api/tag";
+import { useUserStore } from "@/stores/user";
 
 const router = useRouter();
+const userStore = useUserStore();
+const userRole = computed(() => userStore.userInfo?.role);
 
 // ---------- 当前选中的企业ID ----------
 const selectedManuId = ref(null);
@@ -288,12 +293,18 @@ const form = reactive({
 // ---------- 企业列表 ----------
 const enterprises = ref([]);
 const loadingEnterprises = ref(false);
-const currentEnterpriseName = ref("");
+// const currentEnterpriseName = ref("");
 
 const fetchEnterprises = async () => {
   loadingEnterprises.value = true;
+  let res;
   try {
-    const res = await getMyManufactureList({ page: 1, size: 100 });
+    if (userRole === "admin") {
+      res = await getManufactureList({ page: 1, size: 100 });
+    } else {
+      res = await getMyManufactureList({ page: 1, size: 100 });
+    }
+
     enterprises.value = res.records || [];
   } catch (error) {
     console.error("获取企业列表失败", error);
@@ -388,7 +399,10 @@ const rules = {
 };
 
 const disabledDate = (time) => {
-  return time.getTime() < Date.now() - 8.64e7;
+  // 禁用今天 0 点之前的所有日期，确保“昨天及更早日期”统一不可选
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return time.getTime() < todayStart.getTime();
 };
 
 // ---------- 状态映射 ----------
