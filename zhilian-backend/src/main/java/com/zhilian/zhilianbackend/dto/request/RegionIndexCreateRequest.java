@@ -18,8 +18,8 @@ public class RegionIndexCreateRequest {
     private String region;
 
     @NotNull(message = "年份不能为空")
-    @Min(value = 2000, message = "年份最小2000")
-    @Max(value = 2100, message = "年份最大2100")
+    @Min(value = 1900, message = "年份最小为1900")
+    @Max(value = 2200, message = "年份最大为2200")
     @Schema(description = "年份", example = "2026")
     private Integer year;
 

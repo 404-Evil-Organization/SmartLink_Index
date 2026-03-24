@@ -606,13 +606,19 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Param: id 记录ID
      * @Param: request 修改区域指数请求参数（部分字段可选）
      * @Return: 无返回值
-     * @Description: 管理员修改区域指数，若修改区域/年份/季度需校验新组合唯一性，记录不存在时抛出404异常
+     * @Description: 管理员修改区域指数，若修改区域/年份/季度需校验新组合唯一性，记录不存在时抛出404异常，
+     *              仅支持修改季度类型数据
      */
     @Override
     public void adminUpdate(Long id, RegionIndexUpdateRequest request) {
         RegionIndex existing = this.getById(id);
         if (existing == null) {
             throw new BusinessException(404, "记录不存在，id=" + id);
+        }
+
+        // 校验 periodType 必须为季度，避免误改月度数据
+        if (!PERIOD_TYPE_QUARTER.equals(existing.getPeriodType())) {
+            throw new BusinessException(400, "该接口仅支持修改季度数据，当前记录类型为: " + existing.getPeriodType());
         }
 
         // 如果修改了区域、年份、季度，需要校验新组合是否唯一
@@ -660,15 +666,12 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
 
         boolean updated;
         try {
-            // 使用 MyBatis Plus 的返回值判断是否实际更新了记录
             updated = this.updateById(existing);
         } catch (DuplicateKeyException e) {
-            // 并发场景下可能触发数据库唯一约束 uk_region_year_period_deleted，统一转为 409 业务异常
             log.warn("更新区域指数时触发唯一键冲突，id={}, region={}, year={}, quarter={}",
                     id, existing.getRegion(), existing.getYear(), existing.getPeriodValue(), e);
             throw new BusinessException(409, "目标区域、年份、季度的指数已存在");
         }
-        // 并发场景下，记录可能在查询与更新之间被删除，updateById 返回 false 表示未更新任何记录
         if (!updated) {
             throw new BusinessException(404, "更新失败，记录不存在或已被删除，id=" + id);
         }
