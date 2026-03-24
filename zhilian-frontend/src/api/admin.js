@@ -94,3 +94,42 @@ export function getUserDetail(id) {
     method: "get",
   });
 }
+
+/**
+ * 获取待审核需求列表（管理员）
+ * @param {Object} params - 请求参数
+ * @param {number} [params.page=1] - 页码
+ * @param {number} [params.size=10] - 每页条数
+ * @returns {Promise<Object>} 返回分页数据
+ * @returns {Promise<{ total: number, records: Array }>}
+ * @example
+ * getPendingDemands({ page: 1, size: 10 }).then(res => {
+ *   console.log(res.records) // 需求列表
+ * })
+ */
+export const getPendingDemands = (params) => {
+  return request({
+    url: "/admin/demand/pending",
+    method: "get",
+    params,
+  });
+};
+
+/**
+ * 审核需求（通过/驳回）
+ * @param {number} id - 需求ID
+ * @param {Object} data - 审核数据
+ * @param {string} data.status - 审核状态：'approved' 通过 / 'rejected' 驳回
+ * @param {string} [data.remark] - 审核意见（驳回时建议填写）
+ * @returns {Promise<null>}
+ * @example
+ * approveDemand(123, { status: 'approved' })
+ * approveDemand(123, { status: 'rejected', remark: '需求描述不清晰' })
+ */
+export const approveDemand = (id, data) => {
+  return request({
+    url: `/admin/demand/approve/${id}`,
+    method: "post",
+    data,
+  });
+};
