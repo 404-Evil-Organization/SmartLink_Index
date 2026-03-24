@@ -129,8 +129,12 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
      */
     @Override
     public PageResult<DemandPendingVO> getPendingDemandList(Integer page, Integer size) {
+        // 纵深防御：待审核需求列表仅允许管理员访问，防止其他调用方绕过 Controller 权限校验
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限访问该资源");
+        }
         Page<DemandPendingVO> mpPage = new Page<>(page, size);
-        IPage<DemandPendingVO> voPage = baseMapper.selectPendingDemandPage(mpPage);
+        IPage<DemandPendingVO> voPage = baseMapper.selectPendingDemandPage(mpPage, DateConstants.getNotDeletedLocalDateTime());
         List<DemandPendingVO> records = voPage.getRecords();
 
         if (records.isEmpty()) {
