@@ -34,6 +34,7 @@
         border
         stripe
         style="width: 100%"
+        row-key="id"
       >
         <el-table-column type="index" label="序号" width="90" align="center" />
         <el-table-column
