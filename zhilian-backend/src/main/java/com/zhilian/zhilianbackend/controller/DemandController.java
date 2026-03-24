@@ -9,21 +9,29 @@ import com.zhilian.zhilianbackend.dto.response.DemandPublishResponse;
 import com.zhilian.zhilianbackend.service.DemandService;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/demand")
 @RequiredArgsConstructor
+@Validated
 public class DemandController {
 
     private final DemandService demandService;
     private final SecurityUtils securityUtils;
 
     /**
-     * 发布需求
+     * @Author: xiaodengyou
+     * @Date: 2026/03/24
+     * @Param: request 发布需求请求参数
+     * @Return: Result<DemandPublishResponse> 包含需求ID和审核状态
+     * @Description: 发布需求，仅制造企业可操作，且只能为自己的企业发布
      */
     @PostMapping("/publish")
     public Result<DemandPublishResponse> publishDemand(@Valid @RequestBody DemandPublishRequest request) {
@@ -33,7 +41,12 @@ public class DemandController {
     }
 
     /**
-     * 编辑需求
+     * @Author: xiaodengyou
+     * @Date: 2026/03/24
+     * @Param: id 需求ID
+     * @Param: request 编辑需求请求参数
+     * @Return: Result<Void> 无数据返回
+     * @Description: 编辑需求，仅制造企业可操作自己发布的需求，管理员可操作任意需求
      */
     @PutMapping("/{id}")
     public Result<Void> updateDemand(@PathVariable Long id,
@@ -44,7 +57,11 @@ public class DemandController {
     }
 
     /**
-     * 删除需求（逻辑删除）
+     * @Author: xiaodengyou
+     * @Date: 2026/03/24
+     * @Param: id 需求ID
+     * @Return: Result<Void> 无数据返回
+     * @Description: 逻辑删除需求，仅制造企业可删除自己发布的需求，管理员可删除任意需求
      */
     @DeleteMapping("/{id}")
     public Result<Void> deleteDemand(@PathVariable Long id) {
@@ -54,12 +71,19 @@ public class DemandController {
     }
 
     /**
-     * 获取我的需求列表
+     * @Author: xiaodengyou
+     * @Date: 2026/03/24
+     * @Param: page 页码，最小1
+     * @Param: size 每页条数，最小1，最大100
+     * @Param: manuId 制造企业ID
+     * @Param: status 需求状态筛选（可选）
+     * @Return: Result<PageResult<DemandMyListVO>> 分页的需求列表
+     * @Description: 获取当前用户的需求列表，制造企业只能查看自己的需求，管理员可查看任意企业需求
      */
     @GetMapping("/my-list")
     public Result<PageResult<DemandMyListVO>> getMyDemandList(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码最小为1") Integer page,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "每页条数最小为1") @Max(value = 100, message = "每页条数最大为100") Integer size,
             @RequestParam Long manuId,
             @RequestParam(required = false) String status) {
         Long userId = securityUtils.getCurrentUserId();
