@@ -38,7 +38,12 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="周期类型">
-              <el-select v-model="searchForm.periodType" placeholder="全部" clearable>
+              <el-select
+                v-model="searchForm.periodType"
+                placeholder="全部"
+                clearable
+                @change="searchForm.periodValue = ''"
+              >
                 <el-option label="季度" value="quarter" />
                 <el-option label="月度" value="month" />
               </el-select>
@@ -161,7 +166,12 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="周期类型" prop="periodType">
-              <el-select v-model="form.periodType" placeholder="请选择" style="width: 100%">
+              <el-select
+                v-model="form.periodType"
+                placeholder="请选择"
+                style="width: 100%"
+                @change="form.periodValue = null"
+              >
                 <el-option label="季度" value="quarter" />
                 <el-option label="月度" value="month" />
               </el-select>
@@ -325,6 +335,18 @@ const periodValueOptions = computed(() => {
   }
 })
 
+// 监听周期类型变化，重置对应的周期值，避免出现“值不在选项中却被提交”的情况
+watch(
+  () => form.periodType,
+  () => {
+    // 切换周期类型时清空周期值
+    form.periodValue = null
+    // 同步清除该字段的校验状态，避免残留错误提示
+    if (formRef.value && typeof formRef.value.clearValidate === 'function') {
+      formRef.value.clearValidate('periodValue')
+    }
+  }
+)
 // 格式化周期显示（统一为“第X季度”和“X月”）
 const formatPeriod = (type, value) => {
   if (!type || !value) return '-'
