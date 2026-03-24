@@ -393,14 +393,16 @@ const resetDialog = () => {
   dialog.editId = null
 }
 
-// 打开新增弹窗
+// 打开新增弹窗（显式重置状态，避免残留编辑态）
 const openAddDialog = () => {
+  resetDialog() // 确保表单和编辑标志重置
   dialog.title = '新增指数'
   dialog.visible = true
 }
 
 // 打开编辑弹窗
 const openEditDialog = (row) => {
+  resetDialog() // 先重置，再填充编辑数据
   dialog.title = '编辑指数'
   dialog.isEdit = true
   dialog.editId = row.id
@@ -446,9 +448,11 @@ const submitForm = async () => {
   }
 }
 
-// 删除
+// 删除（确认信息包含周期）
 const handleDelete = (row) => {
-  ElMessageBox.confirm(`确认删除“${row.region} ${row.year}年”的指数数据吗？`, '提示', {
+  const periodText = formatPeriod(row.periodType, row.periodValue)
+  const message = `确认删除“${row.region} ${row.year}年 ${periodText}”的指数数据吗？`
+  ElMessageBox.confirm(message, '提示', {
     type: 'warning'
   }).then(async () => {
     try {
@@ -588,8 +592,8 @@ onMounted(() => {
 @media (max-width: 768px) {
   .search-bar .el-row {
     flex-direction: column;
-    align-items: stretch;
-    min-width: auto;
+    flex-wrap: wrap;          /* 允许换行，垂直排列 */
+    min-width: auto;          /* 移除最小宽度限制 */
   }
   .search-bar .el-col {
     margin-bottom: 12px;
