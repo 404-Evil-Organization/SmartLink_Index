@@ -159,7 +159,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="年份" prop="year">
-              <el-input-number v-model="form.year" :min="2000" :max="2030" style="width: 100%" />
+              <el-input-number v-model="form.year" :min="2000" :max="2100" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -521,20 +521,6 @@ watch(() => searchForm.periodType, (newType) => {
     const max = newType === 'quarter' ? 4 : 12
     if (searchForm.periodValue < 1 || searchForm.periodValue > max) {
       searchForm.periodValue = ''
-    }
-  }
-})
-
-// 弹窗
-watch(() => form.periodType, (newType) => {
-  if (!newType) {
-    form.periodValue = null
-    return
-  }
-  if (form.periodValue !== null) {
-    const max = newType === 'quarter' ? 4 : 12
-    if (form.periodValue < 1 || form.periodValue > max) {
-      form.periodValue = null
     }
   }
 })
