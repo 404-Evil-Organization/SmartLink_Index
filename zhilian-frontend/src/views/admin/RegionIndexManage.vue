@@ -15,7 +15,7 @@
       </div>
     </div>
 
-    <!-- 搜索卡片（包含区域、年份、周期类型、周期值筛选） -->
+    <!-- 搜索卡片 -->
     <div class="search-bar">
       <el-form :model="searchForm" label-width="80px" class="search-form">
         <el-row :gutter="20">
@@ -38,25 +38,31 @@
             </el-form-item>
           </el-col>
           <el-col :span="5">
-            <el-form-item label="周期值">
-              <el-select
-                v-model="searchForm.periodValue"
-                placeholder="全部"
-                clearable
-                :disabled="!searchForm.periodType"
-              >
-                <el-option
-                  v-for="val in periodOptions"
-                  :key="val"
-                  :label="
-                    searchForm.periodType === 'quarter'
-                      ? '第' + val + '季度'
-                      : val + '月'
-                  "
-                  :value="val"
-                />
-              </el-select>
-            </el-form-item>
+            <el-tooltip
+              :disabled="!!searchForm.periodType"
+              content="请先选择周期类型"
+              placement="top"
+            >
+              <el-form-item label="周期值">
+                <el-select
+                  v-model="searchForm.periodValue"
+                  placeholder="全部"
+                  clearable
+                  :disabled="!searchForm.periodType"
+                >
+                  <el-option
+                    v-for="val in periodOptions"
+                    :key="val"
+                    :label="
+                      searchForm.periodType === 'quarter'
+                        ? '第' + val + '季度'
+                        : val + '月'
+                    "
+                    :value="val"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-tooltip>
           </el-col>
           <el-col :span="6" style="text-align: right">
             <el-form-item label-width="0">
@@ -150,19 +156,36 @@
             <el-form-item label="周期类型" prop="periodType">
               <el-select v-model="form.periodType" placeholder="请选择" style="width: 100%">
                 <el-option label="季度" value="quarter" />
-                <el-option label="月" value="month" />
+                <el-option label="月度" value="month" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="周期值" prop="periodValue">
-              <el-input-number
-                v-model="form.periodValue"
-                :min="1"
-                :max="form.periodType === 'quarter' ? 4 : 12"
-                style="width: 100%"
-              />
-            </el-form-item>
+            <el-tooltip
+              :disabled="!!form.periodType"
+              content="请先选择周期类型"
+              placement="top"
+            >
+              <el-form-item label="周期值" prop="periodValue">
+                <el-select
+                  v-model="form.periodValue"
+                  placeholder="请选择"
+                  clearable
+                  :disabled="!form.periodType"
+                >
+                  <el-option
+                    v-for="val in periodValueOptions"
+                    :key="val"
+                    :label="
+                      form.periodType === 'quarter'
+                        ? '第' + val + '季度'
+                        : val + '月'
+                    "
+                    :value="val"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-tooltip>
           </el-col>
         </el-row>
         <el-row :gutter="20">
@@ -213,7 +236,7 @@ const searchForm = reactive({
   periodValue: ''
 })
 
-// 根据周期类型动态生成周期值选项
+// 根据周期类型动态生成周期值选项（搜索栏）
 const periodOptions = computed(() => {
   if (searchForm.periodType === 'quarter') {
     return [1, 2, 3, 4]
@@ -261,20 +284,34 @@ const rules = {
   region: [{ required: true, message: '请输入区域', trigger: 'blur' }],
   year: [{ required: true, message: '请输入年份', trigger: 'blur' }],
   periodType: [{ required: true, message: '请选择周期类型', trigger: 'change' }],
-  periodValue: [{ required: true, message: '请输入周期值', trigger: 'blur' }],
+  periodValue: [{ required: true, message: '请选择周期值', trigger: 'change' }],
   coopDensity: [{ required: true, message: '请输入合作密度', trigger: 'blur' }],
   serviceRate: [{ required: true, message: '请输入服务渗透率', trigger: 'blur' }],
   crossRate: [{ required: true, message: '请输入跨域协同度', trigger: 'blur' }],
   totalIndex: [{ required: true, message: '请输入综合指数', trigger: 'blur' }]
 }
 
-// 格式化周期显示
+// 根据周期类型动态生成周期值选项（弹窗）
+const periodValueOptions = computed(() => {
+  if (form.periodType === 'quarter') {
+    return [1, 2, 3, 4]
+  } else if (form.periodType === 'month') {
+    return Array.from({ length: 12 }, (_, i) => i + 1)
+  } else {
+    return []
+  }
+})
+
+// 格式化周期显示（统一为“第X季度”和“X月”）
 const formatPeriod = (type, value) => {
   if (!type || !value) return '-'
-  // 与后端约定保持一致，仅支持 quarter/月 和 month/月；未知类型返回兜底文案
-  const map = { quarter: '季度', month: '月' }
-  const label = map[type]
-  return label ? `${value}${label}` : '未知周期类型'
+  if (type === 'quarter') {
+    return `第${value}季度`
+  } else if (type === 'month') {
+    return `${value}月`
+  } else {
+    return '未知周期类型'
+  }
 }
 
 // 格式化日期时间
@@ -400,6 +437,8 @@ const submitForm = async () => {
       ElMessage.success('新增成功')
     }
     dialog.visible = false
+    // 新增/编辑后重置到第一页，确保新数据可见
+    pagination.current = 1
     fetchList()
   } catch (error) {
     console.error('提交失败', error)
