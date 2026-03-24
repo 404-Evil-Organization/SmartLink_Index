@@ -36,16 +36,16 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
     private final ManufactureMapper manufactureMapper;
     private final ServiceProviderMapper serviceProviderMapper;
 
-    /**
-     * @Author: 6017
-     * @Date: 2026/3/24 23:37
-     * @Param: page 页码  size 每页条数  IPage<PendingEnterpriseResponse> 待审核企业分页数据  
-     * @Return: 
-     * @Description: 获取待审核企业列表，合并制造企业和服务商数据，按创建时间倒序排序并手动分页
-    **/
     private static final Date NOT_DELETED = Date.from(LocalDateTime.of(1970, 1, 1, 0, 0, 0)
             .atZone(ZoneId.systemDefault()).toInstant());
 
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/25 00:16
+     * @Param: page 页码  size 每页条数  IPage<PendingEnterpriseResponse> 待审核企业分页数据
+     * @Return:
+     * @Description: 取待审核企业列表，合并制造企业和服务商数据，按创建时间倒序排序并手动分页
+    **/
     @Override
     public IPage<PendingEnterpriseResponse> getPendingEnterpriseList(Integer page, Integer size) {
         // 创建分页对象
@@ -75,7 +75,7 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
             vo.setContactPerson(manu.getContactPerson());
             vo.setContactPhone(manu.getContactPhone());
             vo.setAuditStatus(manu.getAuditStatus());
-            vo.setCreateTime(convertToLocalDateTime(manu.getCreateTime()));
+            vo.setCreateTime(manu.getCreateTime());  // 直接使用 Date，无需转换
             allList.add(vo);
         }
 
@@ -88,7 +88,7 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
             vo.setContactPerson(service.getContactPerson());
             vo.setContactPhone(service.getContactPhone());
             vo.setAuditStatus(service.getAuditStatus());
-            vo.setCreateTime(convertToLocalDateTime(service.getCreateTime()));
+            vo.setCreateTime(service.getCreateTime());  // 直接使用 Date，无需转换
             allList.add(vo);
         }
 

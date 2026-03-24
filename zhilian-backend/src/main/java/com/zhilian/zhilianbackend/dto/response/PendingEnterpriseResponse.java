@@ -4,15 +4,13 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * @Author: 6017
  * @Date: 2026/3/24 23:35
- * @Param: 
- * @Return: 
  * @Description: 待审核企业响应对象，返回待审核企业的基本信息
-**/
+ **/
 @Data
 @Schema(description = "待审核企业响应对象")
 public class PendingEnterpriseResponse {
@@ -39,6 +37,6 @@ public class PendingEnterpriseResponse {
     private String auditStatus;
 
     @Schema(description = "创建时间")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createTime;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date createTime;
 }
