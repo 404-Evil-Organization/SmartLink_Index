@@ -3,6 +3,7 @@ package com.zhilian.zhilianbackend.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -12,6 +13,10 @@ import java.util.List;
 @Data
 @Schema(description = "发布需求请求参数")
 public class DemandPublishRequest {
+
+    @NotNull(message = "制造企业ID不能为空")
+    @Schema(description = "制造企业ID", example = "1")
+    private Long manuId;
 
     @NotBlank(message = "需求标题不能为空")
     @Schema(description = "需求标题", example = "寻求PCB设计服务")
@@ -28,5 +33,5 @@ public class DemandPublishRequest {
     private Date deadline;
 
     @Schema(description = "标签名称列表", example = "[\"检测认证\", \"PCB电路板\"]")
-    private List<String> tags;  // 注意：由 Long 类型改为 String 类型
+    private List<String> tags;
 }
