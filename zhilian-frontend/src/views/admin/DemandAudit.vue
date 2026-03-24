@@ -343,12 +343,15 @@ const resetAuditForm = () => {
 
 // 提交审核
 const submitAudit = async () => {
-  // 驳回时校验驳回理由
-  if (auditForm.status === "rejected") {
-    if (!auditForm.remark || auditForm.remark.trim() === "") {
-      ElMessage.warning("驳回理由不能为空");
-      return;
-    }
+  // 统一走表单校验，确保 el-form rules 在点击“确定”时正确触发
+  if (!auditFormRef.value) {
+    return;
+  }
+  try {
+    // validate 校验不通过会抛出异常，这里直接中断提交流程
+    await auditFormRef.value.validate();
+  } catch (e) {
+    return;
   }
 
   auditDialog.submitting = true;
