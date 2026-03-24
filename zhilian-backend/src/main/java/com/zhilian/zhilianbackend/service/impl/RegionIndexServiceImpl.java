@@ -2,18 +2,19 @@ package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.zhilian.zhilianbackend.dto.request.RegionDetailQuery;
-import com.zhilian.zhilianbackend.dto.request.RegionListQuery;
-import com.zhilian.zhilianbackend.dto.request.TrendQuery;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
+import com.zhilian.zhilianbackend.dto.request.*;
 import com.zhilian.zhilianbackend.dto.response.RegionDetailVO;
+import com.zhilian.zhilianbackend.dto.response.RegionIndexAdminVO;
 import com.zhilian.zhilianbackend.dto.response.RegionListItemVO;
 import com.zhilian.zhilianbackend.dto.response.TrendItemVO;
 import com.zhilian.zhilianbackend.entity.Cooperation;
 import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.entity.RegionIndex;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
-import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.CooperationMapper;
 import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
@@ -30,6 +31,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -40,15 +42,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
-
-/**
- * @Author: 6017
- * @Date: 2026/3/18 21:52
- * @Param:
- * @Return:
- * @Description: 区域指数服务实现类，实现区域指数相关的业务方法
- */
-import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Service
@@ -533,5 +526,149 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             vo.setTotalIndex(entity.getTotalIndex());
             return vo;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/24
+     * @Param: request 管理员列表查询请求参数，包含分页及筛选条件
+     * @Return: 分页结果，封装 RegionIndexAdminVO 列表
+     * @Description: 管理员分页查询区域指数，支持按区域、年份筛选，默认按计算时间倒序
+     */
+    @Override
+    public IPage<RegionIndexAdminVO> adminList(AdminRegionIndexListRequest request) {
+        Page<RegionIndex> page = new Page<>(request.getPage(), request.getSize());
+
+        LambdaQueryWrapper<RegionIndex> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(request.getRegion())) {
+            wrapper.eq(RegionIndex::getRegion, request.getRegion());
+        }
+        if (request.getYear() != null) {
+            wrapper.eq(RegionIndex::getYear, request.getYear());
+            wrapper.eq(RegionIndex::getPeriodType, "quarter");
+        }
+        wrapper.orderByDesc(RegionIndex::getCalcTime)
+                .orderByDesc(RegionIndex::getId);
+
+        IPage<RegionIndex> entityPage = this.page(page, wrapper);
+        return entityPage.convert(entity -> {
+            RegionIndexAdminVO vo = new RegionIndexAdminVO();
+            BeanUtils.copyProperties(entity, vo);
+            vo.setYear(entity.getYear() != null ? entity.getYear().intValue() : null);
+            vo.setQuarter(entity.getPeriodValue() != null ? entity.getPeriodValue().intValue() : null);
+            return vo;
+        });
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/24
+     * @Param: request 新增区域指数请求参数
+     * @Return: 新增记录的ID
+     * @Description: 管理员新增区域指数，需保证区域+年份+季度组合唯一，若冲突抛出409异常
+     */
+    @Override
+    public Long adminCreate(RegionIndexCreateRequest request) {
+        // 校验唯一性
+        LambdaQueryWrapper<RegionIndex> checkWrapper = new LambdaQueryWrapper<>();
+        checkWrapper.eq(RegionIndex::getRegion, request.getRegion())
+                .eq(RegionIndex::getYear, request.getYear())
+                .eq(RegionIndex::getPeriodType, "quarter")
+                .eq(RegionIndex::getPeriodValue, request.getQuarter());
+        if (this.count(checkWrapper) > 0) {
+            throw new BusinessException(409, "该区域、年份、季度的指数已存在");
+        }
+
+        RegionIndex entity = new RegionIndex();
+        entity.setRegion(request.getRegion());
+        entity.setYear(request.getYear().shortValue());
+        entity.setPeriodType("quarter");
+        entity.setPeriodValue(request.getQuarter().byteValue());
+        entity.setCoopDensity(request.getCoopDensity());
+        entity.setServiceRate(request.getServiceRate());
+        entity.setCrossRate(request.getCrossRate());
+        entity.setTotalIndex(request.getTotalIndex());
+        entity.setCalcTime(new Date());
+
+        this.save(entity);
+        return entity.getId();
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/24
+     * @Param: id 记录ID
+     * @Param: request 修改区域指数请求参数（部分字段可选）
+     * @Return: 无返回值
+     * @Description: 管理员修改区域指数，若修改区域/年份/季度需校验新组合唯一性，记录不存在时抛出404异常
+     */
+    @Override
+    public void adminUpdate(Long id, RegionIndexUpdateRequest request) {
+        RegionIndex existing = this.getById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "记录不存在，id=" + id);
+        }
+
+        // 如果修改了区域、年份、季度，需要校验新组合是否唯一
+        if (request.getRegion() != null && !request.getRegion().equals(existing.getRegion())
+                || request.getYear() != null && !request.getYear().equals(existing.getYear())
+                || request.getQuarter() != null && !request.getQuarter().equals(existing.getPeriodValue())) {
+
+            String newRegion = request.getRegion() != null ? request.getRegion() : existing.getRegion();
+            Short newYear = request.getYear() != null ? request.getYear().shortValue() : existing.getYear();
+            Byte newQuarter = request.getQuarter() != null ? request.getQuarter().byteValue() : existing.getPeriodValue();
+
+            LambdaQueryWrapper<RegionIndex> checkWrapper = new LambdaQueryWrapper<>();
+            checkWrapper.eq(RegionIndex::getRegion, newRegion)
+                    .eq(RegionIndex::getYear, newYear)
+                    .eq(RegionIndex::getPeriodType, "quarter")
+                    .eq(RegionIndex::getPeriodValue, newQuarter)
+                    .ne(RegionIndex::getId, id);
+            if (this.count(checkWrapper) > 0) {
+                throw new BusinessException(409, "目标区域、年份、季度的指数已存在");
+            }
+        }
+
+        // 更新字段
+        if (request.getRegion() != null) {
+            existing.setRegion(request.getRegion());
+        }
+        if (request.getYear() != null) {
+            existing.setYear(request.getYear().shortValue());
+        }
+        if (request.getQuarter() != null) {
+            existing.setPeriodValue(request.getQuarter().byteValue());
+        }
+        if (request.getCoopDensity() != null) {
+            existing.setCoopDensity(request.getCoopDensity());
+        }
+        if (request.getServiceRate() != null) {
+            existing.setServiceRate(request.getServiceRate());
+        }
+        if (request.getCrossRate() != null) {
+            existing.setCrossRate(request.getCrossRate());
+        }
+        if (request.getTotalIndex() != null) {
+            existing.setTotalIndex(request.getTotalIndex());
+        }
+
+        existing.setCalcTime(new Date());
+        this.updateById(existing);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/24
+     * @Param: id 记录ID
+     * @Return: 无返回值
+     * @Description: 管理员删除区域指数（逻辑删除），记录不存在时抛出404异常
+     */
+    @Override
+    public void adminDelete(Long id) {
+        RegionIndex existing = this.getById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "记录不存在，id=" + id);
+        }
+        this.removeById(id);
     }
 }
