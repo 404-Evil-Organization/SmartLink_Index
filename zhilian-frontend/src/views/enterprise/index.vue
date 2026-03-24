@@ -779,7 +779,7 @@
                   link
                   @click="
                     row.certFileUrl.toLowerCase().endsWith('.pdf')
-                      ? window.open(row.certFileUrl)
+                      ? window.open(row.certFileUrl, '_blank', 'noopener,noreferrer')
                       : openCertPreview(row.certFileUrl)
                   "
                 >
