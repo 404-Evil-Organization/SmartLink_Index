@@ -35,9 +35,6 @@ public class DemandMyListVO {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
 
-    @Schema(description = "匹配的服务商信息（状态为matched时返回）")
-    private Object matchedServiceProvider; // 暂未实现匹配功能，可后续扩展
-
     @Schema(description = "标签列表")
     private List<TagSimpleVO> tags;
 

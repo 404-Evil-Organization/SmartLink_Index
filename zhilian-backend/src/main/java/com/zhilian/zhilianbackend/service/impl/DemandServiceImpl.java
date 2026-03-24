@@ -207,10 +207,11 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         }
 
         String status = request.getStatus();
-        // 构造原子更新条件：id 且 audit_status = 'pending'
+        // 构造原子更新条件：id 且 audit_status = 'pending' 且未被逻辑删除
         LambdaUpdateWrapper<Demand> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Demand::getId, demandId)
-                .eq(Demand::getAuditStatus, "pending");
+                .eq(Demand::getAuditStatus, "pending")
+                .eq(Demand::getDeleted, DateConstants.getNotDeletedTime());
 
         if ("approved".equals(status)) {
             updateWrapper.set(Demand::getAuditStatus, "approved")
@@ -281,6 +282,11 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             throw new BusinessException(400, "当前状态不可编辑");
         }
 
+        // 审核状态校验：非管理员在待审核（pending）状态下禁止编辑，防止审核内容与最终内容不一致
+        String auditStatus = demand.getAuditStatus();
+        if (!securityUtils.isAdmin() && "pending".equals(auditStatus)) {
+            throw new BusinessException(400, "待审核需求不可编辑，请等待审核结果");
+        }
         // 记录是否有字段实际变更（用于幂等处理）
         boolean hasChange = false;
         if (request.getTitle() != null && !request.getTitle().equals(demand.getTitle())) {
@@ -481,7 +487,6 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
             vo.setDeadline(demand.getDeadline());
             vo.setStatus(demand.getStatus());
             vo.setCreateTime(demand.getCreateTime());
-            vo.setMatchedServiceProvider(null);
             vo.setTags(demandTagsMap.getOrDefault(demand.getId(), Collections.emptyList()));
             return vo;
         }).collect(Collectors.toList());
