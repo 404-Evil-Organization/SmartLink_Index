@@ -100,8 +100,7 @@ export function getUserDetail(id) {
  * @param {Object} params - 请求参数
  * @param {number} [params.page=1] - 页码
  * @param {number} [params.size=10] - 每页条数
- * @returns {Promise<Object>} 返回分页数据
- * @returns {Promise<{ total: number, records: Array }>}
+ * @returns {Promise<{ total: number, records: any[] }>} 返回分页数据，包含总数和记录列表
  * @example
  * getPendingDemands({ page: 1, size: 10 }).then(res => {
  *   console.log(res.records) // 需求列表
