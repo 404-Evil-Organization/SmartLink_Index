@@ -151,13 +151,17 @@
               <el-select v-model="form.periodType" placeholder="请选择" style="width: 100%">
                 <el-option label="季度" value="quarter" />
                 <el-option label="月" value="month" />
-                <el-option label="年" value="year" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="周期值" prop="periodValue">
-              <el-input-number v-model="form.periodValue" :min="1" :max="12" style="width: 100%" />
+              <el-input-number
+                v-model="form.periodValue"
+                :min="1"
+                :max="form.periodType === 'quarter' ? 4 : 12"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -267,8 +271,10 @@ const rules = {
 // 格式化周期显示
 const formatPeriod = (type, value) => {
   if (!type || !value) return '-'
-  const map = { quarter: '季度', month: '月', year: '年' }
-  return `${value}${map[type] || ''}`
+  // 与后端约定保持一致，仅支持 quarter/月 和 month/月；未知类型返回兜底文案
+  const map = { quarter: '季度', month: '月' }
+  const label = map[type]
+  return label ? `${value}${label}` : '未知周期类型'
 }
 
 // 格式化日期时间
