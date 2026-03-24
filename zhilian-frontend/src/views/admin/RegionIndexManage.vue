@@ -282,13 +282,13 @@ const formRef = ref(null)
 // 表单校验规则
 const rules = {
   region: [{ required: true, message: '请输入区域', trigger: 'blur' }],
-  year: [{ required: true, message: '请输入年份', trigger: 'blur' }],
+  year: [{ required: true, message: '请输入年份', trigger: 'change' }],
   periodType: [{ required: true, message: '请选择周期类型', trigger: 'change' }],
   periodValue: [{ required: true, message: '请选择周期值', trigger: 'change' }],
-  coopDensity: [{ required: true, message: '请输入合作密度', trigger: 'blur' }],
-  serviceRate: [{ required: true, message: '请输入服务渗透率', trigger: 'blur' }],
-  crossRate: [{ required: true, message: '请输入跨域协同度', trigger: 'blur' }],
-  totalIndex: [{ required: true, message: '请输入综合指数', trigger: 'blur' }]
+  coopDensity: [{ required: true, message: '请输入合作密度', trigger: 'change' }],
+  serviceRate: [{ required: true, message: '请输入服务渗透率', trigger: 'change' }],
+  crossRate: [{ required: true, message: '请输入跨域协同度', trigger: 'change' }],
+  totalIndex: [{ required: true, message: '请输入综合指数', trigger: 'change' }]
 }
 
 // 根据周期类型动态生成周期值选项（弹窗）
