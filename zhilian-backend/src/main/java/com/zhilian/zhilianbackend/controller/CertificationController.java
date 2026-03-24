@@ -329,10 +329,28 @@ public class CertificationController {
                 uploadRequest.getCertName(),
                 uploadRequest.getFile() == null ? 0L : uploadRequest.getFile().getSize());
 
-        Long serviceId = getCurrentServiceProviderId(request);
-        if (serviceId == null) {
-            log.warn("上传证书失败：当前用户不是服务商角色或未找到对应的服务商信息");
-            return Result.forbidden("只有服务商才能上传证书");
+        Long targetServiceId;
+        if (isAdmin(request)) {
+            // 管理员可以指定 serviceId，如果未指定则报错
+            targetServiceId = uploadRequest.getServiceId();
+            if (targetServiceId == null) {
+                log.warn("管理员上传证书失败：未指定服务商ID");
+                return Result.badRequest("管理员上传证书必须指定服务商ID");
+            }
+        } else {
+            // 服务商只能为自己上传
+            targetServiceId = getCurrentServiceProviderId(request);
+            if (targetServiceId == null) {
+                log.warn("上传证书失败：当前用户不是服务商角色或未找到对应的服务商信息");
+                return Result.forbidden("只有服务商才能上传证书");
+            }
+        }
+
+        // 在进行文件校验和 OSS 上传之前，先校验服务商是否存在，避免无效上传
+        ServiceProvider serviceProvider = serviceProviderService.getById(targetServiceId);
+        if (serviceProvider == null) {
+            log.warn("上传证书失败：指定的服务商不存在，serviceId={}", targetServiceId);
+            return Result.badRequest("指定的服务商不存在");
         }
 
         // 文件安全校验
@@ -345,7 +363,7 @@ public class CertificationController {
         // 2. 创建证书实体
         Certification certification = new Certification();
         BeanUtils.copyProperties(uploadRequest, certification);
-        certification.setServiceId(serviceId);
+        certification.setServiceId(targetServiceId);
         certification.setCertFileUrl(fileUrl);
         certification.setStatus((byte) 1);
 
@@ -376,12 +394,12 @@ public class CertificationController {
      * @Return: Result<Void>
      * @Description: 更新证书信息，可选择替换文件
      */
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "更新证书", description = "修改证书信息，可选择替换文件")
+    @PutMapping(value = "/{id}")
+    @Operation(summary = "更新证书", description = "修改证书信息（仅元数据，不包含文件替换）")
     public Result<Void> update(
             HttpServletRequest request,
             @Parameter(description = "证书ID", required = true) @PathVariable Long id,
-            @Valid @ModelAttribute CertificationUpdateRequest updateRequest) {
+            @Valid @RequestBody CertificationUpdateRequest updateRequest) {
         log.info("更新证书, 证书ID: {}", id);
 
         // 1. 检查证书是否存在
@@ -403,44 +421,21 @@ public class CertificationController {
         certification.setId(id);
         certification.setServiceId(existing.getServiceId()); // 保持原有服务商ID
 
-        // 4. 处理文件替换
-        MultipartFile newFile = updateRequest.getFile();
-        boolean needReplaceFile = (newFile != null && !newFile.isEmpty());
-
-        String newFileUrl = null;
-        if (needReplaceFile) {
-            // 4.1 校验新文件
-            validateCertificationFile(newFile);
-            // 4.2 上传新文件到OSS
-            newFileUrl = uploadFileWithException(newFile);
-            certification.setCertFileUrl(newFileUrl);
-        }
-
+        // 4. 处理文件替换 (暂不支持通过此接口替换文件，若需替换请删除重建)
+        // 此接口仅支持通过 JSON 修改元数据，前端已调整为发送 application/json
+        
         // 5. 更新数据库
         boolean updated;
         try {
             updated = certificationService.updateById(certification);
         } catch (Exception e) {
-            // 5.1 数据库更新异常，补偿删除新上传的文件（如果有）
-            if (needReplaceFile && newFileUrl != null) {
-                deleteFileQuietly(newFileUrl, "补偿删除新上传的文件（数据库异常）");
-            }
             log.error("更新证书数据库异常, 证书ID: {}", id, e);
             throw new BusinessException(500, "证书更新失败，请稍后重试");
         }
 
         if (!updated) {
-            // 5.2 更新返回false，同样补偿删除新文件
-            if (needReplaceFile && newFileUrl != null) {
-                deleteFileQuietly(newFileUrl, "补偿删除新上传的文件（更新失败）");
-            }
             log.error("更新证书数据库返回false, 证书ID: {}", id);
             throw new BusinessException(500, "证书更新失败，请稍后重试");
-        }
-
-        // 6. 数据库更新成功，此时才删除旧文件（如果有替换）
-        if (needReplaceFile && StringUtils.hasText(existing.getCertFileUrl())) {
-            deleteFileQuietly(existing.getCertFileUrl(), "删除旧证书文件");
         }
 
         log.info("证书更新成功, 证书ID: {}", id);

@@ -16,6 +16,9 @@ import java.util.Date;
 @Schema(description = "证书上传请求参数（含文件）")
 public class CertificationUploadRequest {
 
+    @Schema(description = "服务商ID（管理员上传时必填）", example = "2001")
+    private Long serviceId;
+
     @NotBlank(message = "证书名称不能为空")
     @Schema(description = "证书名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "CNAS认证")
     private String certName;
