@@ -47,6 +47,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, RegionIndex> implements RegionIndexService {
+
+    private static final String PERIOD_TYPE_QUARTER = "quarter";
+
     @Value("${mybatis-plus.global-config.db-config.logic-not-delete-value:1970-01-01 00:00:00}")
     private String logicNotDeletedDatetime;
 
@@ -282,7 +285,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         RegionIndex index = new RegionIndex();
         index.setRegion(region);
         index.setYear(year);
-        index.setPeriodType("quarter");
+        index.setPeriodType(PERIOD_TYPE_QUARTER);
         index.setPeriodValue(quarter);
         index.setCoopDensity(coopDensity);
         index.setServiceRate(serviceRate);
@@ -307,7 +310,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
 
         Long serviceIdKey = coop.getServiceId();
         String serviceRegion = serviceProviderRegionMap.get(serviceIdKey);
-        
+
         if (serviceRegion == null) {
             return false;
         }
@@ -386,7 +389,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             quarter = quarter.trim();
             QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(quarter);
             wrapper.eq("year", quarterInfo.getYear())
-                    .eq("period_type", "quarter")
+                    .eq("period_type", PERIOD_TYPE_QUARTER)
                     .eq("period_value", quarterInfo.getQuarter())
                     // 显式按 region 升序排序，避免依赖数据库默认顺序导致列表顺序不稳定
                     .orderByAsc("region");
@@ -437,7 +440,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             String quarterStr = query.getQuarter().trim();
             QuarterMonthUtils.QuarterInfo quarterInfo = QuarterMonthUtils.parseQuarter(quarterStr);
             wrapper.eq("year", quarterInfo.getYear())
-                    .eq("period_type", "quarter")
+                    .eq("period_type", PERIOD_TYPE_QUARTER)
                     .eq("period_value", quarterInfo.getQuarter());
         } else if (query.getYear() != null && query.getMonth() != null) {
             wrapper.eq("year", query.getYear())
@@ -517,7 +520,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             TrendItemVO vo = new TrendItemVO();
             // 组装 date 字段：季度格式 "2025Q1"，月份格式 "2025-03"
             String date;
-            if ("quarter".equals(entity.getPeriodType())) {
+            if (PERIOD_TYPE_QUARTER.equals(entity.getPeriodType())) {
                 date = entity.getYear() + "Q" + entity.getPeriodValue();
             } else {
                 date = String.format("%d-%02d", entity.getYear(), entity.getPeriodValue());
@@ -547,7 +550,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             wrapper.eq(RegionIndex::getYear, request.getYear());
         }
         // 始终限定为季度数据，避免混入 month 记录导致 VO 中 quarter 语义错误
-        wrapper.eq(RegionIndex::getPeriodType, "quarter");
+        wrapper.eq(RegionIndex::getPeriodType, PERIOD_TYPE_QUARTER);
         wrapper.orderByDesc(RegionIndex::getCalcTime)
                 .orderByDesc(RegionIndex::getId);
 
@@ -573,7 +576,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         RegionIndex entity = new RegionIndex();
         entity.setRegion(request.getRegion());
         entity.setYear(request.getYear().shortValue());
-        entity.setPeriodType("quarter");
+        entity.setPeriodType(PERIOD_TYPE_QUARTER);
         entity.setPeriodValue(request.getQuarter().byteValue());
         entity.setCoopDensity(request.getCoopDensity());
         entity.setServiceRate(request.getServiceRate());
@@ -624,7 +627,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             LambdaQueryWrapper<RegionIndex> checkWrapper = new LambdaQueryWrapper<>();
             checkWrapper.eq(RegionIndex::getRegion, newRegion)
                     .eq(RegionIndex::getYear, newYear)
-                    .eq(RegionIndex::getPeriodType, "quarter")
+                    .eq(RegionIndex::getPeriodType, PERIOD_TYPE_QUARTER)
                     .eq(RegionIndex::getPeriodValue, newQuarter)
                     .ne(RegionIndex::getId, id);
             if (this.count(checkWrapper) > 0) {
@@ -685,7 +688,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             throw new BusinessException(404, "记录不存在，id=" + id);
         }
         // 校验是否为季度数据，与 adminList/adminCreate/adminUpdate 保持一致
-        if (!"quarter".equals(existing.getPeriodType())) {
+        if (!PERIOD_TYPE_QUARTER.equals(existing.getPeriodType())) {
             throw new BusinessException(400, "该接口仅支持删除季度数据，当前记录类型为: " + existing.getPeriodType());
         }
         boolean deleted = this.removeById(id);
