@@ -26,7 +26,14 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="年份">
-              <el-input v-model="searchForm.year" placeholder="请输入年份" clearable />
+              <el-input-number
+                v-model="searchForm.year"
+                :min="2000"
+                :max="2100"
+                placeholder="请输入年份"
+                style="width: 100%"
+                controls-position="right"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="4">
@@ -222,7 +229,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Edit, Delete } from '@element-plus/icons-vue'
 import { getRegionIndexList, addRegionIndex, updateRegionIndex, deleteRegionIndex } from '@/api/regionIndex'
@@ -231,7 +238,7 @@ import { createTimeConverter } from '@/composables/date'
 // 搜索表单
 const searchForm = reactive({
   region: '',
-  year: '',
+  year: null,
   periodType: '',
   periodValue: ''
 })
@@ -279,12 +286,28 @@ const form = reactive({
 
 const formRef = ref(null)
 
-// 表单校验规则
+// 表单校验规则（包含周期值自定义校验）
 const rules = {
   region: [{ required: true, message: '请输入区域', trigger: 'blur' }],
   year: [{ required: true, message: '请输入年份', trigger: 'change' }],
   periodType: [{ required: true, message: '请选择周期类型', trigger: 'change' }],
-  periodValue: [{ required: true, message: '请选择周期值', trigger: 'change' }],
+  periodValue: [
+    { required: true, message: '请选择周期值', trigger: 'change' },
+    {
+      validator: (rule, value, callback) => {
+        if (value === null || value === undefined) {
+          callback(new Error('请选择周期值'))
+        } else if (form.periodType === 'quarter' && (value < 1 || value > 4)) {
+          callback(new Error('季度值应在1-4之间'))
+        } else if (form.periodType === 'month' && (value < 1 || value > 12)) {
+          callback(new Error('月份值应在1-12之间'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change'
+    }
+  ],
   coopDensity: [{ required: true, message: '请输入合作密度', trigger: 'change' }],
   serviceRate: [{ required: true, message: '请输入服务渗透率', trigger: 'change' }],
   crossRate: [{ required: true, message: '请输入跨域协同度', trigger: 'change' }],
@@ -335,7 +358,7 @@ const fetchList = async () => {
       page: pagination.current,
       size: pagination.size,
       ...(searchForm.region && { region: searchForm.region }),
-      ...(searchForm.year && { year: searchForm.year }),
+      ...(searchForm.year !== null && { year: searchForm.year }),
       ...(searchForm.periodType && { periodType: searchForm.periodType }),
       ...(searchForm.periodValue && { periodValue: searchForm.periodValue })
     }
@@ -358,7 +381,7 @@ const handleSearch = () => {
 }
 const resetSearch = () => {
   searchForm.region = ''
-  searchForm.year = ''
+  searchForm.year = null
   searchForm.periodType = ''
   searchForm.periodValue = ''
   handleSearch()
@@ -393,20 +416,19 @@ const resetDialog = () => {
   dialog.editId = null
 }
 
-// 打开新增弹窗（显式重置状态，避免残留编辑态）
+// 打开新增弹窗
 const openAddDialog = () => {
-  resetDialog() // 确保表单和编辑标志重置
+  resetDialog()
   dialog.title = '新增指数'
   dialog.visible = true
 }
 
 // 打开编辑弹窗
 const openEditDialog = (row) => {
-  resetDialog() // 先重置，再填充编辑数据
+  resetDialog()
   dialog.title = '编辑指数'
   dialog.isEdit = true
   dialog.editId = row.id
-  // 填充表单
   Object.assign(form, {
     region: row.region,
     year: row.year,
@@ -439,16 +461,15 @@ const submitForm = async () => {
       ElMessage.success('新增成功')
     }
     dialog.visible = false
-    // 新增/编辑后重置到第一页，确保新数据可见
     pagination.current = 1
     fetchList()
   } catch (error) {
     console.error('提交失败', error)
-    ElMessage.error('操作失败，请稍后重试')
+    // 错误提示由拦截器统一处理，不再重复
   }
 }
 
-// 删除（确认信息包含周期）
+// 删除
 const handleDelete = (row) => {
   const periodText = formatPeriod(row.periodType, row.periodValue)
   const message = `确认删除“${row.region} ${row.year}年 ${periodText}”的指数数据吗？`
@@ -461,10 +482,40 @@ const handleDelete = (row) => {
       fetchList()
     } catch (error) {
       console.error('删除失败', error)
-      ElMessage.error('删除失败，请稍后重试')
+      // 错误提示由拦截器统一处理，不再重复
     }
   }).catch(() => {})
 }
+
+// ---------- 监听周期类型变化，自动清空无效的周期值 ----------
+// 搜索栏
+watch(() => searchForm.periodType, (newType) => {
+  if (!newType) {
+    searchForm.periodValue = ''
+    return
+  }
+  // 如果已有周期值，且超出新类型的有效范围，则清空
+  if (searchForm.periodValue) {
+    const max = newType === 'quarter' ? 4 : 12
+    if (searchForm.periodValue < 1 || searchForm.periodValue > max) {
+      searchForm.periodValue = ''
+    }
+  }
+})
+
+// 弹窗
+watch(() => form.periodType, (newType) => {
+  if (!newType) {
+    form.periodValue = null
+    return
+  }
+  if (form.periodValue !== null) {
+    const max = newType === 'quarter' ? 4 : 12
+    if (form.periodValue < 1 || form.periodValue > max) {
+      form.periodValue = null
+    }
+  }
+})
 
 onMounted(() => {
   fetchList()
@@ -592,8 +643,8 @@ onMounted(() => {
 @media (max-width: 768px) {
   .search-bar .el-row {
     flex-direction: column;
-    flex-wrap: wrap;          /* 允许换行，垂直排列 */
-    min-width: auto;          /* 移除最小宽度限制 */
+    flex-wrap: wrap;
+    min-width: auto;
   }
   .search-bar .el-col {
     margin-bottom: 12px;
