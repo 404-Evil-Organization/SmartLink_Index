@@ -74,7 +74,10 @@
       </div>
 
       <div v-loading="loading" class="cases-grid">
-        <el-empty v-if="!loading && tableData.length === 0" description="暂无案例" />
+        <el-empty
+          v-if="!loading && tableData.length === 0"
+          description="暂无案例"
+        />
         <div
           v-for="item in tableData"
           :key="item.id"
@@ -82,11 +85,7 @@
           @click="openDetail(item)"
         >
           <div class="case-cover">
-            <el-image
-              :src="item.coverImage || defaultCover"
-              fit="cover"
-              lazy
-            >
+            <el-image :src="item.coverImage || defaultCover" fit="cover" lazy>
               <template #error>
                 <div class="image-placeholder">
                   <el-icon :size="32"><Picture /></el-icon>
@@ -102,13 +101,24 @@
             <div class="case-meta">
               <span class="company">{{ item.companyName }}</span>
               <span class="service-type">
-                <el-tag size="small" effect="plain">{{ item.serviceType }}</el-tag>
+                <el-tag size="small" effect="plain">{{
+                  item.serviceType
+                }}</el-tag>
               </span>
             </div>
-            <div class="case-desc">{{ truncateDescription(item.description) }}</div>
+            <div class="case-desc">
+              {{ truncateDescription(item.description) }}
+            </div>
             <div class="case-footer">
-              <span class="publish-time">{{ formatDate(item.publishTime) }}</span>
-              <el-button link type="primary" size="small" @click.stop="openDetail(item)">
+              <span class="publish-time">{{
+                createTimeConverter(item.publishTime).toLocalYMDHMS()
+              }}</span>
+              <el-button
+                link
+                type="primary"
+                size="small"
+                @click.stop="openDetail(item)"
+              >
                 查看详情
               </el-button>
             </div>
@@ -152,22 +162,26 @@
       </div>
       <el-descriptions :column="2" border class="detail-descriptions">
         <el-descriptions-item label="企业名称">
-          {{ detailDialog.data?.companyName || '-' }}
+          {{ detailDialog.data?.companyName || "-" }}
         </el-descriptions-item>
         <el-descriptions-item label="企业类型">
           {{ formatCompanyType(detailDialog.data?.companyType) }}
         </el-descriptions-item>
         <el-descriptions-item label="目标国家">
-          {{ detailDialog.data?.country || '-' }}
+          {{ detailDialog.data?.country || "-" }}
         </el-descriptions-item>
         <el-descriptions-item label="服务类型">
-          {{ detailDialog.data?.serviceType || '-' }}
+          {{ detailDialog.data?.serviceType || "-" }}
         </el-descriptions-item>
         <el-descriptions-item label="发布时间">
-          {{ formatDate(detailDialog.data?.publishTime) }}
+          {{
+            createTimeConverter(detailDialog.data?.publishTime).toLocalYMDHMS()
+          }}
         </el-descriptions-item>
         <el-descriptions-item label="案例详情" :span="2">
-          <div class="detail-description">{{ detailDialog.data?.description || '-' }}</div>
+          <div class="detail-description">
+            {{ detailDialog.data?.description || "-" }}
+          </div>
         </el-descriptions-item>
       </el-descriptions>
       <template #footer>
@@ -178,144 +192,137 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ArrowDown, Refresh, Picture } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { getAbroadCaseList } from '@/api/abroad'
-import { getCountries, getServiceTags } from '@/api/common'
+import { ref, reactive, onMounted } from "vue";
+import { Refresh, Picture } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import { getAbroadCaseList } from "@/api/abroad";
+import { getCountries, getServiceTags } from "@/api/common";
+import { createTimeConverter } from "@/composables/date";
 
 // 搜索折叠状态
-const searchExpanded = ref(true)
+const searchExpanded = ref(true);
 
 // 搜索表单
 const searchForm = reactive({
-  country: '',
-  serviceType: ''
-})
+  country: "",
+  serviceType: "",
+});
 
 // 案例数据
-const tableData = ref([])
-const loading = ref(false)
+const tableData = ref([]);
+const loading = ref(false);
 
 // 分页
 const pagination = reactive({
   current: 1,
   size: 12,
-  total: 0
-})
+  total: 0,
+});
 
 // 下拉选项
-const countryOptions = ref([])
-const serviceTypeOptions = ref([])
+const countryOptions = ref([]);
+const serviceTypeOptions = ref([]);
 
 // 默认封面图片
-const defaultCover = 'https://via.placeholder.com/300x200?text=No+Image'
+const defaultCover = "https://via.placeholder.com/300x200?text=No+Image";
 
 // 详情弹窗
 const detailDialog = reactive({
   visible: false,
-  data: null
-})
+  data: null,
+});
 
 // 截断描述文本
 const truncateDescription = (desc, len = 80) => {
-  if (!desc) return ''
-  return desc.length > len ? desc.slice(0, len) + '...' : desc
-}
-
-// 格式化日期
-const formatDate = (dateStr) => {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return dateStr
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
+  if (!desc) return "";
+  return desc.length > len ? desc.slice(0, len) + "..." : desc;
+};
 
 // 格式化企业类型
 const formatCompanyType = (type) => {
   const map = {
-    manufacture: '制造企业',
-    service: '服务企业'
-  }
-  return map[type] || type || '-'
-}
+    manufacture: "制造企业",
+    service: "服务企业",
+  };
+  return map[type] || type || "-";
+};
 
 // 获取案例列表
 const fetchList = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const params = {
       page: pagination.current,
       size: pagination.size,
       ...(searchForm.country && { country: searchForm.country }),
-      ...(searchForm.serviceType && { serviceType: searchForm.serviceType })
-    }
-    const res = await getAbroadCaseList(params)
-    tableData.value = res.records || []
-    pagination.total = res.total || 0
+      ...(searchForm.serviceType && { serviceType: searchForm.serviceType }),
+    };
+    const res = await getAbroadCaseList(params);
+    tableData.value = res.records || [];
+    pagination.total = res.total || 0;
   } catch (error) {
-    console.error('获取出海案例列表失败', error)
+    console.error("获取出海案例列表失败", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 获取国家列表
 const fetchCountries = async () => {
   try {
-    const res = await getCountries()
-    countryOptions.value = Array.isArray(res) ? res : []
+    const res = await getCountries();
+    countryOptions.value = Array.isArray(res) ? res : [];
   } catch (error) {
-    console.error('获取国家列表失败', error)
-    countryOptions.value = []
+    console.error("获取国家列表失败", error);
+    countryOptions.value = [];
   }
-}
+};
 
 // 获取服务类型标签
 const fetchServiceTags = async () => {
   try {
-    const res = await getServiceTags()
-    serviceTypeOptions.value = Array.isArray(res) ? res : []
+    const res = await getServiceTags();
+    serviceTypeOptions.value = Array.isArray(res) ? res : [];
   } catch (error) {
-    console.error('获取服务类型失败', error)
-    serviceTypeOptions.value = []
+    console.error("获取服务类型失败", error);
+    serviceTypeOptions.value = [];
   }
-}
+};
 
 // 搜索与重置
 const handleSearch = () => {
-  pagination.current = 1
-  fetchList()
-}
+  pagination.current = 1;
+  fetchList();
+};
 
 const resetSearch = () => {
-  searchForm.country = ''
-  searchForm.serviceType = ''
-  handleSearch()
-}
+  searchForm.country = "";
+  searchForm.serviceType = "";
+  handleSearch();
+};
 
 // 分页
 const handleSizeChange = (val) => {
-  pagination.size = val
-  fetchList()
-}
+  pagination.size = val;
+  fetchList();
+};
 
 const handleCurrentChange = (val) => {
-  pagination.current = val
-  fetchList()
-}
+  pagination.current = val;
+  fetchList();
+};
 
 // 打开详情弹窗
 const openDetail = (item) => {
-  detailDialog.data = item
-  detailDialog.visible = true
-}
+  detailDialog.data = item;
+  detailDialog.visible = true;
+};
 
 onMounted(() => {
-  fetchCountries()
-  fetchServiceTags()
-  fetchList()
-})
+  fetchCountries();
+  fetchServiceTags();
+  fetchList();
+});
 </script>
 
 <style scoped>
@@ -425,7 +432,9 @@ onMounted(() => {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
   cursor: pointer;
 }
 
