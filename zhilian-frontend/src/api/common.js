@@ -41,6 +41,16 @@ export function getRegions() {
 }
 
 /**
+ * 获取所有国家列表
+ * @returns {Promise<Array<string>>} 国家列表
+ */
+export function getCountries() {
+  return request({
+    url: "/common/countries",
+    method: "get",
+  });
+}
+/**
  * 获取企业规模枚举
  * @returns {Promise<Array<{value: string, label: string}>>} 规模选项列表
  */
