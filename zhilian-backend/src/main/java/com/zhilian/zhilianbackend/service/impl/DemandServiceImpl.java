@@ -112,8 +112,18 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
 
         // 6. 保存标签关联
         if (!CollectionUtils.isEmpty(request.getTags())) {
+            // 原始标签 ID 列表
+            List<Long> rawTagIds = request.getTags();
+            // 过滤掉 null，避免生成包含 null 的 IN 条件导致 SQL 行为不可预期
+            List<Long> nonNullTagIds = rawTagIds.stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            // 若存在 null 元素或过滤后为空，返回明确的 400 错误提示
+            if (nonNullTagIds.size() != rawTagIds.size() || nonNullTagIds.isEmpty()) {
+                throw new BusinessException(400, "标签ID不能为空");
+            }
             // 先对标签 ID 去重，避免重复 ID 影响存在性校验和唯一键约束
-            Set<Long> distinctTagIds = new LinkedHashSet<>(request.getTags());
+            Set<Long> distinctTagIds = new LinkedHashSet<>(nonNullTagIds);
             // 校验标签是否存在（基于去重后的 ID 集合）
             List<Tag> tags = tagService.listByIds(distinctTagIds);
             if (tags.size() != distinctTagIds.size()) {
