@@ -302,18 +302,23 @@ const rules = {
   year: [{ required: true, message: '请输入年份', trigger: 'change' }],
   periodType: [{ required: true, message: '请选择周期类型', trigger: 'change' }],
   periodValue: [
-    { required: true, message: '请选择周期值', trigger: 'change' },
     {
       validator: (rule, value, callback) => {
-        if (value === null || value === undefined) {
-          callback(new Error('请选择周期值'))
-        } else if (form.periodType === 'quarter' && (value < 1 || value > 4)) {
-          callback(new Error('季度值应在1-4之间'))
-        } else if (form.periodType === 'month' && (value < 1 || value > 12)) {
-          callback(new Error('月份值应在1-12之间'))
-        } else {
-          callback()
+        // 当周期类型未选择时，不对周期值做任何校验，让 periodType 的必填提示引导用户
+        if (!form.periodType) {
+          return callback()
         }
+        // 周期类型已选择时，周期值必填
+        if (value === null || value === undefined || value === '') {
+          return callback(new Error('请选择周期值'))
+        }
+        if (form.periodType === 'quarter' && (value < 1 || value > 4)) {
+          return callback(new Error('季度值应在1-4之间'))
+        }
+        if (form.periodType === 'month' && (value < 1 || value > 12)) {
+          return callback(new Error('月份值应在1-12之间'))
+        }
+        return callback()
       },
       trigger: 'change'
     }
