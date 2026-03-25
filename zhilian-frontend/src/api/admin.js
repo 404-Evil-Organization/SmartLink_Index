@@ -94,3 +94,38 @@ export function getUserDetail(id) {
     method: "get",
   });
 }
+
+// 获取出海案例列表（管理员）
+export function getAbroadCaseList(params) {
+  return request({
+    url: '/admin/abroad-case/list',
+    method: 'get',
+    params,
+  })
+}
+
+// 新增出海案例
+export function addAbroadCase(data) {
+  return request({
+    url: '/admin/abroad-case',
+    method: 'post',
+    data,
+  })
+}
+
+// 修改出海案例
+export function updateAbroadCase(id, data) {
+  return request({
+    url: `/admin/abroad-case/${id}`,
+    method: 'put',
+    data,
+  })
+}
+
+// 删除出海案例
+export function deleteAbroadCase(id) {
+  return request({
+    url: `/admin/abroad-case/${id}`,
+    method: 'delete',
+  })
+}

@@ -9,4 +9,10 @@ export default [
     name: "UserManage",
     component: () => import("@/views/admin/UserManage.vue"),
   },
+  {
+  path: "admin/abroad-case",
+  name: "AbroadCaseManage",
+  component: () => import("@/views/admin/AbroadCaseManage.vue"),
+  meta: { roles: ["admin"] }
+  },
 ];

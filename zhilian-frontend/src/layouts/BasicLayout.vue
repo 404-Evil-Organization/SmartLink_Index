@@ -110,6 +110,10 @@
             <el-icon><Avatar /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/abroad-case">
+            <el-icon><Flag /></el-icon>
+            <span>出海案例管理</span>
+          </el-menu-item>
         </el-sub-menu>
         <!-- 后续可继续添加其他菜单项 -->
       </el-menu>
@@ -156,6 +160,7 @@ import {
   OfficeBuilding,
   List,
   DataLine,
+  Flag, 
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
