@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * @Author: xiaodengyou
@@ -52,9 +52,9 @@ public class OperLogController {
             @Parameter(description = "操作人用户名（模糊匹配）") @RequestParam(required = false) String username,
             @Parameter(description = "操作类型（精确匹配）") @RequestParam(required = false) String operation,
             @Parameter(description = "开始时间，格式：yyyy-MM-dd HH:mm:ss") @RequestParam(required = false)
-            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startTime,
+            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") Date startTime,
             @Parameter(description = "结束时间，格式：yyyy-MM-dd HH:mm:ss") @RequestParam(required = false)
-            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endTime) {
+            @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") Date endTime) {
 
         // 权限校验：仅管理员可访问
         if (!securityUtils.isAdmin()) {
@@ -63,17 +63,19 @@ public class OperLogController {
         }
 
         // 分页参数校验
-        if (page < 1) {
+        if (page == null || page < 1)  {
             page = 1;
+        } else if (page > 100) {
+            page = 10;
         }
         if (size == null || size < 1) {
             size = 10;
         } else if (size > 100) {
-            size = 100;
+            size = 10;
         }
 
         // 时间范围合法性校验
-        if (startTime != null && endTime != null && startTime.isAfter(endTime)) {
+        if (startTime != null && endTime != null && startTime.after(endTime)) {
             log.warn("开始时间 {} 大于结束时间 {}", startTime, endTime);
             return Result.badRequest("开始时间不能大于结束时间");
         }

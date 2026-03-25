@@ -8,11 +8,12 @@ import com.zhilian.zhilianbackend.dto.response.OperLogVO;
 import com.zhilian.zhilianbackend.entity.OperLog;
 import com.zhilian.zhilianbackend.mapper.OperLogMapper;
 import com.zhilian.zhilianbackend.service.OperLogService;
+import com.zhilian.zhilianbackend.utils.SqlUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -38,24 +39,33 @@ public class OperLogServiceImpl extends ServiceImpl<OperLogMapper, OperLog> impl
      */
     @Override
     public IPage<OperLogVO> listOperLogs(Integer page, Integer size, String username, String operation,
-                                         LocalDateTime startTime, LocalDateTime endTime) {
+                                         Date startTime, Date endTime) {
         // 构建分页对象
         Page<OperLog> pageParam = new Page<>(page, size);
 
         // 构建查询条件
         LambdaQueryWrapper<OperLog> wrapper = new LambdaQueryWrapper<>();
+
+        // 用户名模糊匹配（转义通配符，防止 SQL 注入/通配符放大）
         if (StringUtils.isNotBlank(username)) {
-            wrapper.like(OperLog::getUsername, username);
+            String escaped = SqlUtils.escapeSqlLike(username);
+            wrapper.apply("username LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
         }
+
+        // 操作类型精确匹配
         if (StringUtils.isNotBlank(operation)) {
             wrapper.eq(OperLog::getOperation, operation);
         }
+
+        // 时间范围查询
         if (Objects.nonNull(startTime)) {
             wrapper.ge(OperLog::getCreateTime, startTime);
         }
         if (Objects.nonNull(endTime)) {
             wrapper.le(OperLog::getCreateTime, endTime);
         }
+
+        // 按创建时间倒序排序（最新的在前）
         wrapper.orderByDesc(OperLog::getCreateTime);
 
         // 执行分页查询

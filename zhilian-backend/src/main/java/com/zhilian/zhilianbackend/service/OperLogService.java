@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.zhilian.zhilianbackend.dto.response.OperLogVO;
 import com.zhilian.zhilianbackend.entity.OperLog;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 /**
  * @Author: xiaodengyou
@@ -27,5 +27,5 @@ public interface OperLogService extends IService<OperLog> {
      * @Description: 分页查询操作日志（支持多条件筛选）
      */
     IPage<OperLogVO> listOperLogs(Integer page, Integer size, String username, String operation,
-                                  LocalDateTime startTime, LocalDateTime endTime);
+                                  Date startTime, Date endTime);
 }
