@@ -11,6 +11,7 @@ import com.zhilian.zhilianbackend.entity.*;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.*;
 import com.zhilian.zhilianbackend.service.DemandService;
+import com.zhilian.zhilianbackend.utils.SqlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -62,9 +63,12 @@ public class DemandServiceImpl implements DemandService {
             BigDecimal budgetMin, BigDecimal budgetMax,
             LocalDate deadlineStart, LocalDate deadlineEnd) {
 
+        // 对关键词进行 SQL LIKE 转义，防止用户输入的通配符影响查询结果
+        String escapedKeyword = SqlUtils.escapeSqlLike(keyword);
+
         Page<DemandMarketVO> pageParam = new Page<>(page, size);
         IPage<DemandMarketVO> iPage = demandMapper.selectMarketDemands(
-                pageParam, keyword, tagIds, budgetMin, budgetMax,
+                pageParam, escapedKeyword, tagIds, budgetMin, budgetMax,
                 deadlineStart, deadlineEnd, DateConstants.getNotDeletedLocalDateTime()
         );
 
@@ -146,6 +150,7 @@ public class DemandServiceImpl implements DemandService {
         if (demand == null) {
             throw new BusinessException(404, "需求不存在或已被删除");
         }
+        // 状态校验（SQL 已过滤 deleted，无需额外校验）
         if (!"published".equals(demand.getStatus())) {
             throw new BusinessException(409, "需求状态不可接取");
         }
@@ -193,14 +198,25 @@ public class DemandServiceImpl implements DemandService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void resetDemandStatusToPublished(Long demandId) {
+        // 1. 查询需求，确保存在
         Demand demand = demandMapper.selectById(demandId);
-        if (demand != null && "matched".equals(demand.getStatus())) {
-            demand.setStatus("published");
-            demand.setUpdateTime(new Date());
-            demandMapper.updateById(demand);
-            log.info("需求状态重置为 published，需求ID: {}", demandId);
-        } else {
-            log.warn("重置需求状态失败，需求不存在或状态不是 matched，需求ID: {}", demandId);
+        if (demand == null) {
+            log.warn("重置需求状态失败，需求不存在或已被删除，需求ID: {}", demandId);
+            throw new BusinessException(404, "需求不存在或已被删除，无法重置状态");
         }
+        // 2. 仅允许从 matched 状态重置为 published，保证状态流转闭环
+        if (!"matched".equals(demand.getStatus())) {
+            log.warn("重置需求状态失败，需求当前状态不是 matched，需求ID: {}，当前状态: {}", demandId, demand.getStatus());
+            throw new BusinessException(409, "只有 matched 状态的需求才允许重置为 published");
+        }
+        // 3. 执行状态更新，并校验受影响行数，防止静默失败
+        demand.setStatus("published");
+        demand.setUpdateTime(new Date());
+        int updateRows = demandMapper.updateById(demand);
+        if (updateRows == 0) {
+            log.error("重置需求状态失败，数据库更新行数为 0，需求ID: {}", demandId);
+            throw new BusinessException(500, "重置需求状态失败");
+        }
+        log.info("需求状态重置为 published，需求ID: {}", demandId);
     }
 }

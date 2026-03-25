@@ -317,9 +317,24 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
             throw new BusinessException(500, "更新合作状态失败");
         }
 
-        // 恢复需求状态
+        // 恢复需求状态（带强校验，确保合作与需求状态一致）
         if (cooperation.getDemandId() != null) {
+            // 1. 取消前先校验需求当前状态是否允许恢复
+            Demand demand = demandMapper.selectById(cooperation.getDemandId());
+            if (demand == null) {
+                throw new BusinessException(404, "关联需求不存在，无法恢复状态");
+            }
+            // 需求在合作进行中应处于 matched 状态
+            if (!"matched".equals(demand.getStatus())) {
+                throw new BusinessException(409, "关联需求当前状态不允许恢复为已发布");
+            }
+            // 2. 调用业务方法恢复需求状态为 published
             demandService.resetDemandStatusToPublished(cooperation.getDemandId());
+            // 3. 再次查询确认状态是否已成功恢复，否则抛出异常回滚事务
+            Demand updatedDemand = demandMapper.selectById(cooperation.getDemandId());
+            if (updatedDemand == null || !"published".equals(updatedDemand.getStatus())) {
+                throw new BusinessException(500, "恢复需求状态失败");
+            }
         }
 
         log.info("合作取消成功，合作ID: {}, 用户ID: {}, 角色: {}", cooperationId, currentUserId, currentUserRole);

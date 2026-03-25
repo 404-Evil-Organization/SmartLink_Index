@@ -46,7 +46,7 @@
         AND m.deleted = #{notDeletedTime}
         AND m.audit_status = 'approved'
         <if test="keyword != null and keyword != ''">
-            AND d.title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\'
+            AND d.title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
         </if>
         <if test="budgetMin != null">
             AND d.expected_budget &gt;= #{budgetMin}
