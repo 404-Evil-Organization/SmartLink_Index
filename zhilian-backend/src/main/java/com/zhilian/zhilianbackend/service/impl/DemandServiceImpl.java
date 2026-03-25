@@ -325,8 +325,16 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         if (hasChange) {
             boolean updated = this.updateById(demand);
             if (!updated) {
-                // 理论上记录已存在，更新失败可能是并发删除，抛出异常
-                throw new BusinessException(500, "编辑需求失败");
+                // MyBatis Plus 在受影响行数为 0 时会返回 false，这里需要进一步区分：
+                // 1）记录已被删除/不存在 -> 返回 404
+                // 2）记录仍存在但字段值与提交值一致（或并发更新后结果一致） -> 视为幂等成功
+                Demand latest = this.getById(id);
+                if (latest == null || !DateConstants.getNotDeletedTime().equals(latest.getDeleted())) {
+                    // 记录已被删除或不存在，返回更精确的业务错误码而不是 500
+                    throw new BusinessException(404, "需求不存在或已被删除");
+                }
+                // 记录仍存在但受影响行数为 0，可能是提交值与库中值一致或并发更新后结果一致，视为幂等成功
+                log.warn("需求编辑未更新任何字段但记录仍存在，视为幂等成功，ID：{}", id);
             }
         } else {
             // 无字段变更，视为幂等成功
