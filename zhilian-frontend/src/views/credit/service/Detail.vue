@@ -54,6 +54,12 @@
             <el-descriptions-item label="资质概述">{{
               detailData.qualification || "-"
             }}</el-descriptions-item>
+            <el-descriptions-item label="是否出海">{{
+              detailData.isAbroad === 1 ? '是' : '否'
+            }}</el-descriptions-item>
+            <el-descriptions-item label="覆盖国家">{{
+              detailData.countryCoverage || "-"
+            }}</el-descriptions-item>
             <el-descriptions-item label="企业logo">
               <el-image
                 v-if="detailData.logo"
