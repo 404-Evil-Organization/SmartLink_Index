@@ -436,6 +436,13 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         // 逻辑删除需求本身
         boolean deleted = this.removeById(id);
         if (!deleted) {
+            // 在 MyBatis Plus 逻辑删除场景下，可能是并发下记录已被其他请求删除，导致 affectedRows=0
+            // 这里再次查询用于区分“已删除/不存在”（幂等成功）与“真实删除失败”
+            Demand latest = this.getById(id);
+            if (latest == null) {
+                log.info("需求已被删除（可能为并发删除），ID：{}，本次删除操作视为幂等成功", id);
+                return;
+            }
             throw new BusinessException(500, "删除需求失败");
         }
 
