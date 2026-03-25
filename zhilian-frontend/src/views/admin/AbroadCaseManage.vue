@@ -223,8 +223,8 @@ const form = reactive({
 
 const formRef = ref(null)
 
-// 文件上传相关
-const uploadUrl = '/api/common/upload'
+// 文件上传相关：使用环境变量中的后端地址，避免写死为当前域名下的 /api
+const uploadUrl = `${import.meta.env.VITE_API_BASE_URL}/common/upload`
 const uploadHeaders = {
   Authorization: `Bearer ${userStore.token}`
 }
