@@ -810,7 +810,7 @@
 
 - **URL**: `/api/common/countries`
 - **Method**: `GET`
-- **请求头**: `Authorization: Bearer <token>`
+- **请求头**: 无需认证（公开接口）
 - **请求参数**: 无
 - **返回数据**:
 

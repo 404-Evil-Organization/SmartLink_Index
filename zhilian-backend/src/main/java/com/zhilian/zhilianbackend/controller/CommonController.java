@@ -400,11 +400,15 @@ public class CommonController {
     public Result<List<String>> getCountries() {
         log.info("接收获取国家列表请求");
 
-        List<CountryGuide> countryGuides = countryGuideService.list();
+        List<CountryGuide> countryGuides = countryGuideService.lambdaQuery()
+                .select(CountryGuide::getCountry)
+                .isNotNull(CountryGuide::getCountry)
+                .groupBy(CountryGuide::getCountry)
+                .orderByAsc(CountryGuide::getCountry)
+                .list();
+
         List<String> countries = countryGuides.stream()
                 .map(CountryGuide::getCountry)
-                .distinct()
-                .sorted()
                 .collect(java.util.stream.Collectors.toList());
 
         log.info("返回国家列表，共 {} 个", countries.size());
