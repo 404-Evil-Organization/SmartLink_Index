@@ -23,12 +23,10 @@ import java.util.Date;
 import java.util.stream.Collectors;
 
 /**
- * @Author: 6017
- * @Date: 2026/3/25 21:12
- * @Param: 
- * @Return: 
  * @Description: 出海案例Service实现类
-**/
+ * @Author: 6017
+ * @Date: 2026/3/25
+ **/
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -38,12 +36,18 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
     private final OssService ossService;
 
     /**
+     * 有效的状态值集合
+     */
+    private static final Byte STATUS_DRAFT = 0;
+    private static final Byte STATUS_PUBLISHED = 1;
+
+    /**
      * @Author: 6017
-     * @Date: 2026/3/25 21:10
+     * @Date: 2026/3/25 21:05
      * @Param: queryRequest 查询请求参数
      * @Return: Page<AbroadCaseListResponse> 分页案例列表
      * @Description: 分页查询出海案例列表（管理员）
-    **/
+     **/
     @Override
     public Page<AbroadCaseListResponse> listByPage(AbroadCaseQueryRequest queryRequest) {
         // 构建查询条件
@@ -54,6 +58,8 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         }
 
         if (queryRequest.getStatus() != null) {
+            // 校验查询状态值
+            validateStatus(queryRequest.getStatus());
             wrapper.eq(AbroadCase::getStatus, queryRequest.getStatus());
         }
 
@@ -77,11 +83,11 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
 
     /**
      * @Author: 6017
-     * @Date: 2026/3/25 21:12
+     * @Date: 2026/3/25 21:05
      * @Param: id 案例ID
      * @Return: AbroadCaseDetailResponse 案例详情
      * @Description: 获取出海案例详情
-    **/
+     **/
     @Override
     public AbroadCaseDetailResponse getDetail(Long id) {
         AbroadCase entity = abroadCaseMapper.selectById(id);
@@ -96,14 +102,21 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
 
     /**
      * @Author: 6017
-     * @Date: 2026/3/25 21:12
-     * @Param: request 创建请求参数  adminId 管理员ID  adminName 管理员名称
+     * @Date: 2026/3/25 21:05
+     * @Param: request 创建请求参数
+     * @Param: adminId 管理员ID
+     * @Param: adminName 管理员名称
      * @Return: Long 新创建的案例ID
      * @Description: 新增出海案例
-    **/
+     **/
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long create(AbroadCaseCreateRequest request, Long adminId, String adminName) {
+        // 防御性校验：验证状态值
+        if (request.getStatus() != null) {
+            validateStatus(request.getStatus());
+        }
+
         // 处理封面图片上传
         String coverImageUrl = null;
         if (request.getCoverImageFile() != null && !request.getCoverImageFile().isEmpty()) {
@@ -112,7 +125,7 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
                 log.info("上传出海案例封面成功: {}", coverImageUrl);
             } catch (Exception e) {
                 log.error("上传封面图片失败", e);
-                throw new BusinessException(500, "封面图片上传失败: " + e.getMessage());
+                throw new BusinessException(500, "封面图片上传失败: " );
             }
         }
 
@@ -136,11 +149,12 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
 
     /**
      * @Author: 6017
-     * @Date: 2026/3/25 21:13
-     * @Param: id 案例ID  request 更新请求参数
-     * @Return: 
+     * @Date: 2026/3/25 21:05
+     * @Param: id 案例ID
+     * @Param: request 更新请求参数
+     * @Return: void
      * @Description: 更新出海案例（支持部分字段更新）
-    **/
+     **/
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, AbroadCaseUpdateRequest request) {
@@ -148,6 +162,11 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         AbroadCase existing = abroadCaseMapper.selectById(id);
         if (existing == null) {
             throw new BusinessException(404, "出海案例不存在");
+        }
+
+        // 防御性校验：验证状态值
+        if (request.getStatus() != null) {
+            validateStatus(request.getStatus());
         }
 
         // 处理封面图片更新
@@ -199,7 +218,7 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         if (request.getStatus() != null) {
             entity.setStatus(request.getStatus());
             // 只有发布时更新时间才更新发布时间
-            if (request.getStatus() == 1 && existing.getStatus() != 1) {
+            if (request.getStatus() == STATUS_PUBLISHED && existing.getStatus() != STATUS_PUBLISHED) {
                 entity.setPublishTime(new Date());
             }
         }
@@ -215,11 +234,11 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
 
     /**
      * @Author: 6017
-     * @Date: 2026/3/25 21:13
+     * @Date: 2026/3/25 21:05
      * @Param: id 案例ID
-     * @Return: 
+     * @Return: void
      * @Description: 逻辑删除出海案例
-    **/
+     **/
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
@@ -247,5 +266,18 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         }
 
         log.info("删除出海案例成功, caseId: {}", id);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/25 21:40
+     * @Param: status 状态值
+     * @Return: void
+     * @Description: 校验状态值是否有效（0-草稿，1-发布）
+     **/
+    private void validateStatus(Byte status) {
+        if (status != null && status != STATUS_DRAFT && status != STATUS_PUBLISHED) {
+            throw new BusinessException(400, "状态值无效，有效值为0(草稿)或1(发布)");
+        }
     }
 }
