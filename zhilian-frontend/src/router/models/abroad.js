@@ -1,7 +1,7 @@
 export default [
   {
     path: "abroad/services",
-    name: "ServiceList",
+    name: "AbroadServiceList",
     component: () => import("@/views/abroad/ServiceList.vue"),
     meta: {
       roles: ["manufacture", "admin"],
@@ -9,7 +9,7 @@ export default [
   },
   {
     path: "abroad/cases",
-    name: "Cases",
+    name: "AbroadCases",
     component: () => import("@/views/abroad/Cases.vue"),
     meta: {
       roles: ["manufacture", "admin"],

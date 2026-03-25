@@ -151,7 +151,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { ArrowDown, Refresh, View } from "@element-plus/icons-vue";
+import { Refresh, View } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
 import { useUserStore } from "@/stores/user";
@@ -321,29 +321,6 @@ onMounted(() => {
   margin-bottom: 16px;
   border-radius: 12px;
   overflow: hidden;
-}
-
-.search-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px;
-  cursor: pointer;
-  background-color: #fafbfc;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.search-title {
-  font-weight: 600;
-  color: #1f2f3d;
-}
-
-.search-header .el-icon {
-  transition: transform 0.3s;
-}
-
-.search-header .el-icon.is-active {
-  transform: rotate(180deg);
 }
 
 .search-form {

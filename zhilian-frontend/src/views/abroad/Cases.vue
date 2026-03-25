@@ -15,50 +15,48 @@
     <!-- 搜索卡片 -->
     <el-card class="search-card" shadow="hover">
       <el-collapse-transition>
-        <div v-show="searchExpanded">
-          <el-form :model="searchForm" label-width="100px" class="search-form">
-            <el-row :gutter="20">
-              <el-col :span="8">
-                <el-form-item label="目标国家">
-                  <el-select
-                    v-model="searchForm.country"
-                    placeholder="全部"
-                    clearable
-                    filterable
-                  >
-                    <el-option
-                      v-for="item in countryOptions"
-                      :key="item"
-                      :label="item"
-                      :value="item"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="服务类型">
-                  <el-select
-                    v-model="searchForm.serviceType"
-                    placeholder="全部"
-                    clearable
-                    filterable
-                  >
-                    <el-option
-                      v-for="item in serviceTypeOptions"
-                      :key="item.id"
-                      :label="item.name"
-                      :value="item.name"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="8" class="search-actions">
-                <el-button type="primary" @click="handleSearch">查询</el-button>
-                <el-button @click="resetSearch">重置</el-button>
-              </el-col>
-            </el-row>
-          </el-form>
-        </div>
+        <el-form :model="searchForm" label-width="100px" class="search-form">
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="目标国家">
+                <el-select
+                  v-model="searchForm.country"
+                  placeholder="全部"
+                  clearable
+                  filterable
+                >
+                  <el-option
+                    v-for="item in countryOptions"
+                    :key="item"
+                    :label="item"
+                    :value="item"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="服务类型">
+                <el-select
+                  v-model="searchForm.serviceType"
+                  placeholder="全部"
+                  clearable
+                  filterable
+                >
+                  <el-option
+                    v-for="item in serviceTypeOptions"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.name"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8" class="search-actions">
+              <el-button type="primary" @click="handleSearch">查询</el-button>
+              <el-button @click="resetSearch">重置</el-button>
+            </el-col>
+          </el-row>
+        </el-form>
       </el-collapse-transition>
     </el-card>
 
@@ -82,7 +80,11 @@
           v-for="item in tableData"
           :key="item.id"
           class="case-card"
+          role="button"
+          tabindex="0"
           @click="openDetail(item)"
+          @keyup.enter="openDetail(item)"
+          @keyup.space.prevent="openDetail(item)"
         >
           <div class="case-cover">
             <el-image :src="item.coverImage || defaultCover" fit="cover" lazy>
@@ -111,7 +113,7 @@
             </div>
             <div class="case-footer">
               <span class="publish-time">{{
-                createTimeConverter(item.publishTime).toLocalYMDHMS()
+                formatEstablishedDate(item.publishTime)
               }}</span>
               <el-button
                 link
@@ -174,9 +176,7 @@
           {{ detailDialog.data?.serviceType || "-" }}
         </el-descriptions-item>
         <el-descriptions-item label="发布时间">
-          {{
-            createTimeConverter(detailDialog.data?.publishTime).toLocalYMDHMS()
-          }}
+          {{ formatEstablishedDate(detailDialog.data?.publishTime) }}
         </el-descriptions-item>
         <el-descriptions-item label="案例详情" :span="2">
           <div class="detail-description">
@@ -197,10 +197,7 @@ import { Refresh, Picture } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { getAbroadCaseList } from "@/api/abroad";
 import { getCountries, getServiceTags } from "@/api/common";
-import { createTimeConverter } from "@/composables/date";
-
-// 搜索折叠状态
-const searchExpanded = ref(true);
+import { formatEstablishedDate } from "@/composables/date";
 
 // 搜索表单
 const searchForm = reactive({
@@ -364,27 +361,9 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.search-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px;
-  cursor: pointer;
-  background-color: #fafbfc;
-  border-bottom: 1px solid #ebeef5;
-}
-
 .search-title {
   font-weight: 600;
   color: #1f2f3d;
-}
-
-.search-header .el-icon {
-  transition: transform 0.3s;
-}
-
-.search-header .el-icon.is-active {
-  transform: rotate(180deg);
 }
 
 .search-form {

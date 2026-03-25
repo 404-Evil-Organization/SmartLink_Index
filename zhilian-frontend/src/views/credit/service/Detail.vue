@@ -222,23 +222,6 @@ import { useUserStore } from "@/stores/user";
 const userStore = useUserStore();
 const showPhone = (phone) => maskPhone(phone, userStore.userInfo?.role);
 
-// 动态返回面包屑配置
-const backRouteInfo = computed(() => {
-  const from = route.query.from;
-  // 根据不同来源返回不同的路径和文本
-  if (from === "abroad") {
-    return {
-      path: "/abroad/services",
-      label: "出海服务商列表",
-    };
-  }
-  // 默认（普通服务商列表）
-  return {
-    path: "/service/list",
-    label: "服务企业列表",
-  };
-});
-
 // 预览相关
 const previewVisible = ref(false);
 const previewImage = ref("");
@@ -342,6 +325,23 @@ watch(
   },
   { immediate: true },
 );
+
+// 动态返回面包屑配置
+const backRouteInfo = computed(() => {
+  const from = route.query.from;
+  // 根据不同来源返回不同的路径和文本
+  if (from === "abroad") {
+    return {
+      path: "/abroad/services",
+      label: "出海服务商列表",
+    };
+  }
+  // 默认（普通服务商列表）
+  return {
+    path: "/service/list",
+    label: "服务企业列表",
+  };
+});
 
 // onMounted(() => {
 //   fetchDetail()
