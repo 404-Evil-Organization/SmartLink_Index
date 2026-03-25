@@ -268,7 +268,7 @@ const handleCurrentChange = (val) => {
 // 查看详情 - 跳转到服务商详情页
 const handleDetail = (id) => {
   if (!id) {
-    ElMessage.error("企业ID无效");
+    ElMessage.error("服务商信息无效，请刷新重试");
     return;
   }
   router.push({
