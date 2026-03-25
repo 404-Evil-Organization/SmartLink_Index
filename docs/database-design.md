@@ -9,7 +9,7 @@
 | phone       | VARCHAR(20)                                           | 联系电话                                                     |
 | email       | VARCHAR(100)                                          | 电子邮箱                                                     |
 | status      | TINYINT DEFAULT 1                                     | 状态：0禁用 1正常                                            |
-| deleted     | DATETIME DATETIME DEFAULT '1970-01-01 00:00:00'       | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted     | DATETIME DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time | DATETIME DEFAULT CURRENT_TIMESTAMP                    | 注册时间                                                     |
 | update_time | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE          | 更新时间                                                     |
 
