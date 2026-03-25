@@ -2510,7 +2510,7 @@
 | username  | string | 否   | 操作人用户名（模糊匹配）           |
 | operation | string | 否   | 操作类型（如“用户登录”）           |
 | startTime | string | 否   | 开始时间，格式 yyyy-MM-dd HH:mm:ss |
-| endTime   | string | 否   | 结束时间，格式同上0                |
+| endTime   | string | 否   | 结束时间，格式同上                 |
 
 - **返回数据**:
 

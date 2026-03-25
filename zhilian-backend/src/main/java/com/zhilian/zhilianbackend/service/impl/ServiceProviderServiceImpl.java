@@ -597,14 +597,15 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         certWrapper.eq(Certification::getServiceId, provider.getId());
         certWrapper.orderByDesc(Certification::getCreateTime);
         List<Certification> certList = certificationMapper.selectList(certWrapper);
+        List<CertificationVO> certVOList = Collections.emptyList();
         if (certList != null && !certList.isEmpty()) {
-            List<CertificationVO> certVOList = certList.stream().map(cert -> {
+            certVOList = certList.stream().map(cert -> {
                 CertificationVO certVO = new CertificationVO();
                 BeanUtils.copyProperties(cert, certVO);
                 return certVO;
             }).collect(Collectors.toList());
-            vo.setCertifications(certVOList);
         }
+        vo.setCertifications(certVOList);
 
         return vo;
     }
