@@ -19,31 +19,23 @@
           <el-input v-model="searchForm.username" placeholder="用户名" clearable style="width: 150px" />
         </el-form-item>
         <el-form-item label="操作类型">
-          <el-select v-model="searchForm.operation" placeholder="全部" clearable style="width: 120px">
-            <el-option label="用户登录" value="用户登录" />
-            <el-option label="修改密码" value="修改密码" />
-            <el-option label="审核需求" value="审核需求" />
-            <el-option label="审核企业" value="审核企业" />
-            <el-option label="新增标签" value="新增标签" />
-            <el-option label="修改标签" value="修改标签" />
-            <el-option label="删除标签" value="删除标签" />
-            <el-option label="新增指数" value="新增指数" />
-            <el-option label="修改指数" value="修改指数" />
-            <el-option label="删除指数" value="删除指数" />
-            <el-option label="重置密码" value="重置密码" />
-            <el-option label="启用用户" value="启用用户" />
-            <el-option label="禁用用户" value="禁用用户" />
+          <el-input v-model="searchForm.operationKeyword" placeholder="请输入操作类型关键词" clearable style="width: 180px" />
+        </el-form-item>
+        <el-form-item label="结果">
+          <el-select v-model="searchForm.result" placeholder="全部" clearable style="width: 100px">
+            <el-option label="成功" value="成功" />
+            <el-option label="失败" value="失败" />
           </el-select>
         </el-form-item>
         <el-form-item label="时间范围">
           <el-date-picker
             v-model="searchForm.dateRange"
-            type="daterange"
+            type="datetimerange"
             range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            style="width: 260px"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            style="width: 360px"
           />
         </el-form-item>
         <el-form-item>
@@ -104,8 +96,9 @@ import { createTimeConverter } from '@/composables/date'
 // 搜索表单
 const searchForm = reactive({
   username: '',
-  operation: '',
-  dateRange: []  // [startDate, endDate]
+  operationKeyword: '',
+  result: '',
+  dateRange: []
 })
 
 // 表格数据
@@ -140,7 +133,8 @@ const fetchList = async () => {
       page: pagination.current,
       size: pagination.size,
       ...(searchForm.username && { username: searchForm.username }),
-      ...(searchForm.operation && { operation: searchForm.operation }),
+      ...(searchForm.operationKeyword && { operation: searchForm.operationKeyword }),
+      ...(searchForm.result && { result: searchForm.result }),
       ...(searchForm.dateRange && searchForm.dateRange.length === 2 && {
         startTime: searchForm.dateRange[0],
         endTime: searchForm.dateRange[1]
@@ -165,7 +159,8 @@ const handleSearch = () => {
 }
 const resetSearch = () => {
   searchForm.username = ''
-  searchForm.operation = ''
+  searchForm.operationKeyword = ''
+  searchForm.result = ''
   searchForm.dateRange = []
   handleSearch()
 }

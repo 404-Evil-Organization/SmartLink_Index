@@ -188,36 +188,38 @@ export default [
 
   // ---------- 操作日志接口 ----------
   {
-    url: "/api/admin/log/list",
-    method: "get",
+    url: '/api/admin/log/list',
+    method: 'get',
     response: ({ query }) => {
-      const { page = 1, size = 10, username, operation, startTime, endTime } = query;
+      const { page = 1, size = 10, username, operation, result, startTime, endTime } = query;
       let filtered = [...logList];
 
       if (username) {
-        filtered = filtered.filter((item) => item.username.includes(username));
+        filtered = filtered.filter(item => item.username.includes(username));
       }
       if (operation) {
-        filtered = filtered.filter((item) => item.operation === operation);
+        filtered = filtered.filter(item => item.operation.includes(operation));  // 模糊匹配
+      }
+      if (result) {
+        filtered = filtered.filter(item => item.result === result);
       }
       if (startTime && endTime) {
-        filtered = filtered.filter((item) => {
-          const itemDate = item.createTime.split(" ")[0]; // 取 YYYY-MM-DD
-          return itemDate >= startTime && itemDate <= endTime;
+        filtered = filtered.filter(item => {
+          // 直接比较字符串，因为格式统一为 YYYY-MM-DD HH:mm:ss
+          return item.createTime >= startTime && item.createTime <= endTime;
         });
       }
 
       const start = (page - 1) * size;
       const end = start + parseInt(size);
       const records = filtered.slice(start, end);
-
       return {
         code: 200,
         data: {
           total: filtered.length,
-          records,
-        },
+          records
+        }
       };
-    },
-  },
+    }
+  }
 ];
