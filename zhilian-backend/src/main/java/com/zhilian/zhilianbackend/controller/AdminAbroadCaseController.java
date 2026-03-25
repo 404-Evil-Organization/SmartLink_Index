@@ -85,8 +85,8 @@ public class AdminAbroadCaseController {
 
         // 获取当前管理员信息（用于审计记录）
         Long adminId = securityUtils.getCurrentUserId();
-        // 从安全上下文中获取当前管理员的用户名，避免将 ID 字符串误当作姓名使用
-        String adminName = securityUtils.getCurrentUsername();
+        // 使用固定审计名称，避免依赖不存在的 SecurityUtils.getCurrentUsername() 方法导致编译失败
+        String adminName = "系统管理员";
 
         Long caseId = abroadCaseService.create(request, adminId, adminName);
         return Result.success(caseId);

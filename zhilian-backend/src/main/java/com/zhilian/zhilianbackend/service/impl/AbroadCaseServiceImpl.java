@@ -124,9 +124,10 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
                 coverImageUrl = ossService.uploadFile(request.getCoverImageFile());
                 log.info("上传出海案例封面成功: {}", coverImageUrl);
             } catch (Exception e) {
+                // 记录完整异常信息到日志，避免将底层异常细节暴露给前端
                 log.error("上传封面图片失败", e);
-                String safeMessage = StringUtils.hasText(e.getMessage()) ? e.getMessage() : "请稍后重试";
-                throw new BusinessException(500, "封面图片上传失败: " + safeMessage);
+                // 对前端仅返回固定的用户友好提示，防止泄露 OSS/网络/权限等内部错误信息
+                throw new BusinessException(500, "封面图片上传失败，请稍后重试");
             }
         }
 
@@ -135,14 +136,37 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         BeanUtils.copyProperties(request, entity);
         entity.setCoverImage(coverImageUrl);
         // 仅当状态为“已发布”时设置发布时间，草稿不应有发布时间
-        if (entity.getStatus() != null && entity.getStatus() == 1) {
+        if (AbroadCase.STATUS_PUBLISHED.equals(entity.getStatus())) {
             entity.setPublishTime(new Date());
         }
 
-        // 保存
-        int result = abroadCaseMapper.insert(entity);
-        if (result <= 0) {
-            throw new BusinessException(500, "创建出海案例失败");
+        // 保存（如果插入失败或抛异常，需要补偿删除已上传的封面图片，避免产生 OSS 孤儿文件）
+        try {
+            int result = abroadCaseMapper.insert(entity);
+            if (result <= 0) {
+                // DB 插入失败时的补偿删除逻辑：删除之前上传的封面图片
+                if (StringUtils.hasText(coverImageUrl)) {
+                    try {
+                        ossService.deleteFile(coverImageUrl);
+                        log.warn("创建出海案例失败，已补偿删除封面图片: {}", coverImageUrl);
+                    } catch (Exception ex) {
+                        // 补偿删除失败只记录日志，不覆盖原始业务异常
+                        log.warn("创建出海案例失败，补偿删除封面图片失败: {}", coverImageUrl, ex);
+                    }
+                }
+                throw new BusinessException(500, "创建出海案例失败");
+            }
+        } catch (RuntimeException e) {
+            // 捕获 DB 层或 MyBatis 抛出的运行时异常，同样进行补偿删除
+            if (StringUtils.hasText(coverImageUrl)) {
+                try {
+                    ossService.deleteFile(coverImageUrl);
+                    log.warn("创建出海案例异常，已补偿删除封面图片: {}", coverImageUrl);
+                } catch (Exception ex) {
+                    log.warn("创建出海案例异常，补偿删除封面图片失败: {}", coverImageUrl, ex);
+                }
+            }
+            throw e;
         }
 
         // 记录操作日志（可选）
@@ -288,7 +312,8 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
      * @Description: 校验状态值是否有效（0-草稿，1-发布）
      **/
     private void validateStatus(Byte status) {
-        if (status != null && status != STATUS_DRAFT && status != STATUS_PUBLISHED) {
+        // 使用值比较避免 Byte 包装类型引用比较导致的误判
+        if (status != null && !status.equals(STATUS_DRAFT) && !status.equals(STATUS_PUBLISHED)) {
             throw new BusinessException(400, "状态值无效，有效值为0(草稿)或1(发布)");
         }
     }
