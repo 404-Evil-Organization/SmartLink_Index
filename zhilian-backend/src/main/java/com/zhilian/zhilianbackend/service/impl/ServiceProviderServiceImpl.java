@@ -11,10 +11,13 @@ import com.zhilian.zhilianbackend.dto.response.ServiceProviderAddVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderDetailVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderListVO;
 import com.zhilian.zhilianbackend.dto.response.UserInfoResponse;
+import com.zhilian.zhilianbackend.entity.Certification;
+import com.zhilian.zhilianbackend.dto.response.CertificationVO;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
 import com.zhilian.zhilianbackend.entity.ServiceTag;
 import com.zhilian.zhilianbackend.entity.Tag;
 import com.zhilian.zhilianbackend.exception.BusinessException;
+import com.zhilian.zhilianbackend.mapper.CertificationMapper;
 import com.zhilian.zhilianbackend.mapper.ServiceProviderMapper;
 import com.zhilian.zhilianbackend.mapper.ServiceTagMapper;
 import com.zhilian.zhilianbackend.mapper.TagMapper;
@@ -50,6 +53,7 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
     private final TagMapper tagMapper;
     private final ServiceTagMapper serviceTagMapper;
     private final UserService userService;
+    private final CertificationMapper certificationMapper;
     private static final Timestamp NOT_DELETED = Timestamp.valueOf("1970-01-01 00:00:00");
 
     /**
@@ -587,6 +591,22 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
         }
         ServiceProviderDetailVO vo = new ServiceProviderDetailVO();
         BeanUtils.copyProperties(provider, vo);
+
+        // 获取资质证书列表
+        LambdaQueryWrapper<Certification> certWrapper = new LambdaQueryWrapper<>();
+        certWrapper.eq(Certification::getServiceId, provider.getId());
+        certWrapper.orderByDesc(Certification::getCreateTime);
+        List<Certification> certList = certificationMapper.selectList(certWrapper);
+        List<CertificationVO> certVOList = Collections.emptyList();
+        if (certList != null && !certList.isEmpty()) {
+            certVOList = certList.stream().map(cert -> {
+                CertificationVO certVO = new CertificationVO();
+                BeanUtils.copyProperties(cert, certVO);
+                return certVO;
+            }).collect(Collectors.toList());
+        }
+        vo.setCertifications(certVOList);
+
         return vo;
     }
 }

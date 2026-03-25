@@ -132,6 +132,18 @@ public class ServiceProvider implements Serializable {
     private Long auditUserId;
 
     /**
+     * 是否提供出海服务（0否 1是）
+     */
+    @TableField("is_abroad")
+    private Byte isAbroad;
+
+    /**
+     * 覆盖国家/地区，多个用逗号分隔（如"欧盟,美国"）
+     */
+    @TableField("country_coverage")
+    private String countryCoverage;
+
+    /**
      * 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除
      */
     @TableField("deleted")
