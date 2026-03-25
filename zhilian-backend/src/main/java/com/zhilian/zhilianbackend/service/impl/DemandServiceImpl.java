@@ -43,6 +43,22 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> implements DemandService {
 
+    // 角色常量
+    private static final String ROLE_MANUFACTURE = "manufacture";
+
+    // 需求业务状态常量
+    private static final String DEMAND_STATUS_DRAFT = "draft";
+    private static final String DEMAND_STATUS_PUBLISHED = "published";
+
+    // 需求审核状态常量
+    private static final String DEMAND_AUDIT_STATUS_PENDING = "pending";
+    private static final String DEMAND_AUDIT_STATUS_APPROVED = "approved";
+    private static final String DEMAND_AUDIT_STATUS_REJECTED = "rejected";
+
+    // 审核操作常量
+    private static final String APPROVE_ACTION_APPROVED = "approved";
+    private static final String APPROVE_ACTION_REJECTED = "rejected";
+
     private final ManufactureMapper manufactureMapper;
     private final TagService tagService;
     private final DemandTagMapper demandTagMapper;
@@ -61,7 +77,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
     public DemandPublishResponse publishDemand(DemandPublishRequest request, Long userId) {
         // 1. 校验用户角色是否为制造企业
         String role = securityUtils.getCurrentUserRole();
-        if (!"manufacture".equals(role)) {
+        if (!ROLE_MANUFACTURE.equals(role)) {
             throw new BusinessException(403, "只有制造企业可以发布需求");
         }
 
@@ -84,8 +100,8 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         demand.setDescription(request.getDescription());
         demand.setExpectedBudget(request.getExpectedBudget());
         demand.setDeadline(request.getDeadline());
-        demand.setStatus("draft");
-        demand.setAuditStatus("pending");
+        demand.setStatus(DEMAND_STATUS_DRAFT);
+        demand.setAuditStatus(DEMAND_AUDIT_STATUS_PENDING);
         demand.setViews(0);
 
         // 5. 保存需求
@@ -210,22 +226,22 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         // 构造原子更新条件：id 且 audit_status = 'pending' 且未被逻辑删除
         LambdaUpdateWrapper<Demand> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Demand::getId, demandId)
-                .eq(Demand::getAuditStatus, "pending")
+                .eq(Demand::getAuditStatus, DEMAND_AUDIT_STATUS_PENDING)
                 .eq(Demand::getDeleted, DateConstants.getNotDeletedTime());
 
-        if ("approved".equals(status)) {
-            updateWrapper.set(Demand::getAuditStatus, "approved")
-                    .set(Demand::getStatus, "published")
+        if (APPROVE_ACTION_APPROVED.equals(status)) {
+            updateWrapper.set(Demand::getAuditStatus, DEMAND_AUDIT_STATUS_APPROVED)
+                    .set(Demand::getStatus, DEMAND_STATUS_PUBLISHED)
                     .set(Demand::getAuditRemark, request.getRemark())
                     .set(Demand::getAuditTime, new Date())
                     .set(Demand::getAuditUserId, adminUserId);
-        } else if ("rejected".equals(status)) {
+        } else if (APPROVE_ACTION_REJECTED.equals(status)) {
             // 驳回时校验意见
             if (request.getRemark() == null || request.getRemark().trim().isEmpty()) {
                 throw new BusinessException(400, "驳回时必须填写审核意见");
             }
-            updateWrapper.set(Demand::getAuditStatus, "rejected")
-                    .set(Demand::getStatus, "draft")
+            updateWrapper.set(Demand::getAuditStatus, DEMAND_AUDIT_STATUS_REJECTED)
+                    .set(Demand::getStatus, DEMAND_STATUS_DRAFT)
                     .set(Demand::getAuditRemark, request.getRemark())
                     .set(Demand::getAuditTime, new Date())
                     .set(Demand::getAuditUserId, adminUserId);
@@ -248,7 +264,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         }
 
         log.info("需求审核{}，ID：{}，审核人：{}",
-                "approved".equals(status) ? "通过" : "驳回", demandId, adminUserId);
+                APPROVE_ACTION_APPROVED.equals(status) ? "通过" : "驳回", demandId, adminUserId);
     }
 
     /**
@@ -268,7 +284,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         if (!securityUtils.isAdmin()) {
             // 非管理员必须是制造企业
             String role = securityUtils.getCurrentUserRole();
-            if (!"manufacture".equals(role)) {
+            if (!ROLE_MANUFACTURE.equals(role)) {
                 throw new BusinessException(403, "只有制造企业可以操作需求");
             }
             Manufacture manufacture = manufactureMapper.selectById(demand.getManuId());
@@ -278,13 +294,13 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         }
 
         String status = demand.getStatus();
-        if (!"draft".equals(status) && !"published".equals(status)) {
+        if (!DEMAND_STATUS_DRAFT.equals(status) && !DEMAND_STATUS_PUBLISHED.equals(status)) {
             throw new BusinessException(400, "当前状态不可编辑");
         }
 
         // 审核状态校验：非管理员在待审核（pending）状态下禁止编辑，防止审核内容与最终内容不一致
         String auditStatus = demand.getAuditStatus();
-        if (!securityUtils.isAdmin() && "pending".equals(auditStatus)) {
+        if (!securityUtils.isAdmin() && DEMAND_AUDIT_STATUS_PENDING.equals(auditStatus)) {
             throw new BusinessException(400, "待审核需求不可编辑，请等待审核结果");
         }
         // 记录是否有字段实际变更（用于幂等处理）
@@ -376,7 +392,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         // 权限校验：如果是 admin 则跳过，否则必须是制造企业且企业属于当前用户
         if (!securityUtils.isAdmin()) {
             String role = securityUtils.getCurrentUserRole();
-            if (!"manufacture".equals(role)) {
+            if (!ROLE_MANUFACTURE.equals(role)) {
                 throw new BusinessException(403, "只有制造企业可以操作需求");
             }
             Manufacture manufacture = manufactureMapper.selectById(demand.getManuId());
@@ -386,7 +402,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         }
 
         String status = demand.getStatus();
-        if (!"draft".equals(status) && !"published".equals(status)) {
+        if (!DEMAND_STATUS_DRAFT.equals(status) && !DEMAND_STATUS_PUBLISHED.equals(status)) {
             throw new BusinessException(400, "当前状态不可删除");
         }
 
@@ -423,7 +439,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         // 权限校验：如果是 admin 则跳过，否则必须是制造企业且企业属于当前用户
         if (!securityUtils.isAdmin()) {
             String role = securityUtils.getCurrentUserRole();
-            if (!"manufacture".equals(role)) {
+            if (!ROLE_MANUFACTURE.equals(role)) {
                 throw new BusinessException(403, "只有制造企业可以查看自己的需求列表");
             }
             if (!manufacture.getUserId().equals(userId)) {
