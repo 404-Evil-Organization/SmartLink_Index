@@ -239,34 +239,34 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Edit, Delete } from '@element-plus/icons-vue'
-import { getRegionIndexList, addRegionIndex, updateRegionIndex, deleteRegionIndex } from '@/api/regionIndex'
-import { createTimeConverter } from '@/composables/date'
+import { ref, reactive, onMounted, computed, watch } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { Plus, Refresh, Edit, Delete } from "@element-plus/icons-vue";
+import { getRegionIndexList, addRegionIndex, updateRegionIndex, deleteRegionIndex } from "@/api/regionIndex";
+import { createTimeConverter } from "@/composables/date";
 
 // 搜索表单
 const searchForm = reactive({
-  region: '',
+  region: "",
   year: null,
-  periodType: '',
-  periodValue: ''
-})
+  periodType: "",
+  periodValue: ""
+});
 
 // 根据周期类型动态生成周期值选项（搜索栏）
 const periodOptions = computed(() => {
-  if (searchForm.periodType === 'quarter') {
-    return [1, 2, 3, 4]
-  } else if (searchForm.periodType === 'month') {
-    return Array.from({ length: 12 }, (_, i) => i + 1)
+  if (searchForm.periodType === "quarter") {
+    return [1, 2, 3, 4];
+  } else if (searchForm.periodType === "month") {
+    return Array.from({ length: 12 }, (_, i) => i + 1);
   } else {
-    return []
+    return [];
   }
-})
+});
 
 // 表格数据
-const tableData = ref([])
-const loading = ref(false)
+const tableData = ref([]);
+const loading = ref(false);
 
 // 分页
 const pagination = reactive({
