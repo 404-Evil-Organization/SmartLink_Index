@@ -493,6 +493,12 @@
           <el-descriptions-item label="资质概述">{{
             detailDialog.data.qualification || "-"
           }}</el-descriptions-item>
+          <el-descriptions-item label="是否出海">{{
+            detailDialog.data.isAbroad === 1 ? '是' : '否'
+          }}</el-descriptions-item>
+          <el-descriptions-item label="覆盖国家">{{
+            detailDialog.data.countryCoverage || "-"
+          }}</el-descriptions-item>
           <el-descriptions-item label="审核状态">
             <el-tag :type="getAuditStatusType(detailDialog.data.auditStatus)">
               {{ getAuditStatusText(detailDialog.data.auditStatus) }}
@@ -698,6 +704,28 @@
               v-model="form.qualification"
               placeholder="请输入资质概述"
             />
+          </el-form-item>
+          <el-form-item label="是否出海" prop="isAbroad">
+            <el-radio-group v-model="form.isAbroad">
+              <el-radio :label="1">是</el-radio>
+              <el-radio :label="0">否</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="覆盖国家" prop="countryCoverage" v-if="form.isAbroad === 1">
+            <el-select
+              v-model="form.countryCoverage"
+              placeholder="请选择覆盖国家或地区"
+              style="width: 100%"
+              multiple
+              filterable
+            >
+              <el-option
+                v-for="country in countryOptions"
+                :key="country"
+                :label="country"
+                :value="country"
+              />
+            </el-select>
           </el-form-item>
         </template>
 
@@ -999,6 +1027,7 @@ import {
   getScales,
   uploadFile,
   deleteFile,
+  getCountries,
 } from "@/api/common";
 import {
   getCertList,
@@ -1059,6 +1088,7 @@ const regionOptions = ref([]);
 const scaleOptions = ref([]);
 const serviceTypeOptions = ref([]);
 const productTypeOptions = ref([]);
+const countryOptions = ref([]);
 
 // 详情弹窗
 const detailDialog = reactive({
@@ -1095,6 +1125,8 @@ const form = reactive({
   serviceType: [],
   website: "",
   qualification: "",
+  isAbroad: 0,
+  countryCoverage: [],
 });
 
 const formRef = ref(null);
@@ -1211,6 +1243,16 @@ const fetchProductTypeOptions = async () => {
   }
 };
 
+// 获取国家列表选项
+const fetchCountries = async () => {
+  try {
+    const res = await getCountries();
+    countryOptions.value = Array.isArray(res) ? res : [];
+  } catch (error) {
+    console.error("获取国家列表失败", error);
+  }
+};
+
 // 重置搜索
 const resetManuSearch = () => {
   manuSearchKeyword.value = "";
@@ -1308,6 +1350,8 @@ const openEditDialog = async (row, type) => {
       form.employeeCount = detail.employeeCount ?? null;
       form.qualification = detail.qualification || "";
       form.description = detail.description || "";
+      form.isAbroad = detail.isAbroad || 0;
+      form.countryCoverage = joinTags(detail.countryCoverage);
     }
 
     if (detail.logo) {
@@ -1692,6 +1736,8 @@ const resetFormData = () => {
   form.serviceType = [];
   form.website = "";
   form.qualification = "";
+  form.isAbroad = 0;
+  form.countryCoverage = [];
   fileList.value = [];
   // 重置 logo 相关的状态
   originalLogo.value = "";
@@ -1837,6 +1883,8 @@ const submitForm = async () => {
       establishedDate: form.establishedDate,
       employeeCount: form.employeeCount ?? null,
       qualification: form.qualification,
+      isAbroad: form.isAbroad,
+      countryCoverage: form.isAbroad === 1 ? joinTags(form.countryCoverage) : "",
     };
   }
 
@@ -1940,6 +1988,7 @@ onMounted(() => {
   fetchRegions();
   fetchServiceTypeOptions();
   fetchProductTypeOptions();
+  fetchCountries();
   if (activeTab.value === "manufacture") {
     fetchManufactureList();
   } else {

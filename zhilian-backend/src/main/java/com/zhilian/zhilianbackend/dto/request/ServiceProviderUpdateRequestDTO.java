@@ -59,4 +59,10 @@ public class ServiceProviderUpdateRequestDTO {
 
     @Schema(description = "资质概述", example = "CNAS、CMA、IEC、ISO9001")
     private String qualification;
+
+    @Schema(description = "是否提供出海服务（0否 1是）", example = "1")
+    private Integer isAbroad;
+
+    @Schema(description = "覆盖国家/地区，多个用逗号分隔", example = "欧盟,美国")
+    private String countryCoverage;
 }

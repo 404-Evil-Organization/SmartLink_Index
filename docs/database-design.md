@@ -65,6 +65,8 @@
 | audit_remark     | VARCHAR(500)                                            | 审核意见（驳回时填写）                                       |
 | audit_time       | DATETIME                                                | 审核时间                                                     |
 | audit_user_id    | BIGINT                                                  | 审核人ID，关联`user.id`                                      |
+| is_abroad        | TINYINT DEFAULT 0                                       | 是否提供出海服务（0否 1是）                                  |
+| country_coverage | VARCHAR(255)                                            | 覆盖国家/地区，多个用逗号分隔（如"欧盟,美国"）               |
 | deleted          | DATETIME DEFAULT NULL                                   | 逻辑删除时间，NULL未删除，非NULL已删除                       |
 | create_time      | DATETIME DEFAULT CURRENT_TIMESTAMP                      | 记录创建时间                                                 |
 | update_time      | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE            | 最后更新时间                                                 |
@@ -277,6 +279,21 @@
 | deleted      | DATETIME DEFAULT NULL                        | 逻辑删除时间，NULL未删除，非NULL已删除 |
 | create_time  | DATETIME DEFAULT CURRENT_TIMESTAMP           | 记录创建时间                           |
 | update_time  | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 最后更新时间                           |
+
+---
+
+#####  `country_guide`（国家准入指南）
+
+| 字段名       | 类型/约束                                    | 说明                         |
+| :----------- | :------------------------------------------- | :--------------------------- |
+| id           | BIGINT PK AUTO_INCREMENT                     | 主键                         |
+| country      | VARCHAR(50) NOT NULL                         | 国家名称（唯一）             |
+| requirements | TEXT                                         | 准入要求                     |
+| process      | TEXT                                         | 办理流程                     |
+| documents    | TEXT                                         | 所需材料（可存 JSON 或文本） |
+| deleted      | DATETIME DEFAULT NULL                        | 逻辑删除                     |
+| create_time  | DATETIME DEFAULT CURRENT_TIMESTAMP           | 创建时间                     |
+| update_time  | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 更新时间                     |
 
 ------
 

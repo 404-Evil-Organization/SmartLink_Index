@@ -76,4 +76,13 @@ public class ServiceProviderDetailVO {
 
     @Schema(description = "更新时间")
     private Date updateTime;
+
+    @Schema(description = "是否提供出海服务（0否 1是）")
+    private Integer isAbroad;
+
+    @Schema(description = "覆盖国家/地区，多个用逗号分隔")
+    private String countryCoverage;
+
+    @Schema(description = "资质证书列表")
+    private java.util.List<CertificationVO> certifications;
 }

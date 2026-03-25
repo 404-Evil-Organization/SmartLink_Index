@@ -383,5 +383,24 @@ public class CommonController {
         return Result.success(options);
     }
 
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/3/25 19:35
+     * @Param: 
+     * @Return: Result<List<String>> 包含国家列表的响应结果
+     * @Description: 获取所有国家列表，按字母排序
+    **/
+    @GetMapping("/countries")
+    @Operation(summary = "获取所有国家列表", description = "返回所有国家列表，用于出海服务覆盖国家多选")
+    public Result<List<String>> getCountries() {
+        log.info("接收获取国家列表请求");
+        
+        List<String> countries = Arrays.asList(
+            "美国","欧盟","日本","东南亚"
+        );
+                
+        log.info("返回国家列表，共 {} 个", countries.size());
+        return Result.success(countries);
+    }
 
 }

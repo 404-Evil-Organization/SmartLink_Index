@@ -303,7 +303,9 @@
         "contactPerson": "王五",
         "contactPhone": "13700137003",
         "qualification": "CNAS、CMA",
-        "auditStatus": "approved"
+        "auditStatus": "approved",
+        "isAbroad": 1,
+        "countryCoverage": "欧盟,美国"
       }
     ]
   }
@@ -342,6 +344,8 @@
     "auditStatus": "approved",
     "auditRemark": null,
     "auditTime": null,
+    "isAbroad": 1,
+    "countryCoverage": "欧盟,美国",
     "createTime": "2026-03-01 10:00:00",
     "updateTime": "2026-03-01 10:00:00",
     "certifications": [
@@ -351,7 +355,7 @@
         "certNo": "CNAS L1234",
         "expireDate": "2026-12-31"
       }
-    ]
+    ],
   }
 }
 ```
@@ -363,20 +367,22 @@
 - **请求头**: `Authorization: Bearer <token>`（需登录，且只能创建自己的服务商）
 - **请求参数**（JSON Body）:
 
-| 参数名          | 类型   | 必填 | 描述                               |
-| :-------------- | :----- | :--- | :--------------------------------- |
-| companyName     | string | 是   | 企业全称                           |
-| region          | string | 否   | 区域                               |
-| address         | string | 否   | 详细地址                           |
-| contactPerson   | string | 否   | 联系人                             |
-| contactPhone    | string | 否   | 联系电话                           |
-| serviceType     | string | 否   | 服务大类（可多选，逗号分隔或JSON） |
-| description     | string | 否   | 服务介绍                           |
-| logo            | string | 否   | Logo图片URL                        |
-| website         | string | 否   | 企业官网                           |
-| establishedDate | date   | 否   | 成立日期                           |
-| employeeCount   | int    | 否   | 员工人数                           |
-| qualification   | string | 否   | 资质概述                           |
+| 参数名          | 类型    | 必填 | 描述                               |
+| :-------------- | :------ | :--- | :--------------------------------- |
+| companyName     | string  | 是   | 企业全称                           |
+| region          | string  | 否   | 区域                               |
+| address         | string  | 否   | 详细地址                           |
+| contactPerson   | string  | 否   | 联系人                             |
+| contactPhone    | string  | 否   | 联系电话                           |
+| serviceType     | string  | 否   | 服务大类（可多选，逗号分隔或JSON） |
+| description     | string  | 否   | 服务介绍                           |
+| logo            | string  | 否   | Logo图片URL                        |
+| website         | string  | 否   | 企业官网                           |
+| establishedDate | date    | 否   | 成立日期                           |
+| employeeCount   | int     | 否   | 员工人数                           |
+| qualification   | string  | 否   | 资质概述                           |
+| isAbroad        | boolean | 否   | 是否提供出海服务，默认 false       |
+| countryCoverage | string  | 否   | 覆盖国家/地区，多个用逗号分隔      |
 
 - **返回数据**:
 
@@ -399,20 +405,22 @@
 - **路径参数**: `id` (服务商ID)
 - **请求参数**（JSON Body，全部可选，只传需要修改的字段）:
 
-| 参数名          | 类型   | 必填 | 描述                               |
-| :-------------- | :----- | :--- | :--------------------------------- |
-| companyName     | string | 否   | 企业全称                           |
-| region          | string | 否   | 区域                               |
-| address         | string | 否   | 详细地址                           |
-| contactPerson   | string | 否   | 联系人                             |
-| contactPhone    | string | 否   | 联系电话                           |
-| serviceType     | string | 否   | 服务大类（可多选，逗号分隔或JSON） |
-| description     | string | 否   | 服务介绍                           |
-| logo            | string | 否   | Logo图片URL                        |
-| website         | string | 否   | 企业官网                           |
-| establishedDate | date   | 否   | 成立日期                           |
-| employeeCount   | int    | 否   | 员工人数                           |
-| qualification   | string | 否   | 资质概述                           |
+| 参数名          | 类型    | 必填 | 描述                               |
+| :-------------- | :------ | :--- | :--------------------------------- |
+| companyName     | string  | 否   | 企业全称                           |
+| region          | string  | 否   | 区域                               |
+| address         | string  | 否   | 详细地址                           |
+| contactPerson   | string  | 否   | 联系人                             |
+| contactPhone    | string  | 否   | 联系电话                           |
+| serviceType     | string  | 否   | 服务大类（可多选，逗号分隔或JSON） |
+| description     | string  | 否   | 服务介绍                           |
+| logo            | string  | 否   | Logo图片URL                        |
+| website         | string  | 否   | 企业官网                           |
+| establishedDate | date    | 否   | 成立日期                           |
+| employeeCount   | int     | 否   | 员工人数                           |
+| qualification   | string  | 否   | 资质概述                           |
+| isAbroad        | boolean | 否   | 是否提供出海服务                   |
+| countryCoverage | string  | 否   | 覆盖国家/地区，多个用逗号分隔      |
 
 - **返回数据**:
 
@@ -797,6 +805,29 @@
   ]
 }
 ```
+
+#### 1.5.10 获取所有国家列表
+
+- **URL**: `/api/common/countries`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`
+- **请求参数**: 无
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    "美国",
+    "欧盟",
+    "日本",
+    "东南亚"
+  ]
+}
+```
+
+> **说明**：从 `country_guide` 表中查询所有未删除的国家名称，按字母排序。
 
 ---
 
@@ -1693,30 +1724,10 @@
 | 参数名      | 类型   | 必填 | 描述                         |
 | :---------- | :----- | :--- | :--------------------------- |
 | serviceType | string | 否   | 服务类型筛选（如"国际认证"） |
+| region      | string | 否   | 区域筛选（如“深圳”）         |
+| page        | int    | 否   | 页码，默认1                  |
+| size        | int    | 否   | 每页条数，默认10             |
 
-- **返回数据**:
-
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": [
-    {
-      "serviceId": 2001,
-      "companyName": "华测检测",
-      "serviceType": "国际认证",
-      "description": "提供CE、FCC、UL等认证服务",
-      "countryCoverage": ["欧盟", "美国", "日本"]
-    }
-  ]
-}
-```
-
-### 6.2 获取特定国家准入指南
-
-- **URL**: `/api/abroad/country/{country}`
-- **Method**: `GET`
-- **路径参数**: `country` (国家，如 "美国")
 - **返回数据**:
 
 ```json
@@ -1724,24 +1735,36 @@
   "code": 200,
   "message": "success",
   "data": {
-    "country": "美国",
-    "requirements": "FCC认证、UL认证...",
-    "process": "1.提交申请 2.测试 3.发证",
-    "documents": ["产品说明书", "电路图"]
+    "total": 50,
+    "records": [
+      {
+        "id": 2001,
+        "companyName": "华测检测",
+        "serviceType": "国际认证",
+        "description": "提供CE、FCC、UL等认证服务",
+        "region": "深圳",
+        "contactPerson": "王五",
+        "contactPhone": "13700137003",
+        "logo": "https://...",
+        "isAbroad": 1,
+        "countryCoverage": ["欧盟", "美国", "日本"]
+      }
+    ]
   }
 }
 ```
 
-### 6.3 获取成功案例
+> **说明**：仅返回 `audit_status='approved'` 且 `is_abroad=1` 的服务商。`countryCoverage` 前端展示时解析为数组。
 
-- **URL**: `/api/abroad/cases`
+### 6.2 获取特定国家准入指南
+
+- **URL**: `/api/abroad/country/{country}`
 - **Method**: `GET`
-- **请求参数**（可选）:
+- **路径参数**: 
 
-| 参数名      | 类型   | 必填 | 描述     |
-| :---------- | :----- | :--- | :------- |
-| country     | string | 否   | 目标国家 |
-| serviceType | string | 否   | 服务类型 |
+| 参数名  | 类型   | 必填 | 描述               |
+| :------ | :----- | :--- | :----------------- |
+| country | string | 是   | 国家名称，如“美国” |
 
 - **返回数据**:
 
@@ -1749,19 +1772,54 @@
 {
   "code": 200,
   "message": "success",
-  "data": [
-    {
-      "id": 7001,
-      "title": "某电子公司CE认证成功案例",
-      "companyName": "东莞电子",
-      "companyType": "manufacture",
-      "country": "欧盟",
-      "serviceType": "CE认证",
-      "description": "通过华测检测服务...",
-      "coverImage": "https://...",
-      "publishTime": "2026-02-10"
-    }
-  ]
+  "data": {
+    "id": 1,
+    "country": "美国",
+    "requirements": "FCC认证、UL认证，需提供产品测试报告...",
+    "process": "1.提交申请 → 2.产品测试 → 3.发证",
+    "documents": ["产品说明书", "电路图", "测试申请表"]
+  }
+}
+```
+
+> **说明**：若国家不存在或已删除，返回 404。
+
+### 6.3 获取成功案例
+
+- **URL**: `/api/abroad/cases`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（可选）
+- **请求参数**（Query）:
+
+| 参数名      | 类型   | 必填 | 描述             |
+| :---------- | :----- | :--- | :--------------- |
+| country     | string | 否   | 目标国家         |
+| serviceType | string | 否   | 服务类型         |
+| page        | int    | 否   | 页码，默认1      |
+| size        | int    | 否   | 每页条数，默认10 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 20,
+    "records": [
+      {
+        "id": 7001,
+        "title": "某电子公司CE认证成功案例",
+        "companyName": "东莞电子",
+        "companyType": "manufacture",
+        "country": "欧盟",
+        "serviceType": "CE认证",
+        "description": "通过华测检测服务，顺利获得CE认证，产品成功进入欧洲市场。",
+        "coverImage": "https://...",
+        "publishTime": "2026-02-10"
+      }
+    ]
+  }
 }
 ```
 
@@ -2319,9 +2377,126 @@
 
 ---
 
-### 8.5 操作日志接口
+### 8.5 国家指南管理接口
 
-#### 8.5.1 获取操作日志列表
+#### 8.5.1 获取国家指南列表（管理员）
+
+- **URL**: `/api/admin/country-guide/list`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **请求参数**（Query）:
+
+| 参数名  | 类型   | 必填 | 描述                 |
+| :------ | :----- | :--- | :------------------- |
+| page    | int    | 否   | 页码，默认1          |
+| size    | int    | 否   | 每页条数，默认10     |
+| country | string | 否   | 国家名称（模糊匹配） |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 10,
+    "records": [
+      {
+        "id": 1,
+        "country": "美国",
+        "requirements": "FCC认证、UL认证...",
+        "process": "1.提交申请 → 2.产品测试 → 3.发证",
+        "documents": "[\"产品说明书\",\"电路图\"]",
+        "createTime": "2026-03-25 10:00:00",
+        "updateTime": "2026-03-25 10:00:00"
+      }
+    ]
+  }
+}
+```
+
+#### 8.5.2 新增国家指南
+
+- **URL**: `/api/admin/country-guide`
+- **Method**: `POST`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **请求参数**（JSON Body）:
+
+| 参数名       | 类型   | 必填 | 描述                         |
+| :----------- | :----- | :--- | :--------------------------- |
+| country      | string | 是   | 国家名称（唯一）             |
+| requirements | string | 否   | 准入要求                     |
+| process      | string | 否   | 办理流程                     |
+| documents    | string | 否   | 所需材料（可存 JSON 或文本） |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 5
+  }
+}
+```
+
+#### 8.5.3 修改国家指南
+
+- **URL**: `/api/admin/country-guide/{id}`
+- **Method**: `PUT`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 记录ID |
+
+- **请求参数**（JSON Body，全部可选）:
+
+| 参数名       | 类型   | 必填 | 描述     |
+| :----------- | :----- | :--- | :------- |
+| country      | string | 否   | 国家名称 |
+| requirements | string | 否   | 准入要求 |
+| process      | string | 否   | 办理流程 |
+| documents    | string | 否   | 所需材料 |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+#### 8.5.4 删除国家指南
+
+- **URL**: `/api/admin/country-guide/{id}`
+- **Method**: `DELETE`
+- **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 记录ID |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
+### 8.6 操作日志接口
+
+#### 8.6.1 获取操作日志列表
 
 - **URL**: `/api/admin/log/list`
 - **Method**: `GET`
@@ -2335,7 +2510,7 @@
 | username  | string | 否   | 操作人用户名（模糊匹配）           |
 | operation | string | 否   | 操作类型（如“用户登录”）           |
 | startTime | string | 否   | 开始时间，格式 yyyy-MM-dd HH:mm:ss |
-| endTime   | string | 否   | 结束时间，格式同上                 |
+| endTime   | string | 否   | 结束时间，格式同上0                |
 
 - **返回数据**:
 
@@ -2371,9 +2546,9 @@
 }
 ```
 
-### 8.6 企业审核接口
+### 8.7 企业审核接口
 
-#### 8.6.1 获取待审核企业列表
+#### 8.7.1 获取待审核企业列表
 
 - **URL**: `/api/admin/enterprise/pending`
 - **Method**: `GET`
@@ -2419,7 +2594,7 @@
 }
 ```
 
-#### 8.6.2 审核企业
+#### 8.7.2 审核企业
 
 - **URL**: `/api/admin/enterprise/approve/{id}`
 - **Method**: `POST`
