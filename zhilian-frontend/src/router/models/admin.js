@@ -9,4 +9,9 @@ export default [
     name: "UserManage",
     component: () => import("@/views/admin/UserManage.vue"),
   },
+  {
+  path: "admin/log",
+  name: "LogList",
+  component: () => import("@/views/admin/LogList.vue"),
+  },
 ];

@@ -1,5 +1,5 @@
 // mock/admin.js
-// 模拟用户管理相关接口
+// 模拟用户管理及操作日志相关接口
 
 // 模拟用户数据
 let userList = [
@@ -10,7 +10,7 @@ let userList = [
     phone: "13800138001",
     email: "tech@example.com",
     status: 1,
-    createTime: "2026-03-02T09:00:00Z",      // ISO 8601 格式（UTC）
+    createTime: "2026-03-02T09:00:00Z",
   },
   {
     id: 1002,
@@ -41,11 +41,65 @@ let userList = [
   },
 ];
 
+// ---------- 操作日志数据 ----------
+let logList = [
+  {
+    id: 10001,
+    userId: 1004,
+    username: "admin_user",
+    operation: "用户登录",
+    params: "{}",
+    result: "成功",
+    ip: "192.168.1.1",
+    createTime: "2026-03-20 09:30:00",
+  },
+  {
+    id: 10002,
+    userId: 1004,
+    username: "admin_user",
+    operation: "审核企业",
+    params: '{"type":"manufacture","status":"approved"}',
+    result: "成功",
+    ip: "192.168.1.1",
+    createTime: "2026-03-20 10:15:00",
+  },
+  {
+    id: 10003,
+    userId: 1004,
+    username: "admin_user",
+    operation: "重置密码",
+    params: '{"userId":1002}',
+    result: "成功",
+    ip: "192.168.1.1",
+    createTime: "2026-03-21 11:00:00",
+  },
+  {
+    id: 10004,
+    userId: 1004,
+    username: "admin_user",
+    operation: "新增指数",
+    params: '{"region":"珠海","year":2026,"quarter":2}',
+    result: "成功",
+    ip: "192.168.1.1",
+    createTime: "2026-03-22 14:20:00",
+  },
+  {
+    id: 10005,
+    userId: 1004,
+    username: "admin_user",
+    operation: "禁用用户",
+    params: '{"userId":1003}',
+    result: "成功",
+    ip: "192.168.1.1",
+    createTime: "2026-03-23 16:45:00",
+  },
+];
+
 export default [
   // 1. 获取用户列表（分页）
   {
-    url: '/api/admin/user/list',
-    method: 'get',
+    url: "/api/admin/user/list",
+    method: "get",
     response: (req) => {
       const { query } = req;
       const { page = 1, size = 10, role, status, keyword } = query;
@@ -55,7 +109,7 @@ export default [
       if (role) {
         filtered = filtered.filter((u) => u.role === role);
       }
-      if (status !== undefined && status !== '') {
+      if (status !== undefined && status !== "") {
         filtered = filtered.filter((u) => u.status === Number(status));
       }
       if (keyword) {
@@ -70,7 +124,7 @@ export default [
 
       return {
         code: 200,
-        message: 'success',
+        message: "success",
         data: {
           total: filtered.length,
           records,
@@ -82,26 +136,25 @@ export default [
   // 2. 修改用户状态（启用/禁用）使用正则匹配动态ID
   {
     url: /\/api\/admin\/user\/status\/(\d+)/,
-    method: 'put',
+    method: "put",
     response: (req) => {
-      // 从 URL 中提取 ID
       const match = req.url.match(/\/api\/admin\/user\/status\/(\d+)/);
       const id = match ? parseInt(match[1]) : null;
       const { status } = req.body;
-      console.log('[Mock] 状态修改请求 ID:', id, '状态:', status);
+      console.log("[Mock] 状态修改请求 ID:", id, "状态:", status);
 
       const index = userList.findIndex((u) => u.id === id);
       if (index !== -1) {
         userList[index].status = status;
         return {
           code: 200,
-          message: 'success',
+          message: "success",
           data: null,
         };
       }
       return {
         code: 404,
-        message: '用户不存在',
+        message: "用户不存在",
         data: null,
       };
     },
@@ -110,25 +163,60 @@ export default [
   // 3. 重置用户密码 使用正则匹配动态ID
   {
     url: /\/api\/admin\/user\/reset-password\/(\d+)/,
-    method: 'post',
+    method: "post",
     response: (req) => {
       const match = req.url.match(/\/api\/admin\/user\/reset-password\/(\d+)/);
       const id = match ? parseInt(match[1]) : null;
-      console.log('[Mock] 重置密码请求 ID:', id);
+      console.log("[Mock] 重置密码请求 ID:", id);
 
       const user = userList.find((u) => u.id === id);
       if (user) {
         const newPassword = Math.random().toString(36).slice(-8);
         return {
           code: 200,
-          message: 'success',
+          message: "success",
           data: { newPassword },
         };
       }
       return {
         code: 404,
-        message: '用户不存在',
+        message: "用户不存在",
         data: null,
+      };
+    },
+  },
+
+  // ---------- 操作日志接口 ----------
+  {
+    url: "/api/admin/log/list",
+    method: "get",
+    response: ({ query }) => {
+      const { page = 1, size = 10, username, operation, startTime, endTime } = query;
+      let filtered = [...logList];
+
+      if (username) {
+        filtered = filtered.filter((item) => item.username.includes(username));
+      }
+      if (operation) {
+        filtered = filtered.filter((item) => item.operation === operation);
+      }
+      if (startTime && endTime) {
+        filtered = filtered.filter((item) => {
+          const itemDate = item.createTime.split(" ")[0]; // 取 YYYY-MM-DD
+          return itemDate >= startTime && itemDate <= endTime;
+        });
+      }
+
+      const start = (page - 1) * size;
+      const end = start + parseInt(size);
+      const records = filtered.slice(start, end);
+
+      return {
+        code: 200,
+        data: {
+          total: filtered.length,
+          records,
+        },
       };
     },
   },

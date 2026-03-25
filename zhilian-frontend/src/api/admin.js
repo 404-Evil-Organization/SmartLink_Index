@@ -94,3 +94,22 @@ export function getUserDetail(id) {
     method: "get",
   });
 }
+
+/**
+ * 获取操作日志列表
+ * @param {Object} params - 查询参数
+ * @param {number} params.page - 页码
+ * @param {number} params.size - 每页条数
+ * @param {string} params.username - 操作人（模糊匹配）
+ * @param {string} params.operation - 操作类型
+ * @param {string} params.startTime - 开始日期，格式 YYYY-MM-DD
+ * @param {string} params.endTime - 结束日期，格式 YYYY-MM-DD
+ * @returns {Promise<{ total: number, records: Array }>}
+ */
+export function getLogList(params) {
+  return request({
+    url: '/admin/log/list',
+    method: 'get',
+    params
+  })
+}
