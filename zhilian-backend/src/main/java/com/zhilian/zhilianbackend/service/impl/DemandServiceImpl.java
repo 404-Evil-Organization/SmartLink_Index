@@ -353,27 +353,30 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
 
         // 处理标签更新（先删后增）
         if (request.getTags() != null) {
-            // 删除旧标签关联（逻辑删除）
+            // 1. 校验 tags 列表中的元素不能为 null
+            if (request.getTags().stream().anyMatch(Objects::isNull)) {
+                throw new BusinessException(400, "标签ID不能包含null值");
+            }
+
+            // 2. 删除旧标签关联（逻辑删除）
             LambdaUpdateWrapper<DemandTag> deleteWrapper = new LambdaUpdateWrapper<>();
             deleteWrapper.eq(DemandTag::getDemandId, id)
                     .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime());
             demandTagMapper.delete(deleteWrapper);
 
-            // 插入新标签
+            // 3. 插入新标签（去重 + 存在性校验）
             if (!CollectionUtils.isEmpty(request.getTags())) {
                 // 先对标签 ID 进行空值过滤与去重，避免校验误判和唯一键冲突
                 List<Long> distinctTagIds = request.getTags().stream()
-                        .filter(Objects::nonNull)
+                        .filter(Objects::nonNull)  // 实际此处已无 null，但保留过滤以防万一
                         .distinct()
                         .collect(Collectors.toList());
-                // 去重后如果没有有效标签，则无需继续校验和插入
+
                 if (!distinctTagIds.isEmpty()) {
                     // 校验标签是否存在（基于去重后的标签 ID）
                     List<Tag> tags = tagService.listByIds(distinctTagIds);
                     if (tags.size() != distinctTagIds.size()) {
-                        Set<Long> existingIds = tags.stream()
-                                .map(Tag::getId)
-                                .collect(Collectors.toSet());
+                        Set<Long> existingIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
                         List<Long> missingIds = distinctTagIds.stream()
                                 .filter(tagId -> !existingIds.contains(tagId))
                                 .collect(Collectors.toList());
