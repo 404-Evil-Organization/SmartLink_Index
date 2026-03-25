@@ -134,31 +134,30 @@
           />
         </el-form-item>
         <el-form-item label="封面图片">
+          <!-- 已上传图片预览区 -->
+          <div v-if="form.coverImage" class="cover-preview" @click="previewImage(form.coverImage)">
+            <el-image
+              :src="form.coverImage"
+              fit="cover"
+              style="width: 100px; height: 100px; border-radius: 4px; cursor: pointer;"
+              :preview-src-list="[form.coverImage]"
+              hide-on-click-modal
+            />
+            <div class="cover-hint">点击预览</div>
+          </div>
+          <!-- 上传组件（不显示列表） -->
           <el-upload
             class="cover-upload"
-            drag
             :action="uploadUrl"
             :headers="uploadHeaders"
             :on-success="handleUploadSuccess"
             :on-error="handleUploadError"
             :before-upload="beforeUpload"
-            :file-list="fileList"
-            list-type="picture"
-            :limit="1"
+            :show-file-list="false"
           >
-            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-            <div class="el-upload__text">
-              将文件拖到此处，或<em>点击上传</em>
-            </div>
-            <template #tip>
-              <div class="el-upload__tip">
-                支持 jpg/png 格式，大小不超过 2MB
-              </div>
-            </template>
+            <el-button type="primary" plain>上传新图片</el-button>
           </el-upload>
-          <div v-if="form.coverImage" class="cover-preview">
-            <img :src="form.coverImage" style="max-height: 100px" />
-          </div>
+          <div class="el-upload__tip">支持 jpg/png 格式，大小不超过 2MB</div>
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
@@ -223,12 +222,11 @@ const form = reactive({
 
 const formRef = ref(null)
 
-// 文件上传相关：使用环境变量中的后端地址，避免写死为当前域名下的 /api
-const uploadUrl = `${import.meta.env.VITE_API_BASE_URL}/common/upload`
+// 文件上传相关
+const uploadUrl = '/api/common/upload'
 const uploadHeaders = {
   Authorization: `Bearer ${userStore.token}`
 }
-const fileList = ref([])
 
 // 表单校验规则
 const rules = {
@@ -240,7 +238,7 @@ const rules = {
   description: [{ required: true, message: '请输入案例详情', trigger: 'blur' }]
 }
 
-// 日期格式化函数（兼容空格格式和 ISO 格式）
+// 日期格式化函数
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '-'
   let normalized = dateStr
@@ -251,6 +249,12 @@ const formatDateTime = (dateStr) => {
   const date = converter.toDate()
   if (!date) return '-'
   return converter.toLocalYMDHMS()
+}
+
+// 预览图片
+const previewImage = (url) => {
+  // 使用 el-image 的预览功能已自带，这里仅作占位
+  // 实际点击时 el-image 的 preview-src-list 会自动弹出预览
 }
 
 // 获取列表
@@ -311,7 +315,6 @@ const resetDialog = () => {
     coverImage: '',
     status: 1
   })
-  fileList.value = []
   dialog.isEdit = false
   dialog.editId = null
 }
@@ -340,9 +343,6 @@ const openEditDialog = (row) => {
     coverImage: row.coverImage || '',
     status: row.status
   })
-  if (row.coverImage) {
-    fileList.value = [{ name: '封面', url: row.coverImage }]
-  }
   dialog.visible = true
 }
 
@@ -350,7 +350,6 @@ const openEditDialog = (row) => {
 const handleUploadSuccess = (response, file) => {
   if (response.code === 200) {
     form.coverImage = response.data.fileUrl
-    fileList.value = [{ name: file.name, url: response.data.fileUrl }]
     ElMessage.success('上传成功')
   } else {
     ElMessage.error(response.message || '上传失败')
@@ -397,7 +396,6 @@ const submitForm = async () => {
     fetchList()
   } catch (error) {
     console.error('提交失败', error)
-    // 错误提示由拦截器统一处理，不再重复
   }
 }
 
@@ -422,6 +420,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 样式与之前相同，新增封面预览样式 */
 .abroad-case-manage {
   padding: 24px;
   background-color: #f0f2f5;
@@ -540,19 +539,37 @@ onMounted(() => {
 
 /* 封面上传样式 */
 .cover-upload {
-  width: 100%;
+  margin-top: 12px;
 }
 .cover-preview {
-  margin-top: 12px;
-  text-align: center;
+  display: inline-block;
+  position: relative;
+  margin-bottom: 12px;
 }
-.cover-preview img {
-  max-width: 100%;
-  border-radius: 4px;
-  border: 1px solid #dcdfe6;
+.cover-preview .cover-hint {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+  border-radius: 0 0 4px 4px;
+  padding: 2px 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.cover-preview:hover .cover-hint {
+  opacity: 1;
+}
+.el-upload__tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
 }
 
-/* 响应式调整：小屏幕时搜索项垂直排列 */
+/* 响应式调整 */
 @media (max-width: 768px) {
   .search-bar .el-row {
     flex-direction: column;
