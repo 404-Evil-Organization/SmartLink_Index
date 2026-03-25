@@ -96,7 +96,7 @@ CREATE TABLE `service_provider`
     KEY                `idx_audit_status` (`audit_status`),
     KEY                `idx_deleted` (`deleted`),
     KEY                `idx_audit_user_id` (`audit_user_id`),
-    KEY                `idx_is_abroad` (`is_abroad`)
+    KEY                `idx_is_abroad` (`is_abroad`),
     CONSTRAINT `fk_service_provider_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_service_provider_audit_user` FOREIGN KEY (`audit_user_id`) REFERENCES `user` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务商表';
@@ -404,7 +404,7 @@ CREATE TABLE `country_guide`
     `requirements` TEXT COMMENT '准入要求',
     `process`      TEXT COMMENT '办理流程',
     `documents`    TEXT COMMENT '所需材料（可存JSON或文本）',
-    `deleted`      DATETIME DEFAULT NULL COMMENT '逻辑删除时间，NULL未删除，非NULL已删除',
+    `deleted`      DATETIME NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '逻辑删除时间，''1970-01-01 00:00:00'' 表示未删除，其他时间表示已删除',
     `create_time`  DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),

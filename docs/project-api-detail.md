@@ -355,7 +355,7 @@
         "certNo": "CNAS L1234",
         "expireDate": "2026-12-31"
       }
-    ],
+    ]
   }
 }
 ```
@@ -367,22 +367,22 @@
 - **请求头**: `Authorization: Bearer <token>`（需登录，且只能创建自己的服务商）
 - **请求参数**（JSON Body）:
 
-| 参数名          | 类型    | 必填 | 描述                               |
-| :-------------- | :------ | :--- | :--------------------------------- |
-| companyName     | string  | 是   | 企业全称                           |
-| region          | string  | 否   | 区域                               |
-| address         | string  | 否   | 详细地址                           |
-| contactPerson   | string  | 否   | 联系人                             |
-| contactPhone    | string  | 否   | 联系电话                           |
-| serviceType     | string  | 否   | 服务大类（可多选，逗号分隔或JSON） |
-| description     | string  | 否   | 服务介绍                           |
-| logo            | string  | 否   | Logo图片URL                        |
-| website         | string  | 否   | 企业官网                           |
-| establishedDate | date    | 否   | 成立日期                           |
-| employeeCount   | int     | 否   | 员工人数                           |
-| qualification   | string  | 否   | 资质概述                           |
-| isAbroad        | boolean | 否   | 是否提供出海服务，默认 false       |
-| countryCoverage | string  | 否   | 覆盖国家/地区，多个用逗号分隔      |
+| 参数名          | 类型   | 必填 | 描述                                  |
+| :-------------- | :----- | :--- | :------------------------------------ |
+| companyName     | string | 是   | 企业全称                              |
+| region          | string | 否   | 区域                                  |
+| address         | string | 否   | 详细地址                              |
+| contactPerson   | string | 否   | 联系人                                |
+| contactPhone    | string | 否   | 联系电话                              |
+| serviceType     | string | 否   | 服务大类（可多选，逗号分隔或JSON）    |
+| description     | string | 否   | 服务介绍                              |
+| logo            | string | 否   | Logo图片URL                           |
+| website         | string | 否   | 企业官网                              |
+| establishedDate | date   | 否   | 成立日期                              |
+| employeeCount   | int    | 否   | 员工人数                              |
+| qualification   | string | 否   | 资质概述                              |
+| isAbroad        | int    | 否   | 是否提供出海服务，0-否 / 1-是，默认 0 |
+| countryCoverage | string | 否   | 覆盖国家/地区，多个用逗号分隔         |
 
 - **返回数据**:
 
@@ -405,22 +405,22 @@
 - **路径参数**: `id` (服务商ID)
 - **请求参数**（JSON Body，全部可选，只传需要修改的字段）:
 
-| 参数名          | 类型    | 必填 | 描述                               |
-| :-------------- | :------ | :--- | :--------------------------------- |
-| companyName     | string  | 否   | 企业全称                           |
-| region          | string  | 否   | 区域                               |
-| address         | string  | 否   | 详细地址                           |
-| contactPerson   | string  | 否   | 联系人                             |
-| contactPhone    | string  | 否   | 联系电话                           |
-| serviceType     | string  | 否   | 服务大类（可多选，逗号分隔或JSON） |
-| description     | string  | 否   | 服务介绍                           |
-| logo            | string  | 否   | Logo图片URL                        |
-| website         | string  | 否   | 企业官网                           |
-| establishedDate | date    | 否   | 成立日期                           |
-| employeeCount   | int     | 否   | 员工人数                           |
-| qualification   | string  | 否   | 资质概述                           |
-| isAbroad        | boolean | 否   | 是否提供出海服务                   |
-| countryCoverage | string  | 否   | 覆盖国家/地区，多个用逗号分隔      |
+| 参数名          | 类型   | 必填 | 描述                               |
+| :-------------- | :----- | :--- | :--------------------------------- |
+| companyName     | string | 否   | 企业全称                           |
+| region          | string | 否   | 区域                               |
+| address         | string | 否   | 详细地址                           |
+| contactPerson   | string | 否   | 联系人                             |
+| contactPhone    | string | 否   | 联系电话                           |
+| serviceType     | string | 否   | 服务大类（可多选，逗号分隔或JSON） |
+| description     | string | 否   | 服务介绍                           |
+| logo            | string | 否   | Logo图片URL                        |
+| website         | string | 否   | 企业官网                           |
+| establishedDate | date   | 否   | 成立日期                           |
+| employeeCount   | int    | 否   | 员工人数                           |
+| qualification   | string | 否   | 资质概述                           |
+| isAbroad        | int    | 否   | 是否提供出海服务                   |
+| countryCoverage | string | 否   | 覆盖国家/地区，多个用逗号分隔      |
 
 - **返回数据**:
 

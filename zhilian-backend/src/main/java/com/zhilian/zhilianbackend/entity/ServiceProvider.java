@@ -135,7 +135,7 @@ public class ServiceProvider implements Serializable {
      * 是否提供出海服务（0否 1是）
      */
     @TableField("is_abroad")
-    private Integer isAbroad;
+    private Byte isAbroad;
 
     /**
      * 覆盖国家/地区，多个用逗号分隔（如"欧盟,美国"）
