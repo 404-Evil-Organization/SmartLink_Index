@@ -63,15 +63,15 @@ public class OperLogController {
         }
 
         // 分页参数校验
+        // page 仅做下限校验，允许请求任意大于等于 1 的页码，避免“请求第 101 页却返回第 10 页”的错误行为
         if (page == null || page < 1)  {
             page = 1;
-        } else if (page > 100) {
-            page = 10;
         }
+        // size 做上下限校验，默认 10，最大限制为 100
         if (size == null || size < 1) {
             size = 10;
         } else if (size > 100) {
-            size = 10;
+            size = 100;
         }
 
         // 时间范围合法性校验

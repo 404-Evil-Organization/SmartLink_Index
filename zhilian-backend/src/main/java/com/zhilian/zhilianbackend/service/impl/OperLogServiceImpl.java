@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * @Author: xiaodengyou
@@ -71,13 +70,8 @@ public class OperLogServiceImpl extends ServiceImpl<OperLogMapper, OperLog> impl
         // 执行分页查询
         IPage<OperLog> entityPage = this.baseMapper.selectPage(pageParam, wrapper);
 
-        // 转换为 VO 分页对象
-        Page<OperLogVO> voPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
-        voPage.setRecords(entityPage.getRecords().stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList()));
-
-        return voPage;
+        // 使用 convert 方法将实体转换为 VO，保持分页元信息不变
+        return entityPage.convert(this::convertToVO);
     }
 
     /**
