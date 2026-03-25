@@ -599,9 +599,14 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         }
 
         // 如果修改了区域、年份、季度，需要校验新组合是否唯一
-        if (request.getRegion() != null && !request.getRegion().equals(existing.getRegion())
-                || request.getYear() != null && request.getYear().intValue() != existing.getYear().intValue()
-                || request.getQuarter() != null && request.getQuarter().intValue() != existing.getPeriodValue().intValue()) {
+        // 通过中间布尔变量明确表达每个维度是否发生变化，避免依赖 && / || 的运算符优先级导致歧义
+        boolean regionChanged = request.getRegion() != null
+                && !request.getRegion().equals(existing.getRegion());
+        boolean yearChanged = request.getYear() != null
+                && request.getYear().intValue() != existing.getYear().intValue();
+        boolean quarterChanged = request.getQuarter() != null
+                && request.getQuarter().intValue() != existing.getPeriodValue().intValue();
+        if (regionChanged || yearChanged || quarterChanged) {
 
             String newRegion = request.getRegion() != null ? request.getRegion() : existing.getRegion();
             Short newYear = request.getYear() != null ? request.getYear().shortValue() : existing.getYear();
