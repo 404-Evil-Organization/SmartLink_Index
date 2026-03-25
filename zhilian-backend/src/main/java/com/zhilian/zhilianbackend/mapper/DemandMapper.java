@@ -74,9 +74,11 @@ public interface DemandMapper extends BaseMapper<Demand> {
      * @Author: xiaodengyou
      * @Date: 2026/3/25
      * @Param: id 需求ID
+     * @Param: notDeletedTime 逻辑删除时间标记（仅锁定未逻辑删除的记录）
      * @Return: 需求实体（带行锁）
-     * @Description: 使用行锁查询需求，用于防止并发接单
+     * @Description: 使用行锁查询需求，用于防止并发接单；仅对未逻辑删除的需求加锁
      */
-    @Select("SELECT * FROM demand WHERE id = #{id} FOR UPDATE")
-    Demand selectForUpdateById(@Param("id") Long id);
+    @Select("SELECT * FROM demand WHERE id = #{id} AND deleted = #{notDeletedTime} FOR UPDATE")
+    Demand selectForUpdateById(@Param("id") Long id,
+                               @Param("notDeletedTime") LocalDateTime notDeletedTime);
 }

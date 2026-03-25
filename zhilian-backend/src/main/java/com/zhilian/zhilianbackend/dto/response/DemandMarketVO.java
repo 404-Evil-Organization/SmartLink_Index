@@ -6,10 +6,14 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
+/**
+ * @Author: xiaodengyou
+ * @Date: 2026/3/25
+ * @Description: 市场需求列表项视图对象
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -19,8 +23,8 @@ public class DemandMarketVO {
     private String title;
     private String description;
     private BigDecimal expectedBudget;
-    private LocalDate deadline;
-    private LocalDateTime createTime;
+    private Date deadline;          // 原 LocalDate -> Date
+    private Date createTime;        // 原 LocalDateTime -> Date
     private ManufactureListVO manufacture;
     private List<TagResponse> tags;
 }

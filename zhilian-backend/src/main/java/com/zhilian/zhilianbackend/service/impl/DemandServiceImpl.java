@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,7 +38,8 @@ public class DemandServiceImpl implements DemandService {
     private final ServiceProviderMapper serviceProviderMapper;
     private final CooperationMapper cooperationMapper;
 
-    private final LocalDateTime notDeletedTime = DateConstants.getNotDeletedLocalDateTime();
+    // 使用 java.util.Date 类型，与数据库 deleted 字段保持一致（用于 LambdaQueryWrapper）
+    private final Date notDeletedTime = DateConstants.getNotDeletedTime();
 
     /**
      * @Author: xiaodengyou
@@ -65,12 +65,17 @@ public class DemandServiceImpl implements DemandService {
         Page<DemandMarketVO> pageParam = new Page<>(page, size);
         IPage<DemandMarketVO> iPage = demandMapper.selectMarketDemands(
                 pageParam, keyword, tagIds, budgetMin, budgetMax,
-                deadlineStart, deadlineEnd, notDeletedTime
+                deadlineStart, deadlineEnd, DateConstants.getNotDeletedLocalDateTime()
         );
 
         List<DemandMarketVO> records = iPage.getRecords();
         if (records.isEmpty()) {
             return PageResult.from(iPage);
+        }
+
+        // 初始化 tags 字段为空列表，避免返回 null
+        for (DemandMarketVO vo : records) {
+            vo.setTags(new ArrayList<>());
         }
 
         // 批量查询标签
@@ -103,9 +108,9 @@ public class DemandServiceImpl implements DemandService {
                 }
             }
 
-            // 设置标签
+            // 设置标签（已有初始空列表，覆盖即可）
             for (DemandMarketVO vo : records) {
-                vo.setTags(demandTagMap.getOrDefault(vo.getId(), Collections.emptyList()));
+                vo.setTags(demandTagMap.getOrDefault(vo.getId(), new ArrayList<>()));
             }
         }
 
@@ -136,10 +141,10 @@ public class DemandServiceImpl implements DemandService {
             throw new BusinessException(403, "服务商企业未审核通过，无法接取需求");
         }
 
-        // 2. 行锁获取需求
-        Demand demand = demandMapper.selectForUpdateById(demandId);
+        // 2. 行锁获取需求（SQL 已过滤逻辑删除）
+        Demand demand = demandMapper.selectForUpdateById(demandId, DateConstants.getNotDeletedLocalDateTime());
         if (demand == null) {
-            throw new BusinessException(404, "需求不存在");
+            throw new BusinessException(404, "需求不存在或已被删除");
         }
         if (!"published".equals(demand.getStatus())) {
             throw new BusinessException(409, "需求状态不可接取");
@@ -165,7 +170,7 @@ public class DemandServiceImpl implements DemandService {
         cooperation.setAmount(demand.getExpectedBudget());
         cooperation.setDescription("通过接取需求建立合作");
         cooperation.setStatus("ongoing");
-        cooperation.setDeleted(DateConstants.getNotDeletedTime());
+        cooperation.setDeleted(notDeletedTime);
         cooperation.setCreateTime(new Date());
         cooperation.setUpdateTime(new Date());
 

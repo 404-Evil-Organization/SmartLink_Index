@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Author: xiaodengyou
@@ -61,21 +63,40 @@ public class DemandController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deadlineStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate deadlineEnd) {
 
+        // 分页参数合法性校验与范围限制，防止 page/size 为 0、负数或过大导致分页异常或一次性返回过多数据
+        if (page == null || page < 1) {
+            log.warn("收到非法分页参数 page: {}，已重置为 1", page);
+            page = 1;
+        }
+        if (size == null || size <= 0) {
+            log.warn("收到非法分页参数 size: {}，已重置为默认值 10", size);
+            size = 10;
+        }
+        // 可以根据项目统一规范调整最大分页大小，这里以 100 作为示例上限
+        int maxPageSize = 100;
+        if (size > maxPageSize) {
+            log.warn("收到超大分页参数 size: {}，已限制为最大值 {}", size, maxPageSize);
+            size = maxPageSize;
+        }
+
         // 权限校验：服务商或管理员
         String role = securityUtils.getCurrentUserRole();
         if (!"service".equals(role) && !securityUtils.isAdmin()) {
             throw new BusinessException(403, "无权限访问");
         }
 
-        // 解析标签ID列表
+        // 解析标签ID列表（支持带空格、尾逗号等格式）
         List<Long> tagIdList = null;
         if (tagIds != null && !tagIds.isEmpty()) {
             try {
-                tagIdList = java.util.Arrays.stream(tagIds.split(","))
-                        .map(Long::parseLong)
-                        .toList();
+                tagIdList = Arrays.stream(tagIds.split(","))
+                        .map(String::trim)                 // 去除前后空格
+                        .filter(s -> !s.isEmpty())         // 过滤空字符串（如 "1,2," 中的最后一个空串）
+                        .map(Long::parseLong)              // 转换为 Long
+                        .distinct()                        // 去重
+                        .collect(Collectors.toList());
             } catch (NumberFormatException e) {
-                throw new BusinessException(400, "标签ID格式错误");
+                throw new BusinessException(400, "标签ID格式错误，请使用数字ID，用英文逗号分隔");
             }
         }
 
