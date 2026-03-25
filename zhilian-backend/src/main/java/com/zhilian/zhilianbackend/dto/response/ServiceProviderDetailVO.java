@@ -78,7 +78,7 @@ public class ServiceProviderDetailVO {
     private Date updateTime;
 
     @Schema(description = "是否提供出海服务（0否 1是）")
-    private Integer isAbroad;
+    private Byte isAbroad;
 
     @Schema(description = "覆盖国家/地区，多个用逗号分隔")
     private String countryCoverage;

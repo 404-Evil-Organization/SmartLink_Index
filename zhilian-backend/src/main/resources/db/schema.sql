@@ -85,8 +85,8 @@ CREATE TABLE `service_provider`
     `audit_remark`     VARCHAR(500) COMMENT '审核意见（驳回时填写）',
     `audit_time`       DATETIME COMMENT '审核时间',
     `audit_user_id`    BIGINT COMMENT '审核人ID，关联user.id',
-    `is_abroad`        TINYINT               DEFAULT 0 COMMENT '是否提供出海服务（0否 1是）',
-    `country_coverage` VARCHAR(255) COMMENT '覆盖国家/地区，多个用逗号分隔（如"欧盟,美国"）',
+    `is_abroad`        TINYINT      NOT NULL DEFAULT 0 COMMENT '是否提供出海服务（0否 1是）',
+    `country_coverage` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '覆盖国家/地区，多个用逗号分隔（如"欧盟,美国"）',
     `deleted`          DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '逻辑删除时间，''1970-01-01 00:00:00'' 表示未删除，其他时间表示已删除',
     `create_time`      DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
     `update_time`      DATETIME              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
@@ -404,9 +404,9 @@ CREATE TABLE `country_guide`
     `requirements` TEXT COMMENT '准入要求',
     `process`      TEXT COMMENT '办理流程',
     `documents`    TEXT COMMENT '所需材料（可存JSON或文本）',
-    `deleted`      DATETIME NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '逻辑删除时间，''1970-01-01 00:00:00'' 表示未删除，其他时间表示已删除',
-    `create_time`  DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted`      DATETIME    NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '逻辑删除时间，''1970-01-01 00:00:00'' 表示未删除，其他时间表示已删除',
+    `create_time`  DATETIME             DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`  DATETIME             DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_country_deleted` (`country`, `deleted`) COMMENT '保证未删除时国家名称唯一'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='国家准入指南表';

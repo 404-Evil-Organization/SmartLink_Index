@@ -9,7 +9,7 @@
 | phone       | VARCHAR(20)                                           | 联系电话                                                     |
 | email       | VARCHAR(100)                                          | 电子邮箱                                                     |
 | status      | TINYINT DEFAULT 1                                     | 状态：0禁用 1正常                                            |
-| deleted     | DATETIME DEFAULT NULL                                 | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted     | DEFAULT '1970-01-01 00:00:00'                         | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time | DATETIME DEFAULT CURRENT_TIMESTAMP                    | 注册时间                                                     |
 | update_time | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE          | 更新时间                                                     |
 
@@ -37,7 +37,7 @@
 | audit_remark     | VARCHAR(500)                                            | 审核意见（驳回时填写）                                       |
 | audit_time       | DATETIME                                                | 审核时间                                                     |
 | audit_user_id    | BIGINT                                                  | 审核人ID，关联`user.id`                                      |
-| deleted          | DATETIME DEFAULT NULL                                   | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted          | DEFAULT '1970-01-01 00:00:00'                           | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time      | DATETIME DEFAULT CURRENT_TIMESTAMP                      | 记录创建时间                                                 |
 | update_time      | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE            | 最后更新时间                                                 |
 
@@ -67,7 +67,7 @@
 | audit_user_id    | BIGINT                                                  | 审核人ID，关联`user.id`                                      |
 | is_abroad        | TINYINT DEFAULT 0                                       | 是否提供出海服务（0否 1是）                                  |
 | country_coverage | VARCHAR(255)                                            | 覆盖国家/地区，多个用逗号分隔（如"欧盟,美国"）               |
-| deleted          | DATETIME DEFAULT NULL                                   | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted          | DEFAULT '1970-01-01 00:00:00'                           | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time      | DATETIME DEFAULT CURRENT_TIMESTAMP                      | 记录创建时间                                                 |
 | update_time      | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE            | 最后更新时间                                                 |
 
@@ -89,7 +89,7 @@
 | audit_remark    | VARCHAR(500)                                                 | 审核意见（驳回时填写）                                       |
 | audit_time      | DATETIME                                                     | 审核时间                                                     |
 | audit_user_id   | BIGINT                                                       | 审核人ID，关联`user.id`                                      |
-| deleted         | DATETIME DEFAULT NULL                                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted         | DEFAULT '1970-01-01 00:00:00'                                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time     | DATETIME DEFAULT CURRENT_TIMESTAMP                           | 发布时间                                                     |
 | update_time     | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE                 | 最后更新时间                                                 |
 
@@ -103,7 +103,7 @@
 | name        | VARCHAR(50) NOT NULL                         | 标签名称（如“PCB设计”、“CE认证”）                            |
 | category    | VARCHAR(50) NOT NULL DEFAULT 'general'       | 标签类别（如“服务类型”、“认证类型”）                         |
 | description | VARCHAR(200)                                 | 标签说明                                                     |
-| deleted     | DATETIME DEFAULT NULL                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted     | DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time | DATETIME DEFAULT CURRENT_TIMESTAMP           | 记录创建时间                                                 |
 | update_time | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 最后更新时间                                                 |
 
@@ -116,7 +116,7 @@
 | id          | BIGINT PK AUTO_INCREMENT                     | 主键                                                         |
 | demand_id   | BIGINT NOT NULL                              | 关联`demand.id`                                              |
 | tag_id      | BIGINT NOT NULL                              | 关联`tag.id`                                                 |
-| deleted     | DATETIME DEFAULT NULL                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted     | DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time | DATETIME DEFAULT CURRENT_TIMESTAMP           | 记录创建时间                                                 |
 | update_time | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 最后更新时间                                                 |
 
@@ -129,7 +129,7 @@
 | id             | BIGINT PK AUTO_INCREMENT                     | 主键                                                         |
 | manufacture_id | BIGINT NOT NULL                              | 关联`manufacture.id`                                         |
 | tag_id         | BIGINT NOT NULL                              | 关联`tag.id`                                                 |
-| deleted        | DATETIME DEFAULT NULL                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted        | DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time    | DATETIME DEFAULT CURRENT_TIMESTAMP           | 记录创建时间                                                 |
 | update_time    | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 最后更新时间                                                 |
 
@@ -140,7 +140,7 @@
 | id          | BIGINT PK AUTO_INCREMENT                     | 主键                                                         |
 | service_id  | BIGINT NOT NULL                              | 关联`service_provider.id`                                    |
 | tag_id      | BIGINT NOT NULL                              | 关联`tag.id`                                                 |
-| deleted     | DATETIME DEFAULT NULL                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted     | DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time | DATETIME DEFAULT CURRENT_TIMESTAMP           | 记录创建时间                                                 |
 | update_time | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 最后更新时间                                                 |
 
@@ -159,7 +159,7 @@
 | amount      | DECIMAL(12,2)                                             | 合同金额（万元）                                             |
 | description | VARCHAR(500)                                              | 合作内容简述                                                 |
 | status      | ENUM('ongoing','completed','cancelled') DEFAULT 'ongoing' | 合作状态                                                     |
-| deleted     | DATETIME DEFAULT NULL                                     | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted     | DEFAULT '1970-01-01 00:00:00'                             | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time | DATETIME DEFAULT CURRENT_TIMESTAMP                        | 记录创建时间                                                 |
 | update_time | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE              | 最后更新时间                                                 |
 
@@ -176,7 +176,7 @@
 | score          | TINYINT NOT NULL                             | 评分（1-5星）                                                |
 | content        | VARCHAR(500)                                 | 评价内容                                                     |
 | is_anonymous   | TINYINT DEFAULT 0                            | 是否匿名（0否 1是）                                          |
-| deleted        | DATETIME DEFAULT NULL                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted        | DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time    | DATETIME DEFAULT CURRENT_TIMESTAMP           | 评价时间                                                     |
 | update_time    | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 最后更新时间                                                 |
 | **CHECK**      | CHECK (`score` BETWEEN 1 AND 5)              |                                                              |
@@ -197,7 +197,7 @@
 | level          | VARCHAR(20)                                                  | 等级（起步期/成长期/成熟期/引领期）                          |
 | suggestions    | TEXT                                                         | 改进建议（可JSON存储多条）                                   |
 | diagnosis_date | DATETIME                                                     | 诊断日期                                                     |
-| deleted        | DATETIME DEFAULT NULL                                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted        | DEFAULT '1970-01-01 00:00:00'                                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time    | DATETIME DEFAULT CURRENT_TIMESTAMP                           | 记录创建时间                                                 |
 | update_time    | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE                 | 最后更新时间                                                 |
 | **CHECK**      | CHECK (`info_score` BETWEEN 1 AND 5), CHECK (`auto_score` BETWEEN 1 AND 5), CHECK (`data_score` BETWEEN 1 AND 5), CHECK (`service_score` BETWEEN 1 AND 5), CHECK (`total_score` BETWEEN 0 AND 100) |                                                              |
@@ -218,7 +218,7 @@
 | cross_rate   | DECIMAL(5,4)                                                 | 跨域协同度（跨区域合作次数/总合作次数）                      |
 | total_index  | DECIMAL(6,2)                                                 | 协同指数综合得分                                             |
 | calc_time    | DATETIME                                                     | 计算时间                                                     |
-| deleted      | DATETIME DEFAULT NULL                                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted      | DEFAULT '1970-01-01 00:00:00'                                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time  | DATETIME DEFAULT CURRENT_TIMESTAMP                           | 记录创建时间                                                 |
 | update_time  | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE                 | 最后更新时间                                                 |
 | **CHECK**    | CHECK ((`period_type`='quarter' AND `period_value` BETWEEN 1 AND 4) OR (`period_type`='month' AND `period_value` BETWEEN 1 AND 12)) |                                                              |
@@ -238,7 +238,7 @@
 | expire_date     | DATE                                         | 有效期至                                                     |
 | cert_file_url   | VARCHAR(255)                                 | 证书文件路径                                                 |
 | status          | TINYINT DEFAULT 1                            | 状态：0失效 1有效                                            |
-| deleted         | DATETIME DEFAULT NULL                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted         | DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time     | DATETIME DEFAULT CURRENT_TIMESTAMP           | 上传时间                                                     |
 | update_time     | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 最后更新时间                                                 |
 
@@ -255,7 +255,7 @@
 | case_score  | TINYINT                                                      | 案例分                                                       |
 | eval_score  | TINYINT                                                      | 评价分                                                       |
 | calc_time   | DATETIME                                                     | 计算时间                                                     |
-| deleted     | DATETIME DEFAULT NULL                                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted     | DEFAULT '1970-01-01 00:00:00'                                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time | DATETIME DEFAULT CURRENT_TIMESTAMP                           | 记录创建时间                                                 |
 | update_time | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE                 | 最后更新时间                                                 |
 | **CHECK**   | CHECK (`score` BETWEEN 0 AND 100), CHECK (`qual_score` BETWEEN 0 AND 100), CHECK (`case_score` BETWEEN 0 AND 100), CHECK (`eval_score` BETWEEN 0 AND 100) |                                                              |
@@ -276,7 +276,7 @@
 | cover_image  | VARCHAR(255)                                 | 封面图URL                                                    |
 | publish_time | DATETIME                                     | 发布时间                                                     |
 | status       | TINYINT DEFAULT 0                            | 状态：0草稿 1发布                                            |
-| deleted      | DATETIME DEFAULT NULL                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted      | DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time  | DATETIME DEFAULT CURRENT_TIMESTAMP           | 记录创建时间                                                 |
 | update_time  | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 最后更新时间                                                 |
 
@@ -291,7 +291,7 @@
 | requirements | TEXT                                         | 准入要求                                                     |
 | process      | TEXT                                         | 办理流程                                                     |
 | documents    | TEXT                                         | 所需材料（可存 JSON 或文本）                                 |
-| deleted      | DATETIME DEFAULT NULL                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted      | DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time  | DATETIME DEFAULT CURRENT_TIMESTAMP           | 创建时间                                                     |
 | update_time  | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 更新时间                                                     |
 
@@ -308,7 +308,7 @@
 | params      | TEXT                                         | 请求参数（JSON格式，可选）                                   |
 | result      | VARCHAR(50)                                  | 操作结果（成功/失败）                                        |
 | ip          | VARCHAR(50)                                  | 客户端IP地址                                                 |
-| deleted     | DATETIME DEFAULT NULL                        | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
+| deleted     | DEFAULT '1970-01-01 00:00:00'                | 逻辑删除时间，'1970-01-01 00:00:00' 表示未删除，其他时间表示已删除 |
 | create_time | DATETIME DEFAULT CURRENT_TIMESTAMP           | 操作时间                                                     |
 | update_time | DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE | 最后更新时间                                                 |
 
