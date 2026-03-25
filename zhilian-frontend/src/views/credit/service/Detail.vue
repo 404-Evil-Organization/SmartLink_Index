@@ -5,9 +5,9 @@
         <h2 class="page-title">服务商详情</h2>
         <el-breadcrumb separator="/" class="breadcrumb">
           <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-          <el-breadcrumb-item :to="{ path: '/service/list' }"
-            >服务企业列表</el-breadcrumb-item
-          >
+          <el-breadcrumb-item :to="backRouteInfo.path">{{
+            backRouteInfo.label
+          }}</el-breadcrumb-item>
           <el-breadcrumb-item>服务商详情</el-breadcrumb-item>
         </el-breadcrumb>
       </div>
@@ -209,7 +209,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Refresh } from "@element-plus/icons-vue";
@@ -221,6 +221,23 @@ import { maskPhone } from "@/utils/desensitize";
 import { useUserStore } from "@/stores/user";
 const userStore = useUserStore();
 const showPhone = (phone) => maskPhone(phone, userStore.userInfo?.role);
+
+// 动态返回面包屑配置
+const backRouteInfo = computed(() => {
+  const from = route.query.from;
+  // 根据不同来源返回不同的路径和文本
+  if (from === "abroad") {
+    return {
+      path: "/abroad/services",
+      label: "出海服务商列表",
+    };
+  }
+  // 默认（普通服务商列表）
+  return {
+    path: "/service/list",
+    label: "服务企业列表",
+  };
+});
 
 // 预览相关
 const previewVisible = ref(false);
