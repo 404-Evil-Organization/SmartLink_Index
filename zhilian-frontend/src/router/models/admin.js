@@ -9,4 +9,9 @@ export default [
     name: "UserManage",
     component: () => import("@/views/admin/UserManage.vue"),
   },
+  {
+  path: "admin/country-guide",
+  name: "CountryGuideManage",
+  component: () => import("@/views/admin/CountryGuideManage.vue"),
+  },
 ];

@@ -110,6 +110,10 @@
             <el-icon><Avatar /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/country-guide">
+            <el-icon><Flag /></el-icon>
+            <span>国家准入指南管理</span>
+          </el-menu-item>
         </el-sub-menu>
         <!-- 后续可继续添加其他菜单项 -->
       </el-menu>
@@ -156,6 +160,7 @@ import {
   OfficeBuilding,
   List,
   DataLine,
+  Flag,        // 国家准入指南管理图标
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
