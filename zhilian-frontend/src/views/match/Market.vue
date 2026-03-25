@@ -112,7 +112,7 @@
                 <div class="title-wrap">
                   <span class="demand-title">{{ demand.title }}</span>
                   <el-tag
-                    v-if="demand.expectedBudget"
+                    v-if="demand.expectedBudget != null"
                     type="warning"
                     size="small"
                     class="budget-tag"
