@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,7 +35,6 @@ import java.util.stream.Collectors;
 public class DemandServiceImpl implements DemandService {
 
     private final DemandMapper demandMapper;
-    private final ManufactureMapper manufactureMapper;
     private final DemandTagMapper demandTagMapper;
     private final TagMapper tagMapper;
     private final ServiceProviderMapper serviceProviderMapper;
@@ -51,8 +52,8 @@ public class DemandServiceImpl implements DemandService {
      * @Param: tagIds 标签ID列表
      * @Param: budgetMin 最小预算
      * @Param: budgetMax 最大预算
-     * @Param: deadlineStart 截止日期开始范围
-     * @Param: deadlineEnd 截止日期结束范围
+     * @Param: deadlineStart 截止日期开始范围（包含）
+     * @Param: deadlineEnd 截止日期结束范围（包含）
      * @Return: 分页的市场需求列表
      * @Description: 分页查询市场需求列表（已审核通过且已发布的需求），并填充制造企业信息和标签
      */
@@ -66,10 +67,20 @@ public class DemandServiceImpl implements DemandService {
         // 对关键词进行 SQL LIKE 转义，防止用户输入的通配符影响查询结果
         String escapedKeyword = SqlUtils.escapeSqlLike(keyword);
 
+        // 将 LocalDate 转换为 LocalDateTime，确保查询范围包含完整日期
+        // deadlineStart: 当天 00:00:00
+        // deadlineEnd: 当天 23:59:59.999999999（使用 LocalTime.MAX）
+        LocalDateTime startDateTime = deadlineStart != null
+                ? deadlineStart.atStartOfDay()
+                : null;
+        LocalDateTime endDateTime = deadlineEnd != null
+                ? deadlineEnd.atTime(LocalTime.MAX)
+                : null;
+
         Page<DemandMarketVO> pageParam = new Page<>(page, size);
         IPage<DemandMarketVO> iPage = demandMapper.selectMarketDemands(
                 pageParam, escapedKeyword, tagIds, budgetMin, budgetMax,
-                deadlineStart, deadlineEnd, DateConstants.getNotDeletedLocalDateTime()
+                startDateTime, endDateTime, DateConstants.getNotDeletedLocalDateTime()
         );
 
         List<DemandMarketVO> records = iPage.getRecords();

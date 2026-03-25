@@ -46,7 +46,7 @@
         AND m.deleted = #{notDeletedTime}
         AND m.audit_status = 'approved'
         <if test="keyword != null and keyword != ''">
-            AND d.title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+            AND d.title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\'
         </if>
         <if test="budgetMin != null">
             AND d.expected_budget &gt;= #{budgetMin}
@@ -58,7 +58,7 @@
             AND d.deadline &gt;= #{deadlineStart}
         </if>
         <if test="deadlineEnd != null">
-            AND d.deadline &lt;= #{deadlineEnd}
+            AND d.deadline &lt; DATE_ADD(#{deadlineEnd}, INTERVAL 1 DAY)
         </if>
         <if test="tagIds != null and tagIds.size() > 0">
             AND EXISTS (
