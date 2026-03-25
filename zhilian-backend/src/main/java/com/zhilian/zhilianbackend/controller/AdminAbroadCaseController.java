@@ -83,9 +83,10 @@ public class AdminAbroadCaseController {
 
         log.info("管理员新增出海案例, request: {}", request);
 
-        // 获取当前管理员信息
+        // 获取当前管理员信息（用于审计记录）
         Long adminId = securityUtils.getCurrentUserId();
-        String adminName = String.valueOf(adminId);
+        // 从安全上下文中获取当前管理员的用户名，避免将 ID 字符串误当作姓名使用
+        String adminName = securityUtils.getCurrentUsername();
 
         Long caseId = abroadCaseService.create(request, adminId, adminName);
         return Result.success(caseId);
@@ -101,7 +102,7 @@ public class AdminAbroadCaseController {
     @PutMapping("/{id}")
     @Operation(summary = "修改出海案例")
     public Result<Void> update(@PathVariable Long id,
-                               @ModelAttribute AbroadCaseUpdateRequest request) {
+                               @Valid @ModelAttribute AbroadCaseUpdateRequest request) {
         // 校验管理员权限
         checkAdminPermission();
 

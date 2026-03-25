@@ -125,7 +125,8 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
                 log.info("上传出海案例封面成功: {}", coverImageUrl);
             } catch (Exception e) {
                 log.error("上传封面图片失败", e);
-                throw new BusinessException(500, "封面图片上传失败: " );
+                String safeMessage = StringUtils.hasText(e.getMessage()) ? e.getMessage() : "请稍后重试";
+                throw new BusinessException(500, "封面图片上传失败: " + safeMessage);
             }
         }
 
@@ -133,7 +134,10 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         AbroadCase entity = new AbroadCase();
         BeanUtils.copyProperties(request, entity);
         entity.setCoverImage(coverImageUrl);
-        entity.setPublishTime(new Date());
+        // 仅当状态为“已发布”时设置发布时间，草稿不应有发布时间
+        if (entity.getStatus() != null && entity.getStatus() == 1) {
+            entity.setPublishTime(new Date());
+        }
 
         // 保存
         int result = abroadCaseMapper.insert(entity);
@@ -189,7 +193,8 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
                 }
             } catch (Exception e) {
                 log.error("上传新封面图片失败", e);
-                throw new BusinessException(500, "封面图片上传失败: " + e.getMessage());
+                // 对外仅返回固定文案，避免将底层异常信息暴露给前端
+                throw new BusinessException(500, "封面图片上传失败，请稍后重试");
             }
         }
 
@@ -217,16 +222,22 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         }
         if (request.getStatus() != null) {
             entity.setStatus(request.getStatus());
-            // 只有发布时更新时间才更新发布时间
-            if (request.getStatus() == STATUS_PUBLISHED && existing.getStatus() != STATUS_PUBLISHED) {
+            // 只有发布时且原状态不是发布（包括原状态为 null）才更新发布时间
+            Byte newStatus = request.getStatus();
+            Byte oldStatus = existing.getStatus();
+            if (newStatus != null
+                    && newStatus.equals(STATUS_PUBLISHED)
+                    && (oldStatus == null || !oldStatus.equals(STATUS_PUBLISHED))) {
                 entity.setPublishTime(new Date());
             }
         }
         entity.setCoverImage(coverImageUrl);
 
         int result = abroadCaseMapper.updateById(entity);
-        if (result <= 0) {
-            throw new BusinessException(500, "更新出海案例失败");
+        // 在已确认记录存在的前提下，result == 0 更可能表示“无字段变更”的幂等成功
+        if (result == 0) {
+            log.info("更新出海案例无字段变更, 视为幂等成功, caseId: {}", id);
+            return;
         }
 
         log.info("更新出海案例成功, caseId: {}", id);
@@ -251,7 +262,8 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         // 逻辑删除
         int result = abroadCaseMapper.deleteById(id);
         if (result <= 0) {
-            throw new BusinessException(500, "删除出海案例失败");
+            // 在已校验存在的前提下，delete 返回 0 更可能是并发场景下记录已被他人删除/逻辑删除，视为资源不存在
+            throw new BusinessException(404, "出海案例不存在或已被删除");
         }
 
         // 删除OSS中的封面图片（可选，根据业务需求决定是否删除）
