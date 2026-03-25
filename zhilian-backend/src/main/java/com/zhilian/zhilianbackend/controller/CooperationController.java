@@ -2,6 +2,7 @@ package com.zhilian.zhilianbackend.controller;
 
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
+import com.zhilian.zhilianbackend.dto.request.CancelCooperationRequest;
 import com.zhilian.zhilianbackend.dto.request.CooperationListRequest;
 import com.zhilian.zhilianbackend.dto.response.CooperationDetailVO;
 import com.zhilian.zhilianbackend.dto.response.CooperationRecordVO;
@@ -78,5 +79,29 @@ public class CooperationController {
 
         CooperationDetailVO detail = cooperationService.getCooperationDetail(id, userId, userRole);
         return Result.success(detail);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: id 合作记录ID
+     * @Param: request 取消原因（可选）
+     * @Return: 无返回数据
+     * @Description: 取消合作，仅合作双方或管理员可操作，取消后将关联需求状态恢复为已发布
+     */
+    @PostMapping("/cancel/{id}")
+    @Operation(summary = "取消合作")
+    public Result<Void> cancelCooperation(
+            @PathVariable Long id,
+            @RequestBody(required = false) CancelCooperationRequest request) {
+        Long currentUserId = securityUtils.getCurrentUserId();
+        String currentUserRole = securityUtils.getCurrentUserRole();
+
+        if (request != null && request.getReason() != null) {
+            log.info("用户取消合作，合作ID: {}, 原因: {}", id, request.getReason());
+        }
+
+        cooperationService.cancelCooperation(id, currentUserId, currentUserRole);
+        return Result.success();
     }
 }

@@ -1,19 +1,201 @@
 package com.zhilian.zhilianbackend.service.impl;
 
-import com.zhilian.zhilianbackend.entity.Demand;
-import com.zhilian.zhilianbackend.mapper.DemandMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
+import com.zhilian.zhilianbackend.common.result.PageResult;
+import com.zhilian.zhilianbackend.dto.response.DemandMarketVO;
+import com.zhilian.zhilianbackend.dto.response.TagResponse;
+import com.zhilian.zhilianbackend.entity.*;
+import com.zhilian.zhilianbackend.exception.BusinessException;
+import com.zhilian.zhilianbackend.mapper.*;
 import com.zhilian.zhilianbackend.service.DemandService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * @Author: 6017
- * @Date: 2026/3/9 21:29
- * @Param: 
- * @Return: 
- * @Description: 需求表业务逻辑实现类，实现需求相关的业务方法
-**/
+ * @Author: xiaodengyou
+ * @Date: 2026/3/25
+ * @Description: 需求业务逻辑实现类
+ */
+@Slf4j
 @Service
-public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> implements DemandService {
+@RequiredArgsConstructor
+public class DemandServiceImpl implements DemandService {
 
+    private final DemandMapper demandMapper;
+    private final ManufactureMapper manufactureMapper;
+    private final DemandTagMapper demandTagMapper;
+    private final TagMapper tagMapper;
+    private final ServiceProviderMapper serviceProviderMapper;
+    private final CooperationMapper cooperationMapper;
+
+    private final LocalDateTime notDeletedTime = DateConstants.getNotDeletedLocalDateTime();
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: page 页码
+     * @Param: size 每页条数
+     * @Param: keyword 标题关键词
+     * @Param: tagIds 标签ID列表
+     * @Param: budgetMin 最小预算
+     * @Param: budgetMax 最大预算
+     * @Param: deadlineStart 截止日期开始范围
+     * @Param: deadlineEnd 截止日期结束范围
+     * @Return: 分页的市场需求列表
+     * @Description: 分页查询市场需求列表（已审核通过且已发布的需求），并填充制造企业信息和标签
+     */
+    @Override
+    public PageResult<DemandMarketVO> pageMarketDemands(
+            Integer page, Integer size,
+            String keyword, List<Long> tagIds,
+            BigDecimal budgetMin, BigDecimal budgetMax,
+            LocalDate deadlineStart, LocalDate deadlineEnd) {
+
+        Page<DemandMarketVO> pageParam = new Page<>(page, size);
+        IPage<DemandMarketVO> iPage = demandMapper.selectMarketDemands(
+                pageParam, keyword, tagIds, budgetMin, budgetMax,
+                deadlineStart, deadlineEnd, notDeletedTime
+        );
+
+        List<DemandMarketVO> records = iPage.getRecords();
+        if (records.isEmpty()) {
+            return PageResult.from(iPage);
+        }
+
+        // 批量查询标签
+        List<Long> demandIds = records.stream().map(DemandMarketVO::getId).toList();
+        LambdaQueryWrapper<DemandTag> dtWrapper = new LambdaQueryWrapper<>();
+        dtWrapper.in(DemandTag::getDemandId, demandIds)
+                .eq(DemandTag::getDeleted, notDeletedTime);
+        List<DemandTag> demandTags = demandTagMapper.selectList(dtWrapper);
+
+        if (!demandTags.isEmpty()) {
+            Set<Long> tagIdSet = demandTags.stream().map(DemandTag::getTagId).collect(Collectors.toSet());
+            List<Tag> tags = tagMapper.selectList(new LambdaQueryWrapper<Tag>()
+                    .in(Tag::getId, tagIdSet)
+                    .eq(Tag::getDeleted, notDeletedTime));
+            Map<Long, Tag> tagMap = tags.stream().collect(Collectors.toMap(Tag::getId, t -> t));
+
+            // 构建需求ID -> 标签列表的映射
+            Map<Long, List<TagResponse>> demandTagMap = new HashMap<>();
+            for (DemandTag dt : demandTags) {
+                Tag tag = tagMap.get(dt.getTagId());
+                if (tag != null) {
+                    TagResponse tagResp = new TagResponse();
+                    tagResp.setId(tag.getId());
+                    tagResp.setName(tag.getName());
+                    tagResp.setCategory(tag.getCategory());
+                    tagResp.setDescription(tag.getDescription());
+                    tagResp.setCreateTime(tag.getCreateTime());
+                    tagResp.setUpdateTime(tag.getUpdateTime());
+                    demandTagMap.computeIfAbsent(dt.getDemandId(), k -> new ArrayList<>()).add(tagResp);
+                }
+            }
+
+            // 设置标签
+            for (DemandMarketVO vo : records) {
+                vo.setTags(demandTagMap.getOrDefault(vo.getId(), Collections.emptyList()));
+            }
+        }
+
+        return PageResult.from(iPage);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: demandId 需求ID
+     * @Param: serviceId 服务商企业ID
+     * @Param: currentUserId 当前用户ID
+     * @Return: 新创建的合作记录ID
+     * @Description: 服务商接取需求，使用行锁防止并发，校验服务商资质和需求状态，成功后创建合作记录
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long acceptDemand(Long demandId, Long serviceId, Long currentUserId) {
+        // 1. 校验服务商
+        ServiceProvider sp = serviceProviderMapper.selectById(serviceId);
+        if (sp == null) {
+            throw new BusinessException(404, "服务商企业不存在");
+        }
+        if (!sp.getUserId().equals(currentUserId)) {
+            throw new BusinessException(403, "无权操作该服务商企业");
+        }
+        if (!"approved".equals(sp.getAuditStatus())) {
+            throw new BusinessException(403, "服务商企业未审核通过，无法接取需求");
+        }
+
+        // 2. 行锁获取需求
+        Demand demand = demandMapper.selectForUpdateById(demandId);
+        if (demand == null) {
+            throw new BusinessException(404, "需求不存在");
+        }
+        if (!"published".equals(demand.getStatus())) {
+            throw new BusinessException(409, "需求状态不可接取");
+        }
+        if (!"approved".equals(demand.getAuditStatus())) {
+            throw new BusinessException(409, "需求未审核通过");
+        }
+
+        // 3. 更新需求状态
+        demand.setStatus("matched");
+        demand.setUpdateTime(new Date());
+        int updateRows = demandMapper.updateById(demand);
+        if (updateRows == 0) {
+            throw new BusinessException(500, "更新需求状态失败");
+        }
+
+        // 4. 创建合作记录
+        Cooperation cooperation = new Cooperation();
+        cooperation.setManuId(demand.getManuId());
+        cooperation.setServiceId(serviceId);
+        cooperation.setDemandId(demandId);
+        cooperation.setStartDate(new java.sql.Date(System.currentTimeMillis()));
+        cooperation.setAmount(demand.getExpectedBudget());
+        cooperation.setDescription("通过接取需求建立合作");
+        cooperation.setStatus("ongoing");
+        cooperation.setDeleted(DateConstants.getNotDeletedTime());
+        cooperation.setCreateTime(new Date());
+        cooperation.setUpdateTime(new Date());
+
+        int insertRows = cooperationMapper.insert(cooperation);
+        if (insertRows == 0) {
+            throw new BusinessException(500, "创建合作记录失败");
+        }
+
+        log.info("服务商接取需求成功，需求ID: {}, 服务商ID: {}, 合作ID: {}", demandId, serviceId, cooperation.getId());
+        return cooperation.getId();
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: demandId 需求ID
+     * @Return: 无
+     * @Description: 将需求状态重置为已发布（用于取消合作时）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resetDemandStatusToPublished(Long demandId) {
+        Demand demand = demandMapper.selectById(demandId);
+        if (demand != null && "matched".equals(demand.getStatus())) {
+            demand.setStatus("published");
+            demand.setUpdateTime(new Date());
+            demandMapper.updateById(demand);
+            log.info("需求状态重置为 published，需求ID: {}", demandId);
+        } else {
+            log.warn("重置需求状态失败，需求不存在或状态不是 matched，需求ID: {}", demandId);
+        }
+    }
 }

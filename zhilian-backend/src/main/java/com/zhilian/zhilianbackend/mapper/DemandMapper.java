@@ -1,12 +1,17 @@
 package com.zhilian.zhilianbackend.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zhilian.zhilianbackend.dto.response.DemandMarketVO;
 import com.zhilian.zhilianbackend.dto.response.TopDemandResponse;
 import com.zhilian.zhilianbackend.entity.Demand;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,4 +46,37 @@ public interface DemandMapper extends BaseMapper<Demand> {
             "LIMIT #{top}")
     List<TopDemandResponse> getTopDemands(@Param("top") Integer top,
                                           @Param("notDeletedTime") LocalDateTime notDeletedTime);
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: page 分页参数
+     * @Param: keyword 标题关键词
+     * @Param: tagIds 标签ID列表
+     * @Param: budgetMin 最小预算
+     * @Param: budgetMax 最大预算
+     * @Param: deadlineStart 截止日期开始范围
+     * @Param: deadlineEnd 截止日期结束范围
+     * @Param: notDeletedTime 逻辑删除时间标记
+     * @Return: 分页的市场需求列表
+     * @Description: 分页查询市场需求（已审核通过且已发布的需求）
+     */
+    IPage<DemandMarketVO> selectMarketDemands(Page<?> page,
+                                              @Param("keyword") String keyword,
+                                              @Param("tagIds") List<Long> tagIds,
+                                              @Param("budgetMin") BigDecimal budgetMin,
+                                              @Param("budgetMax") BigDecimal budgetMax,
+                                              @Param("deadlineStart") LocalDate deadlineStart,
+                                              @Param("deadlineEnd") LocalDate deadlineEnd,
+                                              @Param("notDeletedTime") LocalDateTime notDeletedTime);
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: id 需求ID
+     * @Return: 需求实体（带行锁）
+     * @Description: 使用行锁查询需求，用于防止并发接单
+     */
+    @Select("SELECT * FROM demand WHERE id = #{id} FOR UPDATE")
+    Demand selectForUpdateById(@Param("id") Long id);
 }
