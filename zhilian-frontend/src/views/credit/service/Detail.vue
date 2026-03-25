@@ -34,7 +34,7 @@
               detailData.contactPerson || "-"
             }}</el-descriptions-item>
             <el-descriptions-item label="联系电话">{{
-              detailData.contactPhone || "-"
+              showPhone(detailData.contactPhone)
             }}</el-descriptions-item>
             <el-descriptions-item label="服务类型">{{
               detailData.serviceType || "-"
@@ -55,7 +55,7 @@
               detailData.qualification || "-"
             }}</el-descriptions-item>
             <el-descriptions-item label="是否出海">{{
-              detailData.isAbroad === 1 ? '是' : '否'
+              detailData.isAbroad === 1 ? "是" : "否"
             }}</el-descriptions-item>
             <el-descriptions-item label="覆盖国家">{{
               detailData.countryCoverage || "-"
@@ -217,6 +217,10 @@ import { getServiceProviderDetail } from "@/api/service-provider";
 import { getCertList } from "@/api/certification";
 import { getEvaluationList } from "@/api/evaluation";
 import { createTimeConverter } from "@/composables/date";
+import { maskPhone } from "@/utils/desensitize";
+import { useUserStore } from "@/stores/user";
+const userStore = useUserStore();
+const showPhone = (phone) => maskPhone(phone, userStore.userInfo?.role);
 
 // 预览相关
 const previewVisible = ref(false);
