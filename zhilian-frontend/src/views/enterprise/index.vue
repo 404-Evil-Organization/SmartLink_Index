@@ -493,6 +493,12 @@
           <el-descriptions-item label="资质概述">{{
             detailDialog.data.qualification || "-"
           }}</el-descriptions-item>
+          <el-descriptions-item label="是否出海">{{
+            detailDialog.data.isAbroad === 1 ? "是" : "否"
+          }}</el-descriptions-item>
+          <el-descriptions-item label="覆盖国家">{{
+            detailDialog.data.countryCoverage || "-"
+          }}</el-descriptions-item>
           <el-descriptions-item label="审核状态">
             <el-tag :type="getAuditStatusType(detailDialog.data.auditStatus)">
               {{ getAuditStatusText(detailDialog.data.auditStatus) }}
@@ -699,6 +705,32 @@
               placeholder="请输入资质概述"
             />
           </el-form-item>
+          <el-form-item label="是否出海" prop="isAbroad">
+            <el-radio-group v-model="form.isAbroad">
+              <el-radio :label="1">是</el-radio>
+              <el-radio :label="0">否</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item
+            label="覆盖国家"
+            prop="countryCoverage"
+            v-if="form.isAbroad === 1"
+          >
+            <el-select
+              v-model="form.countryCoverage"
+              placeholder="请选择覆盖国家或地区"
+              style="width: 100%"
+              multiple
+              filterable
+            >
+              <el-option
+                v-for="country in countryOptions"
+                :key="country"
+                :label="country"
+                :value="country"
+              />
+            </el-select>
+          </el-form-item>
         </template>
 
         <!-- 通用字段（续） -->
@@ -779,7 +811,11 @@
                   link
                   @click="
                     row.certFileUrl.toLowerCase().endsWith('.pdf')
-                      ? window.open(row.certFileUrl, '_blank', 'noopener,noreferrer')
+                      ? window.open(
+                          row.certFileUrl,
+                          '_blank',
+                          'noopener,noreferrer',
+                        )
                       : openCertPreview(row.certFileUrl)
                   "
                 >
@@ -999,6 +1035,7 @@ import {
   getScales,
   uploadFile,
   deleteFile,
+  getCountries,
 } from "@/api/common";
 import {
   getCertList,
@@ -1059,6 +1096,7 @@ const regionOptions = ref([]);
 const scaleOptions = ref([]);
 const serviceTypeOptions = ref([]);
 const productTypeOptions = ref([]);
+const countryOptions = ref([]);
 
 // 详情弹窗
 const detailDialog = reactive({
@@ -1095,6 +1133,8 @@ const form = reactive({
   serviceType: [],
   website: "",
   qualification: "",
+  isAbroad: 0,
+  countryCoverage: [],
 });
 
 const formRef = ref(null);
@@ -1211,6 +1251,16 @@ const fetchProductTypeOptions = async () => {
   }
 };
 
+// 获取国家列表选项
+const fetchCountries = async () => {
+  try {
+    const res = await getCountries();
+    countryOptions.value = Array.isArray(res) ? res : [];
+  } catch (error) {
+    console.error("获取国家列表失败", error);
+  }
+};
+
 // 重置搜索
 const resetManuSearch = () => {
   manuSearchKeyword.value = "";
@@ -1297,10 +1347,7 @@ const openEditDialog = async (row, type) => {
       form.scale = detail.scale || "";
       form.employeeCount = detail.employeeCount ?? null;
       form.annualRevenue = detail.annualRevenue ?? null;
-      // 将字符串转换为数组
-      form.productType = detail.productType
-        ? detail.productType.split(",").map((item) => item.trim())
-        : [];
+      form.productType = normalizeTags(detail.productType);
       form.description = detail.description || "";
     } else {
       form.serviceType = normalizeTags(detail.serviceType);
@@ -1308,6 +1355,8 @@ const openEditDialog = async (row, type) => {
       form.employeeCount = detail.employeeCount ?? null;
       form.qualification = detail.qualification || "";
       form.description = detail.description || "";
+      form.isAbroad = detail.isAbroad || 0;
+      form.countryCoverage = normalizeTags(detail.countryCoverage);
     }
 
     if (detail.logo) {
@@ -1475,12 +1524,15 @@ const handleCertFileChange = (fileItem) => {
     name: file.name,
     status: "success",
     uid: file.uid,
-    raw: file
+    raw: file,
   };
 
   // 如果是 PDF，给定一个默认的文档图标，否则使用 blob URL 以便预览图片
   if (file.type === "application/pdf") {
-    displayFile.url = new URL('../../assets/pdf-icon.png', import.meta.url).href;
+    displayFile.url = new URL(
+      "../../assets/pdf-icon.png",
+      import.meta.url,
+    ).href;
   } else {
     const objectUrl = URL.createObjectURL(file);
     displayFile.url = objectUrl;
@@ -1516,7 +1568,7 @@ const handleCertFilePreview = (fileItem) => {
     // 延迟释放，给浏览器打开窗口留点时间
     setTimeout(() => URL.revokeObjectURL(tempUrl), 1000);
   } else if (fileItem.name && fileItem.name.toLowerCase().endsWith(".pdf")) {
-      window.open(fileItem.url, "_blank");
+    window.open(fileItem.url, "_blank");
   } else {
     // 图片使用已有的预览组件
     openCertPreview(fileItem.url);
@@ -1692,6 +1744,8 @@ const resetFormData = () => {
   form.serviceType = [];
   form.website = "";
   form.qualification = "";
+  form.isAbroad = 0;
+  form.countryCoverage = [];
   fileList.value = [];
   // 重置 logo 相关的状态
   originalLogo.value = "";
@@ -1818,7 +1872,7 @@ const submitForm = async () => {
       scale: form.scale,
       employeeCount: form.employeeCount ?? null,
       annualRevenue: form.annualRevenue ?? null,
-      productType: joinTags(form.productType), // 数组转逗号分隔字符串
+      productType: joinTags(form.productType),
       description: form.description,
       logo: form.logo,
       establishedDate: form.establishedDate,
@@ -1837,6 +1891,9 @@ const submitForm = async () => {
       establishedDate: form.establishedDate,
       employeeCount: form.employeeCount ?? null,
       qualification: form.qualification,
+      isAbroad: form.isAbroad,
+      countryCoverage:
+        form.isAbroad === 1 ? joinTags(form.countryCoverage) : "",
     };
   }
 
@@ -1940,6 +1997,7 @@ onMounted(() => {
   fetchRegions();
   fetchServiceTypeOptions();
   fetchProductTypeOptions();
+  fetchCountries();
   if (activeTab.value === "manufacture") {
     fetchManufactureList();
   } else {
