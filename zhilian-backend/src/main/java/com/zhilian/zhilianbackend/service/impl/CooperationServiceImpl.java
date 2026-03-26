@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -280,10 +281,12 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void cancelCooperation(Long cooperationId, Long currentUserId, String currentUserRole) {
+        // 1. 查询合作记录，用于权限校验和获取 demandId
         Cooperation cooperation = cooperationMapper.selectById(cooperationId);
         if (cooperation == null) {
             throw new BusinessException(404, "合作记录不存在");
         }
+        // 状态校验（并发安全由条件更新保证，但先校验可以提前返回）
         if (!"ongoing".equals(cooperation.getStatus())) {
             throw new BusinessException(409, "当前合作状态不允许取消");
         }
@@ -309,12 +312,15 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
             throw new BusinessException(403, "无权取消该合作");
         }
 
-        // 更新合作状态
-        cooperation.setStatus("cancelled");
-        cooperation.setUpdateTime(new Date());
-        int updateRows = cooperationMapper.updateById(cooperation);
+        // 使用条件更新，避免并发重复取消
+        LambdaUpdateWrapper<Cooperation> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Cooperation::getId, cooperationId)
+                .eq(Cooperation::getStatus, "ongoing")
+                .set(Cooperation::getStatus, "cancelled")
+                .set(Cooperation::getUpdateTime, new Date());
+        int updateRows = cooperationMapper.update(null, updateWrapper);
         if (updateRows == 0) {
-            throw new BusinessException(500, "更新合作状态失败");
+            throw new BusinessException(409, "合作状态已被变更，无法取消");
         }
 
         // 恢复需求状态：resetDemandStatusToPublished 内部已包含需求存在性、状态校验及更新结果校验，
