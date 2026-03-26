@@ -258,7 +258,11 @@
     </el-dialog>
 
     <!-- 接单确认弹窗 -->
-    <el-dialog v-model="acceptConfirmDialog.visible" title="确认接单" width="400px">
+    <el-dialog
+      v-model="acceptConfirmDialog.visible"
+      title="确认接单"
+      width="400px"
+    >
       <div class="confirm-content">
         <el-alert
           title="确认接单"
@@ -267,14 +271,16 @@
           show-icon
           :closable="false"
         />
-        <div class="demand-info" style="margin-top: 16px;">
-          <p><strong>需求标题：</strong>{{ acceptConfirmDialog.demandTitle }}</p>
+        <div class="demand-info" style="margin-top: 16px">
+          <p>
+            <strong>需求标题：</strong>{{ acceptConfirmDialog.demandTitle }}
+          </p>
         </div>
       </div>
       <template #footer>
         <el-button @click="acceptConfirmDialog.visible = false">取消</el-button>
-        <el-button 
-          type="primary" 
+        <el-button
+          type="primary"
           @click="confirmAcceptDemand"
           :loading="acceptingId === acceptConfirmDialog.demandId"
         >
@@ -419,11 +425,8 @@ const fetchDemandList = async () => {
       deadlineStart: searchForm.deadlineStart || undefined,
       deadlineEnd: searchForm.deadlineEnd || undefined,
     };
-    console.log(params);
-    
     const res = await getDemandMarketList(params);
     console.log(res);
-    
 
     demandList.value = res.records || [];
     total.value = res.total || 0;
@@ -479,9 +482,24 @@ const refreshList = () => {
 // 获取标签列表（用于筛选）
 const fetchTags = async () => {
   try {
-    // 获取所有标签，不限数量
-    const res = await getTagList({ page: 1, size: 100 });
-    tagOptions.value = res.records || [];
+    let allTags = [];
+    let page = 1;
+    const size = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      const res = await getTagList({ page, size });
+      const currentTags = res.records || [];
+      allTags = allTags.concat(currentTags);
+      
+      const tagTotal = res.total || 0;
+      if (allTags.length >= tagTotal || currentTags.length < size) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    }
+    tagOptions.value = allTags;
   } catch (error) {
     console.error("获取标签列表失败", error);
   }
@@ -557,15 +575,19 @@ const openAcceptConfirmDialog = (demandId, demandTitle, serviceId) => {
 // 确认接单
 const confirmAcceptDemand = async () => {
   if (!acceptConfirmDialog.demandId || !acceptConfirmDialog.serviceId) return;
-  
+
   try {
-    await doAccept(
-      acceptConfirmDialog.demandId,
-      acceptConfirmDialog.serviceId,
-      acceptConfirmDialog.demandTitle,
-    );
-    acceptConfirmDialog.visible = false;
+    if (
+      await doAccept(
+        acceptConfirmDialog.demandId,
+        acceptConfirmDialog.serviceId,
+        acceptConfirmDialog.demandTitle,
+      )
+    ) {
+      acceptConfirmDialog.visible = false;
+    }
   } catch (error) {
+    ElMessage.error("接单失败");
     console.error("接单失败", error);
   }
 };
