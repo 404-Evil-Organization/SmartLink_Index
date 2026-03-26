@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -68,20 +67,11 @@ public class DemandServiceImpl implements DemandService {
         // 对关键词进行 SQL LIKE 转义，防止用户输入的通配符影响查询结果
         String escapedKeyword = SqlUtils.escapeSqlLike(keyword);
 
-        // 将 LocalDate 转换为 LocalDateTime，确保查询范围包含完整日期
-        // deadlineStart: 当天 00:00:00
-        // deadlineEnd: 当天 23:59:59.999999999（使用 LocalTime.MAX）
-        LocalDateTime startDateTime = deadlineStart != null
-                ? deadlineStart.atStartOfDay()
-                : null;
-        LocalDateTime endDateTime = deadlineEnd != null
-                ? deadlineEnd.atTime(LocalTime.MAX)
-                : null;
-
+        // 直接传递 LocalDate，让 MyBatis 以 DATE 类型绑定参数，保持与数据库字段类型一致
         Page<DemandMarketVO> pageParam = new Page<>(page, size);
         IPage<DemandMarketVO> iPage = demandMapper.selectMarketDemands(
                 pageParam, escapedKeyword, tagIds, budgetMin, budgetMax,
-                startDateTime, endDateTime, DateConstants.getNotDeletedLocalDateTime()
+                deadlineStart, deadlineEnd, DateConstants.getNotDeletedLocalDateTime()
         );
 
         List<DemandMarketVO> records = iPage.getRecords();

@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -52,8 +53,8 @@ public interface DemandMapper extends BaseMapper<Demand> {
      * @Param: tagIds 标签ID列表
      * @Param: budgetMin 最小预算
      * @Param: budgetMax 最大预算
-     * @Param: deadlineStart 截止日期开始范围（LocalDateTime）
-     * @Param: deadlineEnd 截止日期结束范围（LocalDateTime）
+     * @Param: deadlineStart 截止日期开始范围（LocalDate）
+     * @Param: deadlineEnd 截止日期结束范围（LocalDate）
      * @Param: notDeletedTime 逻辑删除时间标记
      * @Return: 分页的市场需求列表
      * @Description: 分页查询市场需求（已审核通过且已发布的需求）
@@ -63,8 +64,8 @@ public interface DemandMapper extends BaseMapper<Demand> {
                                               @Param("tagIds") List<Long> tagIds,
                                               @Param("budgetMin") BigDecimal budgetMin,
                                               @Param("budgetMax") BigDecimal budgetMax,
-                                              @Param("deadlineStart") LocalDateTime deadlineStart,
-                                              @Param("deadlineEnd") LocalDateTime deadlineEnd,
+                                              @Param("deadlineStart") LocalDate deadlineStart,
+                                              @Param("deadlineEnd") LocalDate deadlineEnd,
                                               @Param("notDeletedTime") LocalDateTime notDeletedTime);
 
     /**
