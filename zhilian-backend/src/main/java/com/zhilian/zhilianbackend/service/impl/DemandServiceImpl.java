@@ -10,6 +10,7 @@ import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.request.DemandApproveRequest;
 import com.zhilian.zhilianbackend.dto.request.DemandPublishRequest;
 import com.zhilian.zhilianbackend.dto.request.DemandUpdateRequest;
+import com.zhilian.zhilianbackend.dto.response.DemandDetailVO;
 import com.zhilian.zhilianbackend.dto.response.DemandMyListVO;
 import com.zhilian.zhilianbackend.dto.response.DemandPendingVO;
 import com.zhilian.zhilianbackend.dto.response.DemandPublishResponse;
@@ -49,6 +50,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
     // 需求业务状态常量
     private static final String DEMAND_STATUS_DRAFT = "draft";
     private static final String DEMAND_STATUS_PUBLISHED = "published";
+    private static final String DEMAND_STATUS_MATCHED = "matched";
 
     // 需求审核状态常量
     private static final String DEMAND_AUDIT_STATUS_PENDING = "pending";
@@ -58,6 +60,9 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
     // 审核操作常量
     private static final String APPROVE_ACTION_APPROVED = "approved";
     private static final String APPROVE_ACTION_REJECTED = "rejected";
+
+    // 定义允许所有登录用户查看的状态
+    private static final Set<String> PUBLIC_STATUSES = Set.of(DEMAND_STATUS_PUBLISHED, DEMAND_STATUS_MATCHED);
 
     private final ManufactureMapper manufactureMapper;
     private final TagService tagService;
@@ -538,5 +543,86 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         Page<DemandMyListVO> resultPage = new Page<>(demandPage.getCurrent(), demandPage.getSize(), demandPage.getTotal());
         resultPage.setRecords(records);
         return PageResult.from(resultPage);
+    }
+
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/03/26 18:29
+     * @param id     需求 ID，不能为 null
+     * @param userId 当前登录用户 ID，用于权限校验（当需求为草稿时，与发布者 userId 比对）
+     * @return 需求详情视图对象 {@link DemandDetailVO}，包含需求基本信息、关联制造企业及标签列表
+     * @Description: 获取需求详情
+     */
+    @Override
+    public DemandDetailVO getDemandDetail(Long id, Long userId) {
+        Demand demand = this.getById(id);
+        if (demand == null || !DateConstants.getNotDeletedTime().equals(demand.getDeleted())) {
+            throw new BusinessException(404, "需求不存在或已被删除");
+        }
+
+        Manufacture manufacture = manufactureMapper.selectById(demand.getManuId());
+
+        // 草稿场景下，如果关联制造企业不存在（例如被逻辑删除或数据不一致），
+        // 需要在进入权限判断前直接按资源不存在处理，而不是误报为权限不足。
+        if (DEMAND_STATUS_DRAFT.equals(demand.getStatus()) && manufacture == null) {
+            throw new BusinessException(404, "关联制造企业不存在或已被删除");
+        }
+        // 权限校验逻辑
+        // - 若需求状态为 draft，则仅发布者（根据 manuId 关联的用户）或管理员可查看详情。
+        // - 若需求状态为 published 或 matched，则所有已登录用户均可查看详情
+        if (!PUBLIC_STATUSES.contains(demand.getStatus())) {
+            // 非公开状态：仅创建者或管理员可查看
+            if (!securityUtils.isAdmin()) {
+                if (manufacture == null || !manufacture.getUserId().equals(userId)) {
+                    throw new BusinessException(403, "无权查看该需求");
+                }
+            }
+        }
+
+        DemandDetailVO vo = new DemandDetailVO();
+        vo.setId(demand.getId());
+        vo.setManuId(demand.getManuId());
+        vo.setTitle(demand.getTitle());
+        vo.setDescription(demand.getDescription());
+        vo.setExpectedBudget(demand.getExpectedBudget());
+        vo.setDeadline(demand.getDeadline());
+        vo.setStatus(demand.getStatus());
+        vo.setAuditStatus(demand.getAuditStatus());
+        vo.setAuditRemark(demand.getAuditRemark());
+        vo.setCreateTime(demand.getCreateTime());
+        vo.setUpdateTime(demand.getUpdateTime());
+
+        if (manufacture != null) {
+            DemandDetailVO.ManufactureInfo manuInfo = new DemandDetailVO.ManufactureInfo();
+            manuInfo.setId(manufacture.getId());
+            manuInfo.setCompanyName(manufacture.getCompanyName());
+            manuInfo.setRegion(manufacture.getRegion());
+            manuInfo.setContactPerson(manufacture.getContactPerson());
+            manuInfo.setContactPhone(manufacture.getContactPhone());
+            vo.setManufacture(manuInfo);
+        }
+
+        List<DemandTag> demandTags = demandTagMapper.selectList(
+                new LambdaQueryWrapper<DemandTag>()
+                        .eq(DemandTag::getDemandId, id)
+                        .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime())
+        );
+
+        List<DemandDetailVO.TagSimpleVO> tags = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(demandTags)) {
+            List<Long> tagIds = demandTags.stream().map(DemandTag::getTagId).distinct().collect(Collectors.toList());
+            if (!tagIds.isEmpty()) {
+                List<Tag> tagList = tagService.listByIds(tagIds);
+                for (Tag t : tagList) {
+                    DemandDetailVO.TagSimpleVO tvo = new DemandDetailVO.TagSimpleVO();
+                    tvo.setId(t.getId());
+                    tvo.setName(t.getName());
+                    tags.add(tvo);
+                }
+            }
+        }
+        vo.setTags(tags);
+
+        return vo;
     }
 }
