@@ -177,7 +177,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Edit, Delete, UploadFilled } from '@element-plus/icons-vue'
+import { Plus, Refresh, Edit, Delete } from '@element-plus/icons-vue'
 import { getAbroadCaseList, addAbroadCase, updateAbroadCase, deleteAbroadCase } from '@/api/admin'
 import { useUserStore } from '@/stores/user'
 import { createTimeConverter } from '@/composables/date'
