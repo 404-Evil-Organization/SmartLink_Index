@@ -448,8 +448,6 @@ const fetchList = async () => {
       ...(searchForm.periodValue && { periodValue: searchForm.periodValue }),
     };
     const res = await getRegionIndexList(params);
-    console.log(res);
-
     tableData.value = res.records || [];
     pagination.total = res.total || 0;
   } catch (error) {

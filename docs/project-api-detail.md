@@ -2231,6 +2231,7 @@
 | region     | string | 否   | 区域筛选                   |
 | year       | int    | 否   | 年份筛选                   |
 | periodType | string | 否   | 周期类型：quarter(季度) 或 month(月份) |
+| periodValue | int | 否 | 周期值：当 periodType=`quarter` 时取值 1-4；当 periodType=`month` 时取值 1-12 |
 
 - **返回数据**:
 
