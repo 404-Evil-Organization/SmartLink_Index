@@ -550,26 +550,32 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
      * @Description: 获取需求详情
      */
     @Override
-    public com.zhilian.zhilianbackend.dto.response.DemandDetailVO getDemandDetail(Long id, Long userId) {
+    public DemandDetailVO getDemandDetail(Long id, Long userId) {
         Demand demand = this.getById(id);
         if (demand == null || !DateConstants.getNotDeletedTime().equals(demand.getDeleted())) {
             throw new BusinessException(404, "需求不存在或已被删除");
         }
 
         Manufacture manufacture = manufactureMapper.selectById(demand.getManuId());
-        
+
+        // 草稿场景下，如果关联制造企业不存在（例如被逻辑删除或数据不一致），
+        // 需要在进入权限判断前直接按资源不存在处理，而不是误报为权限不足。
+        if (DEMAND_STATUS_DRAFT.equals(demand.getStatus()) && manufacture == null) {
+            throw new BusinessException(404, "关联制造企业不存在或已被删除");
+        }
         // 权限校验逻辑
         // - 若需求状态为 draft，则仅发布者（根据 manuId 关联的用户）或管理员可查看详情。
         // - 若需求状态为 published 或 matched，则所有已登录用户均可查看详情
         if (DEMAND_STATUS_DRAFT.equals(demand.getStatus())) {
             if (!securityUtils.isAdmin()) {
-                if (manufacture == null || !manufacture.getUserId().equals(userId)) {
+                // 走到这里时，manufacture 在草稿场景下已保证非空，这里只做 userId 权限校验
+                if (!manufacture.getUserId().equals(userId)) {
                     throw new BusinessException(403, "无权查看该草稿需求");
                 }
             }
         }
 
-        com.zhilian.zhilianbackend.dto.response.DemandDetailVO vo = new com.zhilian.zhilianbackend.dto.response.DemandDetailVO();
+        DemandDetailVO vo = new DemandDetailVO();
         vo.setId(demand.getId());
         vo.setManuId(demand.getManuId());
         vo.setTitle(demand.getTitle());
@@ -583,7 +589,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         vo.setUpdateTime(demand.getUpdateTime());
 
         if (manufacture != null) {
-            com.zhilian.zhilianbackend.dto.response.DemandDetailVO.ManufactureInfo manuInfo = new com.zhilian.zhilianbackend.dto.response.DemandDetailVO.ManufactureInfo();
+            DemandDetailVO.ManufactureInfo manuInfo = new DemandDetailVO.ManufactureInfo();
             manuInfo.setId(manufacture.getId());
             manuInfo.setCompanyName(manufacture.getCompanyName());
             manuInfo.setRegion(manufacture.getRegion());
@@ -598,13 +604,13 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
                         .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime())
         );
 
-        List<com.zhilian.zhilianbackend.dto.response.DemandDetailVO.TagSimpleVO> tags = new ArrayList<>();
+        List<DemandDetailVO.TagSimpleVO> tags = new ArrayList<>();
         if (!CollectionUtils.isEmpty(demandTags)) {
             List<Long> tagIds = demandTags.stream().map(DemandTag::getTagId).distinct().collect(Collectors.toList());
             if (!tagIds.isEmpty()) {
                 List<Tag> tagList = tagService.listByIds(tagIds);
                 for (Tag t : tagList) {
-                    com.zhilian.zhilianbackend.dto.response.DemandDetailVO.TagSimpleVO tvo = new com.zhilian.zhilianbackend.dto.response.DemandDetailVO.TagSimpleVO();
+                    DemandDetailVO.TagSimpleVO tvo = new DemandDetailVO.TagSimpleVO();
                     tvo.setId(t.getId());
                     tvo.setName(t.getName());
                     tags.add(tvo);
