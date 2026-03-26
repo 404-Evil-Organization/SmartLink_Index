@@ -70,15 +70,12 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         Page<AbroadCase> page = new Page<>(queryRequest.getPage(), queryRequest.getSize());
         Page<AbroadCase> resultPage = abroadCaseMapper.selectPage(page, wrapper);
 
-        // 转换为Response
-        Page<AbroadCaseListResponse> responsePage = new Page<>(resultPage.getCurrent(), resultPage.getSize(), resultPage.getTotal());
-        responsePage.setRecords(resultPage.getRecords().stream().map(entity -> {
+        // 使用 MyBatis Plus 提供的 convert 方法进行分页 VO 映射，保留所有分页元信息
+        return resultPage.convert(entity -> {
             AbroadCaseListResponse response = new AbroadCaseListResponse();
             BeanUtils.copyProperties(entity, response);
             return response;
-        }).collect(Collectors.toList()));
-
-        return responsePage;
+        });
     }
 
     /**
