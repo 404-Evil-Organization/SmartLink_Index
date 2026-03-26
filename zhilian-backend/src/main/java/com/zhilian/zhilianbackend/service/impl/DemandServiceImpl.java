@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhilian.zhilianbackend.common.constant.DateConstants;
@@ -204,29 +205,24 @@ public class DemandServiceImpl implements DemandService {
      * @Date: 2026/3/25
      * @Param: demandId 需求ID
      * @Return: 无
-     * @Description: 将需求状态重置为已发布（用于取消合作时）
+     * @Description: 将需求状态重置为已发布（用于取消合作时），使用条件更新确保并发安全
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void resetDemandStatusToPublished(Long demandId) {
-        // 1. 查询需求，确保存在
-        Demand demand = demandMapper.selectById(demandId);
-        if (demand == null) {
-            log.warn("重置需求状态失败，需求不存在或已被删除，需求ID: {}", demandId);
-            throw new BusinessException(404, "需求不存在或已被删除，无法重置状态");
-        }
-        // 2. 仅允许从 matched 状态重置为 published，保证状态流转闭环
-        if (!"matched".equals(demand.getStatus())) {
-            log.warn("重置需求状态失败，需求当前状态不是 matched，需求ID: {}，当前状态: {}", demandId, demand.getStatus());
-            throw new BusinessException(409, "只有 matched 状态的需求才允许重置为 published");
-        }
-        // 3. 执行状态更新，并校验受影响行数，防止静默失败
-        demand.setStatus("published");
-        demand.setUpdateTime(new Date());
-        int updateRows = demandMapper.updateById(demand);
+        // 使用条件更新，只有当需求存在、未逻辑删除且状态为 matched 时才更新为 published
+        LambdaUpdateWrapper<Demand> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Demand::getId, demandId)
+                .eq(Demand::getDeleted, notDeletedTime)      // 未逻辑删除
+                .eq(Demand::getStatus, "matched")           // 仅 matched 状态
+                .set(Demand::getStatus, "published")
+                .set(Demand::getUpdateTime, new Date());
+
+        int updateRows = demandMapper.update(null, updateWrapper);
         if (updateRows == 0) {
-            log.error("重置需求状态失败，数据库更新行数为 0，需求ID: {}", demandId);
-            throw new BusinessException(500, "重置需求状态失败");
+            // 未匹配到符合条件的记录，可能是需求不存在、已逻辑删除或状态已变更
+            log.warn("重置需求状态失败，需求ID: {}，可能已被删除或状态已变更", demandId);
+            throw new BusinessException(409, "需求状态已变更，无法重置为已发布");
         }
         log.info("需求状态重置为 published，需求ID: {}", demandId);
     }

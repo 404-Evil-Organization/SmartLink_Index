@@ -98,10 +98,32 @@ public class CooperationController {
         String currentUserRole = securityUtils.getCurrentUserRole();
 
         if (request != null && request.getReason() != null) {
-            log.info("用户取消合作，合作ID: {}, 原因: {}", id, request.getReason());
+            // 为避免用户输入导致日志污染，这里对取消原因做控制字符清理与长度截断
+            String sanitizedReason = sanitizeReasonForLog(request.getReason());
+            log.info("用户取消合作，合作ID: {}, 原因: {}", id, sanitizedReason);
         }
-
         cooperationService.cancelCooperation(id, currentUserId, currentUserRole);
         return Result.success();
+    }
+    /**
+     * 对用户输入的取消原因进行日志安全清洗：
+     * 1. 去除换行、回车、制表符等控制字符，统一替换为空格；
+     * 2. 限制最大长度，避免超长内容污染日志（默认 200 字符）。
+     *
+     * @param reason 用户原始输入的取消原因
+     * @return 适合写入日志的安全、简短原因文案
+     */
+    private String sanitizeReasonForLog(String reason) {
+        if (reason == null) {
+            return "null";
+        }
+        // 替换常见控制字符为单个空格，防止日志被拆成多行或缩进错乱
+        String cleaned = reason.replaceAll("[\\r\\n\\t]", " ");
+        // 设置日志中允许记录的最大长度
+        final int maxLength = 200;
+        if (cleaned.length() > maxLength) {
+            cleaned = cleaned.substring(0, maxLength) + "...(truncated)";
+        }
+        return cleaned;
     }
 }
