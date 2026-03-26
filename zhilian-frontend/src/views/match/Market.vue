@@ -256,6 +256,32 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 接单确认弹窗 -->
+    <el-dialog v-model="acceptConfirmDialog.visible" title="确认接单" width="400px">
+      <div class="confirm-content">
+        <el-alert
+          title="确认接单"
+          type="warning"
+          description="接单后将无法撤销，请确认是否接取该需求？"
+          show-icon
+          :closable="false"
+        />
+        <div class="demand-info" style="margin-top: 16px;">
+          <p><strong>需求标题：</strong>{{ acceptConfirmDialog.demandTitle }}</p>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="acceptConfirmDialog.visible = false">取消</el-button>
+        <el-button 
+          type="primary" 
+          @click="confirmAcceptDemand"
+          :loading="acceptingId === acceptConfirmDialog.demandId"
+        >
+          确认接单
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -320,8 +346,15 @@ const availableServiceProviders = ref([]);
 const selectServiceDialog = reactive({
   visible: false,
   demandId: null,
-  selectedServiceId: null,
   demandTitle: "",
+  selectedServiceId: null,
+});
+// 接单确认弹窗
+const acceptConfirmDialog = reactive({
+  visible: false,
+  demandId: null,
+  demandTitle: "",
+  serviceId: null,
 });
 
 // 预算错误提示
@@ -386,7 +419,11 @@ const fetchDemandList = async () => {
       deadlineStart: searchForm.deadlineStart || undefined,
       deadlineEnd: searchForm.deadlineEnd || undefined,
     };
+    console.log(params);
+    
     const res = await getDemandMarketList(params);
+    console.log(res);
+    
 
     demandList.value = res.records || [];
     total.value = res.total || 0;
@@ -443,7 +480,7 @@ const refreshList = () => {
 const fetchTags = async () => {
   try {
     // 获取所有标签，不限数量
-    const res = await getTagList({ page: 1, size: 1000 });
+    const res = await getTagList({ page: 1, size: 100 });
     tagOptions.value = res.records || [];
   } catch (error) {
     console.error("获取标签列表失败", error);
@@ -480,10 +517,10 @@ const handleAccept = async (demand) => {
     return;
   }
 
-  // 如果只有一个服务商企业，直接接单
+  // 如果只有一个服务商企业，弹出确认弹窗
   if (availableServiceProviders.value.length === 1) {
     const serviceId = availableServiceProviders.value[0].id;
-    await doAccept(demand.id, serviceId, demand.title);
+    openAcceptConfirmDialog(demand.id, demand.title, serviceId);
   } else {
     // 多个服务商企业，弹出选择框
     selectServiceDialog.demandId = demand.id;
@@ -500,14 +537,36 @@ const confirmAccept = async () => {
     ElMessage.warning("请选择服务商企业");
     return;
   }
-  if (
+  // 弹出确认弹窗
+  openAcceptConfirmDialog(
+    selectServiceDialog.demandId,
+    selectServiceDialog.demandTitle,
+    selectServiceDialog.selectedServiceId,
+  );
+  selectServiceDialog.visible = false;
+};
+
+// 打开接单确认弹窗
+const openAcceptConfirmDialog = (demandId, demandTitle, serviceId) => {
+  acceptConfirmDialog.demandId = demandId;
+  acceptConfirmDialog.demandTitle = demandTitle;
+  acceptConfirmDialog.serviceId = serviceId;
+  acceptConfirmDialog.visible = true;
+};
+
+// 确认接单
+const confirmAcceptDemand = async () => {
+  if (!acceptConfirmDialog.demandId || !acceptConfirmDialog.serviceId) return;
+  
+  try {
     await doAccept(
-      selectServiceDialog.demandId,
-      selectServiceDialog.selectedServiceId,
-      selectServiceDialog.demandTitle,
-    )
-  ) {
-    selectServiceDialog.visible = false;
+      acceptConfirmDialog.demandId,
+      acceptConfirmDialog.serviceId,
+      acceptConfirmDialog.demandTitle,
+    );
+    acceptConfirmDialog.visible = false;
+  } catch (error) {
+    console.error("接单失败", error);
   }
 };
 
@@ -519,7 +578,7 @@ const doAccept = async (demandId, serviceId, demandTitle) => {
       demandId,
       serviceId,
     });
-    ElMessage.success(`已成功接取需求“${demandTitle}”`);
+    ElMessage.success(`已成功接取需求"${demandTitle}"`);
     // 刷新列表，移除已匹配的需求
     await fetchDemandList();
     return true;

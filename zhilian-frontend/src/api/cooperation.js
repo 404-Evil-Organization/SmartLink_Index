@@ -26,3 +26,16 @@ export function getCooperationDetail(id) {
     method: "get",
   });
 }
+
+/**
+ * 取消合作（4.7）
+ * @param {number} id - 合作记录ID
+ * @param {string} [reason] - 取消原因
+ */
+export function cancelCooperation(id, reason = "") {
+  return request({
+    url: `/cooperation/cancel/${id}`,
+    method: "post",
+    data: { reason },
+  });
+}
