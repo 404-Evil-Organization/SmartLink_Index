@@ -4,67 +4,36 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseQueryRequest;
-import com.zhilian.zhilianbackend.dto.request.AbroadServiceQueryRequest;
 import com.zhilian.zhilianbackend.dto.response.AbroadCaseVO;
-import com.zhilian.zhilianbackend.dto.response.AbroadServiceVO;
 import com.zhilian.zhilianbackend.entity.AbroadCase;
-import com.zhilian.zhilianbackend.entity.ServiceProvider;
 import com.zhilian.zhilianbackend.mapper.AbroadCaseMapper;
-import com.zhilian.zhilianbackend.mapper.ServiceProviderMapper;
 import com.zhilian.zhilianbackend.service.AbroadCaseService;
+import com.zhilian.zhilianbackend.utils.SqlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
- * @Author: 6017
- * @Date: 2026/3/9 21:33
- * @Param:
- * @Return:
- * @Description: 出海业务服务实现类，包含案例与服务商相关业务实现
- **/
+ * @Author: xiaodengyou
+ * @Date: 2026/3/26 15:51
+ * @Description: 出海成功案例业务实现类
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AbroadCaseServiceImpl extends ServiceImpl<AbroadCaseMapper, AbroadCase> implements AbroadCaseService {
 
-    private final ServiceProviderMapper serviceProviderMapper;
-
-    @Override
-    public List<AbroadServiceVO> getAbroadServices(AbroadServiceQueryRequest request) {
-        String serviceType = request.getServiceType();
-        log.debug("查询出海服务商，服务类型过滤：{}", serviceType);
-
-        // 构建查询条件
-        LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ServiceProvider::getIsAbroad, 1)               // 提供出海服务
-                .eq(ServiceProvider::getAuditStatus, "approved")   // 审核通过
-                .apply("deleted = '1970-01-01 00:00:00'");        // 未删除
-
-        // 服务类型筛选（使用 FIND_IN_SET 匹配逗号分隔的 service_type）
-        if (StringUtils.hasText(serviceType)) {
-            wrapper.apply("FIND_IN_SET({0}, service_type) > 0", serviceType);
-        }
-
-        // 按 id 降序，保证稳定排序
-        wrapper.orderByDesc(ServiceProvider::getId);
-
-        List<ServiceProvider> providers = serviceProviderMapper.selectList(wrapper);
-
-        List<AbroadServiceVO> result = providers.stream()
-                .map(this::convertToServiceVO)
-                .collect(Collectors.toList());
-
-        log.info("查询出海服务商成功，共{}条", result.size());
-        return result;
-    }
-
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/26 15:51
+     * @Param: request 成功案例查询请求参数（含分页、筛选条件）
+     * @Return: PageResult<AbroadCaseVO> 分页封装的成功案例视图对象
+     * @Description: 分页查询已发布的成功案例，支持按国家、服务类型模糊筛选
+     */
     @Override
     public PageResult<AbroadCaseVO> getAbroadCases(AbroadCaseQueryRequest request) {
         String country = request.getCountry();
@@ -75,57 +44,42 @@ public class AbroadCaseServiceImpl extends ServiceImpl<AbroadCaseMapper, AbroadC
         log.debug("查询成功案例，国家：{}，服务类型：{}，页码：{}，每页条数：{}",
                 country, serviceType, pageNum, pageSize);
 
-        // 构建分页对象
         Page<AbroadCase> page = new Page<>(pageNum, pageSize);
 
-        // 构建查询条件
         LambdaQueryWrapper<AbroadCase> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(AbroadCase::getStatus, 1)                       // 已发布
-                .apply("deleted = '1970-01-01 00:00:00'");         // 未删除
+        wrapper.eq(AbroadCase::getStatus, 1)
+                .apply("deleted = {0}", DateConstants.getNotDeletedTimeStr());
 
         if (StringUtils.hasText(country)) {
-            wrapper.like(AbroadCase::getCountry, country);
+            String escapedCountry = SqlUtils.escapeSqlLike(country);
+            wrapper.apply("country LIKE CONCAT('%', {0}, '%') ESCAPE '\\'", escapedCountry);
         }
         if (StringUtils.hasText(serviceType)) {
-            wrapper.like(AbroadCase::getServiceType, serviceType);
+            String escapedServiceType = SqlUtils.escapeSqlLike(serviceType);
+            wrapper.apply("service_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\'", escapedServiceType);
         }
 
-        // 按发布时间倒序
         wrapper.orderByDesc(AbroadCase::getPublishTime);
 
         // 执行分页查询
         IPage<AbroadCase> pageResult = this.page(page, wrapper);
 
-        // 转换为 VO
-        List<AbroadCaseVO> records = pageResult.getRecords().stream()
-                .map(this::convertToCaseVO)
-                .collect(Collectors.toList());
+        // 使用 convert 方法将实体转换为 VO，直接得到 IPage<AbroadCaseVO>
+        IPage<AbroadCaseVO> voPage = pageResult.convert(this::convertToVO);
 
-        log.info("查询成功案例成功，总记录数：{}，本次返回：{}条", pageResult.getTotal(), records.size());
+        log.info("查询成功案例成功，总记录数：{}，本次返回：{}条", voPage.getTotal(), voPage.getRecords().size());
 
-        // 手动构建 PageResult，因为实体类型和 VO 类型不同
-        return new PageResult<>(pageResult.getTotal(), records, pageResult.getCurrent(), pageResult.getSize());
+        return PageResult.from(voPage);
     }
 
-    // ==================== 转换方法 ====================
-
-    private AbroadServiceVO convertToServiceVO(ServiceProvider provider) {
-        AbroadServiceVO vo = new AbroadServiceVO();
-        vo.setId(provider.getId());
-        vo.setCompanyName(provider.getCompanyName());
-        vo.setRegion(provider.getRegion());
-        vo.setServiceType(provider.getServiceType());
-        vo.setDescription(provider.getDescription());
-        vo.setLogo(provider.getLogo());
-        vo.setWebsite(provider.getWebsite());
-        vo.setEstablishedDate(provider.getEstablishedDate());
-        vo.setEmployeeCount(provider.getEmployeeCount());
-        vo.setCountryCoverage(provider.getCountryCoverage());
-        vo.setQualification(provider.getQualification());
-        return vo;
-    }
-
-    private AbroadCaseVO convertToCaseVO(AbroadCase abroadCase) {
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/26 15:51
+     * @Param: abroadCase 实体对象
+     * @Return: AbroadCaseVO 视图对象
+     * @Description: 将 AbroadCase 实体转换为 AbroadCaseVO 视图对象
+     */
+    private AbroadCaseVO convertToVO(AbroadCase abroadCase) {
         AbroadCaseVO vo = new AbroadCaseVO();
         vo.setId(abroadCase.getId());
         vo.setTitle(abroadCase.getTitle());

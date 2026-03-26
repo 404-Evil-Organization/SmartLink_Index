@@ -3,33 +3,22 @@ package com.zhilian.zhilianbackend.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseQueryRequest;
-import com.zhilian.zhilianbackend.dto.request.AbroadServiceQueryRequest;
 import com.zhilian.zhilianbackend.dto.response.AbroadCaseVO;
-import com.zhilian.zhilianbackend.dto.response.AbroadServiceVO;
 import com.zhilian.zhilianbackend.entity.AbroadCase;
-
-import java.util.List;
 
 /**
  * @Author: 6017
  * @Date: 2026/3/9 21:26
- * @Param:
- * @Return:
- * @Description: 出海业务服务接口，包含案例与服务商相关业务方法
- **/
+ * @Description: 出海成功案例业务接口
+ */
 public interface AbroadCaseService extends IService<AbroadCase> {
 
     /**
-     * 获取提供出海服务的服务商列表
-     * @param request 查询条件
-     * @return 服务商列表
-     */
-    List<AbroadServiceVO> getAbroadServices(AbroadServiceQueryRequest request);
-
-    /**
-     * 分页获取已发布成功案例
-     * @param request 查询条件（含分页）
-     * @return 分页结果
+     * @Author: xiaodengyou
+     * @Date: 2026/3/26 15:51
+     * @Param: request 成功案例查询请求参数（含分页、筛选条件）
+     * @Return: PageResult<AbroadCaseVO> 分页封装的成功案例视图对象
+     * @Description: 分页获取已发布的成功案例，支持按国家、服务类型筛选
      */
     PageResult<AbroadCaseVO> getAbroadCases(AbroadCaseQueryRequest request);
 }
