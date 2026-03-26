@@ -9,4 +9,9 @@ export default [
     name: "UserManage",
     component: () => import("@/views/admin/UserManage.vue"),
   },
+  {
+    path: "admin/demand",
+    name: "DemandAudit",
+    component: () => import("@/views/admin/DemandAudit.vue"),
+  },
 ];
