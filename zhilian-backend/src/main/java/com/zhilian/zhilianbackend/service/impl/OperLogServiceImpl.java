@@ -39,8 +39,20 @@ public class OperLogServiceImpl extends ServiceImpl<OperLogMapper, OperLog> impl
     @Override
     public IPage<OperLogVO> listOperLogs(Integer page, Integer size, String username, String operation,
                                          Date startTime, Date endTime) {
-        // 构建分页对象
-        Page<OperLog> pageParam = new Page<>(page, size);
+        // 分页参数兜底与范围校验，防止空指针与异常分页
+        long safePage = (page == null || page < 1) ? 1L : page.longValue();
+        long safeSize;
+        if (size == null || size < 1) {
+            // 默认每页 10 条
+            safeSize = 10L;
+        } else if (size > 100) {
+            // 限制单页最大 100 条，避免一次性查询过多数据
+            safeSize = 100L;
+        } else {
+            safeSize = size.longValue();
+        }
+        // 构建分页对象（使用安全的分页参数）
+        Page<OperLog> pageParam = new Page<>(safePage, safeSize);
 
         // 构建查询条件
         LambdaQueryWrapper<OperLog> wrapper = new LambdaQueryWrapper<>();

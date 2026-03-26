@@ -1,5 +1,6 @@
 package com.zhilian.zhilianbackend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,5 +39,6 @@ public class OperLogVO {
     private String ip;
 
     @Schema(description = "操作时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime;
 }

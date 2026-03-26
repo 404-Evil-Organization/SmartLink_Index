@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.response.OperLogVO;
-import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.OperLogService;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -59,7 +58,7 @@ public class OperLogController {
         // 权限校验：仅管理员可访问
         if (!securityUtils.isAdmin()) {
             log.warn("非管理员用户尝试访问操作日志列表");
-            throw new BusinessException(403, "权限不足，仅管理员可查看操作日志");
+            return Result.forbidden("权限不足，仅管理员可查看操作日志");
         }
 
         // 分页参数校验
