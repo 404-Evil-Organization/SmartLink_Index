@@ -1,5 +1,6 @@
 package com.zhilian.zhilianbackend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -31,6 +32,7 @@ public class AbroadServiceVO {
     private String website;
 
     @Schema(description = "成立日期")
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date establishedDate;
 
     @Schema(description = "员工人数")
