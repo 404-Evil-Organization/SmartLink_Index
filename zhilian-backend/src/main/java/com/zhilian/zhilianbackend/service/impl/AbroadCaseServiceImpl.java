@@ -63,7 +63,7 @@ public class AbroadCaseServiceImpl extends ServiceImpl<AbroadCaseMapper, AbroadC
         IPage<AbroadCase> pageResult = this.page(page, wrapper);
         IPage<AbroadCaseVO> voPage = pageResult.convert(this::convertToVO);
 
-        log.info("查询成功案例成功，总记录数：{}，本次返回：{}条", voPage.getTotal(), voPage.getRecords().size());
+        log.debug("查询成功案例成功，总记录数：{}，本次返回：{}条", voPage.getTotal(), voPage.getRecords().size());
 
         return PageResult.from(voPage);
     }

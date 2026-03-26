@@ -61,7 +61,7 @@ public class AbroadServiceProviderServiceImpl implements AbroadServiceProviderSe
         IPage<ServiceProvider> pageResult = serviceProviderMapper.selectPage(page, wrapper);
         IPage<AbroadServiceVO> voPage = pageResult.convert(this::convertToVO);
 
-        log.info("查询出海服务商成功，总记录数：{}，本次返回：{}条", voPage.getTotal(), voPage.getRecords().size());
+        log.debug("查询出海服务商成功，总记录数：{}，本次返回：{}条", voPage.getTotal(), voPage.getRecords().size());
 
         return PageResult.from(voPage);
     }
