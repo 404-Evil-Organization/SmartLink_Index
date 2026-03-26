@@ -229,9 +229,7 @@ export default [
       }
       return { code: 404, message: '案例不存在', data: null };
     }
-  }
-];
-
+  },
   {
     url: "/api/admin/demand/pending",
     method: "get",
