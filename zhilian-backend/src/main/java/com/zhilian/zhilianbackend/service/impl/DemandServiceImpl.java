@@ -60,6 +60,9 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
     private static final String APPROVE_ACTION_APPROVED = "approved";
     private static final String APPROVE_ACTION_REJECTED = "rejected";
 
+    // 定义允许所有登录用户查看的状态
+    private static final Set<String> PUBLIC_STATUSES = Set.of("published", "matched");
+
     private final ManufactureMapper manufactureMapper;
     private final TagService tagService;
     private final DemandTagMapper demandTagMapper;
@@ -566,11 +569,11 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
         // 权限校验逻辑
         // - 若需求状态为 draft，则仅发布者（根据 manuId 关联的用户）或管理员可查看详情。
         // - 若需求状态为 published 或 matched，则所有已登录用户均可查看详情
-        if (DEMAND_STATUS_DRAFT.equals(demand.getStatus())) {
+        if (!PUBLIC_STATUSES.contains(demand.getStatus())) {
+            // 非公开状态：仅创建者或管理员可查看
             if (!securityUtils.isAdmin()) {
-                // 走到这里时，manufacture 在草稿场景下已保证非空，这里只做 userId 权限校验
-                if (!manufacture.getUserId().equals(userId)) {
-                    throw new BusinessException(403, "无权查看该草稿需求");
+                if (manufacture == null || !manufacture.getUserId().equals(userId)) {
+                    throw new BusinessException(403, "无权查看该需求");
                 }
             }
         }
