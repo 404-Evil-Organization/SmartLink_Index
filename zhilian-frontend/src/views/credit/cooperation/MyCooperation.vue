@@ -95,11 +95,20 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <!-- 新增：查看详情按钮 -->
             <el-button size="small" @click="openDetailDialog(row.id)">
               查看详情
+            </el-button>
+            <!-- 取消合作按钮 -->
+            <el-button
+              v-if="row.status === 'ongoing'"
+              type="danger"
+              size="small"
+              @click="openCancelDialog(row)"
+            >
+              取消合作
             </el-button>
             <el-button
               v-if="row.status === 'completed' && !row.hasEvaluated"
@@ -176,6 +185,26 @@
         <el-button @click="detailDialog.visible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 取消合作弹窗 -->
+    <el-dialog v-model="cancelDialog.visible" title="取消合作" width="500px">
+      <el-form :model="cancelDialog" label-width="80px">
+        <el-form-item label="取消原因">
+          <el-input
+            v-model="cancelDialog.reason"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入取消合作的原因（可选）"
+            maxlength="200"
+            show-word-limit
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="cancelDialog.visible = false" :disabled="canceling">取消</el-button>
+        <el-button type="danger" @click="handleCancelCooperation" :loading="canceling">确认取消</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -184,7 +213,7 @@ import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Refresh } from "@element-plus/icons-vue";
-import { getMyCooperationList, getCooperationDetail } from "@/api/cooperation";
+import { getMyCooperationList, getCooperationDetail, cancelCooperation } from "@/api/cooperation";
 import { getMyManufactureList, getMyServiceList } from "@/api/enterprise";
 
 const router = useRouter();
@@ -212,6 +241,16 @@ const detailDialog = reactive({
   visible: false,
   data: {},
 });
+
+// 取消合作弹窗
+const cancelDialog = reactive({
+  visible: false,
+  currentRow: null,
+  reason: "",
+});
+
+// 取消合作 loading 状态
+const canceling = ref(false);
 
 // 获取个人企业列表（制造企业 + 服务商）
 const fetchMyEnterprises = async () => {
@@ -309,6 +348,31 @@ const goToEvaluation = (coopId) => {
     path: "/evaluation/add",
     query: { coopId: coopId },
   });
+};
+
+// 打开取消合作弹窗
+const openCancelDialog = (row) => {
+  cancelDialog.currentRow = row;
+  cancelDialog.reason = "";
+  cancelDialog.visible = true;
+};
+
+// 处理取消合作
+const handleCancelCooperation = async () => {
+  if (!cancelDialog.currentRow || canceling.value) return;
+  
+  canceling.value = true;
+  try {
+    await cancelCooperation(cancelDialog.currentRow.id, cancelDialog.reason);
+    ElMessage.success("取消合作成功");
+    cancelDialog.visible = false;
+    fetchList(); // 刷新列表
+  } catch (error) {
+    console.error("取消合作失败", error);
+    ElMessage.error("取消合作失败");
+  } finally {
+    canceling.value = false;
+  }
 };
 
 // 状态标签样式

@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -12,10 +13,13 @@ import com.zhilian.zhilianbackend.entity.*;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.*;
 import com.zhilian.zhilianbackend.service.CooperationService;
+import com.zhilian.zhilianbackend.service.DemandService;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.Date;
 
 /**
  * @Author: xiaodengyou
@@ -32,10 +36,23 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
     private final ServiceProviderMapper serviceProviderMapper;
     private final DemandMapper demandMapper;
     private final EvaluationMapper evaluationMapper;
+    private final DemandService demandService;
     private final SecurityUtils securityUtils;
 
     // ==================== 非管理员方法 ====================
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: userId 当前用户ID
+     * @Param: userRole 当前用户角色
+     * @Param: enterpriseId 企业ID（可选）
+     * @Param: status 状态筛选
+     * @Param: page 页码
+     * @Param: size 每页条数
+     * @Return: 分页的合作记录列表
+     * @Description: 分页查询当前用户的合作记录（非管理员）
+     */
     @Override
     public PageResult<CooperationRecordVO> pageMyCooperations(Long userId, String userRole, Long enterpriseId, String status, Integer page, Integer size) {
         Long companyId;
@@ -66,6 +83,15 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
         return PageResult.from(iPage);
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: cooperationId 合作记录ID
+     * @Param: userId 当前用户ID
+     * @Param: userRole 当前用户角色
+     * @Return: 合作记录详情
+     * @Description: 获取合作记录详情（非管理员，需校验权限）
+     */
     @Override
     public CooperationDetailVO getCooperationDetail(Long cooperationId, Long userId, String userRole) {
         // 1. 查询合作记录
@@ -101,6 +127,17 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
 
     // ==================== 管理员方法 ====================
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: userId 当前用户ID
+     * @Param: enterpriseId 企业ID（可选）
+     * @Param: status 状态筛选
+     * @Param: page 页码
+     * @Param: size 每页条数
+     * @Return: 分页的合作记录列表
+     * @Description: 分页查询合作记录（管理员专用，不限制企业）
+     */
     @Override
     public PageResult<CooperationRecordVO> pageMyCooperationsAdmin(Long userId, Long enterpriseId, String status, Integer page, Integer size) {
         Page<CooperationRecordVO> pageParam = new Page<>(page, size);
@@ -110,6 +147,14 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
         return PageResult.from(iPage);
     }
 
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/20 19:00
+     * @Param: cooperationId 合作记录ID
+     * @Param: userId 当前用户ID
+     * @Return: 合作记录详情
+     * @Description: 获取合作记录详情（管理员专用，无权限校验）
+     */
     @Override
     public CooperationDetailVO getCooperationDetailAdmin(Long cooperationId, Long userId) {
         Cooperation cooperation = cooperationMapper.selectById(cooperationId);
@@ -222,5 +267,69 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
                 .createTime(cooperation.getCreateTime())
                 .hasEvaluated(hasEvaluated)
                 .build();
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: cooperationId 合作记录ID
+     * @Param: currentUserId 当前用户ID
+     * @Param: currentUserRole 当前用户角色
+     * @Return: 无
+     * @Description: 取消合作，仅合作双方或管理员可操作，成功后恢复关联需求状态
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void cancelCooperation(Long cooperationId, Long currentUserId, String currentUserRole) {
+        // 1. 查询合作记录，用于权限校验和获取 demandId
+        Cooperation cooperation = cooperationMapper.selectById(cooperationId);
+        if (cooperation == null) {
+            throw new BusinessException(404, "合作记录不存在");
+        }
+        // 状态校验（并发安全由条件更新保证，但先校验可以提前返回）
+        if (!"ongoing".equals(cooperation.getStatus())) {
+            throw new BusinessException(409, "当前合作状态不允许取消");
+        }
+
+        // 权限校验
+        boolean authorized = false;
+        if ("manufacture".equals(currentUserRole)) {
+            LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Manufacture::getUserId, currentUserId);
+            Manufacture manufacture = manufactureMapper.selectOne(wrapper);
+            if (manufacture != null && manufacture.getId().equals(cooperation.getManuId())) {
+                authorized = true;
+            }
+        } else if ("service".equals(currentUserRole)) {
+            LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(ServiceProvider::getUserId, currentUserId);
+            ServiceProvider sp = serviceProviderMapper.selectOne(wrapper);
+            if (sp != null && sp.getId().equals(cooperation.getServiceId())) {
+                authorized = true;
+            }
+        }
+        if (!authorized && !securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权取消该合作");
+        }
+
+        // 使用条件更新，避免并发重复取消，并确保仅更新未被逻辑删除的记录
+        LambdaUpdateWrapper<Cooperation> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Cooperation::getId, cooperationId)
+                .eq(Cooperation::getStatus, "ongoing")
+                .eq(Cooperation::getDeleted, DateConstants.getNotDeletedTime())
+                .set(Cooperation::getStatus, "cancelled")
+                .set(Cooperation::getUpdateTime, new Date());
+        int updateRows = cooperationMapper.update(null, updateWrapper);
+        if (updateRows == 0) {
+            throw new BusinessException(409, "合作状态已被变更，无法取消");
+        }
+
+        // 恢复需求状态：resetDemandStatusToPublished 内部已包含需求存在性、状态校验及更新结果校验，
+        // 任何失败都会抛出 BusinessException 回滚事务，无需在此额外查询。
+        if (cooperation.getDemandId() != null) {
+            demandService.resetDemandStatusToPublished(cooperation.getDemandId());
+        }
+
+        log.info("合作取消成功，合作ID: {}, 用户ID: {}, 角色: {}", cooperationId, currentUserId, currentUserRole);
     }
 }
