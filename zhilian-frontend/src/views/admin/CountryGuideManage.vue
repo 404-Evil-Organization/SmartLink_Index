@@ -62,7 +62,7 @@
         </el-table-column>
         <el-table-column prop="updateTime" label="更新时间" width="160">
           <template #default="{ row }">
-            {{ formatDateTime(row.updateTime) }}
+            {{ createTimeConverter(row.updateTime).toLocalYMDHMS() || '-' }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -202,19 +202,6 @@ const rules = {
   country: [{ required: true, message: '请输入国家名称', trigger: 'blur' }],
   requirements: [{ required: true, message: '请输入准入要求', trigger: 'blur' }],
   process: [{ required: true, message: '请输入办理流程', trigger: 'blur' }]
-}
-
-// 日期格式化（兼容空格格式和 ISO 格式）
-const formatDateTime = (dateStr) => {
-  if (!dateStr) return '-'
-  let normalized = dateStr
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
-    normalized = dateStr.replace(' ', 'T')
-  }
-  const converter = createTimeConverter(normalized)
-  const date = converter.toDate()
-  if (!date) return '-'
-  return converter.toLocalYMDHMS()
 }
 
 // 获取列表
