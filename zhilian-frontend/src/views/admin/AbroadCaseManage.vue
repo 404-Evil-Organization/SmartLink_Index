@@ -68,7 +68,7 @@
         </el-table-column>
         <el-table-column label="发布时间" width="160">
           <template #default="{ row }">
-            {{ formatDateTime(row.publishTime) }}
+            {{ createTimeConverter(row.publishTime).toLocalYMDHMS() || '-' }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -236,19 +236,6 @@ const rules = {
   country: [{ required: true, message: '请输入目标国家', trigger: 'blur' }],
   serviceType: [{ required: true, message: '请输入服务类型', trigger: 'blur' }],
   description: [{ required: true, message: '请输入案例详情', trigger: 'blur' }]
-}
-
-// 日期格式化函数
-const formatDateTime = (dateStr) => {
-  if (!dateStr) return '-'
-  let normalized = dateStr
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
-    normalized = dateStr.replace(' ', 'T')
-  }
-  const converter = createTimeConverter(normalized)
-  const date = converter.toDate()
-  if (!date) return '-'
-  return converter.toLocalYMDHMS()
 }
 
 // 预览图片
