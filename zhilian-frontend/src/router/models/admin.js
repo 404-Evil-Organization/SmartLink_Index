@@ -14,4 +14,14 @@ export default [
     name: "AbroadCaseManage",
     component: () => import("@/views/admin/AbroadCaseManage.vue"),
   },
+  {
+    path: "admin/demand",
+    name: "DemandAudit",
+    component: () => import("@/views/admin/DemandAudit.vue"),
+  },
+  {
+    path: "admin/region-index",
+    name: "RegionIndexManage",
+    component: () => import("@/views/admin/RegionIndexManage.vue"),
+  },
 ];

@@ -1542,6 +1542,58 @@
 > 3. 更新合作记录 `status='cancelled'`。
 > 4. 将关联的需求状态恢复为 `published`。
 
+---
+
+### 4.8 获取需求详情
+
+- **URL**: `/api/demand/{id}`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需登录）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 需求ID |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 3001,
+    "manuId": 1001,
+    "title": "寻求PCB设计服务",
+    "description": "需要专业PCB设计公司，有高速PCB设计经验者优先。",
+    "expectedBudget": 10.0,
+    "deadline": "2026-06-01",
+    "status": "published",
+    "auditStatus": "approved",
+    "auditRemark": null,
+    "createTime": "2026-03-01 10:00:00",
+    "updateTime": "2026-03-01 10:00:00",
+    "manufacture": {
+      "id": 1001,
+      "companyName": "深圳电子科技",
+      "region": "深圳",
+      "contactPerson": "张三",
+      "contactPhone": "13800138001"
+    },
+    "tags": [
+      { "id": 1, "name": "PCB设计" },
+      { "id": 2, "name": "高速电路" }
+    ]
+  }
+}
+```
+
+> **业务逻辑**：
+>
+> - 若需求状态为 `draft`（草稿），则仅发布者（根据 `manuId` 关联的用户）或管理员可查看详情。
+> - 若需求状态为 `published` 或 `matched`，则所有已登录用户均可查看详情，但敏感信息（如联系电话）可能根据角色或需求状态进行脱敏处理（具体可参考文档设计，此接口未做脱敏，返回完整信息）。
+> - 若需求已被删除（逻辑删除），则返回404。
+
 ------
 
 ## 五、信用评价体系模块
@@ -1822,6 +1874,51 @@
   }
 }
 ```
+
+### 6.4 获取国家准入指南列表
+
+- **URL**: `/api/abroad/country-guide/list`
+- **Method**: `GET`
+- **请求头**: 无需认证（公开接口）
+- **请求参数**（Query）:
+
+| 参数名  | 类型   | 必填 | 描述                       |
+| :------ | :----- | :--- | :------------------------- |
+| page    | int    | 否   | 页码，默认1                |
+| size    | int    | 否   | 每页条数，默认10           |
+| keyword | string | 否   | 国家名称关键词（模糊匹配） |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "total": 10,
+    "records": [
+      {
+        "id": 1,
+        "country": "美国",
+        "requirements": "FCC认证（强制性）、UL认证（安全）、能源之星（能效），部分产品需FDA或EPA认证。测试标准遵循ANSI/UL、ASTM等。",
+        "process": "1. 确定产品类别与适用标准\n2. 选择认证机构（如UL、FCC授权实验室）\n3. 提交样品与技术文档\n4. 实验室测试\n5. 出具报告，获取证书\n6. 后续市场监督与年度审核",
+        "documents": [
+          "产品说明书（英文）",
+          "电路原理图与PCB layout",
+          "关键元器件清单及认证证书",
+          "产品标签与包装图样",
+          "测试申请表"
+        ]
+      }
+    ]
+  }
+}
+```
+
+> **说明**：
+>
+> - 返回所有已发布的国家准入指南，支持分页和按国家名称模糊搜索。
+> - `requirements`、`process`、`documents` 字段与 `6.2 获取特定国家准入指南` 接口返回的字段结构一致，此处列表返回完整数据。
 
 ---
 
