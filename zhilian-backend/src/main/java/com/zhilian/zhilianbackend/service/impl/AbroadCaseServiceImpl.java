@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseCreateRequest;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseQueryRequest;
@@ -48,12 +49,12 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
      * @Description: 分页查询出海案例列表（管理员）
      **/
     @Override
-    public Page<AbroadCaseListResponse> listByPage(AbroadCaseQueryRequest queryRequest) {
+    public IPage<AbroadCaseListResponse> listByPage(AbroadCaseQueryRequest queryRequest) {
         // 构建查询条件
         LambdaQueryWrapper<AbroadCase> wrapper = new LambdaQueryWrapper<>();
 
         if (StringUtils.hasText(queryRequest.getCountry())) {
-            wrapper.eq(AbroadCase::getCountry, queryRequest.getCountry());
+            wrapper.like(AbroadCase::getCountry, queryRequest.getCountry());
         }
 
         if (queryRequest.getStatus() != null) {
@@ -67,7 +68,7 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
 
         // 分页查询
         Page<AbroadCase> page = new Page<>(queryRequest.getPage(), queryRequest.getSize());
-        Page<AbroadCase> resultPage = abroadCaseMapper.selectPage(page, wrapper);
+        IPage<AbroadCase> resultPage = abroadCaseMapper.selectPage(page, wrapper);
 
         // 使用 MyBatis Plus 提供的 convert 方法进行分页 VO 映射，保留所有分页元信息
         return resultPage.convert(entity -> {

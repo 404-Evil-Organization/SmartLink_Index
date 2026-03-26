@@ -185,9 +185,8 @@ import {
   List,
   DataLine,
   Flag,
-  Checked,  // 新增
+  Checked,
   Shop,
-  Checked, // 新增
   DocumentAdd,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";

@@ -148,10 +148,8 @@
           <!-- 上传组件（不显示列表） -->
           <el-upload
             class="cover-upload"
-            :action="uploadUrl"
-            :headers="uploadHeaders"
-            :on-success="handleUploadSuccess"
-            :on-error="handleUploadError"
+            action="#"
+            :http-request="handleCustomUpload"
             :before-upload="beforeUpload"
             :show-file-list="false"
           >
@@ -221,12 +219,6 @@ const form = reactive({
 })
 
 const formRef = ref(null)
-
-// 文件上传相关
-const uploadUrl = '/api/common/upload'
-const uploadHeaders = {
-  Authorization: `Bearer ${userStore.token}`
-}
 
 // 表单校验规则
 const rules = {
@@ -300,6 +292,7 @@ const resetDialog = () => {
     serviceType: '',
     description: '',
     coverImage: '',
+    coverImageFile: null,
     status: 1
   })
   dialog.isEdit = false
@@ -328,6 +321,7 @@ const openEditDialog = (row) => {
     serviceType: row.serviceType,
     description: row.description,
     coverImage: row.coverImage || '',
+    coverImageFile: null,
     status: row.status
   })
   dialog.visible = true
@@ -360,6 +354,15 @@ const beforeUpload = (file) => {
   return true
 }
 
+// 自定义上传行为，因为我们需要把文件拦截下来和表单一起提交，而不是直接单独上传
+const handleCustomUpload = (options) => {
+  const file = options.file;
+  // 生成本地预览 URL
+  form.coverImage = URL.createObjectURL(file);
+  // 保存文件对象，等待提交表单时一并发送
+  form.coverImageFile = file;
+};
+
 // 提交表单
 const submitForm = async () => {
   if (!formRef.value) return
@@ -368,14 +371,28 @@ const submitForm = async () => {
   } catch (error) {
     return
   }
+  
+  // 使用 FormData 来提交数据
+  const formData = new FormData()
+  formData.append('title', form.title)
+  formData.append('companyName', form.companyName)
+  formData.append('companyType', form.companyType)
+  formData.append('country', form.country)
+  formData.append('serviceType', form.serviceType)
+  formData.append('description', form.description)
+  formData.append('status', form.status)
+  
+  // 如果有新上传的图片
+  if (form.coverImageFile) {
+    formData.append('coverImageFile', form.coverImageFile)
+  }
 
-  const data = { ...form }
   try {
     if (dialog.isEdit) {
-      await updateAbroadCase(dialog.editId, data)
+      await updateAbroadCase(dialog.editId, formData)
       ElMessage.success('修改成功')
     } else {
-      await addAbroadCase(data)
+      await addAbroadCase(formData)
       ElMessage.success('新增成功')
     }
     dialog.visible = false

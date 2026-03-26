@@ -1,6 +1,6 @@
 package com.zhilian.zhilianbackend.controller;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseCreateRequest;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseQueryRequest;
@@ -43,7 +43,7 @@ public class AdminAbroadCaseController {
      **/
     @GetMapping("/list")
     @Operation(summary = "获取出海案例列表")
-    public Result<Page<AbroadCaseListResponse>> list(@Valid AbroadCaseQueryRequest queryRequest) {
+    public Result<IPage<AbroadCaseListResponse>> list(@Valid AbroadCaseQueryRequest queryRequest) {
         // 校验管理员权限
         checkAdminPermission();
 

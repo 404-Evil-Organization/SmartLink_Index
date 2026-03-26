@@ -1,6 +1,6 @@
 package com.zhilian.zhilianbackend.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseCreateRequest;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseQueryRequest;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseUpdateRequest;
@@ -17,7 +17,7 @@ public interface AbroadCaseService {
     /**
      * 分页查询出海案例列表（管理员）
      */
-    Page<AbroadCaseListResponse> listByPage(AbroadCaseQueryRequest queryRequest);
+    IPage<AbroadCaseListResponse> listByPage(AbroadCaseQueryRequest queryRequest);
 
     /**
      * 获取出海案例详情
