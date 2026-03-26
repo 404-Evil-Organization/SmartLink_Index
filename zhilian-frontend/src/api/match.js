@@ -21,7 +21,7 @@ import request from "@/utils/request";
  */
 export function getDemandMarketList(params) {
   return request({
-    url: "/demand/market",
+    url: "/demand/market/list",
     method: "get",
     params,
   });

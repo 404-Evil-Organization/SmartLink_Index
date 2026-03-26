@@ -51,7 +51,7 @@ public class DemandController {
      * @Return: 分页的市场需求列表
      * @Description: 获取合作市场需求列表，仅服务商或管理员可访问
      */
-    @GetMapping("/market")
+    @GetMapping("/market/list")
     @Operation(summary = "获取合作市场需求列表")
     public Result<PageResult<DemandMarketVO>> getMarketDemands(
             @RequestParam(defaultValue = "1") Integer page,
