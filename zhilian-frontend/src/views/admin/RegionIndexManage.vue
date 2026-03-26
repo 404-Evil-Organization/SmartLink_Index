@@ -340,15 +340,25 @@ const periodValueOptions = computed(() => {
   }
 })
 
-// 监听周期类型变化，重置对应的周期值，避免出现“值不在选项中却被提交”的情况
+// 监听周期类型变化，仅在当前周期值在新类型下无效时才重置，避免编辑回填被误清空
 watch(
   () => form.periodType,
-  () => {
-    // 切换周期类型时清空周期值
-    form.periodValue = null
-    // 同步清除该字段的校验状态，避免残留错误提示
-    if (formRef.value && typeof formRef.value.clearValidate === 'function') {
-      formRef.value.clearValidate('periodValue')
+  (newType, oldType) => {
+    // 周期类型未实际变化时不做处理
+    if (newType === oldType) {
+      return
+    }
+
+    // 获取当前周期类型对应的合法选项
+    const validOptions = periodValueOptions.value || []
+
+    // 仅当当前周期值不在新类型可选范围内时才清空，防止合法回填值被误清除
+    if (!validOptions.includes(form.periodValue)) {
+      form.periodValue = null
+      // 同步清除该字段的校验状态，避免残留错误提示
+      if (formRef.value && typeof formRef.value.clearValidate === 'function') {
+        formRef.value.clearValidate('periodValue')
+      }
     }
   }
 )
