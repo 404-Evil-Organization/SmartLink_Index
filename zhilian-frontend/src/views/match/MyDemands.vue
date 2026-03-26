@@ -366,8 +366,8 @@ const fetchTags = async () => {
       const currentTags = res.records || [];
       allTags = allTags.concat(currentTags);
       
-      const total = res.total || 0;
-      if (allTags.length >= total || currentTags.length < size) {
+      const tagTotal = res.total || 0;
+      if (allTags.length >= tagTotal || currentTags.length < size) {
         hasMore = false;
       } else {
         page++;
