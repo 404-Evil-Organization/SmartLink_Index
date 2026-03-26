@@ -1,5 +1,15 @@
 import request from "@/utils/request";
 
+// 获取待审核企业列表
+export function getAuditList(params) {
+  return request({
+    url: "/admin/enterprise/audit/list",
+    method: "get",
+    params,
+  });
+}
+
+// 获取用户列表（管理员）
 /**
  * 获取用户列表（管理员）
  * @description 分页查询用户，支持按角色、状态筛选和关键词模糊搜索（8.1.1）
@@ -34,6 +44,16 @@ export function getUserList(params) {
   });
 }
 
+// 审核企业（通过/驳回）
+export function auditEnterprise(id, status, auditRemark = "") {
+  return request({
+    url: `/admin/enterprise/audit/${id}`,
+    method: "put",
+    data: { status, auditRemark },
+  });
+}
+
+// 修改用户状态
 /**
  * 修改用户状态（启用/禁用）
  * @description 管理员修改指定用户的状态（8.1.3）
