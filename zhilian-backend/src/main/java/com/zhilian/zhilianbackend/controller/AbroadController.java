@@ -10,13 +10,12 @@ import com.zhilian.zhilianbackend.service.AbroadCaseService;
 import com.zhilian.zhilianbackend.service.AbroadServiceProviderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @Author: xiaodengyou
@@ -41,11 +40,11 @@ public class AbroadController {
      * @Description: 获取提供出海服务的服务商列表（公开接口）
      */
     @GetMapping("/services")
-    @Operation(summary = "获取提供出海服务的服务商列表", description = "支持按服务类型筛选，公开接口")
-    public Result<List<AbroadServiceVO>> getAbroadServices(@Valid AbroadServiceQueryRequest request) {
+    @Operation(summary = "获取提供出海服务的服务商列表", description = "支持按服务类型、区域筛选，支持分页，公开接口")
+    public Result<PageResult<AbroadServiceVO>> getAbroadServices(@Validated AbroadServiceQueryRequest request) {
         log.debug("接收到获取出海服务商请求，参数：{}", request);
-        List<AbroadServiceVO> list = abroadServiceProviderService.getAbroadServices(request);
-        return Result.success(list);
+        PageResult<AbroadServiceVO> pageResult = abroadServiceProviderService.getAbroadServices(request);
+        return Result.success(pageResult);
     }
 
     /**

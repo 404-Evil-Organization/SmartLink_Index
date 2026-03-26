@@ -52,19 +52,17 @@ public class AbroadCaseServiceImpl extends ServiceImpl<AbroadCaseMapper, AbroadC
 
         if (StringUtils.hasText(country)) {
             String escapedCountry = SqlUtils.escapeSqlLike(country);
-            wrapper.apply("country LIKE CONCAT('%', {0}, '%') ESCAPE '\\'", escapedCountry);
+            // 使用四个反斜杠，最终 SQL 为 ESCAPE '\\'
+            wrapper.apply("country LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escapedCountry);
         }
         if (StringUtils.hasText(serviceType)) {
             String escapedServiceType = SqlUtils.escapeSqlLike(serviceType);
-            wrapper.apply("service_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\'", escapedServiceType);
+            wrapper.apply("service_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escapedServiceType);
         }
 
         wrapper.orderByDesc(AbroadCase::getPublishTime);
 
-        // 执行分页查询
         IPage<AbroadCase> pageResult = this.page(page, wrapper);
-
-        // 使用 convert 方法将实体转换为 VO，直接得到 IPage<AbroadCaseVO>
         IPage<AbroadCaseVO> voPage = pageResult.convert(this::convertToVO);
 
         log.info("查询成功案例成功，总记录数：{}，本次返回：{}条", voPage.getTotal(), voPage.getRecords().size());
