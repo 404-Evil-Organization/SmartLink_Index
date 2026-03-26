@@ -22,4 +22,35 @@
         id, manu_id, title, description, expected_budget, deadline, status, views, deleted, create_time, update_time
     </sql>
 
+    <!-- 待审核需求分页查询结果映射（仅需求+企业） -->
+    <resultMap id="PendingDemandVOMap" type="com.zhilian.zhilianbackend.dto.response.DemandPendingVO">
+        <id column="id" property="id"/>
+        <result column="manu_id" property="manuId"/>
+        <result column="manu_name" property="manuName"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="expected_budget" property="expectedBudget"/>
+        <result column="deadline" property="deadline"/>
+        <result column="create_time" property="createTime"/>
+        <!-- 标签不在 SQL 中关联，由 Service 层组装 -->
+    </resultMap>
+
+    <!-- 分页查询待审核需求（仅需求基本信息 + 企业名称，不含标签） -->
+    <select id="selectPendingDemandPage" resultMap="PendingDemandVOMap">
+        SELECT
+            d.id,
+            d.manu_id,
+            m.company_name AS manu_name,
+            d.title,
+            d.description,
+            d.expected_budget,
+            d.deadline,
+            d.create_time
+        FROM demand d
+                 LEFT JOIN manufacture m ON d.manu_id = m.id AND m.deleted =  #{notDeletedTime}
+        WHERE d.deleted =  #{notDeletedTime}
+          AND d.audit_status = 'pending'
+        ORDER BY d.create_time DESC
+    </select>
+
 </mapper>
