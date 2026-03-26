@@ -117,12 +117,28 @@ public class CooperationController {
         if (reason == null) {
             return "null";
         }
-        // 替换常见控制字符为单个空格，防止日志被拆成多行或缩进错乱
-        String cleaned = reason.replaceAll("[\\r\\n\\t]", " ");
-        // 设置日志中允许记录的最大长度
+        // 设置日志中允许记录的最大原始长度，先截断再做清洗，避免对超长字符串执行高开销操作
         final int maxLength = 200;
-        if (cleaned.length() > maxLength) {
-            cleaned = cleaned.substring(0, maxLength) + "...(truncated)";
+        String truncated;
+        if (reason.length() > maxLength) {
+            truncated = reason.substring(0, maxLength);
+        } else {
+            truncated = reason;
+        }
+        // 逐字符将常见控制字符替换为单个空格，避免使用正则 replaceAll 带来的性能风险
+        StringBuilder sb = new StringBuilder(truncated.length());
+        for (int i = 0; i < truncated.length(); i++) {
+            char c = truncated.charAt(i);
+            if (c == '\r' || c == '\n' || c == '\t') {
+                sb.append(' ');
+            } else {
+                sb.append(c);
+            }
+        }
+        String cleaned = sb.toString();
+        // 如果原始内容被截断，追加标记说明
+        if (reason.length() > maxLength) {
+            cleaned = cleaned + "...(truncated)";
         }
         return cleaned;
     }

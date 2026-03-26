@@ -312,10 +312,11 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
             throw new BusinessException(403, "无权取消该合作");
         }
 
-        // 使用条件更新，避免并发重复取消
+        // 使用条件更新，避免并发重复取消，并确保仅更新未被逻辑删除的记录
         LambdaUpdateWrapper<Cooperation> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Cooperation::getId, cooperationId)
                 .eq(Cooperation::getStatus, "ongoing")
+                .eq(Cooperation::getDeleted, DateConstants.getNotDeletedTime())
                 .set(Cooperation::getStatus, "cancelled")
                 .set(Cooperation::getUpdateTime, new Date());
         int updateRows = cooperationMapper.update(null, updateWrapper);
