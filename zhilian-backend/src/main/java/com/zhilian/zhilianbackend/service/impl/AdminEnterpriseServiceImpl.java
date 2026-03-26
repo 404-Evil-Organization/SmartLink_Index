@@ -83,7 +83,6 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
                         ServiceProvider::getDeleted
                 )
                 .eq(ServiceProvider::getAuditStatus, "pending")
-                .eq(ServiceProvider::getDeleted, DateConstants.getNotDeletedTime())
                 .orderByDesc(ServiceProvider::getCreateTime);
         List<ServiceProvider> serviceList = serviceProviderMapper.selectList(serviceWrapper);
 
@@ -124,10 +123,17 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
             return b.getCreateTime().compareTo(a.getCreateTime());
         });
 
-        // 手动分页
-        int start = (page - 1) * size;
-        int end = Math.min(start + size, allList.size());
-        List<PendingEnterpriseResponse> records = start < allList.size() ? allList.subList(start, end) : new ArrayList<>();
+        // 手动分页，使用 long 计算避免 int 溢出，并在 subList 前做边界保护
+        long longStart = ((long) page - 1) * size;
+        List<PendingEnterpriseResponse> records;
+        if (longStart < 0 || longStart >= allList.size()) {
+            // 起始位置越界时直接返回空记录，避免 subList 越界异常
+            records = new ArrayList<>();
+        } else {
+            int start = (int) longStart;
+            int end = (int) Math.min(longStart + size, allList.size());
+            records = allList.subList(start, end);
+        }
 
         pageParam.setRecords(records);
         pageParam.setTotal(allList.size());

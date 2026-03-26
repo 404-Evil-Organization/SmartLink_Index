@@ -26,6 +26,6 @@ public class EnterpriseApproveRequest {
     @Pattern(regexp = "^(approved|rejected)$", message = "审核状态只能是 approved 或 rejected")
     private String status;
 
-    @Schema(description = "审核意见（驳回时建议填写）", example = "营业执照不清晰，请重新上传")
+    @Schema(description = "审核意见（当审核状态为 rejected 时必填，用于说明驳回原因）", example = "营业执照不清晰，请重新上传")
     private String remark;
 }
