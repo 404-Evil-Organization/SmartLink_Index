@@ -1,5 +1,15 @@
 import request from "@/utils/request";
 
+// 获取待审核企业列表
+export function getAuditList(params) {
+  return request({
+    url: "/admin/enterprise/audit/list",
+    method: "get",
+    params,
+  });
+}
+
+// 获取用户列表（管理员）
 /**
  * 获取用户列表（管理员）
  * @description 分页查询用户，支持按角色、状态筛选和关键词模糊搜索（8.1.1）
@@ -34,6 +44,16 @@ export function getUserList(params) {
   });
 }
 
+// 审核企业（通过/驳回）
+export function auditEnterprise(id, status, auditRemark = "") {
+  return request({
+    url: `/admin/enterprise/audit/${id}`,
+    method: "put",
+    data: { status, auditRemark },
+  });
+}
+
+// 修改用户状态
 /**
  * 修改用户状态（启用/禁用）
  * @description 管理员修改指定用户的状态（8.1.3）
@@ -174,6 +194,48 @@ export function approveDemand(id, data) {
 export function updateAbroadCase(id, data) {
   return request({
     url: `/admin/abroad-case/${id}`,
+      method: "put",
+    data,
+  });
+}
+/**
+ * 获取区域指数列表
+ *
+ * @param {Object} params 查询参数对象（如区域名称、时间区间、分页信息等）
+ * @returns {Promise} 返回后端响应的 Promise，对应区域指数列表数据
+ */
+export function getRegionIndexList(params) {
+  return request({
+    url: "/admin/region-index/list",
+    method: "get",
+    params,
+  });
+}
+
+/**
+ * 新增区域指数
+ *
+ * @param {Object} data 区域指数新增数据对象
+ * @returns {Promise} 返回后端响应的 Promise，一般为新增结果或新增记录信息
+ */
+export function addRegionIndex(data) {
+  return request({
+    url: "/admin/region-index",
+    method: "post",
+    data,
+  });
+}
+
+/**
+ * 修改区域指数
+ *
+ * @param {string|number} id 区域指数主键 ID
+ * @param {Object} data 区域指数更新数据对象
+ * @returns {Promise} 返回后端响应的 Promise，一般为更新结果
+ */
+export function updateRegionIndex(id, data) {
+  return request({
+    url: `/admin/region-index/${id}`,
     method: "put",
     data,
   });
@@ -188,6 +250,19 @@ export function updateAbroadCase(id, data) {
 export function deleteAbroadCase(id) {
   return request({
     url: `/admin/abroad-case/${id}`,
+    method: "delete",
+  });
+}
+
+/**
+ * 删除区域指数
+ *
+ * @param {string|number} id 区域指数主键 ID
+ * @returns {Promise} 返回后端响应的 Promise，一般为删除结果
+ */
+export function deleteRegionIndex(id) {
+  return request({
+    url: `/admin/region-index/${id}`,
     method: "delete",
   });
 }

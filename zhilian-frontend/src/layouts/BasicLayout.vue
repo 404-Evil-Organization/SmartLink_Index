@@ -124,6 +124,10 @@
             <el-icon><DataBoard /></el-icon>
             <span>区域数据管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/enterprise-audit">
+            <el-icon><Checked /></el-icon>
+            <span>企业审核</span>
+          </el-menu-item>
           <el-menu-item index="/admin/abroad-case">
             <el-icon><Flag /></el-icon>
             <span>出海案例管理</span>
@@ -175,6 +179,7 @@ import {
   List,
   DataLine,
   Flag,
+  Checked,  // 新增
   DocumentAdd,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";

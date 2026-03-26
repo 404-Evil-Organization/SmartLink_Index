@@ -527,7 +527,12 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         if (request.getYear() != null) {
             wrapper.eq(RegionIndex::getYear, request.getYear());
         }
-        wrapper.eq(RegionIndex::getPeriodType, PERIOD_TYPE_QUARTER);
+        if (StringUtils.hasText(request.getPeriodType())) {
+            wrapper.eq(RegionIndex::getPeriodType, request.getPeriodType());
+        }
+        if (request.getPeriodValue() != null) {
+            wrapper.eq(RegionIndex::getPeriodValue, request.getPeriodValue());
+        }
         wrapper.orderByDesc(RegionIndex::getCalcTime)
                 .orderByDesc(RegionIndex::getId);
 
@@ -536,7 +541,8 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             RegionIndexAdminVO vo = new RegionIndexAdminVO();
             BeanUtils.copyProperties(entity, vo);
             vo.setYear(entity.getYear() != null ? entity.getYear().intValue() : null);
-            vo.setQuarter(entity.getPeriodValue() != null ? entity.getPeriodValue().intValue() : null);
+            vo.setPeriodType(entity.getPeriodType());
+            vo.setPeriodValue(entity.getPeriodValue() != null ? entity.getPeriodValue().intValue() : null);
             return vo;
         });
     }
@@ -557,8 +563,8 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         RegionIndex entity = new RegionIndex();
         entity.setRegion(request.getRegion());
         entity.setYear(request.getYear().shortValue());
-        entity.setPeriodType(PERIOD_TYPE_QUARTER);
-        entity.setPeriodValue(request.getQuarter().byteValue());
+        entity.setPeriodType(request.getPeriodType());
+        entity.setPeriodValue(request.getPeriodValue().byteValue());
         entity.setCoopDensity(request.getCoopDensity());
         entity.setServiceRate(request.getServiceRate());
         entity.setCrossRate(request.getCrossRate());
@@ -573,9 +579,9 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             }
             return entity.getId();
         } catch (DuplicateKeyException e) {
-            log.warn("新增区域指数时触发唯一键冲突，region={}, year={}, quarter={}",
-                    request.getRegion(), request.getYear(), request.getQuarter(), e);
-            throw new BusinessException(409, "该区域、年份、季度的指数已存在");
+            log.warn("新增区域指数时触发唯一键冲突，region={}, year={}, periodType={}, periodValue={}",
+                    request.getRegion(), request.getYear(), request.getPeriodType(), request.getPeriodValue(), e);
+            throw new BusinessException(409, "该区域、年份、周期的指数已存在");
         }
     }
 
@@ -585,8 +591,8 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Param: id 记录ID
      * @Param: request 修改区域指数请求参数（部分字段可选）
      * @Return: 无返回值
-     * @Description: 管理员修改区域指数，若修改区域/年份/季度需校验新组合唯一性，记录不存在时抛出404异常，
-     *              仅支持修改季度类型数据。当请求体无任何可更新字段时返回400；当字段值无实际变更时幂等成功。
+     * @Description: 管理员修改区域指数，若修改区域/年份/周期需校验新组合唯一性，记录不存在时抛出404异常，
+     *              当请求体无任何可更新字段时返回400；当字段值无实际变更时幂等成功。
      */
     @Override
     public void adminUpdate(Long id, RegionIndexUpdateRequest request) {
@@ -595,10 +601,10 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         }
 
         // 校验至少有一个可更新字段
-        if (request.getRegion() == null && request.getYear() == null && request.getQuarter() == null
+        if (request.getRegion() == null && request.getYear() == null && request.getPeriodType() == null && request.getPeriodValue() == null
                 && request.getCoopDensity() == null && request.getServiceRate() == null
                 && request.getCrossRate() == null && request.getTotalIndex() == null) {
-            throw new BusinessException(400, "至少提供一个可更新字段（region、year、quarter、coopDensity、serviceRate、crossRate、totalIndex）");
+            throw new BusinessException(400, "至少提供一个可更新字段（region、year、periodType、periodValue、coopDensity、serviceRate、crossRate、totalIndex）");
         }
 
         RegionIndex existing = this.getById(id);
@@ -606,32 +612,32 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
             throw new BusinessException(404, "记录不存在，id=" + id);
         }
 
-        if (!PERIOD_TYPE_QUARTER.equals(existing.getPeriodType())) {
-            throw new BusinessException(400, "该接口仅支持修改季度数据，当前记录类型为: " + existing.getPeriodType());
-        }
-
-        // 如果修改了区域、年份、季度，需要校验新组合是否唯一
+        // 如果修改了区域、年份、周期，需要校验新组合是否唯一
         // 通过中间布尔变量明确表达每个维度是否发生变化，避免依赖 && / || 的运算符优先级导致歧义
         boolean regionChanged = request.getRegion() != null
                 && !request.getRegion().equals(existing.getRegion());
         boolean yearChanged = request.getYear() != null
                 && request.getYear().intValue() != existing.getYear().intValue();
-        boolean quarterChanged = request.getQuarter() != null
-                && request.getQuarter().intValue() != existing.getPeriodValue().intValue();
-        if (regionChanged || yearChanged || quarterChanged) {
+        boolean periodTypeChanged = request.getPeriodType() != null
+                && !request.getPeriodType().equals(existing.getPeriodType());
+        boolean periodValueChanged = request.getPeriodValue() != null
+                && request.getPeriodValue().intValue() != existing.getPeriodValue().intValue();
+                
+        if (regionChanged || yearChanged || periodTypeChanged || periodValueChanged) {
 
             String newRegion = request.getRegion() != null ? request.getRegion() : existing.getRegion();
             Short newYear = request.getYear() != null ? request.getYear().shortValue() : existing.getYear();
-            Byte newQuarter = request.getQuarter() != null ? request.getQuarter().byteValue() : existing.getPeriodValue();
+            String newPeriodType = request.getPeriodType() != null ? request.getPeriodType() : existing.getPeriodType();
+            Byte newPeriodValue = request.getPeriodValue() != null ? request.getPeriodValue().byteValue() : existing.getPeriodValue();
 
             LambdaQueryWrapper<RegionIndex> checkWrapper = new LambdaQueryWrapper<>();
             checkWrapper.eq(RegionIndex::getRegion, newRegion)
                     .eq(RegionIndex::getYear, newYear)
-                    .eq(RegionIndex::getPeriodType, PERIOD_TYPE_QUARTER)
-                    .eq(RegionIndex::getPeriodValue, newQuarter)
+                    .eq(RegionIndex::getPeriodType, newPeriodType)
+                    .eq(RegionIndex::getPeriodValue, newPeriodValue)
                     .ne(RegionIndex::getId, id);
             if (this.count(checkWrapper) > 0) {
-                throw new BusinessException(409, "目标区域、年份、季度的指数已存在");
+                throw new BusinessException(409, "目标区域、年份、周期的指数已存在");
             }
         }
 
@@ -642,8 +648,11 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         if (request.getYear() != null) {
             existing.setYear(request.getYear().shortValue());
         }
-        if (request.getQuarter() != null) {
-            existing.setPeriodValue(request.getQuarter().byteValue());
+        if (request.getPeriodType() != null) {
+            existing.setPeriodType(request.getPeriodType());
+        }
+        if (request.getPeriodValue() != null) {
+            existing.setPeriodValue(request.getPeriodValue().byteValue());
         }
         if (request.getCoopDensity() != null) {
             existing.setCoopDensity(request.getCoopDensity());
@@ -667,9 +676,9 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
                 log.info("区域指数未发生实际变更，id={}", id);
             }
         } catch (DuplicateKeyException e) {
-            log.warn("更新区域指数时触发唯一键冲突，id={}, region={}, year={}, quarter={}",
-                    id, existing.getRegion(), existing.getYear(), existing.getPeriodValue(), e);
-            throw new BusinessException(409, "目标区域、年份、季度的指数已存在");
+            log.warn("更新区域指数时触发唯一键冲突，id={}, region={}, year={}, periodType={}, periodValue={}",
+                    id, existing.getRegion(), existing.getYear(), existing.getPeriodType(), existing.getPeriodValue(), e);
+            throw new BusinessException(409, "目标区域、年份、周期的指数已存在");
         }
     }
 
@@ -678,7 +687,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
      * @Date: 2026/3/24
      * @Param: id 记录ID
      * @Return: 无返回值
-     * @Description: 管理员删除区域指数（逻辑删除），仅支持删除季度数据
+     * @Description: 管理员删除区域指数（逻辑删除）
      */
     @Override
     public void adminDelete(Long id) {
@@ -689,9 +698,6 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         RegionIndex existing = this.getById(id);
         if (existing == null) {
             throw new BusinessException(404, "记录不存在，id=" + id);
-        }
-        if (!PERIOD_TYPE_QUARTER.equals(existing.getPeriodType())) {
-            throw new BusinessException(400, "该接口仅支持删除季度数据，当前记录类型为: " + existing.getPeriodType());
         }
         boolean deleted = this.removeById(id);
         if (!deleted) {
