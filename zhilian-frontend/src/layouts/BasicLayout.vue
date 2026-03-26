@@ -73,6 +73,18 @@
           <span>服务企业列表</span>
         </el-menu-item>
 
+        <!-- 出海服务菜单栏 -->
+        <el-sub-menu v-if="isManufacture || isAdmin" index="abroad">
+          <template #title>
+            <el-icon><Van /></el-icon>
+            <span>出海服务</span>
+          </template>
+          <el-menu-item index="/abroad/country">
+            <el-icon><Guide /></el-icon>
+            <span>出海服务商列表</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 我的企业页面 -->
         <el-menu-item
           v-if="isAdmin || isManufacture || isService"
@@ -156,6 +168,8 @@ import {
   OfficeBuilding,
   List,
   DataLine,
+  Guide,
+  Van,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
