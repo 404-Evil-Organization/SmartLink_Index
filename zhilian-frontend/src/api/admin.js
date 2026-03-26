@@ -194,7 +194,7 @@ export function approveDemand(id, data) {
 export function updateAbroadCase(id, data) {
   return request({
     url: `/admin/abroad-case/${id}`,
-      method: "put",
+    method: "put",
     data,
   });
 }
