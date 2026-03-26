@@ -65,7 +65,7 @@
         <el-table-column prop="ip" label="IP地址" width="140" />
         <el-table-column label="操作时间" width="160">
           <template #default="{ row }">
-            {{ formatDateTime(row.createTime) }}
+            {{ createTimeConverter(row.createTime).toLocalYMDHMS() || '-' }}
           </template>
         </el-table-column>
       </el-table>
@@ -111,19 +111,6 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
-
-// 日期格式化
-const formatDateTime = (dateStr) => {
-  if (!dateStr) return '-'
-  let normalized = dateStr
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
-    normalized = dateStr.replace(' ', 'T')
-  }
-  const converter = createTimeConverter(normalized)
-  const date = converter.toDate()
-  if (!date) return '-'
-  return converter.toLocalYMDHMS()
-}
 
 // 获取列表
 const fetchList = async () => {
