@@ -23,11 +23,15 @@ public class RegionIndexCreateRequest {
     @Schema(description = "年份", example = "2026")
     private Integer year;
 
-    @NotNull(message = "季度不能为空")
-    @Min(value = 1, message = "季度必须为1-4")
-    @Max(value = 4, message = "季度必须为1-4")
-    @Schema(description = "季度", example = "1")
-    private Integer quarter;
+    @NotBlank(message = "周期类型不能为空")
+    @Schema(description = "周期类型：quarter(季度) 或 month(月份)", example = "quarter")
+    private String periodType;
+
+    @NotNull(message = "周期值不能为空")
+    @Min(value = 1, message = "周期值最小为1")
+    @Max(value = 12, message = "周期值最大为12")
+    @Schema(description = "周期值", example = "1")
+    private Integer periodValue;
 
     @Schema(description = "合作密度", example = "0.85")
     private BigDecimal coopDensity;
