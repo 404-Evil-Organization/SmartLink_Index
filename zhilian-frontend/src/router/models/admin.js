@@ -14,4 +14,9 @@ export default [
     name: "DemandAudit",
     component: () => import("@/views/admin/DemandAudit.vue"),
   },
+  {
+    path: "admin/region-index",
+    name: "RegionIndexManage",
+    component: () => import("@/views/admin/RegionIndexManage.vue"),
+  },
 ];
