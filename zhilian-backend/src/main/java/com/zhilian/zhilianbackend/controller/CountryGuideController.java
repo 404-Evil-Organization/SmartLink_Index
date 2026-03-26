@@ -8,6 +8,7 @@ import com.zhilian.zhilianbackend.dto.response.CountryGuideResponse;
 import com.zhilian.zhilianbackend.service.CountryGuideService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,7 +51,7 @@ public class CountryGuideController {
      **/
     @PostMapping
     @Operation(summary = "新增国家指南")
-    public Result<Map<String, Long>> create(@RequestBody CountryGuideCreateRequest request) {
+    public Result<Map<String, Long>> create(@Valid @RequestBody CountryGuideCreateRequest request) {
         Long id = countryGuideService.create(request);
         Map<String, Long> data = new HashMap<>();
         data.put("id", id);
@@ -67,7 +68,7 @@ public class CountryGuideController {
      **/
     @PutMapping("/{id}")
     @Operation(summary = "修改国家指南")
-    public Result<Void> update(@PathVariable Long id, @RequestBody CountryGuideUpdateRequest request) {
+    public Result<Void> update(@PathVariable Long id, @Valid @RequestBody CountryGuideUpdateRequest request) {
         countryGuideService.update(id, request);
         return Result.success();
     }

@@ -15,6 +15,7 @@ import com.zhilian.zhilianbackend.service.CountryGuideService;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -27,6 +28,9 @@ import java.util.stream.Collectors;
 public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, CountryGuide> implements CountryGuideService {
 
     private final SecurityUtils securityUtils;
+
+    // 分页每页最大条数限制
+    private static final int MAX_PAGE_SIZE = 100;
 
     /**
      * @Author: xiaodengyou
@@ -50,6 +54,10 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         }
         if (size == null || size <= 0) {
             size = 10;
+        }
+        // 限制最大分页大小，避免恶意请求
+        if (size > MAX_PAGE_SIZE) {
+            size = MAX_PAGE_SIZE;
         }
 
         Page<CountryGuide> mpPage = new Page<>(page, size);
@@ -83,9 +91,20 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
             throw new BusinessException(403, "无权限访问");
         }
 
+        // 基础参数校验：请求体与国家名称不能为空，且长度限制为 50 个字符以内
+        if (request == null) {
+            throw new BusinessException(400, "请求参数不能为空");
+        }
+        String country = request.getCountry();
+        if (!StringUtils.hasText(country)) {
+            throw new BusinessException(400, "国家名称不能为空");
+        }
+        if (country.length() > 50) {
+            throw new BusinessException(400, "国家名称长度不能超过50个字符");
+        }
         // 检查国家名称是否已存在（未删除）
         LambdaQueryWrapper<CountryGuide> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CountryGuide::getCountry, request.getCountry());
+        wrapper.eq(CountryGuide::getCountry, country);
         long count = this.count(wrapper);
         if (count > 0) {
             throw new BusinessException(409, "国家名称已存在");
@@ -144,7 +163,12 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
             existing.setDocuments(request.getDocuments());
         }
 
-        this.updateById(existing);
+        try {
+            this.updateById(existing);
+        } catch (DuplicateKeyException e) {
+            // 捕获唯一键冲突（并发场景下修改为国家名称已存在）
+            throw new BusinessException(409, "国家名称已存在");
+        }
     }
 
     /**
