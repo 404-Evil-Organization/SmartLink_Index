@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Date;
-import java.util.stream.Collectors;
 
 /**
  * @Description: 出海案例Service实现类
@@ -255,8 +254,25 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         entity.setCoverImage(coverImageUrl);
 
         int result = abroadCaseMapper.updateById(entity);
-        // 在已确认记录存在的前提下，result == 0 更可能表示“无字段变更”的幂等成功
         if (result == 0) {
+            // 二次校验：可能是记录已被逻辑删除/不存在（尤其表上有 @TableLogic 时）
+            AbroadCase reloaded = abroadCaseMapper.selectById(id);
+            if (reloaded == null) {
+                // 如果本次更新流程中上传了新封面且与原封面不同，需做补偿删除，避免产生 OSS 孤儿文件
+                if (StringUtils.hasText(coverImageUrl)
+                        && (existing.getCoverImage() == null || !coverImageUrl.equals(existing.getCoverImage()))) {
+                    try {
+                        ossService.deleteFile(coverImageUrl);
+                        log.info("出海案例更新失败, 已补偿删除新上传封面: {}", coverImageUrl);
+                    } catch (Exception ex) {
+                        log.warn("出海案例更新失败且补偿删除新封面出错, cover: {}", coverImageUrl, ex);
+                        // 补偿删除失败不再向上抛出，避免覆盖原始业务异常
+                    }
+                }
+                throw new BusinessException(404, "出海案例不存在或已被删除");
+            }
+
+            // 在已确认记录依然存在的前提下，将 result == 0 视为“无字段变更”的幂等成功
             log.info("更新出海案例无字段变更, 视为幂等成功, caseId: {}", id);
             return;
         }
