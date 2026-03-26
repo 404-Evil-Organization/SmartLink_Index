@@ -62,7 +62,7 @@
         <el-table-column prop="contactPhone" label="联系电话" width="130" />
         <el-table-column label="申请时间" width="160">
           <template #default="{ row }">
-            {{ formatDateTime(row.createTime) }}
+            {{ createTimeConverter(row.createTime).toLocalYMDHMS() || '-' }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
@@ -164,19 +164,6 @@ const auditRules = computed(() => ({
     }
   ]
 }))
-
-// 格式化日期
-const formatDateTime = (dateStr) => {
-  if (!dateStr) return '-'
-  let normalized = dateStr
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
-    normalized = dateStr.replace(' ', 'T')
-  }
-  const converter = createTimeConverter(normalized)
-  const date = converter.toDate()
-  if (!date) return '-'
-  return converter.toLocalYMDHMS()
-}
 
 // 获取列表
 const fetchList = async () => {
