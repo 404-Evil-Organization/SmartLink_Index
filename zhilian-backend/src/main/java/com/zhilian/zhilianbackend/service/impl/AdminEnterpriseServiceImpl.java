@@ -3,6 +3,7 @@ package com.zhilian.zhilianbackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.dto.response.PendingEnterpriseResponse;
 import com.zhilian.zhilianbackend.entity.Manufacture;
 import com.zhilian.zhilianbackend.entity.ServiceProvider;
@@ -15,8 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -24,10 +24,8 @@ import java.util.List;
 /**
  * @Author: 6017
  * @Date: 2026/3/24 23:36
- * @Param: 
- * @Return: 
  * @Description: 管理员企业审核服务实现类
-**/
+ **/
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,16 +34,13 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
     private final ManufactureMapper manufactureMapper;
     private final ServiceProviderMapper serviceProviderMapper;
 
-    private static final Date NOT_DELETED = Date.from(LocalDateTime.of(1970, 1, 1, 0, 0, 0)
-            .atZone(ZoneId.systemDefault()).toInstant());
-
     /**
      * @Author: 6017
      * @Date: 2026/3/25 00:16
      * @Param: page 页码  size 每页条数  IPage<PendingEnterpriseResponse> 待审核企业分页数据
      * @Return:
      * @Description: 取待审核企业列表，合并制造企业和服务商数据，按创建时间倒序排序并手动分页
-    **/
+     **/
     @Override
     public IPage<PendingEnterpriseResponse> getPendingEnterpriseList(Integer page, Integer size) {
         // 基本参数校验，防止非法分页参数造成不必要的压力
@@ -70,7 +65,7 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
                         Manufacture::getDeleted
                 )
                 .eq(Manufacture::getAuditStatus, "pending")
-                .eq(Manufacture::getDeleted, NOT_DELETED)
+                .eq(Manufacture::getDeleted, DateConstants.getNotDeletedTime())
                 .orderByDesc(Manufacture::getCreateTime);
         List<Manufacture> manuList = manufactureMapper.selectList(manuWrapper);
 
@@ -88,7 +83,7 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
                         ServiceProvider::getDeleted
                 )
                 .eq(ServiceProvider::getAuditStatus, "pending")
-                .eq(ServiceProvider::getDeleted, NOT_DELETED)
+                .eq(ServiceProvider::getDeleted, DateConstants.getNotDeletedTime())
                 .orderByDesc(ServiceProvider::getCreateTime);
         List<ServiceProvider> serviceList = serviceProviderMapper.selectList(serviceWrapper);
 
@@ -145,12 +140,18 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
      * @Author: 6017
      * @Date: 2026/3/24 23:37
      * @Param: enterpriseId 企业ID  type 企业类型（manufacture/service）  status 审核状态（approved/rejected）  remark 审核意见  auditUserId 审核人ID
-     * @Return: 
+     * @Return:
      * @Description: 审核企业，更新审核状态、审核意见、审核时间和审核人信息
-    **/
+     **/
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approveEnterprise(Long enterpriseId, String type, String status, String remark, Long auditUserId) {
+        // 业务校验：驳回时必须填写审核意见
+        if ("rejected".equals(status) && (remark == null || remark.trim().isEmpty())) {
+            log.warn("审核驳回失败，未填写驳回原因: enterpriseId={}, type={}", enterpriseId, type);
+            throw new BusinessException(400, "审核驳回时必须填写审核意见");
+        }
+
         Date now = new Date();
 
         if ("manufacture".equals(type)) {
@@ -191,19 +192,5 @@ public class AdminEnterpriseServiceImpl implements AdminEnterpriseService {
             log.warn("审核企业失败，无效的企业类型: type={}", type);
             throw new BusinessException(400, "无效的企业类型，仅支持 manufacture 或 service");
         }
-    }
-
-    /**
-     * @Author: 6017
-     * @Date: 2026/3/24 23:38
-     * @Param: date Date 类型的时间
-     * @Return: LocalDateTime LocalDateTime 类型的时间
-     * @Description: Date 转 LocalDateTime，用于日期类型转换
-    **/
-    private LocalDateTime convertToLocalDateTime(Date date) {
-        if (date == null) {
-            return null;
-        }
-        return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 }
