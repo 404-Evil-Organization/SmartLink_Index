@@ -201,8 +201,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="cancelDialog.visible = false">取消</el-button>
-        <el-button type="danger" @click="handleCancelCooperation">确认取消</el-button>
+        <el-button @click="cancelDialog.visible = false" :disabled="canceling">取消</el-button>
+        <el-button type="danger" @click="handleCancelCooperation" :loading="canceling">确认取消</el-button>
       </template>
     </el-dialog>
   </div>
@@ -248,6 +248,9 @@ const cancelDialog = reactive({
   currentRow: null,
   reason: "",
 });
+
+// 取消合作 loading 状态
+const canceling = ref(false);
 
 // 获取个人企业列表（制造企业 + 服务商）
 const fetchMyEnterprises = async () => {
@@ -356,8 +359,9 @@ const openCancelDialog = (row) => {
 
 // 处理取消合作
 const handleCancelCooperation = async () => {
-  if (!cancelDialog.currentRow) return;
+  if (!cancelDialog.currentRow || canceling.value) return;
   
+  canceling.value = true;
   try {
     await cancelCooperation(cancelDialog.currentRow.id, cancelDialog.reason);
     ElMessage.success("取消合作成功");
@@ -366,6 +370,8 @@ const handleCancelCooperation = async () => {
   } catch (error) {
     console.error("取消合作失败", error);
     ElMessage.error("取消合作失败");
+  } finally {
+    canceling.value = false;
   }
 };
 

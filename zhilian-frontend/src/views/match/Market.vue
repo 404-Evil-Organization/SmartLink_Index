@@ -426,7 +426,6 @@ const fetchDemandList = async () => {
       deadlineEnd: searchForm.deadlineEnd || undefined,
     };
     const res = await getDemandMarketList(params);
-    console.log(res);
 
     demandList.value = res.records || [];
     total.value = res.total || 0;
@@ -491,7 +490,7 @@ const fetchTags = async () => {
       const res = await getTagList({ page, size });
       const currentTags = res.records || [];
       allTags = allTags.concat(currentTags);
-      
+
       const tagTotal = res.total || 0;
       if (allTags.length >= tagTotal || currentTags.length < size) {
         hasMore = false;
@@ -576,19 +575,17 @@ const openAcceptConfirmDialog = (demandId, demandTitle, serviceId) => {
 const confirmAcceptDemand = async () => {
   if (!acceptConfirmDialog.demandId || !acceptConfirmDialog.serviceId) return;
 
-  try {
-    if (
-      await doAccept(
-        acceptConfirmDialog.demandId,
-        acceptConfirmDialog.serviceId,
-        acceptConfirmDialog.demandTitle,
-      )
-    ) {
-      acceptConfirmDialog.visible = false;
-    }
-  } catch (error) {
-    ElMessage.error("接单失败");
-    console.error("接单失败", error);
+  const success = await doAccept(
+    acceptConfirmDialog.demandId,
+    acceptConfirmDialog.serviceId,
+    acceptConfirmDialog.demandTitle,
+  );
+  if (success) {
+    // 接单成功，关闭确认弹窗
+    acceptConfirmDialog.visible = false;
+  } else {
+    // 接单失败，保持弹窗打开并给出友好提示
+    ElMessage.error("接单失败，请稍后重试");
   }
 };
 
