@@ -3,17 +3,21 @@ package com.zhilian.zhilianbackend.controller;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.AcceptDemandRequest;
-import com.zhilian.zhilianbackend.dto.response.AcceptDemandResult;
-import com.zhilian.zhilianbackend.dto.response.DemandMarketVO;
+import com.zhilian.zhilianbackend.dto.request.DemandPublishRequest;
+import com.zhilian.zhilianbackend.dto.request.DemandUpdateRequest;
+import com.zhilian.zhilianbackend.dto.response.*;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.DemandService;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -21,26 +25,6 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-/**
- * @Author: xiaodengyou
- * @Date: 2026/3/25
- * @Description: 需求模块控制器，提供市场需求列表、接取需求等接口
- */
-import com.zhilian.zhilianbackend.dto.request.DemandPublishRequest;
-import com.zhilian.zhilianbackend.dto.request.DemandUpdateRequest;
-import com.zhilian.zhilianbackend.dto.response.DemandDetailVO;
-import com.zhilian.zhilianbackend.dto.response.DemandMyListVO;
-import com.zhilian.zhilianbackend.dto.response.DemandPublishResponse;
-import com.zhilian.zhilianbackend.service.DemandService;
-import com.zhilian.zhilianbackend.utils.SecurityUtils;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController

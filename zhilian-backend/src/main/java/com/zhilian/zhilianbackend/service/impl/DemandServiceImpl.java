@@ -4,46 +4,28 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.zhilian.zhilianbackend.common.constant.DateConstants;
-import com.zhilian.zhilianbackend.common.result.PageResult;
-import com.zhilian.zhilianbackend.dto.response.DemandMarketVO;
-import com.zhilian.zhilianbackend.dto.response.TagResponse;
-import com.zhilian.zhilianbackend.entity.*;
-import com.zhilian.zhilianbackend.exception.BusinessException;
-import com.zhilian.zhilianbackend.mapper.*;
-import com.zhilian.zhilianbackend.service.DemandService;
-import com.zhilian.zhilianbackend.utils.SqlUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.request.DemandApproveRequest;
 import com.zhilian.zhilianbackend.dto.request.DemandPublishRequest;
 import com.zhilian.zhilianbackend.dto.request.DemandUpdateRequest;
-import com.zhilian.zhilianbackend.dto.response.DemandDetailVO;
-import com.zhilian.zhilianbackend.dto.response.DemandMyListVO;
-import com.zhilian.zhilianbackend.dto.response.DemandPendingVO;
-import com.zhilian.zhilianbackend.dto.response.DemandPublishResponse;
-import com.zhilian.zhilianbackend.entity.Demand;
-import com.zhilian.zhilianbackend.entity.DemandTag;
-import com.zhilian.zhilianbackend.entity.Manufacture;
-import com.zhilian.zhilianbackend.entity.Tag;
+import com.zhilian.zhilianbackend.dto.response.*;
+import com.zhilian.zhilianbackend.entity.*;
 import com.zhilian.zhilianbackend.exception.BusinessException;
-import com.zhilian.zhilianbackend.mapper.DemandMapper;
-import com.zhilian.zhilianbackend.mapper.DemandTagMapper;
-import com.zhilian.zhilianbackend.mapper.ManufactureMapper;
+import com.zhilian.zhilianbackend.mapper.*;
 import com.zhilian.zhilianbackend.service.DemandService;
 import com.zhilian.zhilianbackend.service.TagService;
 import com.zhilian.zhilianbackend.utils.SecurityUtils;
+import com.zhilian.zhilianbackend.utils.SqlUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import org.springframework.util.CollectionUtils;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,7 +37,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class DemandServiceImpl implements DemandService {
+public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> implements DemandService {
 
     private final DemandMapper demandMapper;
     private final DemandTagMapper demandTagMapper;
@@ -65,6 +47,30 @@ public class DemandServiceImpl implements DemandService {
 
     // 使用 java.util.Date 类型，与数据库 deleted 字段保持一致（用于 LambdaQueryWrapper）
     private final Date notDeletedTime = DateConstants.getNotDeletedTime();
+    // 角色常量
+    private static final String ROLE_MANUFACTURE = "manufacture";
+
+    // 需求业务状态常量
+    private static final String DEMAND_STATUS_DRAFT = "draft";
+    private static final String DEMAND_STATUS_PUBLISHED = "published";
+    private static final String DEMAND_STATUS_MATCHED = "matched";
+
+    // 需求审核状态常量
+    private static final String DEMAND_AUDIT_STATUS_PENDING = "pending";
+    private static final String DEMAND_AUDIT_STATUS_APPROVED = "approved";
+    private static final String DEMAND_AUDIT_STATUS_REJECTED = "rejected";
+
+    // 审核操作常量
+    private static final String APPROVE_ACTION_APPROVED = "approved";
+    private static final String APPROVE_ACTION_REJECTED = "rejected";
+
+    // 定义允许所有登录用户查看的状态
+    private static final Set<String> PUBLIC_STATUSES = Set.of(DEMAND_STATUS_PUBLISHED, DEMAND_STATUS_MATCHED);
+
+    private final ManufactureMapper manufactureMapper;
+    private final TagService tagService;
+    private final SecurityUtils securityUtils;
+
 
     /**
      * @Author: xiaodengyou
@@ -145,29 +151,6 @@ public class DemandServiceImpl implements DemandService {
 
         return PageResult.from(iPage);}
 
-    // 角色常量
-    private static final String ROLE_MANUFACTURE = "manufacture";
-
-    // 需求业务状态常量
-    private static final String DEMAND_STATUS_DRAFT = "draft";
-    private static final String DEMAND_STATUS_PUBLISHED = "published";
-    private static final String DEMAND_STATUS_MATCHED = "matched";
-
-    // 需求审核状态常量
-    private static final String DEMAND_AUDIT_STATUS_PENDING = "pending";
-    private static final String DEMAND_AUDIT_STATUS_APPROVED = "approved";
-    private static final String DEMAND_AUDIT_STATUS_REJECTED = "rejected";
-
-    // 审核操作常量
-    private static final String APPROVE_ACTION_APPROVED = "approved";
-    private static final String APPROVE_ACTION_REJECTED = "rejected";
-
-    // 定义允许所有登录用户查看的状态
-    private static final Set<String> PUBLIC_STATUSES = Set.of(DEMAND_STATUS_PUBLISHED, DEMAND_STATUS_MATCHED);
-
-    private final ManufactureMapper manufactureMapper;
-    private final TagService tagService;
-    private final SecurityUtils securityUtils;
 
     /**
      * @Author: xiaodengyou
