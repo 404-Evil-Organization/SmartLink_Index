@@ -3,7 +3,7 @@ import request from "@/utils/request";
 // 获取待审核企业列表
 export function getAuditList(params) {
   return request({
-    url: "/admin/enterprise/audit/list",
+    url: "/admin/enterprise/pending",
     method: "get",
     params,
   });
@@ -45,11 +45,11 @@ export function getUserList(params) {
 }
 
 // 审核企业（通过/驳回）
-export function auditEnterprise(id, status, auditRemark = "") {
+export function auditEnterprise(id, type, status, remark = "") {
   return request({
-    url: `/admin/enterprise/audit/${id}`,
-    method: "put",
-    data: { status, auditRemark },
+    url: `/admin/enterprise/approve/${id}`,
+    method: "post",
+    data: { type, status, remark },
   });
 }
 
