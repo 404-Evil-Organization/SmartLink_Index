@@ -19,10 +19,13 @@ public class RegionIndexUpdateRequest {
     @Max(value = 2200, message = "年份最大为2200")
     private Integer year;
 
-    @Min(value = 1, message = "季度最小为1")
-    @Max(value = 4, message = "季度最大为4")
-    @Schema(description = "季度", example = "1")
-    private Integer quarter;
+    @Schema(description = "周期类型：quarter(季度) 或 month(月份)", example = "quarter")
+    private String periodType;
+
+    @Min(value = 1, message = "周期值最小为1")
+    @Max(value = 12, message = "周期值最大为12")
+    @Schema(description = "周期值", example = "1")
+    private Integer periodValue;
 
     @Schema(description = "合作密度", example = "0.85")
     private BigDecimal coopDensity;

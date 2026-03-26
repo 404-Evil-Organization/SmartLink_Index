@@ -20,8 +20,11 @@ public class RegionIndexAdminVO {
     @Schema(description = "年份")
     private Integer year;
 
-    @Schema(description = "季度")
-    private Integer quarter;
+    @Schema(description = "周期类型")
+    private String periodType;
+
+    @Schema(description = "周期值")
+    private Integer periodValue;
 
     @Schema(description = "合作密度")
     private BigDecimal coopDensity;
