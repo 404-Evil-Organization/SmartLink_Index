@@ -42,21 +42,7 @@ public class AbroadController {
 
         log.info("接收到获取国家准入指南请求，country: {}", country);
 
-        try {
-            CountryGuideResponse response = countryGuideService.getByCountry(country);
-            return Result.success(response);
-        } catch (BusinessException e) {
-            log.warn("获取国家准入指南业务异常，country: {}, message: {}", country, e.getMessage());
-            // 根据业务异常的状态码返回对应的响应
-            if (e.getCode() == 404) {
-                return Result.notFound(e.getMessage());
-            } else if (e.getCode() == 400) {
-                return Result.badRequest(e.getMessage());
-            }
-            return Result.error(e.getMessage());
-        } catch (Exception e) {
-            log.error("获取国家准入指南发生未知错误，country: {}", country, e);
-            return Result.error("获取国家准入指南失败，请稍后重试");
-        }
+        CountryGuideResponse response = countryGuideService.getByCountry(country);
+        return Result.success(response);
     }
 }

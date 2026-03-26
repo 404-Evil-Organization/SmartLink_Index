@@ -53,7 +53,11 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
 
         // 构建查询条件：国家名称匹配 + 未删除（@TableLogic 会自动处理）
         LambdaQueryWrapper<CountryGuide> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CountryGuide::getCountry, country.trim());
+        wrapper.eq(CountryGuide::getCountry, country.trim())
+                // 按更新时间倒序，确保在存在多条记录时优先获取最新一条
+                .orderByDesc(CountryGuide::getUpdateTime)
+                // 使用 LIMIT 1 明确只取一条，避免 getOne 在多条结果时抛 TooManyResultsException
+                .last("LIMIT 1");
 
         CountryGuide guide = this.getOne(wrapper);
 
