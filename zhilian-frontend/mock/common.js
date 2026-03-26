@@ -51,6 +51,8 @@ const tagCategories = [
   { value: "rests", label: "其他类型" },
 ];
 
+const countries = ["美国", "欧盟", "日本", "东南亚"];
+
 export default [
   // 1.5.1 获取区域列表
   {
@@ -143,6 +145,16 @@ export default [
       code: 200,
       message: "success",
       data: tagCategories,
+    }),
+  },
+  // 1.5.10 获取所有国家列表
+  {
+    url: "/api/common/countries",
+    method: "get",
+    response: () => ({
+      code: 200,
+      message: "success",
+      data: countries,
     }),
   },
 ];

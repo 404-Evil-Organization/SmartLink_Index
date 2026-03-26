@@ -4,6 +4,8 @@ import com.zhilian.zhilianbackend.common.enums.TagCategory;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.response.ScaleResponse;
 import com.zhilian.zhilianbackend.dto.response.ServiceTagResponse;
+import com.zhilian.zhilianbackend.service.CountryGuideService;
+import com.zhilian.zhilianbackend.entity.CountryGuide;
 import com.zhilian.zhilianbackend.service.OssService;
 import com.zhilian.zhilianbackend.service.TagService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,6 +43,9 @@ public class CommonController {
 
     // 允许的文件扩展名列表（统一小写）
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("png", "jpg", "jpeg");
+
+    // 注入CountryGuideService
+    private final CountryGuideService countryGuideService;
 
     // 允许的Content-Type列表（统一小写）
     private static final List<String> ALLOWED_CONTENT_TYPES = Arrays.asList(
@@ -383,5 +388,31 @@ public class CommonController {
         return Result.success(options);
     }
 
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/3/25 19:35
+     * @Param: 
+     * @Return: Result<List<String>> 包含国家列表的响应结果
+     * @Description: 获取所有国家列表，按字母排序
+    **/
+    @GetMapping("/countries")
+    @Operation(summary = "获取所有国家列表", description = "返回所有国家列表，用于出海服务覆盖国家多选")
+    public Result<List<String>> getCountries() {
+        log.info("接收获取国家列表请求");
+
+        List<CountryGuide> countryGuides = countryGuideService.lambdaQuery()
+                .select(CountryGuide::getCountry)
+                .isNotNull(CountryGuide::getCountry)
+                .groupBy(CountryGuide::getCountry)
+                .orderByAsc(CountryGuide::getCountry)
+                .list();
+
+        List<String> countries = countryGuides.stream()
+                .map(CountryGuide::getCountry)
+                .collect(java.util.stream.Collectors.toList());
+
+        log.info("返回国家列表，共 {} 个", countries.size());
+        return Result.success(countries);
+    }
 
 }
