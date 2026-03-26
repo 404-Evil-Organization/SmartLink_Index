@@ -15,9 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @Author: taciturn-hg
@@ -33,7 +35,10 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
 
     private final ObjectMapper objectMapper;
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    /**
+     * 使用线程安全的 DateTimeFormatter 替代 SimpleDateFormat
+     */
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * @Author: 6017
@@ -41,7 +46,7 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
      * @Param: country 国家名称
      * @Return: CountryGuideResponse 国家准入指南响应对象
      * @Description: 根据国家名称从数据库查询准入指南，处理documents字段的JSON解析，格式化时间字段
-    **/
+     **/
     @Override
     public CountryGuideResponse getByCountry(String country) {
         log.info("查询国家准入指南，country: {}", country);
@@ -71,32 +76,71 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         CountryGuideResponse response = new CountryGuideResponse();
         BeanUtils.copyProperties(guide, response);
 
-        // 处理 documents 字段（使用 Jackson 解析 JSON）
+        // 处理 documents 字段
         if (guide.getDocuments() != null && !guide.getDocuments().isEmpty()) {
-            try {
-                // 尝试解析为 JSON 数组
-                List<String> documents = objectMapper.readValue(
-                        guide.getDocuments(),
-                        new TypeReference<List<String>>() {}
-                );
-                response.setDocuments(documents);
-            } catch (JsonProcessingException e) {
-                // 如果 JSON 解析失败，则按逗号分隔处理
-                log.warn("解析 documents 字段为 JSON 失败，使用逗号分隔: {}", guide.getDocuments(), e);
-                String[] docArray = guide.getDocuments().split(",");
-                response.setDocuments(Arrays.asList(docArray));
-            }
+            List<String> documents = parseDocuments(guide.getDocuments());
+            response.setDocuments(documents);
         }
 
         // 格式化时间字段
         if (guide.getCreateTime() != null) {
-            response.setCreateTime(DATE_FORMAT.format(guide.getCreateTime()));
+            LocalDateTime createDateTime = guide.getCreateTime().toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDateTime();
+            response.setCreateTime(createDateTime.format(DATE_TIME_FORMATTER));
         }
         if (guide.getUpdateTime() != null) {
-            response.setUpdateTime(DATE_FORMAT.format(guide.getUpdateTime()));
+            LocalDateTime updateDateTime = guide.getUpdateTime().toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDateTime();
+            response.setUpdateTime(updateDateTime.format(DATE_TIME_FORMATTER));
         }
 
         log.info("查询国家准入指南成功，country: {}, id: {}", country, guide.getId());
         return response;
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/26 00:15
+     * @Param: documentsStr 原始 documents 字符串（可能是 JSON 或逗号分隔的文本）
+     * @Return: List<String> 清理后的文档列表
+     * @Description: 解析 documents 字段，优先尝试 JSON 解析，失败则按逗号分隔并清理空格和空字符串
+     **/
+    private List<String> parseDocuments(String documentsStr) {
+        // 优先尝试 JSON 解析
+        try {
+            List<String> documents = objectMapper.readValue(
+                    documentsStr,
+                    new TypeReference<List<String>>() {}
+            );
+            log.debug("JSON 解析 documents 成功，共 {} 项", documents.size());
+            return documents;
+        } catch (JsonProcessingException e) {
+            // JSON 解析失败，使用逗号分隔处理
+            log.warn("解析 documents 字段为 JSON 失败，使用逗号分隔: {}", documentsStr, e);
+            return parseCommaSeparatedDocuments(documentsStr);
+        }
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/26 00:15
+     * @Param: documentsStr 逗号分隔的字符串
+     * @Return: List<String> 清理后的文档列表
+     * @Description: 解析逗号分隔的 documents，去除每项前后空格，过滤空字符串
+     **/
+    private List<String> parseCommaSeparatedDocuments(String documentsStr) {
+        if (documentsStr == null || documentsStr.trim().isEmpty()) {
+            return List.of();
+        }
+
+        List<String> documents = Arrays.stream(documentsStr.split(","))
+                .map(String::trim)           // 去除前后空格
+                .filter(s -> !s.isEmpty())   // 过滤空字符串
+                .collect(Collectors.toList());
+
+        log.debug("逗号分隔解析 documents 成功，共 {} 项", documents.size());
+        return documents;
     }
 }
