@@ -50,6 +50,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
     // 需求业务状态常量
     private static final String DEMAND_STATUS_DRAFT = "draft";
     private static final String DEMAND_STATUS_PUBLISHED = "published";
+    private static final String DEMAND_STATUS_MATCHED = "matched";
 
     // 需求审核状态常量
     private static final String DEMAND_AUDIT_STATUS_PENDING = "pending";
@@ -61,7 +62,7 @@ public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> impleme
     private static final String APPROVE_ACTION_REJECTED = "rejected";
 
     // 定义允许所有登录用户查看的状态
-    private static final Set<String> PUBLIC_STATUSES = Set.of("published", "matched");
+    private static final Set<String> PUBLIC_STATUSES = Set.of(DEMAND_STATUS_PUBLISHED, DEMAND_STATUS_MATCHED);
 
     private final ManufactureMapper manufactureMapper;
     private final TagService tagService;
