@@ -18,7 +18,18 @@ VALUES ('tech_company', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3
        ('shenzhen_logistics', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'service', '13600136004', 'szlog@example.com', 1, '1970-01-01 00:00:00',
         NOW(), NOW()),
        ('admin_user', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'admin', '18800188005', 'admin@zhilian.com', 1, '1970-01-01 00:00:00', NOW(),
-        NOW());
+        NOW()),
+       -- 新增制造企业用户
+       ('guangzhou_auto', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'manufacture', '13500135006', 'guangzhou_auto@example.com', 1, '1970-01-01 00:00:00', NOW(), NOW()),
+       ('foshan_elec', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'manufacture', '13400134007', 'foshan_elec@example.com', 1, '1970-01-01 00:00:00', NOW(), NOW()),
+       ('zhuhai_med', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'manufacture', '13300133008', 'zhuhai_med@example.com', 1, '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增服务商用户
+       ('sgs_cert', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'service', '13200132009', 'sgs@example.com', 1, '1970-01-01 00:00:00', NOW(), NOW()),
+       ('design_studio', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'service', '13100131010', 'design@example.com', 1, '1970-01-01 00:00:00', NOW(), NOW()),
+       ('logistics_co', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'service', '13000130011', 'logistics@example.com', 1, '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增园区用户
+       ('shenzhen_park', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'park', '12900129012', 'park@sz.gov.cn', 1, '1970-01-01 00:00:00', NOW(), NOW()),
+       ('dongguan_park', '$2a$10$rkkoqXCdFDjjl8lc4LPdfO0MkYakJg27pFkU/I0hEiN.Rvr3FMbSu', 'park', '12800128013', 'park@dg.gov.cn', 1, '1970-01-01 00:00:00', NOW(), NOW());
 
 -- =====================================================
 -- 2. 制造企业表 (manufacture)
@@ -32,6 +43,16 @@ VALUES (1, '深圳电子科技', '深圳', '深圳市南山区科技园', '张�
         NOW(), NOW()),
        (2, '东莞精密机械', '东莞', '东莞市长安镇', '李四', '13900139002', 'large', 1200, 15000.00, '精密模具',
         '高端模具制造商', 'https://mock-oss.example.com/logo2.png', '2008-08-08', 'approved', NULL, NOW(), 5, '1970-01-01 00:00:00',
+        NOW(), NOW()),
+       -- 新增制造企业 (user_id 6, 7, 8 对应用户表中的制造企业用户)
+       (6, '广州汽车零部件', '广州', '广州市黄埔区', '王明', '13500135006', 'large', 800, 12000.00, '汽车零部件',
+        '专业汽车零部件制造商', 'https://mock-oss.example.com/logo5.png', '2012-03-15', 'approved', NULL, NOW(), 5, '1970-01-01 00:00:00',
+        NOW(), NOW()),
+       (7, '佛山电器制造', '佛山', '佛山市顺德区', '陈华', '13400134007', 'medium', 300, 5000.00, '家用电器',
+        '家电产品制造商', 'https://mock-oss.example.com/logo6.png', '2015-08-20', 'approved', NULL, NOW(), 5, '1970-01-01 00:00:00',
+        NOW(), NOW()),
+       (8, '珠海医疗器械', '珠海', '珠海市香洲区', '刘强', '13300133008', 'small', 150, 2000.00, '医疗器械',
+        '医疗设备研发制造', 'https://mock-oss.example.com/logo7.png', '2018-11-10', 'approved', NULL, NOW(), 5, '1970-01-01 00:00:00',
         NOW(), NOW());
 
 -- =====================================================
@@ -46,7 +67,17 @@ VALUES (3, '华测检测认证集团', '深圳', '深圳市南山区科技园', 
         'CNAS、CMA', 'approved', NULL, NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW()),
        (4, '深圳物流供应链', '深圳', '深圳市宝安区', '赵六', '13600136004', '物流供应链', '提供国内外物流服务',
         'https://mock-oss.example.com/logo4.png', 'www.szlog.com', '2015-03-15', 300, 'ISO9001', 'approved', NULL,
-        NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW());
+        NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增服务商
+       (9, 'SGS通标标准技术服务', '广州', '广州市天河区', '张伟', '13200132009', '检测认证,咨询服务',
+        '全球领先的检验、鉴定、测试和认证机构', 'https://mock-oss.example.com/logo8.png', 'www.sgs.com', '1991-05-10', 1500,
+        'CNAS、CMA、ISO17025', 'approved', NULL, NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW()),
+       (10, '创新设计工作室', '深圳', '深圳市福田区', '李娜', '13100131010', '工业设计,产品设计',
+        '专业产品外观与结构设计服务', 'https://mock-oss.example.com/logo9.png', 'www.designstudio.com', '2017-09-01', 50,
+        '红点设计奖、IF设计奖', 'approved', NULL, NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW()),
+       (11, '顺丰速运有限公司', '深圳', '深圳市南山区', '陈明', '13000130011', '物流供应链,仓储服务',
+        '国内领先的快递物流综合服务商', 'https://mock-oss.example.com/logo10.png', 'www.sf-express.com', '1993-03-26', 40000,
+        'ISO9001、ISO14001', 'approved', NULL, NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW());
 
 -- =====================================================
 -- 4. 标签字典表 (tag)
@@ -63,7 +94,18 @@ VALUES ('检测认证', 'service', '各类检测认证服务', '1970-01-01 00:00
        ('消费电子', 'product', '消费类电子产品', '1970-01-01 00:00:00', NOW(), NOW()),
        ('精密模具', 'product', '精密模具设计与制造', '1970-01-01 00:00:00', NOW(), NOW()),
        ('热门推荐', 'general', '热门推荐标签', '1970-01-01 00:00:00', NOW(), NOW()),
-       ('新品上市', 'general', '新品标签', '1970-01-01 00:00:00', NOW(), NOW());
+       ('新品上市', 'general', '新品标签', '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增标签
+       ('CE认证', 'certification', '欧盟CE认证', '1970-01-01 00:00:00', NOW(), NOW()),
+       ('FCC认证', 'certification', '美国FCC认证', '1970-01-01 00:00:00', NOW(), NOW()),
+       ('RoHS认证', 'certification', '有害物质限制认证', '1970-01-01 00:00:00', NOW(), NOW()),
+       ('汽车零部件', 'product', '汽车相关零部件', '1970-01-01 00:00:00', NOW(), NOW()),
+       ('医疗器械', 'product', '医疗设备及器械', '1970-01-01 00:00:00', NOW(), NOW()),
+       ('家用电器', 'product', '家用电器产品', '1970-01-01 00:00:00', NOW(), NOW()),
+       ('咨询服务', 'service', '专业技术咨询服务', '1970-01-01 00:00:00', NOW(), NOW()),
+       ('仓储服务', 'service', '仓储物流服务', '1970-01-01 00:00:00', NOW(), NOW()),
+       ('软件开发', 'service', '软件定制开发服务', '1970-01-01 00:00:00', NOW(), NOW()),
+       ('质量检测', 'service', '产品质量检测服务', '1970-01-01 00:00:00', NOW(), NOW());
 
 -- 记录新增的精密模具标签ID（用于后续manufacture_tag）
 SET @mold_tag_id = (SELECT id FROM tag WHERE name = '精密模具' AND category = 'product');
@@ -79,6 +121,13 @@ VALUES (1, '寻求PCB设计服务', '需要专业PCB设计公司，有高速PCB�
        (1, '寻找EMS代工厂', '需要SMT贴片服务，月产能需达到10万片', 50.00, '2026-05-01', 'published', 0, 'approved', NULL,
         NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW()),
        (2, '精密模具设计', '需要高精度模具设计，用于手机外壳生产', 20.00, '2026-04-15', 'published', 0, 'approved', NULL,
+        NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增需求 (manu_id引用制造企业表的ID: 3, 4, 5)
+       (3, '汽车零部件CE认证', '需要CE认证服务，产品出口欧盟市场', 15.00, '2026-06-01', 'published', 0, 'approved', NULL,
+        NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW()),
+       (4, '医疗器械质量检测', '需要专业的医疗器械质量检测服务', 25.00, '2026-05-20', 'published', 0, 'approved', NULL,
+        NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW()),
+       (5, '家电产品FCC认证', '需要FCC认证，产品出口美国市场', 12.00, '2026-07-01', 'published', 0, 'approved', NULL,
         NOW(), 5, '1970-01-01 00:00:00', NOW(), NOW());
 
 -- =====================================================
@@ -89,7 +138,14 @@ VALUES (1, 7, '1970-01-01 00:00:00', NOW(), NOW()),
        (1, 1, '1970-01-01 00:00:00', NOW(), NOW()),
        (2, 8, '1970-01-01 00:00:00', NOW(), NOW()),
        (2, 3, '1970-01-01 00:00:00', NOW(), NOW()),
-       (3, 2, '1970-01-01 00:00:00', NOW(), NOW());
+       (3, 2, '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增需求标签关系 (demand_id引用需求表的ID: 4, 5, 6)
+       (4, 13, '1970-01-01 00:00:00', NOW(), NOW()), -- CE认证
+       (4, 1, '1970-01-01 00:00:00', NOW(), NOW()), -- 检测认证
+       (5, 22, '1970-01-01 00:00:00', NOW(), NOW()), -- 质量检测
+       (5, 17, '1970-01-01 00:00:00', NOW(), NOW()), -- 医疗器械
+       (6, 14, '1970-01-01 00:00:00', NOW(), NOW()), -- FCC认证
+       (6, 18, '1970-01-01 00:00:00', NOW(), NOW()); -- 家用电器
 
 -- =====================================================
 -- 7. 制造企业能力标签表 (manufacture_tag)
@@ -97,7 +153,11 @@ VALUES (1, 7, '1970-01-01 00:00:00', NOW(), NOW()),
 INSERT INTO `manufacture_tag` (`manufacture_id`, `tag_id`, `deleted`, `create_time`, `update_time`)
 VALUES (1, 7, '1970-01-01 00:00:00', NOW(), NOW()),
        (1, 9, '1970-01-01 00:00:00', NOW(), NOW()),
-       (2, @mold_tag_id, '1970-01-01 00:00:00', NOW(), NOW());
+       (2, @mold_tag_id, '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增制造企业能力标签 (manufacture_id引用制造企业表的ID: 3, 4, 5)
+       (3, 16, '1970-01-01 00:00:00', NOW(), NOW()), -- 汽车零部件
+       (4, 17, '1970-01-01 00:00:00', NOW(), NOW()), -- 医疗器械
+       (5, 18, '1970-01-01 00:00:00', NOW(), NOW()); -- 家用电器
 
 -- =====================================================
 -- 8. 服务商能力标签表 (service_tag)
@@ -107,7 +167,15 @@ VALUES (1, 1, '1970-01-01 00:00:00', NOW(), NOW()),
        (1, 4, '1970-01-01 00:00:00', NOW(), NOW()),
        (1, 5, '1970-01-01 00:00:00', NOW(), NOW()),
        (2, 3, '1970-01-01 00:00:00', NOW(), NOW()),
-       (2, 6, '1970-01-01 00:00:00', NOW(), NOW());
+       (2, 6, '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增服务商能力标签
+       (3, 1, '1970-01-01 00:00:00', NOW(), NOW()), -- 检测认证
+       (3, 13, '1970-01-01 00:00:00', NOW(), NOW()), -- CE认证
+       (3, 14, '1970-01-01 00:00:00', NOW(), NOW()), -- FCC认证
+       (4, 2, '1970-01-01 00:00:00', NOW(), NOW()), -- 工业设计
+       (4, 19, '1970-01-01 00:00:00', NOW(), NOW()), -- 咨询服务
+       (5, 3, '1970-01-01 00:00:00', NOW(), NOW()), -- 物流供应链
+       (5, 20, '1970-01-01 00:00:00', NOW(), NOW()); -- 仓储服务
 
 -- =====================================================
 -- 9. 合作记录表 (cooperation)
@@ -144,7 +212,23 @@ INSERT INTO `region_index` (`region`, `year`, `period_type`, `period_value`, `co
                             `cross_rate`, `total_index`, `calc_time`, `deleted`, `create_time`, `update_time`)
 VALUES ('深圳', 2026, 'quarter', 1, 0.85, 0.72, 0.45, 75.8, NOW(), '1970-01-01 00:00:00', NOW(), NOW()),
        ('东莞', 2026, 'quarter', 1, 0.78, 0.68, 0.52, 73.2, NOW(), '1970-01-01 00:00:00', NOW(), NOW()),
-       ('广州', 2026, 'quarter', 1, 0.82, 0.70, 0.48, 74.5, NOW(), '1970-01-01 00:00:00', NOW(), NOW());
+       ('广州', 2026, 'quarter', 1, 0.82, 0.70, 0.48, 74.5, NOW(), '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增季度数据
+       ('深圳', 2025, 'quarter', 4, 0.83, 0.70, 0.43, 74.2, DATE_SUB(NOW(), INTERVAL 3 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('深圳', 2025, 'quarter', 3, 0.81, 0.68, 0.41, 72.8, DATE_SUB(NOW(), INTERVAL 6 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('深圳', 2025, 'quarter', 2, 0.79, 0.65, 0.39, 70.5, DATE_SUB(NOW(), INTERVAL 9 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('东莞', 2025, 'quarter', 4, 0.76, 0.66, 0.50, 72.0, DATE_SUB(NOW(), INTERVAL 3 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('广州', 2025, 'quarter', 4, 0.80, 0.68, 0.46, 73.2, DATE_SUB(NOW(), INTERVAL 3 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增月份数据
+       ('深圳', 2026, 'month', 3, 0.84, 0.71, 0.44, 75.2, DATE_SUB(NOW(), INTERVAL 1 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('深圳', 2026, 'month', 2, 0.82, 0.69, 0.42, 73.8, DATE_SUB(NOW(), INTERVAL 2 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('深圳', 2026, 'month', 1, 0.80, 0.67, 0.40, 72.0, DATE_SUB(NOW(), INTERVAL 3 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('东莞', 2026, 'month', 3, 0.77, 0.67, 0.51, 72.8, DATE_SUB(NOW(), INTERVAL 1 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('广州', 2026, 'month', 3, 0.81, 0.69, 0.47, 74.0, DATE_SUB(NOW(), INTERVAL 1 MONTH), '1970-01-01 00:00:00', NOW(), NOW()),
+       -- 新增其他区域数据
+       ('佛山', 2026, 'quarter', 1, 0.75, 0.65, 0.45, 70.5, NOW(), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('惠州', 2026, 'quarter', 1, 0.72, 0.62, 0.42, 68.8, NOW(), '1970-01-01 00:00:00', NOW(), NOW()),
+       ('珠海', 2026, 'quarter', 1, 0.70, 0.60, 0.40, 67.2, NOW(), '1970-01-01 00:00:00', NOW(), NOW());
 
 -- =====================================================
 -- 13. 资质证书表 (certification)

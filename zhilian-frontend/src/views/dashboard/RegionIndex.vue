@@ -212,7 +212,9 @@
                     ? "第" + regionDetail.periodValue + "季度"
                     : regionDetail.periodValue + "月"
                 }}
-                （计算时间：{{ regionDetail.calcTime }}）
+                （计算时间：{{
+                  createTimeConverter(regionDetail.calcTime).toLocalYMDHMS()
+                }}）
               </div>
             </div>
             <div
@@ -305,6 +307,7 @@ import * as echarts from "echarts";
 import { ElMessage } from "element-plus";
 import { Refresh } from "@element-plus/icons-vue";
 import { getRegionIndexList, getRegionIndex, getTrendData } from "@/api/region";
+import { createTimeConverter } from "@/composables/date";
 
 // 图表实例
 const barChartRef = ref(null);

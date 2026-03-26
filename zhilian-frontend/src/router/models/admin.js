@@ -5,6 +5,11 @@ export default [
     component: () => import("@/views/admin/TagList.vue"),
   },
   {
+    path: "admin/enterprise-audit",
+    name: "EnterpriseAudit",
+    component: () => import("@/views/admin/EnterpriseAudit.vue"),
+  },
+  {
     path: "admin/user",
     name: "UserManage",
     component: () => import("@/views/admin/UserManage.vue"),
@@ -13,5 +18,10 @@ export default [
     path: "admin/demand",
     name: "DemandAudit",
     component: () => import("@/views/admin/DemandAudit.vue"),
+  },
+  {
+    path: "admin/region-index",
+    name: "RegionIndexManage",
+    component: () => import("@/views/admin/RegionIndexManage.vue"),
   },
 ];
