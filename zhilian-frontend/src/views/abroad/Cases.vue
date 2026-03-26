@@ -361,11 +361,6 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.search-title {
-  font-weight: 600;
-  color: #1f2f3d;
-}
-
 .search-form {
   padding: 20px;
 }
