@@ -94,3 +94,97 @@ export function getUserDetail(id) {
     method: "get",
   });
 }
+
+/**
+ * 获取待审核需求列表（管理员）
+ * @param {Object} params - 请求参数
+ * @param {number} [params.page=1] - 页码
+ * @param {number} [params.size=10] - 每页条数
+ * @returns {Promise<{ total: number, records: any[] }>} 返回分页数据，包含总数和记录列表
+ * @example
+ * getPendingDemands({ page: 1, size: 10 }).then(res => {
+ *   console.log(res.records) // 需求列表
+ * })
+ */
+export function getPendingDemands(params) {
+  return request({
+    url: "/admin/demand/pending",
+    method: "get",
+    params,
+  });
+}
+
+/**
+ * 审核需求（通过/驳回）
+ * @param {number} id - 需求ID
+ * @param {Object} data - 审核数据
+ * @param {string} data.status - 审核状态：'approved' 通过 / 'rejected' 驳回
+ * @param {string} [data.remark] - 审核意见（驳回时建议填写）
+ * @returns {Promise<null>}
+ * @example
+ * approveDemand(123, { status: 'approved' })
+ * approveDemand(123, { status: 'rejected', remark: '需求描述不清晰' })
+ */
+export function approveDemand(id, data) {
+  return request({
+    url: `/admin/demand/approve/${id}`,
+    method: "post",
+    data,
+  });
+}
+
+/**
+ * 获取区域指数列表
+ *
+ * @param {Object} params 查询参数对象（如区域名称、时间区间、分页信息等）
+ * @returns {Promise} 返回后端响应的 Promise，对应区域指数列表数据
+ */
+export function getRegionIndexList(params) {
+  return request({
+    url: "/admin/region-index/list",
+    method: "get",
+    params,
+  });
+}
+
+/**
+ * 新增区域指数
+ *
+ * @param {Object} data 区域指数新增数据对象
+ * @returns {Promise} 返回后端响应的 Promise，一般为新增结果或新增记录信息
+ */
+export function addRegionIndex(data) {
+  return request({
+    url: "/admin/region-index",
+    method: "post",
+    data,
+  });
+}
+
+/**
+ * 修改区域指数
+ *
+ * @param {string|number} id 区域指数主键 ID
+ * @param {Object} data 区域指数更新数据对象
+ * @returns {Promise} 返回后端响应的 Promise，一般为更新结果
+ */
+export function updateRegionIndex(id, data) {
+  return request({
+    url: `/admin/region-index/${id}`,
+    method: "put",
+    data,
+  });
+}
+
+/**
+ * 删除区域指数
+ *
+ * @param {string|number} id 区域指数主键 ID
+ * @returns {Promise} 返回后端响应的 Promise，一般为删除结果
+ */
+export function deleteRegionIndex(id) {
+  return request({
+    url: `/admin/region-index/${id}`,
+    method: "delete",
+  });
+}

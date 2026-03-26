@@ -57,6 +57,12 @@
           </el-menu-item>
         </el-sub-menu>
 
+        <!-- 我的需求页面 -->
+        <el-menu-item v-if="isManufacture || isAdmin" index="/match/my">
+          <el-icon><DocumentAdd /></el-icon>
+          <span>我的需求</span>
+        </el-menu-item>
+
         <!-- 制造企业列表页面 -->
         <el-menu-item index="/manufacture/list">
           <el-icon>
@@ -110,6 +116,14 @@
             <el-icon><Avatar /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/demand">
+            <el-icon><Avatar /></el-icon>
+            <span>需求审核</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/region-index">
+            <el-icon><DataBoard /></el-icon>
+            <span>区域数据管理</span>
+          </el-menu-item>
         </el-sub-menu>
         <!-- 后续可继续添加其他菜单项 -->
       </el-menu>
@@ -156,6 +170,7 @@ import {
   OfficeBuilding,
   List,
   DataLine,
+  DocumentAdd,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
