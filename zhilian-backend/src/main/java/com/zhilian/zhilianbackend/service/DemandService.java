@@ -5,6 +5,7 @@ import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.request.DemandApproveRequest;
 import com.zhilian.zhilianbackend.dto.request.DemandPublishRequest;
 import com.zhilian.zhilianbackend.dto.request.DemandUpdateRequest;
+import com.zhilian.zhilianbackend.dto.response.DemandDetailVO;
 import com.zhilian.zhilianbackend.dto.response.DemandMyListVO;
 import com.zhilian.zhilianbackend.dto.response.DemandPendingVO;
 import com.zhilian.zhilianbackend.dto.response.DemandPublishResponse;
@@ -27,5 +28,5 @@ public interface DemandService extends IService<Demand> {
     void deleteDemand(Long id, Long userId);
     PageResult<DemandMyListVO> getMyDemandList(Integer page, Integer size, Long manuId, String status, Long userId);
     
-    com.zhilian.zhilianbackend.dto.response.DemandDetailVO getDemandDetail(Long id, Long userId);
+    DemandDetailVO getDemandDetail(Long id, Long userId);
 }
