@@ -28,7 +28,7 @@ public class DemandDetailVO {
     private BigDecimal expectedBudget;
 
     @Schema(description = "期望完成日期")
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyy-MM-dd", timezone = "GMT+8")
     private Date deadline;
 
     @Schema(description = "业务状态：draft/published/matched/closed")
@@ -41,11 +41,11 @@ public class DemandDetailVO {
     private String auditRemark;
 
     @Schema(description = "发布时间")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime;
 
     @Schema(description = "更新时间")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateTime;
 
     @Schema(description = "制造企业信息")

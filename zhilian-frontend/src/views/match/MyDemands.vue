@@ -356,9 +356,25 @@ const categoryMap = {
 
 const fetchTags = async () => {
   try {
-    const res = await getTagList({ page: 1, size: 100 });
-    const tags = res.records || [];
-    tagOptions.value = tags.map((tag) => ({
+    let allTags = [];
+    let page = 1;
+    const size = 100;
+    let hasMore = true;
+
+    while (hasMore) {
+      const res = await getTagList({ page, size });
+      const currentTags = res.records || [];
+      allTags = allTags.concat(currentTags);
+      
+      const total = res.total || 0;
+      if (allTags.length >= total || currentTags.length < size) {
+        hasMore = false;
+      } else {
+        page++;
+      }
+    }
+
+    tagOptions.value = allTags.map((tag) => ({
       id: tag.id,
       name: tag.name,
       category: tag.category,
