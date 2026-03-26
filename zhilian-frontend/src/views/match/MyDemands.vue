@@ -58,6 +58,7 @@
         <div class="filter-actions">
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
+          <el-button @click="handleRefresh" :icon="Refresh">刷新</el-button>
         </div>
       </div>
     </el-card>
@@ -227,6 +228,16 @@
             />
           </el-select>
         </el-form-item>
+
+        <el-form-item label="审核状态" v-if="!isAdd">
+          <el-tag :type="auditStatusTagType(form.auditStatus)">
+            {{ auditStatusText(form.auditStatus) }}
+          </el-tag>
+        </el-form-item>
+
+        <el-form-item label="审核意见" v-if="!isAdd">
+          <div class="audit-remark">{{ form.auditRemark || "无" }}</div>
+        </el-form-item>
       </el-form>
 
       <template #footer>
@@ -240,6 +251,7 @@
 </template>
 
 <script setup>
+import { Refresh } from "@element-plus/icons-vue";
 import { ref, reactive, computed, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useRouter } from "vue-router";
@@ -288,6 +300,8 @@ const form = reactive({
   expectedBudget: null,
   deadline: "",
   tags: [],
+  auditStatus: "",
+  auditRemark: "",
 });
 
 // ---------- 企业列表 ----------
@@ -342,7 +356,7 @@ const categoryMap = {
 
 const fetchTags = async () => {
   try {
-    const res = await getTagList({ page: 1, size: 500 });
+    const res = await getTagList({ page: 1, size: 100 });
     const tags = res.records || [];
     tagOptions.value = tags.map((tag) => ({
       id: tag.id,
@@ -427,6 +441,24 @@ const statusTagType = (status) => {
   return map[status] || "";
 };
 
+const auditStatusText = (status) => {
+  const map = {
+    pending: "待审核",
+    approved: "已通过",
+    rejected: "已驳回",
+  };
+  return map[status] || status;
+};
+
+const auditStatusTagType = (status) => {
+  const map = {
+    pending: "warning",
+    approved: "success",
+    rejected: "danger",
+  };
+  return map[status] || "info";
+};
+
 // ---------- 获取需求列表 ----------
 const fetchList = async () => {
   if (!selectedManuId.value) return;
@@ -451,6 +483,10 @@ const fetchList = async () => {
 };
 
 // ---------- 搜索与分页 ----------
+const handleRefresh = () => {
+  fetchList();
+};
+
 const handleSearch = () => {
   queryParams.page = 1;
   fetchList();
@@ -488,10 +524,10 @@ const handleAdd = () => {
 };
 
 const handleEdit = async (row) => {
-  if (row.manuId !== selectedManuId.value) {
-    ElMessage.warning("当前选中的企业与需求所属企业不一致，无法编辑");
-    return;
-  }
+  // if (row.manuId !== selectedManuId.value) {
+  //   ElMessage.warning("当前选中的企业与需求所属企业不一致，无法编辑");
+  //   return;
+  // }
   isAdd.value = false;
   currentDemandId.value = row.id;
   try {
@@ -503,6 +539,8 @@ const handleEdit = async (row) => {
       data.expectedBudget !== undefined ? data.expectedBudget : null;
     form.deadline = data.deadline || "";
     form.tags = data.tags?.map((tag) => tag.id) || [];
+    form.auditStatus = data.auditStatus || "";
+    form.auditRemark = data.auditRemark || "";
     dialogVisible.value = true;
   } catch (error) {
     console.error("获取需求详情失败", error);
@@ -519,6 +557,8 @@ const resetForm = () => {
   form.expectedBudget = null;
   form.deadline = "";
   form.tags = [];
+  form.auditStatus = "";
+  form.auditRemark = "";
 };
 
 const handleDialogClose = () => {
@@ -572,10 +612,10 @@ const submitForm = async () => {
 
 // ---------- 删除需求 ----------
 const handleDelete = (row) => {
-  if (row.manuId !== selectedManuId.value) {
-    ElMessage.warning("当前选中的企业与需求所属企业不一致，无法删除");
-    return;
-  }
+  // if (row.manuId !== selectedManuId.value) {
+  //   ElMessage.warning("当前选中的企业与需求所属企业不一致，无法删除");
+  //   return;
+  // }
   ElMessageBox.confirm("确定删除该需求吗？删除后不可恢复。", "提示", {
     confirmButtonText: "确定",
     cancelButtonText: "取消",
@@ -722,5 +762,12 @@ onMounted(async () => {
 
 .filter-form-left .el-select {
   width: 120px;
+}
+
+.audit-remark {
+  line-height: 1.5;
+  color: #606266;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 </style>

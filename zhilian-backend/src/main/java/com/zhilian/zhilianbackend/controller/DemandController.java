@@ -90,4 +90,17 @@ public class DemandController {
         PageResult<DemandMyListVO> pageResult = demandService.getMyDemandList(page, size, manuId, status, userId);
         return Result.success(pageResult);
     }
+
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/03/26 18:29
+     * @Param: id 需求ID
+     * @Return: Result<com.zhilian.zhilianbackend.dto.response.DemandDetailVO> 需求详情
+     * @Description: 获取需求详情
+     */
+    @GetMapping("/{id}")
+    public Result<com.zhilian.zhilianbackend.dto.response.DemandDetailVO> getDemandDetail(@PathVariable Long id) {
+        Long userId = securityUtils.getCurrentUserId();
+        return Result.success(demandService.getDemandDetail(id, userId));
+    }
 }

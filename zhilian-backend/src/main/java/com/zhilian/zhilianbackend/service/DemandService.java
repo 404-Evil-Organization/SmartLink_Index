@@ -26,4 +26,6 @@ public interface DemandService extends IService<Demand> {
     void updateDemand(Long id, DemandUpdateRequest request, Long userId);
     void deleteDemand(Long id, Long userId);
     PageResult<DemandMyListVO> getMyDemandList(Integer page, Integer size, Long manuId, String status, Long userId);
+    
+    com.zhilian.zhilianbackend.dto.response.DemandDetailVO getDemandDetail(Long id, Long userId);
 }
