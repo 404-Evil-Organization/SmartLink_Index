@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseQueryRequest;
 import com.zhilian.zhilianbackend.dto.response.AbroadCaseVO;
@@ -47,8 +46,7 @@ public class AbroadCaseServiceImpl extends ServiceImpl<AbroadCaseMapper, AbroadC
         Page<AbroadCase> page = new Page<>(pageNum, pageSize);
 
         LambdaQueryWrapper<AbroadCase> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(AbroadCase::getStatus, 1)
-                .apply("deleted = {0}", DateConstants.getNotDeletedTimeStr());
+        wrapper.eq(AbroadCase::getStatus, 1);  // 只查询已发布的案例
 
         if (StringUtils.hasText(country)) {
             String escapedCountry = SqlUtils.escapeSqlLike(country);

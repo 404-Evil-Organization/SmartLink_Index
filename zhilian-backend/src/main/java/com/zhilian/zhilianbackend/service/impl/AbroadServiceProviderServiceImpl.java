@@ -3,7 +3,6 @@ package com.zhilian.zhilianbackend.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.zhilian.zhilianbackend.common.constant.DateConstants;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.request.AbroadServiceQueryRequest;
 import com.zhilian.zhilianbackend.dto.response.AbroadServiceVO;
@@ -44,14 +43,11 @@ public class AbroadServiceProviderServiceImpl implements AbroadServiceProviderSe
         log.debug("查询出海服务商，服务类型过滤：{}，区域：{}，页码：{}，每页条数：{}",
                 serviceType, region, pageNum, pageSize);
 
-        // 构建分页对象
         Page<ServiceProvider> page = new Page<>(pageNum, pageSize);
 
-        // 构建查询条件
         LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ServiceProvider::getIsAbroad, 1)
-                .eq(ServiceProvider::getAuditStatus, "approved")
-                .apply("deleted = {0}", DateConstants.getNotDeletedTimeStr());
+                .eq(ServiceProvider::getAuditStatus, "approved");
 
         if (StringUtils.hasText(serviceType)) {
             wrapper.apply("FIND_IN_SET({0}, service_type) > 0", serviceType);
@@ -62,10 +58,7 @@ public class AbroadServiceProviderServiceImpl implements AbroadServiceProviderSe
 
         wrapper.orderByDesc(ServiceProvider::getId);
 
-        // 执行分页查询
         IPage<ServiceProvider> pageResult = serviceProviderMapper.selectPage(page, wrapper);
-
-        // 转换为 VO 并返回分页结果
         IPage<AbroadServiceVO> voPage = pageResult.convert(this::convertToVO);
 
         log.info("查询出海服务商成功，总记录数：{}，本次返回：{}条", voPage.getTotal(), voPage.getRecords().size());

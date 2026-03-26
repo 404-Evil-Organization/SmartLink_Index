@@ -35,9 +35,9 @@ public class AbroadController {
     /**
      * @Author: xiaodengyou
      * @Date: 2026/3/26 15:51
-     * @Param: request 服务商查询请求参数（含服务类型筛选）
-     * @Return: Result<List<AbroadServiceVO>> 统一响应结果，包含服务商列表
-     * @Description: 获取提供出海服务的服务商列表（公开接口）
+     * @Param: request 服务商查询请求参数（含服务类型、区域筛选及分页）
+     * @Return: Result<PageResult<AbroadServiceVO>> 统一响应结果，包含分页的服务商数据
+     * @Description: 分页获取提供出海服务且审核通过的服务商列表，支持按服务类型、区域筛选（公开接口）
      */
     @GetMapping("/services")
     @Operation(summary = "获取提供出海服务的服务商列表", description = "支持按服务类型、区域筛选，支持分页，公开接口")

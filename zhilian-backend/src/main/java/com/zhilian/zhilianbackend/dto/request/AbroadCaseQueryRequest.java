@@ -18,7 +18,6 @@ public class AbroadCaseQueryRequest {
 
     @NotNull(message = "页码不能为空")
     @Min(value = 1, message = "页码最小为1")
-    @Max(value = 100, message = "页码最大为100")
     @Schema(description = "页码", defaultValue = "1")
     private Integer page = 1;
 
