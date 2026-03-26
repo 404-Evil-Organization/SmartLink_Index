@@ -116,6 +116,23 @@ export function getUserDetail(id) {
 }
 
 /**
+ * 获取出海案例列表（管理员）
+ * @description 分页查询出海案例，支持按关键词等条件筛选
+ * @param {Object} params - 请求参数
+ * @param {number} [params.page] - 页码，默认1
+ * @param {number} [params.size] - 每页条数，默认10
+ * @param {string} [params.keyword] - 标题/企业名称等关键词模糊搜索
+ * @returns {Promise<Object>} 返回分页数据
+ */
+export function getAbroadCaseList(params) {
+  return request({
+    url: "/admin/abroad-case/list",
+    method: "get",
+    params,
+  });
+}
+
+/**
  * 获取待审核需求列表（管理员）
  * @param {Object} params - 请求参数
  * @param {number} [params.page=1] - 页码
@@ -131,6 +148,20 @@ export function getPendingDemands(params) {
     url: "/admin/demand/pending",
     method: "get",
     params,
+  });
+}
+
+/**
+ * 新增出海案例（管理员）
+ * @description 管理员创建新的出海案例记录
+ * @param {Object} data - 出海案例表单数据
+ * @returns {Promise<Object>} 返回新增后的案例信息或通用响应结果
+ */
+export function addAbroadCase(data) {
+  return request({
+    url: "/admin/abroad-case",
+    method: "post",
+    data,
   });
 }
 
@@ -153,6 +184,20 @@ export function approveDemand(id, data) {
   });
 }
 
+/**
+ * 修改出海案例（管理员）
+ * @description 管理员根据案例ID更新出海案例信息
+ * @param {number} id - 出海案例ID
+ * @param {Object} data - 出海案例更新数据
+ * @returns {Promise<Object>} 返回更新后的案例信息或通用响应结果
+ */
+export function updateAbroadCase(id, data) {
+  return request({
+    url: `/admin/abroad-case/${id}`,
+      method: "put",
+    data,
+  });
+}
 /**
  * 获取区域指数列表
  *
@@ -193,6 +238,19 @@ export function updateRegionIndex(id, data) {
     url: `/admin/region-index/${id}`,
     method: "put",
     data,
+  });
+}
+
+/**
+ * 删除出海案例（管理员）
+ * @description 管理员根据ID删除指定的出海案例
+ * @param {number} id - 出海案例ID
+ * @returns {Promise<null>} 无返回数据
+ */
+export function deleteAbroadCase(id) {
+  return request({
+    url: `/admin/abroad-case/${id}`,
+    method: "delete",
   });
 }
 
