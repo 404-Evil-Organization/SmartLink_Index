@@ -136,7 +136,7 @@ public class AbroadCaseServiceImpl implements AbroadCaseService {
         BeanUtils.copyProperties(request, entity);
         entity.setCoverImage(coverImageUrl);
         // 仅当状态为“已发布”时设置发布时间，草稿不应有发布时间
-        if (AbroadCase.STATUS_PUBLISHED.equals(entity.getStatus())) {
+        if (STATUS_PUBLISHED.equals(entity.getStatus())) {
             entity.setPublishTime(new Date());
         }
 
