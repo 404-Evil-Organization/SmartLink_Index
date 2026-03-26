@@ -220,10 +220,7 @@ import {
   updateAbroadCase,
   deleteAbroadCase,
 } from "@/api/admin";
-import { useUserStore } from "@/stores/user";
 import { createTimeConverter } from "@/composables/date";
-
-const userStore = useUserStore();
 
 // 搜索表单
 const searchForm = reactive({
@@ -333,13 +330,13 @@ const handleCurrentChange = (val) => {
 const resetDialog = () => {
   formRef.value?.clearValidate();
   formRef.value?.resetFields();
-  
+
   // 释放对象 URL 内存
   if (previewObjectUrl) {
     URL.revokeObjectURL(previewObjectUrl);
     previewObjectUrl = null;
   }
-  
+
   Object.assign(form, {
     title: "",
     companyName: "",
@@ -387,16 +384,16 @@ const openEditDialog = (row) => {
 const handleCustomUpload = (options) => {
   try {
     const file = options.file;
-    
+
     // 释放旧的预览 URL，防止内存泄漏
     if (previewObjectUrl) {
       URL.revokeObjectURL(previewObjectUrl);
     }
-    
+
     // 生成新的本地预览 URL
     previewObjectUrl = URL.createObjectURL(file);
     form.coverImage = previewObjectUrl;
-    
+
     // 保存文件对象，等待提交表单时一并发送
     form.coverImageFile = file;
     if (typeof options.onSuccess === "function") {
@@ -408,6 +405,20 @@ const handleCustomUpload = (options) => {
       options.onError(error);
     }
   }
+};
+
+const beforeUpload = (file) => {
+  const isImage = file.type === "image/jpeg" || file.type === "image/png";
+  const isLt2M = file.size / 1024 / 1024 < 2;
+  if (!isImage) {
+    ElMessage.error("只能上传 JPG/PNG 格式图片");
+    return false;
+  }
+  if (!isLt2M) {
+    ElMessage.error("图片大小不能超过 2MB");
+    return false;
+  }
+  return true;
 };
 
 // 提交表单
