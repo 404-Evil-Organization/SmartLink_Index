@@ -120,6 +120,10 @@
             <el-icon><Avatar /></el-icon>
             <span>需求审核</span>
           </el-menu-item>
+          <el-menu-item index="/admin/region-index">
+            <el-icon><DataBoard /></el-icon>
+            <span>区域数据管理</span>
+          </el-menu-item>
           <el-menu-item index="/admin/enterprise-audit">
             <el-icon><Checked /></el-icon>
             <span>企业审核</span>
