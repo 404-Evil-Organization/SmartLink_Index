@@ -85,6 +85,14 @@ public class DemandController {
             throw new BusinessException(403, "无权限访问");
         }
 
+        // 区间参数合法性校验
+        if (expectedBudgetMin != null && expectedBudgetMax != null && expectedBudgetMin.compareTo(expectedBudgetMax) > 0) {
+            throw new BusinessException(400, "预算最小值不能大于最大值");
+        }
+        if (deadlineStart != null && deadlineEnd != null && deadlineStart.isAfter(deadlineEnd)) {
+            throw new BusinessException(400, "截止日期开始范围不能大于结束范围");
+        }
+
         // 解析标签ID列表（支持带空格、尾逗号等格式）
         List<Long> tagIdList = null;
         if (tagIds != null && !tagIds.isEmpty()) {
