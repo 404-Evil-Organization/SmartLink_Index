@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.common.constant.DateConstants;
-import com.zhilian.zhilianbackend.dto.request.*;
 import com.zhilian.zhilianbackend.dto.response.RegionDetailVO;
 import com.zhilian.zhilianbackend.dto.response.RegionIndexAdminVO;
 import com.zhilian.zhilianbackend.dto.response.RegionListItemVO;
@@ -34,6 +33,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
+import com.zhilian.zhilianbackend.dto.request.AdminRegionIndexListRequest;
+import com.zhilian.zhilianbackend.dto.request.RegionDetailQuery;
+import com.zhilian.zhilianbackend.dto.request.RegionIndexCreateRequest;
+import com.zhilian.zhilianbackend.dto.request.RegionIndexUpdateRequest;
+import com.zhilian.zhilianbackend.dto.request.RegionListQuery;
+import com.zhilian.zhilianbackend.dto.request.TrendQuery;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,8 +46,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
