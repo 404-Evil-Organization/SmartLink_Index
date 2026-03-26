@@ -210,6 +210,7 @@ const resetSearch = () => {
 
 // 分页变化
 const handlePageChange = () => {
+  pagination.size = size;
   fetchList();
 };
 

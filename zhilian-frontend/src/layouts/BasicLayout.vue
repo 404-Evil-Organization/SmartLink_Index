@@ -81,7 +81,7 @@
           </template>
           <el-menu-item index="/abroad/country">
             <el-icon><Guide /></el-icon>
-            <span>出海服务商列表</span>
+            <span>国家准入指南</span>
           </el-menu-item>
         </el-sub-menu>
 
