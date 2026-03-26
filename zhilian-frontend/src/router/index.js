@@ -12,6 +12,7 @@ import evaluationRoutes from "./models/evaluation";
 import diagnosisRoutes from "./models/diagnosis";
 import errorRoutes from "./models/error";
 import enterpriseRoutes from "./models/enterprise";
+import matchRoutes from "./models/match";
 
 const routes = [
   {
@@ -42,6 +43,7 @@ const routes = [
       ...cooperationRoutes,
       ...evaluationRoutes,
       ...enterpriseRoutes,
+      ...matchRoutes,
       // 管理端路由统一标记为仅管理员可访问
       ...adminRoutes.map((route) => ({
         ...route,

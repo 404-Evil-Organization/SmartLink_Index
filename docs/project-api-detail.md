@@ -1542,6 +1542,58 @@
 > 3. 更新合作记录 `status='cancelled'`。
 > 4. 将关联的需求状态恢复为 `published`。
 
+---
+
+### 4.8 获取需求详情
+
+- **URL**: `/api/demand/{id}`
+- **Method**: `GET`
+- **请求头**: `Authorization: Bearer <token>`（需登录）
+- **路径参数**:
+
+| 参数名 | 类型 | 必填 | 描述   |
+| :----- | :--- | :--- | :----- |
+| id     | long | 是   | 需求ID |
+
+- **返回数据**:
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "id": 3001,
+    "manuId": 1001,
+    "title": "寻求PCB设计服务",
+    "description": "需要专业PCB设计公司，有高速PCB设计经验者优先。",
+    "expectedBudget": 10.0,
+    "deadline": "2026-06-01",
+    "status": "published",
+    "auditStatus": "approved",
+    "auditRemark": null,
+    "createTime": "2026-03-01 10:00:00",
+    "updateTime": "2026-03-01 10:00:00",
+    "manufacture": {
+      "id": 1001,
+      "companyName": "深圳电子科技",
+      "region": "深圳",
+      "contactPerson": "张三",
+      "contactPhone": "13800138001"
+    },
+    "tags": [
+      { "id": 1, "name": "PCB设计" },
+      { "id": 2, "name": "高速电路" }
+    ]
+  }
+}
+```
+
+> **业务逻辑**：
+>
+> - 若需求状态为 `draft`（草稿），则仅发布者（根据 `manuId` 关联的用户）或管理员可查看详情。
+> - 若需求状态为 `published` 或 `matched`，则所有已登录用户均可查看详情，但敏感信息（如联系电话）可能根据角色或需求状态进行脱敏处理（具体可参考文档设计，此接口未做脱敏，返回完整信息）。
+> - 若需求已被删除（逻辑删除），则返回404。
+
 ------
 
 ## 五、信用评价体系模块
