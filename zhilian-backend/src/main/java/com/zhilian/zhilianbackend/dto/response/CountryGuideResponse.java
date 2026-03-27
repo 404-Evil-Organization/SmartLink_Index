@@ -1,22 +1,17 @@
 package com.zhilian.zhilianbackend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.Date;
 import java.util.List;
 
-/**
- * @Author: 6017
- * @Date: 2026/3/26 00:01
- * @Param: 
- * @Return: 
- * @Description: 国家准入指南响应DTO
-**/
 @Data
-@Schema(description = "国家准入指南响应")
+@Schema(description = "国家指南响应")
 public class CountryGuideResponse {
 
-    @Schema(description = "记录ID")
+    @Schema(description = "主键ID")
     private Long id;
 
     @Schema(description = "国家名称")
@@ -28,12 +23,14 @@ public class CountryGuideResponse {
     @Schema(description = "办理流程")
     private String process;
 
-    @Schema(description = "所需材料列表")
+    @Schema(description = "所需材料")
     private List<String> documents;
 
     @Schema(description = "创建时间")
-    private String createTime;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date createTime;
 
     @Schema(description = "更新时间")
-    private String updateTime;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date updateTime;
 }

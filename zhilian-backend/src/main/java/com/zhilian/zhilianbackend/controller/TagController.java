@@ -89,8 +89,6 @@ public class TagController {
     @Operation(summary = "获取标签列表（分页）")
     @GetMapping("/list")
     public Result<IPage<TagResponse>> list(@Valid TagQueryRequest queryRequest) {
-        // 管理后台接口：统一校验当前用户是否为管理员
-        checkAdmin();
         return Result.success(tagService.pageQuery(queryRequest));
     }
 
