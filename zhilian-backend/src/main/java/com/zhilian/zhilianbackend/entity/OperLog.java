@@ -59,6 +59,12 @@ public class OperLog implements Serializable {
     private String result;
 
     /**
+     * 失败原因/异常信息
+     */
+    @TableField("error_msg")
+    private String errorMsg;
+
+    /**
      * 客户端IP地址
      */
     @TableField("ip")

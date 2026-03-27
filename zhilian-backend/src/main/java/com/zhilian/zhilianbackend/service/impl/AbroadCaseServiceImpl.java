@@ -1,5 +1,14 @@
 package com.zhilian.zhilianbackend.service.impl;
 
+import com.zhilian.zhilianbackend.service.OssService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import java.util.Date;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -7,7 +16,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseQueryRequest;
 import com.zhilian.zhilianbackend.dto.response.AbroadCaseVO;
+import com.zhilian.zhilianbackend.dto.request.AbroadCaseCreateRequest;
+import com.zhilian.zhilianbackend.dto.request.AbroadCaseQueryRequest;
+import com.zhilian.zhilianbackend.dto.request.AbroadCaseUpdateRequest;
+import com.zhilian.zhilianbackend.dto.response.AbroadCaseDetailResponse;
+import com.zhilian.zhilianbackend.dto.response.AbroadCaseListResponse;
 import com.zhilian.zhilianbackend.entity.AbroadCase;
+import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.mapper.AbroadCaseMapper;
 import com.zhilian.zhilianbackend.service.AbroadCaseService;
 import com.zhilian.zhilianbackend.utils.SqlUtils;
@@ -86,6 +101,326 @@ public class AbroadCaseServiceImpl extends ServiceImpl<AbroadCaseMapper, AbroadC
         vo.setDescription(abroadCase.getDescription());
         vo.setCoverImage(abroadCase.getCoverImage());
         vo.setPublishTime(abroadCase.getPublishTime());
-        return vo;
+        return vo;}
+
+
+
+    private final AbroadCaseMapper abroadCaseMapper;
+    private final OssService ossService;
+
+    /**
+     * 有效的状态值集合
+     */
+    private static final Byte STATUS_DRAFT = 0;
+    private static final Byte STATUS_PUBLISHED = 1;
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/25 21:05
+     * @Param: queryRequest 查询请求参数
+     * @Return: Page<AbroadCaseListResponse> 分页案例列表
+     * @Description: 分页查询出海案例列表（管理员）
+     **/
+    @Override
+    public IPage<AbroadCaseListResponse> listByPage(AbroadCaseQueryRequest queryRequest) {
+        // 构建查询条件
+        LambdaQueryWrapper<AbroadCase> wrapper = new LambdaQueryWrapper<>();
+
+        if (StringUtils.hasText(queryRequest.getCountry())) {
+            wrapper.like(AbroadCase::getCountry, queryRequest.getCountry());
+        }
+
+        if (queryRequest.getStatus() != null) {
+            // 校验查询状态值
+            validateStatus(queryRequest.getStatus());
+            wrapper.eq(AbroadCase::getStatus, queryRequest.getStatus());
+        }
+
+        // 按创建时间倒序
+        wrapper.orderByDesc(AbroadCase::getCreateTime);
+
+        // 分页查询
+        Page<AbroadCase> page = new Page<>(queryRequest.getPage(), queryRequest.getSize());
+        IPage<AbroadCase> resultPage = abroadCaseMapper.selectPage(page, wrapper);
+
+        // 使用 MyBatis Plus 提供的 convert 方法进行分页 VO 映射，保留所有分页元信息
+        return resultPage.convert(entity -> {
+            AbroadCaseListResponse response = new AbroadCaseListResponse();
+            BeanUtils.copyProperties(entity, response);
+            return response;
+        });
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/25 21:05
+     * @Param: id 案例ID
+     * @Return: AbroadCaseDetailResponse 案例详情
+     * @Description: 获取出海案例详情
+     **/
+    @Override
+    public AbroadCaseDetailResponse getDetail(Long id) {
+        AbroadCase entity = abroadCaseMapper.selectById(id);
+        if (entity == null) {
+            throw new BusinessException(404, "出海案例不存在");
+        }
+
+        AbroadCaseDetailResponse response = new AbroadCaseDetailResponse();
+        BeanUtils.copyProperties(entity, response);
+        return response;
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/25 21:05
+     * @Param: request 创建请求参数
+     * @Param: adminId 管理员ID
+     * @Param: adminName 管理员名称
+     * @Return: Long 新创建的案例ID
+     * @Description: 新增出海案例
+     **/
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long create(AbroadCaseCreateRequest request, Long adminId, String adminName) {
+        // 记录管理员创建出海案例的操作日志，便于审计与问题追踪
+        log.info("管理员创建出海案例开始, adminId={}, adminName={}", adminId, adminName);
+        // 防御性校验：验证状态值
+        if (request.getStatus() != null) {
+            validateStatus(request.getStatus());
+        }
+
+        // 处理封面图片上传
+        String coverImageUrl = null;
+        if (request.getCoverImageFile() != null && !request.getCoverImageFile().isEmpty()) {
+            try {
+                coverImageUrl = ossService.uploadFile(request.getCoverImageFile());
+                log.info("上传出海案例封面成功: {}", coverImageUrl);
+            } catch (Exception e) {
+                // 记录完整异常信息到日志，避免将底层异常细节暴露给前端
+                log.error("上传封面图片失败", e);
+                // 对前端仅返回固定的用户友好提示，防止泄露 OSS/网络/权限等内部错误信息
+                throw new BusinessException(500, "封面图片上传失败，请稍后重试");
+            }
+        }
+
+        // 构建实体
+        AbroadCase entity = new AbroadCase();
+        BeanUtils.copyProperties(request, entity);
+        entity.setCoverImage(coverImageUrl);
+        // 仅当状态为“已发布”时设置发布时间，草稿不应有发布时间
+        if (STATUS_PUBLISHED.equals(entity.getStatus())) {
+            entity.setPublishTime(new Date());
+        }
+
+        // 保存（如果插入失败或抛异常，需要补偿删除已上传的封面图片，避免产生 OSS 孤儿文件）
+        try {
+            int result = abroadCaseMapper.insert(entity);
+            if (result <= 0) {
+                // DB 插入失败时的补偿删除逻辑：删除之前上传的封面图片
+                if (StringUtils.hasText(coverImageUrl)) {
+                    try {
+                        ossService.deleteFile(coverImageUrl);
+                        log.warn("创建出海案例失败，已补偿删除封面图片: {}", coverImageUrl);
+                    } catch (Exception ex) {
+                        // 补偿删除失败只记录日志，不覆盖原始业务异常
+                        log.warn("创建出海案例失败，补偿删除封面图片失败: {}", coverImageUrl, ex);
+                    }
+                }
+                throw new BusinessException(500, "创建出海案例失败");
+            }
+        } catch (RuntimeException e) {
+            // 捕获 DB 层或 MyBatis 抛出的运行时异常，同样进行补偿删除
+            if (StringUtils.hasText(coverImageUrl)) {
+                try {
+                    ossService.deleteFile(coverImageUrl);
+                    log.warn("创建出海案例异常，已补偿删除封面图片: {}", coverImageUrl);
+                } catch (Exception ex) {
+                    log.warn("创建出海案例异常，补偿删除封面图片失败: {}", coverImageUrl, ex);
+                }
+            }
+            throw e;
+        }
+
+        // 记录操作日志（可选）
+        log.info("管理员创建出海案例成功, adminId: {}, caseId: {}", adminId, entity.getId());
+
+        return entity.getId();
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/25 21:05
+     * @Param: id 案例ID
+     * @Param: request 更新请求参数
+     * @Return: void
+     * @Description: 更新出海案例（支持部分字段更新）
+     **/
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void update(Long id, AbroadCaseUpdateRequest request) {
+        // 查询原记录
+        AbroadCase existing = abroadCaseMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "出海案例不存在");
+        }
+
+        // 防御性校验：验证状态值
+        if (request.getStatus() != null) {
+            validateStatus(request.getStatus());
+        }
+
+        // 处理封面图片更新
+        String coverImageUrl = existing.getCoverImage();
+        if (request.getCoverImageFile() != null && !request.getCoverImageFile().isEmpty()) {
+            // 上传新图片
+            try {
+                coverImageUrl = ossService.uploadFile(request.getCoverImageFile());
+                log.info("更新出海案例封面成功: {}", coverImageUrl);
+
+                // 删除旧图片（可选，根据业务需求决定是否删除）
+                if (StringUtils.hasText(existing.getCoverImage())) {
+                    try {
+                        ossService.deleteFile(existing.getCoverImage());
+                        log.info("删除旧封面成功: {}", existing.getCoverImage());
+                    } catch (Exception e) {
+                        log.warn("删除旧封面失败: {}", existing.getCoverImage(), e);
+                        // 删除失败不影响主流程
+                    }
+                }
+            } catch (Exception e) {
+                log.error("上传新封面图片失败", e);
+                // 对外仅返回固定文案，避免将底层异常信息暴露给前端
+                throw new BusinessException(500, "封面图片上传失败，请稍后重试");
+            }
+        }
+
+        // 构建更新实体（只更新非空字段）
+        AbroadCase entity = new AbroadCase();
+        entity.setId(id);
+
+        if (request.getTitle() != null) {
+            entity.setTitle(request.getTitle());
+        }
+        if (request.getCompanyName() != null) {
+            entity.setCompanyName(request.getCompanyName());
+        }
+        if (request.getCompanyType() != null) {
+            entity.setCompanyType(request.getCompanyType());
+        }
+        if (request.getCountry() != null) {
+            entity.setCountry(request.getCountry());
+        }
+        if (request.getServiceType() != null) {
+            entity.setServiceType(request.getServiceType());
+        }
+        if (request.getDescription() != null) {
+            entity.setDescription(request.getDescription());
+        }
+        if (request.getStatus() != null) {
+            entity.setStatus(request.getStatus());
+            // 只有发布时且原状态不是发布（包括原状态为 null）才更新发布时间
+            Byte newStatus = request.getStatus();
+            Byte oldStatus = existing.getStatus();
+            if (newStatus != null
+                    && newStatus.equals(STATUS_PUBLISHED)
+                    && (oldStatus == null || !oldStatus.equals(STATUS_PUBLISHED))) {
+                entity.setPublishTime(new Date());
+            }
+        }
+        entity.setCoverImage(coverImageUrl);
+        // 标记本次是否上传了新封面且与旧封面不同, 供异常/失败场景下做 OSS 补偿删除
+        boolean uploadedNewCover = StringUtils.hasText(coverImageUrl)
+                && (existing.getCoverImage() == null || !coverImageUrl.equals(existing.getCoverImage()));
+
+        try {
+            int result = abroadCaseMapper.updateById(entity);
+            if (result == 0) {
+                // 二次校验：可能是记录已被逻辑删除/不存在（尤其表上有 @TableLogic 时）
+                AbroadCase reloaded = abroadCaseMapper.selectById(id);
+                if (reloaded == null) {
+                    // 如果本次更新流程中上传了新封面且与原封面不同，需做补偿删除，避免产生 OSS 孤儿文件
+                    if (uploadedNewCover) {
+                        try {
+                            ossService.deleteFile(coverImageUrl);
+                            log.info("出海案例更新失败, 已补偿删除新上传封面: {}", coverImageUrl);
+                        } catch (Exception ex) {
+                            log.warn("出海案例更新失败且补偿删除新封面出错, cover: {}", coverImageUrl, ex);
+                            // 补偿删除失败不再向上抛出，避免覆盖原始业务异常
+                        }
+                    }
+                    throw new BusinessException(404, "出海案例不存在或已被删除");
+                }
+
+                // 在已确认记录依然存在的前提下，将 result == 0 视为“无字段变更”的幂等成功
+                log.info("更新出海案例无字段变更, 视为幂等成功, caseId: {}", id);
+                return;
+            }
+
+            log.info("更新出海案例成功, caseId: {}", id);
+        } catch (RuntimeException e) {
+            // updateById 执行过程中抛出运行时异常时, 若本次上传了新封面且与旧封面不同, 需要做 OSS 补偿删除
+            if (uploadedNewCover) {
+                try {
+                    ossService.deleteFile(coverImageUrl);
+                    log.info("出海案例更新异常, 已补偿删除新上传封面: {}", coverImageUrl);
+                } catch (Exception ex) {
+                    log.warn("出海案例更新异常且补偿删除新封面出错, cover: {}", coverImageUrl, ex);
+                    // 补偿删除失败不再向上抛出, 避免覆盖原始业务异常
+                }
+            }
+            // 重新抛出原始异常, 保持原有事务和异常处理行为
+            throw e;
+        }
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/25 21:05
+     * @Param: id 案例ID
+     * @Return: void
+     * @Description: 逻辑删除出海案例
+     **/
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(Long id) {
+        // 查询原记录，获取封面图URL（用于后续删除）
+        AbroadCase existing = abroadCaseMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(404, "出海案例不存在");
+        }
+
+        // 逻辑删除
+        int result = abroadCaseMapper.deleteById(id);
+        if (result <= 0) {
+            // 在已校验存在的前提下，delete 返回 0 更可能是并发场景下记录已被他人删除/逻辑删除，视为资源不存在
+            throw new BusinessException(404, "出海案例不存在或已被删除");
+        }
+
+        // 删除OSS中的封面图片（可选，根据业务需求决定是否删除）
+        if (StringUtils.hasText(existing.getCoverImage())) {
+            try {
+                ossService.deleteFile(existing.getCoverImage());
+                log.info("删除案例封面成功: {}", existing.getCoverImage());
+            } catch (Exception e) {
+                log.warn("删除案例封面失败: {}", existing.getCoverImage(), e);
+                // 删除失败不影响主流程
+            }
+        }
+
+        log.info("删除出海案例成功, caseId: {}", id);
+    }
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/25 21:40
+     * @Param: status 状态值
+     * @Return: void
+     * @Description: 校验状态值是否有效（0-草稿，1-发布）
+     **/
+    private void validateStatus(Byte status) {
+        // 使用值比较避免 Byte 包装类型引用比较导致的误判
+        if (status != null && !status.equals(STATUS_DRAFT) && !status.equals(STATUS_PUBLISHED)) {
+            throw new BusinessException(400, "状态值无效，有效值为0(草稿)或1(发布)");
+        }
     }
 }

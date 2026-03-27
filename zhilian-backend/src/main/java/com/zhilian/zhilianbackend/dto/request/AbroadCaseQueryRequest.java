@@ -16,6 +16,9 @@ public class AbroadCaseQueryRequest {
     @Schema(description = "服务类型", example = "CE认证")
     private String serviceType;
 
+    @Schema(description = "状态", example = "1")
+    private Byte status;
+
     @NotNull(message = "页码不能为空")
     @Min(value = 1, message = "页码最小为1")
     @Schema(description = "页码", defaultValue = "1")
