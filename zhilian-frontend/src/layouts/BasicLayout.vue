@@ -57,6 +57,12 @@
           </el-menu-item>
         </el-sub-menu>
 
+        <!-- 我的需求页面 -->
+        <el-menu-item v-if="isManufacture || isAdmin" index="/match/my">
+          <el-icon><DocumentAdd /></el-icon>
+          <span>我的需求</span>
+        </el-menu-item>
+
         <!-- 制造企业列表页面 -->
         <el-menu-item index="/manufacture/list">
           <el-icon>
@@ -71,6 +77,12 @@
             <OfficeBuilding />
           </el-icon>
           <span>服务企业列表</span>
+        </el-menu-item>
+
+        <!-- 合作市场页面 -->
+        <el-menu-item v-if="isService || isAdmin" index="/match/market">
+          <el-icon><Shop /></el-icon>
+          <span>合作市场</span>
         </el-menu-item>
 
         <!-- 我的企业页面 -->
@@ -113,6 +125,26 @@
           <el-menu-item index="/admin/country-guide">
             <el-icon><Flag /></el-icon>
             <span>国家准入指南管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/log">
+            <el-icon><Document /></el-icon>
+            <span>操作日志</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/demand">
+            <el-icon><Avatar /></el-icon>
+            <span>需求审核</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/region-index">
+            <el-icon><DataBoard /></el-icon>
+            <span>区域数据管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/enterprise-audit">
+            <el-icon><Checked /></el-icon>
+            <span>企业审核</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/abroad-case">
+            <el-icon><Flag /></el-icon>
+            <span>出海案例管理</span>
           </el-menu-item>
         </el-sub-menu>
         <!-- 后续可继续添加其他菜单项 -->
@@ -160,7 +192,11 @@ import {
   OfficeBuilding,
   List,
   DataLine,
-  Flag,        // 国家准入指南管理图标
+  Document,
+  Flag,
+  Checked,
+  Shop,
+  DocumentAdd,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 

@@ -147,7 +147,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         String springRole = role != null ? "ROLE_" + role.toUpperCase() : "ROLE_USER";
                         SimpleGrantedAuthority authority = new SimpleGrantedAuthority(springRole);
 
-                        // 创建 UserDetails
+                        // 创建 UserDetails，将 username 放入密码字段中（或其他安全的方式）传递，或者更好的方式是自定义 Authentication
+                        // 考虑到当前项目使用了 org.springframework.security.core.userdetails.User
+                        // 我们可以利用它的 username 字段存用户ID，然后用一个自定义的扩展或者干脆利用 claims。
+                        // 为了改动最小，我们将原始的 username 存入 Authentication 的 details 中
                         UserDetails userDetails = User.builder()
                                 .username(String.valueOf(userId))
                                 .password("")
@@ -159,7 +162,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 new UsernamePasswordAuthenticationToken(
                                         userDetails, null, userDetails.getAuthorities());
 
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        // 将完整的 claims 或者 username 存入 details 中，方便后续提取
+                        WebAuthenticationDetailsSource detailsSource = new WebAuthenticationDetailsSource();
+                        // 我们可以创建一个自定义对象，或者简单地将 username 存入
+                        java.util.Map<String, Object> detailsMap = new java.util.HashMap<>();
+                        detailsMap.put("username", username);
+                        detailsMap.put("webDetails", detailsSource.buildDetails(request));
+                        
+                        authentication.setDetails(detailsMap);
 
                         // 设置到SecurityContext中
                         SecurityContextHolder.getContext().setAuthentication(authentication);
