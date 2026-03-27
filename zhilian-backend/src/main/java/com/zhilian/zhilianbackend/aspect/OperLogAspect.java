@@ -57,7 +57,7 @@ public class OperLogAspect {
             resultStatus = "失败";
             errorMsg = be.getMessage();
             throw be;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             resultStatus = "失败";
             errorMsg = "系统异常: " + e.getMessage();
             throw e;
@@ -65,7 +65,7 @@ public class OperLogAspect {
             // 无论成功还是失败，都在 finally 中记录日志
             try {
                 operLogService.recordLog(operation, paramsStr, resultStatus, errorMsg);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.error("AOP记录操作日志失败", e);
             }
         }

@@ -19,6 +19,29 @@ public class SecurityUtils {
 
     /**
      * @Author: taciturn-hg
+     * @Date: 2026/03/27 9:39
+     * @Return: String 当前登录用户的用户名，如果获取不到则返回 null
+     * @Description: 尝试从 Spring Security 上下文的 details 中获取当前登录用户名。
+     */
+    public String getCurrentUsernameOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            return null;
+        }
+        Object details = authentication.getDetails();
+        if (details instanceof java.util.Map) {
+            java.util.Map<?, ?> detailsMap = (java.util.Map<?, ?>) details;
+            Object usernameObj = detailsMap.get("username");
+            if (usernameObj != null) {
+                return usernameObj.toString();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @Author: taciturn-hg
      * @Date: 2026/03/27 9:17
      * @Return: Long 当前登录用户的 ID，如果用户未登录、认证信息为空或无法解析为长整型，则返回 null
      * @Description: 尝试从 Spring Security 上下文中获取当前登录用户 ID。

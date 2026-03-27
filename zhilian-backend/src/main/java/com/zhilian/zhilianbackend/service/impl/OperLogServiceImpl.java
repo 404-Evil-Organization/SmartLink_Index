@@ -144,10 +144,17 @@ public class OperLogServiceImpl extends ServiceImpl<OperLogMapper, OperLog> impl
             Long userId = securityUtils.getCurrentUserIdOrNull();
             if (userId != null) {
                 operLog.setUserId(userId);
-                // 查询用户名
-                User user = userMapper.selectById(userId);
-                if (user != null) {
-                    operLog.setUsername(user.getUsername());
+                
+                // 优先从 SecurityContext 的 details 中获取用户名（避免查库）
+                String username = securityUtils.getCurrentUsernameOrNull();
+                if (StringUtils.isNotBlank(username)) {
+                    operLog.setUsername(username);
+                } else {
+                    // 如果上下文没有用户名，作为后备方案再去查库
+                    User user = userMapper.selectById(userId);
+                    if (user != null) {
+                        operLog.setUsername(user.getUsername());
+                    }
                 }
             } else {
                 // 如果未登录（如登录接口），尝试从 params 中解析用户名

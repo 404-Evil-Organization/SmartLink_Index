@@ -221,6 +221,7 @@ const handleCurrentChange = (val) => {
 
 // 查看详情
 const handleViewDetail = async (row) => {
+  detailDialog.data = { ...row }
   detailDialog.visible = true
   detailDialog.loading = true
   try {
