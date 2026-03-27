@@ -57,7 +57,7 @@ public class AbroadController {
     }
 
     /**
-     * @Author: taciurn-hg
+     * @Author: taciturn-hg
      * @Date: 2026/3/27 18:45
      * @Param: page 页码，默认1
      * @Param: size 每页条数，默认10
