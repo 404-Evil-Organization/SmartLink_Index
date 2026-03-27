@@ -285,3 +285,15 @@ export function deleteRegionIndex(id) {
     method: "delete",
   });
 }
+
+/**
+ * 获取操作日志详情
+ * @param {number} id - 日志ID
+ * @returns {Promise<Object>} 返回操作日志详情数据
+ */
+export function getOperLogDetail(id) {
+  return request({
+    url: `/admin/log/${id}`,
+    method: "get",
+  });
+}

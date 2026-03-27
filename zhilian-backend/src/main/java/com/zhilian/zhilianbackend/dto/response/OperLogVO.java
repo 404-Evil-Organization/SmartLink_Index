@@ -35,6 +35,9 @@ public class OperLogVO {
     @Schema(description = "操作结果")
     private String result;
 
+    @Schema(description = "失败原因/异常信息")
+    private String errorMsg;
+
     @Schema(description = "客户端IP地址")
     private String ip;
 

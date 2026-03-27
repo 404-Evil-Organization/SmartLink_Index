@@ -13,7 +13,6 @@ import java.util.Date;
  * @Description: 操作日志表业务逻辑接口
  */
 public interface OperLogService extends IService<OperLog> {
-
     /**
      * @Author: xiaodengyou
      * @Date: 2026/3/25 22:45
@@ -28,4 +27,25 @@ public interface OperLogService extends IService<OperLog> {
      */
     IPage<OperLogVO> listOperLogs(Integer page, Integer size, String username, String operation,
                                   Date startTime, Date endTime);
+
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/03/27 9:17
+     * @Param: operation 操作描述
+     * @Param: params 请求参数（可为null）
+     * @Param: result 操作结果
+     * @Param: errorMsg 失败原因（可为null）
+     * @Return: void
+     * @Description: 记录操作日志，自动获取当前登录用户和IP
+     */
+    void recordLog(String operation, String params, String result, String errorMsg);
+
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/03/27 9:17
+     * @Param: id 日志ID
+     * @Return: OperLogVO 日志详情
+     * @Description: 获取操作日志详情
+     */
+    OperLogVO getOperLogDetail(Long id);
 }
