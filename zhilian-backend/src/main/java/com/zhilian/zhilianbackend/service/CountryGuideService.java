@@ -10,6 +10,15 @@ import com.zhilian.zhilianbackend.common.result.PageResult;
 public interface CountryGuideService extends IService<CountryGuide> {
 
     /**
+     * @Author: 6017
+     * @Date: 2026/3/26 00:02
+     * @Param: country 国家名称
+     * @Return: CountryGuideResponse 国家准入指南响应对象
+     * @Description: 根据国家名称获取准入指南，返回包含准入要求、办理流程和所需材料的响应对象
+    **/
+    CountryGuideResponse getByCountry(String country);
+    
+    /*
      * @Author: xiaodengyou
      * @Date: 2026/3/26 21:33
      * @Param: page 页码

@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 @Data
 @Schema(description = "国家指南响应")
@@ -23,7 +24,7 @@ public class CountryGuideResponse {
     private String process;
 
     @Schema(description = "所需材料")
-    private String documents;
+    private List<String> documents;
 
     @Schema(description = "创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

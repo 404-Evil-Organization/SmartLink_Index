@@ -1,19 +1,24 @@
 package com.zhilian.zhilianbackend.controller;
 
-import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
+import com.zhilian.zhilianbackend.dto.response.CountryGuideResponse;
+import com.zhilian.zhilianbackend.service.CountryGuideService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.dto.request.AbroadCaseQueryRequest;
 import com.zhilian.zhilianbackend.dto.request.AbroadServiceQueryRequest;
 import com.zhilian.zhilianbackend.dto.response.AbroadCaseVO;
 import com.zhilian.zhilianbackend.dto.response.AbroadServiceVO;
 import com.zhilian.zhilianbackend.service.AbroadCaseService;
 import com.zhilian.zhilianbackend.service.AbroadServiceProviderService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,6 +33,27 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Tag(name = "出海业务模块", description = "出海服务商、成功案例")
 public class AbroadController {
+
+    private final CountryGuideService countryGuideService;
+
+    /**
+     * @Author: 6017
+     * @Date: 2026/3/25 00:01
+     * @Param: country 国家名称（路径参数）
+     * @Return: Result<CountryGuideResponse> 统一响应结果，包含国家准入指南数据
+     * @Description: 获取特定国家准入指南，根据国家名称返回该国的市场准入要求、办理流程和所需材料
+    **/
+    @GetMapping("/country/{country}")
+    @Operation(summary = "获取特定国家准入指南", description = "根据国家名称获取该国的市场准入要求、办理流程和所需材料")
+    public Result<CountryGuideResponse> getCountryGuide(
+            @Parameter(description = "国家名称", required = true, example = "美国")
+            @PathVariable String country) {
+
+        log.info("接收到获取国家准入指南请求，country: {}", country);
+
+        CountryGuideResponse response = countryGuideService.getByCountry(country);
+        return Result.success(response);
+    }
 
     private final AbroadServiceProviderService abroadServiceProviderService;
     private final AbroadCaseService abroadCaseService;
