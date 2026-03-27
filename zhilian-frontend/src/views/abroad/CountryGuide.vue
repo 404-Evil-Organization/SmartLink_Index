@@ -57,7 +57,7 @@
         stripe
         style="width: 100%"
       >
-        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column type="index" label="序号" width="70" align="center" />
         <el-table-column prop="country" label="国家/地区" width="150" />
         <el-table-column
           prop="requirements"
@@ -183,7 +183,7 @@ const fetchList = async () => {
     const params = {
       page: pagination.current,
       size: pagination.size,
-      keyword: searchForm.keyword || undefined,
+      countryKeyword: searchForm.keyword || undefined,
     };
     const res = await getCountryGuideList(params);
     tableData.value = res.records || [];
