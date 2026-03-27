@@ -2224,12 +2224,14 @@
 - **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
 - **请求参数**（Query）:
 
-| 参数名 | 类型   | 必填 | 描述             |
-| :----- | :----- | :--- | :--------------- |
-| page   | int    | 否   | 页码，默认1      |
-| size   | int    | 否   | 每页条数，默认10 |
-| region | string | 否   | 区域筛选         |
-| year   | int    | 否   | 年份筛选         |
+| 参数名     | 类型   | 必填 | 描述                       |
+| :--------- | :----- | :--- | :------------------------- |
+| page       | int    | 否   | 页码，默认1                |
+| size       | int    | 否   | 每页条数，默认10           |
+| region     | string | 否   | 区域筛选                   |
+| year       | int    | 否   | 年份筛选                   |
+| periodType | string | 否   | 周期类型：quarter(季度) 或 month(月份) |
+| periodValue | int | 否 | 周期值：当 periodType=`quarter` 时取值 1-4；当 periodType=`month` 时取值 1-12 |
 
 - **返回数据**:
 
@@ -2244,7 +2246,8 @@
         "id": 101,
         "region": "深圳",
         "year": 2026,
-        "quarter": 1,
+        "periodType": "quarter",
+        "periodValue": 1,
         "coopDensity": 0.85,
         "serviceRate": 0.72,
         "crossRate": 0.45,
@@ -2265,15 +2268,16 @@
 - **请求头**: `Authorization: Bearer <token>`（需 admin 角色）
 - **请求参数**（JSON Body）:
 
-| 参数名      | 类型    | 必填 | 说明               |
-| :---------- | :------ | :--- | :----------------- |
-| region      | string  | 是   | 区域，如“深圳”     |
-| year        | int     | 是   | 年份，如2026       |
-| quarter     | int     | 是   | 季度（1-4）        |
-| coopDensity | decimal | 否   | 合作密度，如0.85   |
-| serviceRate | decimal | 否   | 服务渗透率，如0.72 |
-| crossRate   | decimal | 否   | 跨域协同度，如0.45 |
-| totalIndex  | decimal | 否   | 综合得分，如75.8   |
+| 参数名      | 类型    | 必填 | 说明                                 |
+| :---------- | :------ | :--- | :----------------------------------- |
+| region      | string  | 是   | 区域，如“深圳”                       |
+| year        | int     | 是   | 年份，如2026                         |
+| periodType  | string  | 是   | 周期类型：quarter(季度) 或 month(月份) |
+| periodValue | int     | 是   | 周期值：当periodType为quarter时，取值1-4；当为month时，取值1-12 |
+| coopDensity | decimal | 否   | 合作密度，如0.85                     |
+| serviceRate | decimal | 否   | 服务渗透率，如0.72                   |
+| crossRate   | decimal | 否   | 跨域协同度，如0.45                   |
+| totalIndex  | decimal | 否   | 综合得分，如75.8                     |
 
 - **返回数据**:
 
@@ -2300,15 +2304,16 @@
 
 - **请求参数**（JSON Body，全部可选，只需传需要修改的字段）:
 
-| 参数名      | 类型    | 必填 | 说明       |
-| :---------- | :------ | :--- | :--------- |
-| region      | string  | 否   | 区域       |
-| year        | int     | 否   | 年份       |
-| quarter     | int     | 否   | 季度       |
-| coopDensity | decimal | 否   | 合作密度   |
-| serviceRate | decimal | 否   | 服务渗透率 |
-| crossRate   | decimal | 否   | 跨域协同度 |
-| totalIndex  | decimal | 否   | 综合得分   |
+| 参数名      | 类型    | 必填 | 说明                                 |
+| :---------- | :------ | :--- | :----------------------------------- |
+| region      | string  | 否   | 区域                                 |
+| year        | int     | 否   | 年份                                 |
+| periodType  | string  | 否   | 周期类型：quarter(季度) 或 month(月份) |
+| periodValue | int     | 否   | 周期值：当periodType为quarter时，取值1-4；当为month时，取值1-12 |
+| coopDensity | decimal | 否   | 合作密度                             |
+| serviceRate | decimal | 否   | 服务渗透率                           |
+| crossRate   | decimal | 否   | 跨域协同度                           |
+| totalIndex  | decimal | 否   | 综合得分                             |
 
 - **返回数据**:
 

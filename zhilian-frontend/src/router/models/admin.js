@@ -5,13 +5,38 @@ export default [
     component: () => import("@/views/admin/TagList.vue"),
   },
   {
+    path: "admin/enterprise-audit",
+    name: "EnterpriseAudit",
+    component: () => import("@/views/admin/EnterpriseAudit.vue"),
+  },
+  {
     path: "admin/user",
     name: "UserManage",
     component: () => import("@/views/admin/UserManage.vue"),
   },
   {
+    path: "admin/country-guide",
+    name: "CountryGuideManage",
+    component: () => import("@/views/admin/CountryGuideManage.vue"),
+  },
+  {
+    path: "admin/log",
+    name: "LogList",
+    component: () => import("@/views/admin/LogList.vue"),
+  },
+  {
+    path: "admin/abroad-case",
+    name: "AbroadCaseManage",
+    component: () => import("@/views/admin/AbroadCaseManage.vue"),
+  },
+  {
     path: "admin/demand",
     name: "DemandAudit",
     component: () => import("@/views/admin/DemandAudit.vue"),
+  },
+  {
+    path: "admin/region-index",
+    name: "RegionIndexManage",
+    component: () => import("@/views/admin/RegionIndexManage.vue"),
   },
 ];

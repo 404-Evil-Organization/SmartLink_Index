@@ -1,10 +1,10 @@
 package com.zhilian.zhilianbackend.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.zhilian.zhilianbackend.dto.request.RegionDetailQuery;
-import com.zhilian.zhilianbackend.dto.request.RegionListQuery;
-import com.zhilian.zhilianbackend.dto.request.TrendQuery;
+import com.zhilian.zhilianbackend.dto.request.*;
 import com.zhilian.zhilianbackend.dto.response.RegionDetailVO;
+import com.zhilian.zhilianbackend.dto.response.RegionIndexAdminVO;
 import com.zhilian.zhilianbackend.dto.response.RegionListItemVO;
 import com.zhilian.zhilianbackend.dto.response.TrendItemVO;
 import com.zhilian.zhilianbackend.entity.RegionIndex;
@@ -70,4 +70,40 @@ public interface RegionIndexService extends IService<RegionIndex> {
      * @Description: 获取趋势数据
      **/
     List<TrendItemVO> getTrend(TrendQuery query);
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/24
+     * @Param: request 管理员列表查询请求参数
+     * @Return: 分页结果，封装 RegionIndexAdminVO 列表
+     * @Description: 管理员分页查询区域指数，支持按区域、年份筛选
+     */
+    IPage<RegionIndexAdminVO> adminList(AdminRegionIndexListRequest request);
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/24
+     * @Param: request 新增区域指数请求参数
+     * @Return: 新增记录的ID
+     * @Description: 管理员新增区域指数，需保证区域+年份+季度组合唯一
+     */
+    Long adminCreate(RegionIndexCreateRequest request);
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/24
+     * @Param: id 记录ID
+     * @Param: request 修改区域指数请求参数
+     * @Return: 无返回值
+     * @Description: 管理员修改区域指数，若修改区域/年份/季度需校验唯一性
+     */
+    void adminUpdate(Long id, RegionIndexUpdateRequest request);
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/24
+     * @Param: id 记录ID
+     * @Return: 无返回值
+     * @Description: 管理员删除区域指数（逻辑删除）
+     */
+    void adminDelete(Long id);
 }
