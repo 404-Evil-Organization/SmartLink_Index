@@ -382,13 +382,26 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
     private CountryGuideResponse convertToResponse(CountryGuide entity) {
         CountryGuideResponse response = new CountryGuideResponse();
         BeanUtils.copyProperties(entity, response);
-        
-        // 处理 documents 字段
-        if (entity.getDocuments() != null && !entity.getDocuments().isEmpty()) {
-            List<String> documents = parseDocuments(entity.getDocuments());
-            response.setDocuments(documents);
+
+        // 处理 documents 字段：兼容 JSON 数组与逗号分隔字符串两种存储形式
+        String rawDocuments = entity.getDocuments();
+        if (rawDocuments != null && !rawDocuments.isEmpty()) {
+            String trimmed = rawDocuments.trim();
+            if (!trimmed.isEmpty()) {
+                List<String> documents;
+                // 如果是 JSON 数组格式（如 ["a","b"]），走原有 parseDocuments 逻辑
+                if (trimmed.startsWith("[")) {
+                    documents = parseDocuments(trimmed);
+                } else {
+                    // 否则按逗号分隔解析，避免触发 JSON 解析失败产生噪声日志
+                    documents = Arrays.stream(trimmed.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(Collectors.toList());
+                }
+                response.setDocuments(documents);
+            }
         }
-        
         return response;
     }
 }
