@@ -28,7 +28,7 @@ public class CountryGuideController {
      * @Date: 2026/3/26 21:33
      * @Param: page 页码，默认1
      * @Param: size 每页条数，默认10
-     * @Param: country 国家名称（模糊匹配）
+     * @Param: countryKeyword 国家名称（模糊匹配）
      * @Return: Result<PageResult<CountryGuideResponse>> 分页结果
      * @Description: 获取国家指南列表（分页）
      **/
@@ -37,8 +37,8 @@ public class CountryGuideController {
     public Result<PageResult<CountryGuideResponse>> list(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) String country) {
-        PageResult<CountryGuideResponse> pageResult = countryGuideService.listByPage(page, size, country);
+            @RequestParam(required = false) String countryKeyword) {
+        PageResult<CountryGuideResponse> pageResult = countryGuideService.listByPage(page, size, countryKeyword);
         return Result.success(pageResult);
     }
 

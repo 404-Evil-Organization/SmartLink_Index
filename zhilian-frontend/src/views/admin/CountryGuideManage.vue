@@ -247,7 +247,7 @@ const fetchList = async () => {
     const params = {
       page: pagination.current,
       size: pagination.size,
-      ...(searchForm.country && { country: searchForm.country }),
+      ...(searchForm.country && { countryKeyword: searchForm.country }),
     };
     const res = await getCountryGuideList(params);
     // 将后端返回的 documents 字符串解析为数组
