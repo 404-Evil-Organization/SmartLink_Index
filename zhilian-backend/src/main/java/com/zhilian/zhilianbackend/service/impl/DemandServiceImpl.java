@@ -1,19 +1,803 @@
 package com.zhilian.zhilianbackend.service.impl;
 
-import com.zhilian.zhilianbackend.entity.Demand;
-import com.zhilian.zhilianbackend.mapper.DemandMapper;
-import com.zhilian.zhilianbackend.service.DemandService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zhilian.zhilianbackend.common.constant.DateConstants;
+import com.zhilian.zhilianbackend.common.result.PageResult;
+import com.zhilian.zhilianbackend.dto.request.DemandApproveRequest;
+import com.zhilian.zhilianbackend.dto.request.DemandPublishRequest;
+import com.zhilian.zhilianbackend.dto.request.DemandUpdateRequest;
+import com.zhilian.zhilianbackend.dto.response.*;
+import com.zhilian.zhilianbackend.entity.*;
+import com.zhilian.zhilianbackend.exception.BusinessException;
+import com.zhilian.zhilianbackend.mapper.*;
+import com.zhilian.zhilianbackend.service.DemandService;
+import com.zhilian.zhilianbackend.service.TagService;
+import com.zhilian.zhilianbackend.utils.SecurityUtils;
+import com.zhilian.zhilianbackend.utils.SqlUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * @Author: 6017
- * @Date: 2026/3/9 21:29
- * @Param: 
- * @Return: 
- * @Description: 需求表业务逻辑实现类，实现需求相关的业务方法
-**/
+ * @Author: xiaodengyou
+ * @Date: 2026/3/25
+ * @Description: 需求业务逻辑实现类
+ */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class DemandServiceImpl extends ServiceImpl<DemandMapper, Demand> implements DemandService {
 
+    private final DemandMapper demandMapper;
+    private final DemandTagMapper demandTagMapper;
+    private final TagMapper tagMapper;
+    private final ServiceProviderMapper serviceProviderMapper;
+    private final CooperationMapper cooperationMapper;
+
+    // 使用 java.util.Date 类型，与数据库 deleted 字段保持一致（用于 LambdaQueryWrapper）
+    private final Date notDeletedTime = DateConstants.getNotDeletedTime();
+    // 角色常量
+    private static final String ROLE_MANUFACTURE = "manufacture";
+
+    // 需求业务状态常量
+    private static final String DEMAND_STATUS_DRAFT = "draft";
+    private static final String DEMAND_STATUS_PUBLISHED = "published";
+    private static final String DEMAND_STATUS_MATCHED = "matched";
+
+    // 需求审核状态常量
+    private static final String DEMAND_AUDIT_STATUS_PENDING = "pending";
+    private static final String DEMAND_AUDIT_STATUS_APPROVED = "approved";
+    private static final String DEMAND_AUDIT_STATUS_REJECTED = "rejected";
+
+    // 审核操作常量
+    private static final String APPROVE_ACTION_APPROVED = "approved";
+    private static final String APPROVE_ACTION_REJECTED = "rejected";
+
+    // 定义允许所有登录用户查看的状态
+    private static final Set<String> PUBLIC_STATUSES = Set.of(DEMAND_STATUS_PUBLISHED, DEMAND_STATUS_MATCHED);
+
+    private final ManufactureMapper manufactureMapper;
+    private final TagService tagService;
+    private final SecurityUtils securityUtils;
+
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: page 页码
+     * @Param: size 每页条数
+     * @Param: keyword 标题关键词
+     * @Param: tagIds 标签ID列表
+     * @Param: budgetMin 最小预算
+     * @Param: budgetMax 最大预算
+     * @Param: deadlineStart 截止日期开始范围（包含）
+     * @Param: deadlineEnd 截止日期结束范围（包含）
+     * @Return: 分页的市场需求列表
+     * @Description: 分页查询市场需求列表（已审核通过且已发布的需求），并填充制造企业信息和标签
+     */
+    @Override
+    public PageResult<DemandMarketVO> pageMarketDemands(
+            Integer page, Integer size,
+            String keyword, List<Long> tagIds,
+            BigDecimal budgetMin, BigDecimal budgetMax,
+            LocalDate deadlineStart, LocalDate deadlineEnd) {
+
+        // 对关键词进行 SQL LIKE 转义，防止用户输入的通配符影响查询结果
+        String escapedKeyword = SqlUtils.escapeSqlLike(keyword);
+
+        // 直接传递 LocalDate，让 MyBatis 以 DATE 类型绑定参数，保持与数据库字段类型一致
+        Page<DemandMarketVO> pageParam = new Page<>(page, size);
+        IPage<DemandMarketVO> iPage = demandMapper.selectMarketDemands(
+                pageParam, escapedKeyword, tagIds, budgetMin, budgetMax,
+                deadlineStart, deadlineEnd, DateConstants.getNotDeletedLocalDateTime()
+        );
+
+        List<DemandMarketVO> records = iPage.getRecords();
+        if (records.isEmpty()) {
+            return PageResult.from(iPage);
+        }
+
+        // 初始化 tags 字段为空列表，避免返回 null
+        for (DemandMarketVO vo : records) {
+            vo.setTags(new ArrayList<>());
+        }
+
+        // 批量查询标签
+        List<Long> demandIds = records.stream().map(DemandMarketVO::getId).toList();
+        LambdaQueryWrapper<DemandTag> dtWrapper = new LambdaQueryWrapper<>();
+        dtWrapper.in(DemandTag::getDemandId, demandIds)
+                .eq(DemandTag::getDeleted, notDeletedTime);
+        List<DemandTag> demandTags = demandTagMapper.selectList(dtWrapper);
+
+        if (!demandTags.isEmpty()) {
+            Set<Long> tagIdSet = demandTags.stream().map(DemandTag::getTagId).collect(Collectors.toSet());
+            List<Tag> tags = tagMapper.selectList(new LambdaQueryWrapper<Tag>()
+                    .in(Tag::getId, tagIdSet)
+                    .eq(Tag::getDeleted, notDeletedTime));
+            Map<Long, Tag> tagMap = tags.stream().collect(Collectors.toMap(Tag::getId, t -> t));
+
+            // 构建需求ID -> 标签列表的映射
+            Map<Long, List<TagResponse>> demandTagMap = new HashMap<>();
+            for (DemandTag dt : demandTags) {
+                Tag tag = tagMap.get(dt.getTagId());
+                if (tag != null) {
+                    TagResponse tagResp = new TagResponse();
+                    tagResp.setId(tag.getId());
+                    tagResp.setName(tag.getName());
+                    tagResp.setCategory(tag.getCategory());
+                    tagResp.setDescription(tag.getDescription());
+                    tagResp.setCreateTime(tag.getCreateTime());
+                    tagResp.setUpdateTime(tag.getUpdateTime());
+                    demandTagMap.computeIfAbsent(dt.getDemandId(), k -> new ArrayList<>()).add(tagResp);
+                }
+            }
+
+            // 设置标签（已有初始空列表，覆盖即可）
+            for (DemandMarketVO vo : records) {
+                vo.setTags(demandTagMap.getOrDefault(vo.getId(), new ArrayList<>()));
+            }
+        }
+
+        return PageResult.from(iPage);}
+
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/03/23
+     * @Param: request 发布需求请求参数
+     * @Param: userId 当前登录用户ID
+     * @Return: DemandPublishResponse 包含需求ID和审核状态
+     * @Description: 发布需求，校验用户为制造企业且只能为自己的企业发布，保存需求及标签关联，默认状态为待审核
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public DemandPublishResponse publishDemand(DemandPublishRequest request, Long userId) {
+        // 1. 校验用户角色是否为制造企业
+        String role = securityUtils.getCurrentUserRole();
+        if (!ROLE_MANUFACTURE.equals(role)) {
+            throw new BusinessException(403, "只有制造企业可以发布需求");
+        }
+
+        // 2. 根据传入的 manuId 查询制造企业
+        Long manuId = request.getManuId();
+        Manufacture manufacture = manufactureMapper.selectById(manuId);
+        if (manufacture == null) {
+            throw new BusinessException(404, "制造企业不存在");
+        }
+
+        // 3. 校验该制造企业是否属于当前用户
+        if (!manufacture.getUserId().equals(userId)) {
+            throw new BusinessException(403, "只能为自己的企业发布需求");
+        }
+
+        // 4. 构建需求实体
+        Demand demand = new Demand();
+        demand.setManuId(manuId);
+        demand.setTitle(request.getTitle());
+        demand.setDescription(request.getDescription());
+        demand.setExpectedBudget(request.getExpectedBudget());
+        demand.setDeadline(request.getDeadline());
+        demand.setStatus(DEMAND_STATUS_DRAFT);
+        demand.setAuditStatus(DEMAND_AUDIT_STATUS_PENDING);
+        demand.setViews(0);
+
+        // 5. 保存需求
+        boolean saved = this.save(demand);
+        if (!saved) {
+            throw new BusinessException(500, "发布需求失败");
+        }
+
+        // 6. 保存标签关联
+        if (!CollectionUtils.isEmpty(request.getTags())) {
+            // 原始标签 ID 列表
+            List<Long> rawTagIds = request.getTags();
+            // 过滤掉 null，避免生成包含 null 的 IN 条件导致 SQL 行为不可预期
+            List<Long> nonNullTagIds = rawTagIds.stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            // 若存在 null 元素或过滤后为空，返回明确的 400 错误提示
+            if (nonNullTagIds.size() != rawTagIds.size() || nonNullTagIds.isEmpty()) {
+                throw new BusinessException(400, "标签ID不能为空");
+            }
+            // 先对标签 ID 去重，避免重复 ID 影响存在性校验和唯一键约束
+            Set<Long> distinctTagIds = new LinkedHashSet<>(nonNullTagIds);
+            // 校验标签是否存在（基于去重后的 ID 集合）
+            List<Tag> tags = tagService.listByIds(distinctTagIds);
+            if (tags.size() != distinctTagIds.size()) {
+                Set<Long> existingIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
+                List<Long> missingIds = distinctTagIds.stream()
+                        .filter(id -> !existingIds.contains(id))
+                        .collect(Collectors.toList());
+                throw new BusinessException(400, "以下标签 ID 不存在: " + missingIds);
+            }
+            List<DemandTag> demandTags = distinctTagIds.stream()
+                    .map(tagId -> new DemandTag()
+                            .setDemandId(demand.getId())
+                            .setTagId(tagId)
+                            .setDeleted(DateConstants.getNotDeletedTime()))
+                    .collect(Collectors.toList());
+            demandTagMapper.insertBatch(demandTags);
+        }
+
+        log.info("需求发布成功，ID：{}，制造企业：{}", demand.getId(), manufacture.getCompanyName());
+        return new DemandPublishResponse(demand.getId(), demand.getAuditStatus());
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/03/23
+     * @Param: page 页码
+     * @Param: size 每页条数
+     * @Return: PageResult<DemandPendingVO> 分页的待审核需求列表
+     * @Description: 分页查询待审核需求，先查询需求基本信息，再批量查询标签组装
+     */
+    @Override
+    public PageResult<DemandPendingVO> getPendingDemandList(Integer page, Integer size) {
+        // 纵深防御：待审核需求列表仅允许管理员访问，防止其他调用方绕过 Controller 权限校验
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限访问该资源");
+        }
+        Page<DemandPendingVO> mpPage = new Page<>(page, size);
+        IPage<DemandPendingVO> voPage = baseMapper.selectPendingDemandPage(mpPage, DateConstants.getNotDeletedLocalDateTime());
+        List<DemandPendingVO> records = voPage.getRecords();
+
+        if (records.isEmpty()) {
+            return PageResult.from(voPage);
+        }
+
+        List<Long> demandIds = records.stream()
+                .map(DemandPendingVO::getId)
+                .collect(Collectors.toList());
+
+        List<DemandTag> demandTags = demandTagMapper.selectList(
+                new LambdaQueryWrapper<DemandTag>()
+                        .in(DemandTag::getDemandId, demandIds)
+                        .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime())
+        );
+
+        List<Long> tagIds = demandTags.stream()
+                .map(DemandTag::getTagId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        final Map<Long, String> tagIdToNameMap = tagIds.isEmpty() ?
+                Collections.emptyMap() :
+                tagService.listByIds(tagIds).stream()
+                        .collect(Collectors.toMap(Tag::getId, Tag::getName));
+
+        Map<Long, List<DemandPendingVO.TagSimpleVO>> demandTagsMap = demandTags.stream()
+                .map(dt -> {
+                    String tagName = tagIdToNameMap.get(dt.getTagId());
+                    if (tagName == null) {
+                        log.warn("标签 ID {} 已不存在或被删除，需求 ID {} 的标签将被忽略", dt.getTagId(), dt.getDemandId());
+                        return null;
+                    }
+                    DemandPendingVO.TagSimpleVO tagVO = new DemandPendingVO.TagSimpleVO();
+                    tagVO.setId(dt.getTagId());
+                    tagVO.setName(tagName);
+                    return new AbstractMap.SimpleEntry<>(dt.getDemandId(), tagVO);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(
+                        Map.Entry::getKey,
+                        Collectors.mapping(Map.Entry::getValue, Collectors.toList())
+                ));
+
+        for (DemandPendingVO record : records) {
+            List<DemandPendingVO.TagSimpleVO> tags = demandTagsMap.getOrDefault(record.getId(), Collections.emptyList());
+            record.setTags(tags);
+        }
+
+        return PageResult.from(voPage);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: demandId 需求ID
+     * @Param: serviceId 服务商企业ID
+     * @Param: currentUserId 当前用户ID
+     * @Return: 新创建的合作记录ID
+     * @Description: 服务商接取需求，使用行锁防止并发，校验服务商资质和需求状态，成功后创建合作记录
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long acceptDemand(Long demandId, Long serviceId, Long currentUserId) {
+        // 1. 校验服务商
+        ServiceProvider sp = serviceProviderMapper.selectById(serviceId);
+        if (sp == null) {
+            throw new BusinessException(404, "服务商企业不存在");
+        }
+        if (!sp.getUserId().equals(currentUserId)) {
+            throw new BusinessException(403, "无权操作该服务商企业");
+        }
+        if (!"approved".equals(sp.getAuditStatus())) {
+            throw new BusinessException(403, "服务商企业未审核通过，无法接取需求");
+        }
+
+        // 2. 行锁获取需求（SQL 已过滤逻辑删除）
+        Demand demand = demandMapper.selectForUpdateById(demandId, DateConstants.getNotDeletedLocalDateTime());
+        if (demand == null) {
+            throw new BusinessException(404, "需求不存在或已被删除");
+        }
+        // 状态校验（SQL 已过滤 deleted，无需额外校验）
+        if (!"published".equals(demand.getStatus())) {
+            throw new BusinessException(409, "需求状态不可接取");
+        }
+        if (!"approved".equals(demand.getAuditStatus())) {
+            throw new BusinessException(409, "需求未审核通过");
+        }
+
+        // 3. 更新需求状态
+        demand.setStatus("matched");
+        demand.setUpdateTime(new Date());
+        int updateRows = demandMapper.updateById(demand);
+        if (updateRows == 0) {
+            throw new BusinessException(500, "更新需求状态失败");
+        }
+
+        // 4. 创建合作记录
+        Cooperation cooperation = new Cooperation();
+        cooperation.setManuId(demand.getManuId());
+        cooperation.setServiceId(serviceId);
+        cooperation.setDemandId(demandId);
+        cooperation.setStartDate(new java.sql.Date(System.currentTimeMillis()));
+        cooperation.setAmount(demand.getExpectedBudget());
+        cooperation.setDescription("通过接取需求建立合作");
+        cooperation.setStatus("ongoing");
+        cooperation.setDeleted(notDeletedTime);
+        cooperation.setCreateTime(new Date());
+        cooperation.setUpdateTime(new Date());
+
+        int insertRows = cooperationMapper.insert(cooperation);
+        if (insertRows == 0) {
+            throw new BusinessException(500, "创建合作记录失败");
+        }
+
+        log.info("服务商接取需求成功，需求ID: {}, 服务商ID: {}, 合作ID: {}", demandId, serviceId, cooperation.getId());
+        return cooperation.getId();
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/3/25
+     * @Param: demandId 需求ID
+     * @Return: 无
+     * @Description: 将需求状态重置为已发布（用于取消合作时），使用条件更新确保并发安全
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resetDemandStatusToPublished(Long demandId) {
+        // 使用条件更新，只有当需求存在、未逻辑删除且状态为 matched 时才更新为 published
+        LambdaUpdateWrapper<Demand> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Demand::getId, demandId)
+                .eq(Demand::getDeleted, notDeletedTime)      // 未逻辑删除
+                .eq(Demand::getStatus, "matched")           // 仅 matched 状态
+                .set(Demand::getStatus, "published")
+                .set(Demand::getUpdateTime, new Date());
+
+        int updateRows = demandMapper.update(null, updateWrapper);
+        if (updateRows == 0) {
+            // 未匹配到符合条件的记录，可能是需求不存在、已逻辑删除或状态已变更
+            log.warn("重置需求状态失败，需求ID: {}，可能已被删除或状态已变更", demandId);
+            throw new BusinessException(409, "需求状态已变更，无法重置为已发布");
+        }
+        log.info("需求状态重置为 published，需求ID: {}", demandId);}
+        
+    /*
+     * @Date: 2026/03/23
+     * @Param: demandId 需求ID
+     * @Param: request 审核请求参数（状态、意见）
+     * @Param: adminUserId 当前管理员用户ID
+     * @Return: void
+     * @Description: 审核需求，通过时更新审核状态和业务状态；驳回时更新审核状态为rejected，业务状态保持draft。
+     *               使用带条件的原子更新避免并发重复审核。
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void approveDemand(Long demandId, DemandApproveRequest request, Long adminUserId) {
+        // 纵深防御：在 Service 层校验管理员权限
+        if (!securityUtils.isAdmin()) {
+            throw new BusinessException(403, "无权限操作");
+        }
+
+        String status = request.getStatus();
+        // 构造原子更新条件：id 且 audit_status = 'pending' 且未被逻辑删除
+        LambdaUpdateWrapper<Demand> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Demand::getId, demandId)
+                .eq(Demand::getAuditStatus, DEMAND_AUDIT_STATUS_PENDING)
+                .eq(Demand::getDeleted, DateConstants.getNotDeletedTime());
+
+        if (APPROVE_ACTION_APPROVED.equals(status)) {
+            updateWrapper.set(Demand::getAuditStatus, DEMAND_AUDIT_STATUS_APPROVED)
+                    .set(Demand::getStatus, DEMAND_STATUS_PUBLISHED)
+                    .set(Demand::getAuditRemark, request.getRemark())
+                    .set(Demand::getAuditTime, new Date())
+                    .set(Demand::getAuditUserId, adminUserId);
+        } else if (APPROVE_ACTION_REJECTED.equals(status)) {
+            // 驳回时校验意见
+            if (request.getRemark() == null || request.getRemark().trim().isEmpty()) {
+                throw new BusinessException(400, "驳回时必须填写审核意见");
+            }
+            updateWrapper.set(Demand::getAuditStatus, DEMAND_AUDIT_STATUS_REJECTED)
+                    .set(Demand::getStatus, DEMAND_STATUS_DRAFT)
+                    .set(Demand::getAuditRemark, request.getRemark())
+                    .set(Demand::getAuditTime, new Date())
+                    .set(Demand::getAuditUserId, adminUserId);
+        } else {
+            throw new BusinessException(400, "审核状态不合法");
+        }
+
+        // 执行条件更新
+        boolean updated = this.update(updateWrapper);
+
+        if (!updated) {
+            // 更新失败，可能因为需求不存在或状态已不是 pending
+            // 再查询一次，获取更精确的错误原因
+            Demand demand = this.getById(demandId);
+            if (demand == null) {
+                throw new BusinessException(404, "需求不存在");
+            }
+            // 状态已变
+            throw new BusinessException(400, "该需求已审核过，不能重复审核");
+        }
+
+        log.info("需求审核{}，ID：{}，审核人：{}",
+                APPROVE_ACTION_APPROVED.equals(status) ? "通过" : "驳回", demandId, adminUserId);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/03/24
+     * @Description: 编辑需求
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateDemand(Long id, DemandUpdateRequest request, Long userId) {
+        Demand demand = this.getById(id);
+        if (demand == null) {
+            throw new BusinessException(404, "需求不存在");
+        }
+
+        // 权限校验：如果是 admin 则跳过，否则必须是制造企业且企业属于当前用户
+        if (!securityUtils.isAdmin()) {
+            // 非管理员必须是制造企业
+            String role = securityUtils.getCurrentUserRole();
+            if (!ROLE_MANUFACTURE.equals(role)) {
+                throw new BusinessException(403, "只有制造企业可以操作需求");
+            }
+            Manufacture manufacture = manufactureMapper.selectById(demand.getManuId());
+            if (manufacture == null || !manufacture.getUserId().equals(userId)) {
+                throw new BusinessException(403, "无权操作此需求");
+            }
+        }
+
+        String status = demand.getStatus();
+        if (!DEMAND_STATUS_DRAFT.equals(status) && !DEMAND_STATUS_PUBLISHED.equals(status)) {
+            throw new BusinessException(400, "当前状态不可编辑");
+        }
+
+        // 审核状态校验：非管理员在待审核（pending）状态下禁止编辑，防止审核内容与最终内容不一致
+        String auditStatus = demand.getAuditStatus();
+        if (!securityUtils.isAdmin() && DEMAND_AUDIT_STATUS_PENDING.equals(auditStatus)) {
+            throw new BusinessException(400, "待审核需求不可编辑，请等待审核结果");
+        }
+        // 记录是否有字段实际变更（用于幂等处理）
+        boolean hasChange = false;
+        if (request.getTitle() != null && !request.getTitle().equals(demand.getTitle())) {
+            demand.setTitle(request.getTitle());
+            hasChange = true;
+        }
+        if (request.getDescription() != null && !request.getDescription().equals(demand.getDescription())) {
+            demand.setDescription(request.getDescription());
+            hasChange = true;
+        }
+        if (request.getExpectedBudget() != null && (demand.getExpectedBudget() == null || !request.getExpectedBudget().equals(demand.getExpectedBudget()))) {
+            demand.setExpectedBudget(request.getExpectedBudget());
+            hasChange = true;
+        }
+        if (request.getDeadline() != null && (demand.getDeadline() == null || !request.getDeadline().equals(demand.getDeadline()))) {
+            demand.setDeadline(request.getDeadline());
+            hasChange = true;
+        }
+
+        if (hasChange) {
+            boolean updated = this.updateById(demand);
+            if (!updated) {
+                // MyBatis Plus 在受影响行数为 0 时会返回 false，这里需要进一步区分：
+                // 1）记录已被删除/不存在 -> 返回 404
+                // 2）记录仍存在但字段值与提交值一致（或并发更新后结果一致） -> 视为幂等成功
+                Demand latest = this.getById(id);
+                if (latest == null || !DateConstants.getNotDeletedTime().equals(latest.getDeleted())) {
+                    // 记录已被删除或不存在，返回更精确的业务错误码而不是 500
+                    throw new BusinessException(404, "需求不存在或已被删除");
+                }
+                // 记录仍存在但受影响行数为 0，可能是提交值与库中值一致或并发更新后结果一致，视为幂等成功
+                log.warn("需求编辑未更新任何字段但记录仍存在，视为幂等成功，ID：{}", id);
+            }
+        } else {
+            // 无字段变更，视为幂等成功
+            log.info("需求编辑无实际变更，ID：{}", id);
+        }
+
+        // 处理标签更新（先删后增）
+        if (request.getTags() != null) {
+            // 1. 校验 tags 列表中的元素不能为 null
+            if (request.getTags().stream().anyMatch(Objects::isNull)) {
+                throw new BusinessException(400, "标签ID不能包含null值");
+            }
+
+            // 2. 删除旧标签关联（逻辑删除）
+            LambdaUpdateWrapper<DemandTag> deleteWrapper = new LambdaUpdateWrapper<>();
+            deleteWrapper.eq(DemandTag::getDemandId, id)
+                    .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime());
+            demandTagMapper.delete(deleteWrapper);
+
+            // 3. 插入新标签（去重 + 存在性校验）
+            if (!CollectionUtils.isEmpty(request.getTags())) {
+                // 先对标签 ID 进行空值过滤与去重，避免校验误判和唯一键冲突
+                List<Long> distinctTagIds = request.getTags().stream()
+                        .filter(Objects::nonNull)  // 实际此处已无 null，但保留过滤以防万一
+                        .distinct()
+                        .collect(Collectors.toList());
+
+                if (!distinctTagIds.isEmpty()) {
+                    // 校验标签是否存在（基于去重后的标签 ID）
+                    List<Tag> tags = tagService.listByIds(distinctTagIds);
+                    if (tags.size() != distinctTagIds.size()) {
+                        Set<Long> existingIds = tags.stream().map(Tag::getId).collect(Collectors.toSet());
+                        List<Long> missingIds = distinctTagIds.stream()
+                                .filter(tagId -> !existingIds.contains(tagId))
+                                .collect(Collectors.toList());
+                        throw new BusinessException(400, "以下标签 ID 不存在: " + missingIds);
+                    }
+                    // 基于去重后的标签 ID 构造需求-标签关联，避免唯一键冲突
+                    List<DemandTag> demandTags = distinctTagIds.stream()
+                            .map(tagId -> new DemandTag()
+                                    .setDemandId(id)
+                                    .setTagId(tagId)
+                                    .setDeleted(DateConstants.getNotDeletedTime()))
+                            .collect(Collectors.toList());
+                    demandTagMapper.insertBatch(demandTags);
+                }
+            }
+        }
+
+        log.info("需求编辑成功，ID：{}", id);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/03/24
+     * @Description: 逻辑删除需求（级联删除关联标签）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteDemand(Long id, Long userId) {
+        Demand demand = this.getById(id);
+        if (demand == null) {
+            throw new BusinessException(404, "需求不存在");
+        }
+
+        // 权限校验：如果是 admin 则跳过，否则必须是制造企业且企业属于当前用户
+        if (!securityUtils.isAdmin()) {
+            String role = securityUtils.getCurrentUserRole();
+            if (!ROLE_MANUFACTURE.equals(role)) {
+                throw new BusinessException(403, "只有制造企业可以操作需求");
+            }
+            Manufacture manufacture = manufactureMapper.selectById(demand.getManuId());
+            if (manufacture == null || !manufacture.getUserId().equals(userId)) {
+                throw new BusinessException(403, "无权操作此需求");
+            }
+        }
+
+        String status = demand.getStatus();
+        if (!DEMAND_STATUS_DRAFT.equals(status) && !DEMAND_STATUS_PUBLISHED.equals(status)) {
+            throw new BusinessException(400, "当前状态不可删除");
+        }
+
+        // 逻辑删除关联标签（只删除未删除的记录）
+        LambdaUpdateWrapper<DemandTag> tagWrapper = new LambdaUpdateWrapper<>();
+        tagWrapper.eq(DemandTag::getDemandId, id)
+                .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime());
+        boolean deletedTags = demandTagMapper.delete(tagWrapper) > 0;
+        if (deletedTags) {
+            log.info("已逻辑删除需求 {} 的关联标签", id);
+        }
+
+        // 逻辑删除需求本身
+        boolean deleted = this.removeById(id);
+        if (!deleted) {
+            // 在 MyBatis Plus 逻辑删除场景下，可能是并发下记录已被其他请求删除，导致 affectedRows=0
+            // 这里再次查询用于区分“已删除/不存在”（幂等成功）与“真实删除失败”
+            Demand latest = this.getById(id);
+            if (latest == null) {
+                log.info("需求已被删除（可能为并发删除），ID：{}，本次删除操作视为幂等成功", id);
+                return;
+            }
+            throw new BusinessException(500, "删除需求失败");
+        }
+
+        log.info("需求删除成功，ID：{}", id);
+    }
+
+    /**
+     * @Author: xiaodengyou
+     * @Date: 2026/03/24
+     * @Description: 分页获取我的需求列表
+     */
+    @Override
+    public PageResult<DemandMyListVO> getMyDemandList(Integer page, Integer size, Long manuId, String status, Long userId) {
+        Manufacture manufacture = manufactureMapper.selectById(manuId);
+        if (manufacture == null) {
+            throw new BusinessException(404, "制造企业不存在");
+        }
+
+        // 权限校验：如果是 admin 则跳过，否则必须是制造企业且企业属于当前用户
+        if (!securityUtils.isAdmin()) {
+            String role = securityUtils.getCurrentUserRole();
+            if (!ROLE_MANUFACTURE.equals(role)) {
+                throw new BusinessException(403, "只有制造企业可以查看自己的需求列表");
+            }
+            if (!manufacture.getUserId().equals(userId)) {
+                throw new BusinessException(403, "无权查看其他企业的需求");
+            }
+        }
+
+        Page<Demand> mpPage = new Page<>(page, size);
+        LambdaQueryWrapper<Demand> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Demand::getManuId, manuId);
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(Demand::getStatus, status);
+        }
+        wrapper.eq(Demand::getDeleted, DateConstants.getNotDeletedTime());
+        wrapper.orderByDesc(Demand::getCreateTime);
+
+        Page<Demand> demandPage = this.page(mpPage, wrapper);
+        List<Demand> demands = demandPage.getRecords();
+
+        if (demands.isEmpty()) {
+            return PageResult.from(demandPage.convert(d -> null));
+        }
+
+        List<Long> demandIds = demands.stream().map(Demand::getId).collect(Collectors.toList());
+        List<DemandTag> demandTags = demandTagMapper.selectList(
+                new LambdaQueryWrapper<DemandTag>()
+                        .in(DemandTag::getDemandId, demandIds)
+                        .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime())
+        );
+
+        List<Long> tagIds = demandTags.stream().map(DemandTag::getTagId).distinct().collect(Collectors.toList());
+        final Map<Long, String> tagIdToNameMap = tagIds.isEmpty() ?
+                Collections.emptyMap() :
+                tagService.listByIds(tagIds).stream()
+                        .collect(Collectors.toMap(Tag::getId, Tag::getName));
+
+        Map<Long, List<DemandMyListVO.TagSimpleVO>> demandTagsMap = demandTags.stream()
+                .map(dt -> {
+                    String tagName = tagIdToNameMap.get(dt.getTagId());
+                    if (tagName == null) {
+                        log.warn("标签 ID {} 已不存在或被删除，需求 ID {} 的标签将被忽略", dt.getTagId(), dt.getDemandId());
+                        return null;
+                    }
+                    DemandMyListVO.TagSimpleVO tagVO = new DemandMyListVO.TagSimpleVO();
+                    tagVO.setId(dt.getTagId());
+                    tagVO.setName(tagName);
+                    return new AbstractMap.SimpleEntry<>(dt.getDemandId(), tagVO);
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(
+                        Map.Entry::getKey,
+                        Collectors.mapping(Map.Entry::getValue, Collectors.toList())
+                ));
+
+        List<DemandMyListVO> records = demands.stream().map(demand -> {
+            DemandMyListVO vo = new DemandMyListVO();
+            vo.setId(demand.getId());
+            vo.setTitle(demand.getTitle());
+            vo.setDescription(demand.getDescription());
+            vo.setExpectedBudget(demand.getExpectedBudget());
+            vo.setDeadline(demand.getDeadline());
+            vo.setStatus(demand.getStatus());
+            vo.setCreateTime(demand.getCreateTime());
+            vo.setTags(demandTagsMap.getOrDefault(demand.getId(), Collections.emptyList()));
+            return vo;
+        }).collect(Collectors.toList());
+
+        Page<DemandMyListVO> resultPage = new Page<>(demandPage.getCurrent(), demandPage.getSize(), demandPage.getTotal());
+        resultPage.setRecords(records);
+        return PageResult.from(resultPage);
+    }
+
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/03/26 18:29
+     * @param id     需求 ID，不能为 null
+     * @param userId 当前登录用户 ID，用于权限校验（当需求为草稿时，与发布者 userId 比对）
+     * @return 需求详情视图对象 {@link DemandDetailVO}，包含需求基本信息、关联制造企业及标签列表
+     * @Description: 获取需求详情
+     */
+    @Override
+    public DemandDetailVO getDemandDetail(Long id, Long userId) {
+        Demand demand = this.getById(id);
+        if (demand == null || !DateConstants.getNotDeletedTime().equals(demand.getDeleted())) {
+            throw new BusinessException(404, "需求不存在或已被删除");
+        }
+
+        Manufacture manufacture = manufactureMapper.selectById(demand.getManuId());
+
+        // 草稿场景下，如果关联制造企业不存在（例如被逻辑删除或数据不一致），
+        // 需要在进入权限判断前直接按资源不存在处理，而不是误报为权限不足。
+        if (DEMAND_STATUS_DRAFT.equals(demand.getStatus()) && manufacture == null) {
+            throw new BusinessException(404, "关联制造企业不存在或已被删除");
+        }
+        // 权限校验逻辑
+        // - 若需求状态为 draft，则仅发布者（根据 manuId 关联的用户）或管理员可查看详情。
+        // - 若需求状态为 published 或 matched，则所有已登录用户均可查看详情
+        if (!PUBLIC_STATUSES.contains(demand.getStatus())) {
+            // 非公开状态：仅创建者或管理员可查看
+            if (!securityUtils.isAdmin()) {
+                if (manufacture == null || !manufacture.getUserId().equals(userId)) {
+                    throw new BusinessException(403, "无权查看该需求");
+                }
+            }
+        }
+
+        DemandDetailVO vo = new DemandDetailVO();
+        vo.setId(demand.getId());
+        vo.setManuId(demand.getManuId());
+        vo.setTitle(demand.getTitle());
+        vo.setDescription(demand.getDescription());
+        vo.setExpectedBudget(demand.getExpectedBudget());
+        vo.setDeadline(demand.getDeadline());
+        vo.setStatus(demand.getStatus());
+        vo.setAuditStatus(demand.getAuditStatus());
+        vo.setAuditRemark(demand.getAuditRemark());
+        vo.setCreateTime(demand.getCreateTime());
+        vo.setUpdateTime(demand.getUpdateTime());
+
+        if (manufacture != null) {
+            DemandDetailVO.ManufactureInfo manuInfo = new DemandDetailVO.ManufactureInfo();
+            manuInfo.setId(manufacture.getId());
+            manuInfo.setCompanyName(manufacture.getCompanyName());
+            manuInfo.setRegion(manufacture.getRegion());
+            manuInfo.setContactPerson(manufacture.getContactPerson());
+            manuInfo.setContactPhone(manufacture.getContactPhone());
+            vo.setManufacture(manuInfo);
+        }
+
+        List<DemandTag> demandTags = demandTagMapper.selectList(
+                new LambdaQueryWrapper<DemandTag>()
+                        .eq(DemandTag::getDemandId, id)
+                        .eq(DemandTag::getDeleted, DateConstants.getNotDeletedTime())
+        );
+
+        List<DemandDetailVO.TagSimpleVO> tags = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(demandTags)) {
+            List<Long> tagIds = demandTags.stream().map(DemandTag::getTagId).distinct().collect(Collectors.toList());
+            if (!tagIds.isEmpty()) {
+                List<Tag> tagList = tagService.listByIds(tagIds);
+                for (Tag t : tagList) {
+                    DemandDetailVO.TagSimpleVO tvo = new DemandDetailVO.TagSimpleVO();
+                    tvo.setId(t.getId());
+                    tvo.setName(t.getName());
+                    tags.add(tvo);
+                }
+            }
+        }
+        vo.setTags(tags);
+
+        return vo;
+    }
 }
