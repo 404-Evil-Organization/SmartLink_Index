@@ -15,6 +15,11 @@ export default [
     component: () => import("@/views/admin/UserManage.vue"),
   },
   {
+    path: "admin/log",
+    name: "LogList",
+    component: () => import("@/views/admin/LogList.vue"),
+  },
+  {
     path: "admin/abroad-case",
     name: "AbroadCaseManage",
     component: () => import("@/views/admin/AbroadCaseManage.vue"),
