@@ -118,12 +118,6 @@
             <span v-if="!row.countryCoverage">-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="contactPerson" label="联系人" width="100" />
-        <el-table-column prop="contactPhone" label="联系电话" width="130">
-          <template #default="{ row }">
-            {{ maskPhone(row.contactPhone, userStore.userInfo?.role) }}
-          </template>
-        </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button size="small" link @click="handleDetail(row.id)">
