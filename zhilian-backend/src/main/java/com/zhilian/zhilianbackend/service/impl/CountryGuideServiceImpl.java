@@ -141,12 +141,12 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
      * @Date: 2026/3/26 21:33
      * @Param: page 页码
      * @Param: size 每页条数
-     * @Param: country 国家名称（模糊匹配）
+     * @Param: countryKeyword 国家名称（模糊匹配）
      * @Return: PageResult<CountryGuideResponse> 分页结果
      * @Description: 分页查询国家指南列表，仅管理员可访问
      **/
     @Override
-    public PageResult<CountryGuideResponse> listByPage(Integer page, Integer size, String country) {
+    public PageResult<CountryGuideResponse> listByPage(Integer page, Integer size, String countryKeyword) {
         // 管理员权限校验
         if (!securityUtils.isAdmin()) {
             throw new BusinessException(403, "无权限访问");
@@ -166,8 +166,8 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
 
         Page<CountryGuide> mpPage = new Page<>(page, size);
         LambdaQueryWrapper<CountryGuide> wrapper = new LambdaQueryWrapper<>();
-        if (StringUtils.hasText(country)) {
-            wrapper.like(CountryGuide::getCountry, country);
+        if (StringUtils.hasText(countryKeyword)) {
+            wrapper.like(CountryGuide::getCountry, countryKeyword);
         }
         wrapper.orderByDesc(CountryGuide::getCreateTime);
 
@@ -185,12 +185,12 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
      * @Date: 2026/3/27 18:44
      * @Param: page 页码
      * @Param: size 每页条数
-     * @Param: keyword 国家名称关键词（模糊匹配）
+     * @Param: countryKeyword 国家名称关键词（模糊匹配）
      * @Return: PageResult<CountryGuideResponse> 分页结果
      * @Description: 公开接口-分页查询国家指南列表，无需鉴权
      **/
     @Override
-    public PageResult<CountryGuideResponse> publicListByPage(Integer page, Integer size, String keyword) {
+    public PageResult<CountryGuideResponse> publicListByPage(Integer page, Integer size, String countryKeyword) {
         // 分页参数默认值
         if (page == null || page <= 0) {
             page = 1;
@@ -205,8 +205,8 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
 
         Page<CountryGuide> mpPage = new Page<>(page, size);
         LambdaQueryWrapper<CountryGuide> wrapper = new LambdaQueryWrapper<>();
-        if (StringUtils.hasText(keyword)) {
-            wrapper.like(CountryGuide::getCountry, keyword);
+        if (StringUtils.hasText(countryKeyword)) {
+            wrapper.like(CountryGuide::getCountry, countryKeyword);
         }
         wrapper.orderByDesc(CountryGuide::getCreateTime);
 

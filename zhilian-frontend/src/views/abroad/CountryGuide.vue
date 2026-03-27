@@ -183,7 +183,7 @@ const fetchList = async () => {
     const params = {
       page: pagination.current,
       size: pagination.size,
-      keyword: searchForm.keyword || undefined,
+      countryKeyword: searchForm.keyword || undefined,
     };
     const res = await getCountryGuideList(params);
     tableData.value = res.records || [];

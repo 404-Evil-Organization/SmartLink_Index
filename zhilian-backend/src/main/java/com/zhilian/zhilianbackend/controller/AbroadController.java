@@ -57,11 +57,11 @@ public class AbroadController {
     }
 
     /**
-     * @Author: taciurn-hg
+     * @Author: taciturn-hg
      * @Date: 2026/3/27 18:45
      * @Param: page 页码，默认1
      * @Param: size 每页条数，默认10
-     * @Param: keyword 国家名称关键词（模糊匹配）
+     * @Param: countryKeyword 国家名称关键词（模糊匹配）
      * @Return: Result<PageResult<CountryGuideResponse>> 分页结果
      * @Description: 获取国家准入指南列表（公开接口）
      **/
@@ -70,9 +70,9 @@ public class AbroadController {
     public Result<PageResult<CountryGuideResponse>> getCountryGuideList(
             @Parameter(description = "页码，默认1") @RequestParam(required = false, defaultValue = "1") Integer page,
             @Parameter(description = "每页条数，默认10") @RequestParam(required = false, defaultValue = "10") Integer size,
-            @Parameter(description = "国家名称关键词") @RequestParam(required = false) String keyword) {
-        log.debug("接收到获取国家准入指南列表请求，page: {}, size: {}, keyword: {}", page, size, keyword);
-        PageResult<CountryGuideResponse> pageResult = countryGuideService.publicListByPage(page, size, keyword);
+            @Parameter(description = "国家名称关键词") @RequestParam(required = false) String countryKeyword) {
+        log.debug("接收到获取国家准入指南列表请求，page: {}, size: {}, countryKeyword: {}", page, size, countryKeyword);
+        PageResult<CountryGuideResponse> pageResult = countryGuideService.publicListByPage(page, size, countryKeyword);
         return Result.success(pageResult);
     }
 
