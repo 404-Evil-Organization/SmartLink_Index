@@ -393,11 +393,8 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
                 if (trimmed.startsWith("[")) {
                     documents = parseDocuments(trimmed);
                 } else {
-                    // 否则按逗号分隔解析，避免触发 JSON 解析失败产生噪声日志
-                    documents = Arrays.stream(trimmed.split(","))
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
-                            .collect(Collectors.toList());
+                    // 否则复用统一的逗号分隔解析方法，避免重复实现和逻辑不一致
+                    documents = parseCommaSeparatedDocuments(trimmed);
                 }
                 response.setDocuments(documents);
             }
