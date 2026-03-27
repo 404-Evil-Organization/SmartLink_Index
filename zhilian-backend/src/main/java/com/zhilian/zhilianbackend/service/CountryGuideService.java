@@ -30,6 +30,17 @@ public interface CountryGuideService extends IService<CountryGuide> {
     PageResult<CountryGuideResponse> listByPage(Integer page, Integer size, String country);
 
     /**
+     * @Author: taciturn-hg
+     * @Date: 2026/3/27 18:45
+     * @Param: page 页码
+     * @Param: size 每页条数
+     * @Param: keyword 国家名称关键词（模糊匹配）
+     * @Return: PageResult<CountryGuideResponse> 分页结果
+     * @Description: 公开接口-分页查询国家指南列表
+     **/
+    PageResult<CountryGuideResponse> publicListByPage(Integer page, Integer size, String keyword);
+
+    /**
      * @Author: xiaodengyou
      * @Date: 2026/3/26 21:33
      * @Param: request 新增国家指南请求参数

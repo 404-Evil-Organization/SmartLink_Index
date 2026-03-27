@@ -20,6 +20,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -53,6 +54,26 @@ public class AbroadController {
 
         CountryGuideResponse response = countryGuideService.getByCountry(country);
         return Result.success(response);
+    }
+
+    /**
+     * @Author: taciurn-hg
+     * @Date: 2026/3/27 18:45
+     * @Param: page 页码，默认1
+     * @Param: size 每页条数，默认10
+     * @Param: keyword 国家名称关键词（模糊匹配）
+     * @Return: Result<PageResult<CountryGuideResponse>> 分页结果
+     * @Description: 获取国家准入指南列表（公开接口）
+     **/
+    @GetMapping("/country-guide/list")
+    @Operation(summary = "获取国家准入指南列表", description = "支持分页和按国家名称模糊搜索，公开接口")
+    public Result<PageResult<CountryGuideResponse>> getCountryGuideList(
+            @Parameter(description = "页码，默认1") @RequestParam(required = false, defaultValue = "1") Integer page,
+            @Parameter(description = "每页条数，默认10") @RequestParam(required = false, defaultValue = "10") Integer size,
+            @Parameter(description = "国家名称关键词") @RequestParam(required = false) String keyword) {
+        log.debug("接收到获取国家准入指南列表请求，page: {}, size: {}, keyword: {}", page, size, keyword);
+        PageResult<CountryGuideResponse> pageResult = countryGuideService.publicListByPage(page, size, keyword);
+        return Result.success(pageResult);
     }
 
     private final AbroadServiceProviderService abroadServiceProviderService;

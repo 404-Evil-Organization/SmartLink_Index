@@ -181,6 +181,45 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
     }
 
     /**
+     * @Author: taciturn-hg
+     * @Date: 2026/3/27 18:44
+     * @Param: page 页码
+     * @Param: size 每页条数
+     * @Param: keyword 国家名称关键词（模糊匹配）
+     * @Return: PageResult<CountryGuideResponse> 分页结果
+     * @Description: 公开接口-分页查询国家指南列表，无需鉴权
+     **/
+    @Override
+    public PageResult<CountryGuideResponse> publicListByPage(Integer page, Integer size, String keyword) {
+        // 分页参数默认值
+        if (page == null || page <= 0) {
+            page = 1;
+        }
+        if (size == null || size <= 0) {
+            size = 10;
+        }
+        // 限制最大分页大小，避免恶意请求
+        if (size > MAX_PAGE_SIZE) {
+            size = MAX_PAGE_SIZE;
+        }
+
+        Page<CountryGuide> mpPage = new Page<>(page, size);
+        LambdaQueryWrapper<CountryGuide> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(keyword)) {
+            wrapper.like(CountryGuide::getCountry, keyword);
+        }
+        wrapper.orderByDesc(CountryGuide::getCreateTime);
+
+        Page<CountryGuide> resultPage = this.page(mpPage, wrapper);
+
+        List<CountryGuideResponse> records = resultPage.getRecords().stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+
+        return new PageResult<>(resultPage.getTotal(), records, resultPage.getCurrent(), resultPage.getSize());
+    }
+
+    /**
      * @Author: xiaodengyou
      * @Date: 2026/3/26 21:33
      * @Param: request 新增国家指南请求参数
@@ -343,6 +382,13 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
     private CountryGuideResponse convertToResponse(CountryGuide entity) {
         CountryGuideResponse response = new CountryGuideResponse();
         BeanUtils.copyProperties(entity, response);
+        
+        // 处理 documents 字段
+        if (entity.getDocuments() != null && !entity.getDocuments().isEmpty()) {
+            List<String> documents = parseDocuments(entity.getDocuments());
+            response.setDocuments(documents);
+        }
+        
         return response;
     }
 }
