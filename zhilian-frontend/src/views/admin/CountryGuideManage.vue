@@ -335,7 +335,7 @@ const submitForm = async () => {
     return;
   }
 
-  // 将 documents 数组转为 JSON 字符串
+  // 将 documents 数组转换为逗号分隔的字符串，保持与后端字段格式一致
   const data = {
     ...form,
     documents: joinTags(form.documents),
