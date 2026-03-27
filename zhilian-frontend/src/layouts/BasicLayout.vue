@@ -101,7 +101,6 @@
             <el-icon><Checked /></el-icon>
             <span>出海成功案例</span>
           </el-menu-item>
-        </el-sub-menu>
 
         <!-- 合作市场页面 -->
         <el-menu-item v-if="isService || isAdmin" index="/match/market">
