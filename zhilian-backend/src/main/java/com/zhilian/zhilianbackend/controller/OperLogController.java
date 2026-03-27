@@ -82,4 +82,21 @@ public class OperLogController {
         IPage<OperLogVO> operLogPage = operLogService.listOperLogs(page, size, username, operation, startTime, endTime);
         return Result.success(PageResult.from(operLogPage));
     }
+
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/03/27 8:58
+     * @Param: id 日志ID
+     * @Return: Result<OperLogVO> 日志详情
+     * @Description: 获取操作日志详情
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "获取操作日志详情")
+    public Result<OperLogVO> getOperLogDetail(@PathVariable Long id) {
+        if (!securityUtils.isAdmin()) {
+            log.warn("非管理员用户尝试访问操作日志详情");
+            return Result.forbidden("权限不足，仅管理员可查看操作日志");
+        }
+        return Result.success(operLogService.getOperLogDetail(id));
+    }
 }

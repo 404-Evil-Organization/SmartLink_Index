@@ -58,14 +58,24 @@
 
       <el-table :data="tableData" v-loading="loading" border stripe row-key="id" style="width: 100%">
         <el-table-column type="index" label="序号" width="70" align="center" />
-        <el-table-column prop="username" label="操作人" width="150" />
-        <el-table-column prop="operation" label="操作类型" width="140" />
-        <el-table-column prop="params" label="请求参数" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="result" label="结果" width="80" />
-        <el-table-column prop="ip" label="IP地址" width="140" />
-        <el-table-column label="操作时间" width="160">
+        <el-table-column prop="username" label="操作人" min-width="150" />
+        <el-table-column prop="operation" label="操作类型" min-width="200" />
+        <el-table-column label="结果" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.result === '成功' ? 'success' : 'danger'">
+              {{ row.result }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="ip" label="IP地址" width="160" />
+        <el-table-column label="操作时间" width="200">
           <template #default="{ row }">
             {{ createTimeConverter(row.createTime).toLocalYMDHMS() || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="handleViewDetail(row)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -83,6 +93,34 @@
         />
       </div>
     </el-card>
+
+    <!-- 详情弹窗 -->
+    <el-dialog v-model="detailDialog.visible" title="操作日志详情" width="600px">
+      <el-descriptions :column="1" border v-loading="detailDialog.loading">
+        <el-descriptions-item label="操作人">{{ detailDialog.data.username || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="操作类型">{{ detailDialog.data.operation || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="IP地址">{{ detailDialog.data.ip || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="操作时间">
+          {{ detailDialog.data.createTime ? createTimeConverter(detailDialog.data.createTime).toLocalYMDHMS() : '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="操作结果">
+          <el-tag :type="detailDialog.data.result === '成功' ? 'success' : 'danger'">
+            {{ detailDialog.data.result || '-' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="失败原因" v-if="detailDialog.data.result !== '成功'">
+          <span style="color: #f56c6c">{{ detailDialog.data.errorMsg || '无' }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="请求参数">
+          <pre class="json-preview">{{ formatParams(detailDialog.data.params) }}</pre>
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="detailDialog.visible = false">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -90,7 +128,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
-import { getLogList } from '@/api/admin'
+import { getLogList, getOperLogDetail } from '@/api/admin'
 import { createTimeConverter } from '@/composables/date'
 
 // 搜索表单
@@ -111,6 +149,24 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
+
+// 详情弹窗数据
+const detailDialog = reactive({
+  visible: false,
+  loading: false,
+  data: {}
+})
+
+// 格式化JSON参数
+const formatParams = (paramsStr) => {
+  if (!paramsStr) return '无'
+  try {
+    const obj = JSON.parse(paramsStr)
+    return JSON.stringify(obj, null, 2)
+  } catch (e) {
+    return paramsStr
+  }
+}
 
 // 获取列表
 const fetchList = async () => {
@@ -161,6 +217,22 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   pagination.current = val
   fetchList()
+}
+
+// 查看详情
+const handleViewDetail = async (row) => {
+  detailDialog.visible = true
+  detailDialog.loading = true
+  try {
+    const res = await getOperLogDetail(row.id)
+    detailDialog.data = res || row // 如果请求失败，使用当前行数据兜底
+  } catch (error) {
+    console.error('获取日志详情失败', error)
+    detailDialog.data = row
+    ElMessage.error('获取日志详情失败')
+  } finally {
+    detailDialog.loading = false
+  }
 }
 
 onMounted(() => {
@@ -266,5 +338,18 @@ onMounted(() => {
     margin-left: 0;
     margin-right: 8px;
   }
+}
+
+.json-preview {
+  margin: 0;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  font-family: Consolas, Monaco, monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 300px;
+  overflow-y: auto;
 }
 </style>

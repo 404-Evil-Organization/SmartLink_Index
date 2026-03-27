@@ -18,6 +18,30 @@ import java.util.Optional;
 public class SecurityUtils {
 
     /**
+     * @Author: taciturn-hg
+     * @Date: 2026/03/27 9:17
+     * @Return: Long 当前登录用户的 ID，如果用户未登录、认证信息为空或无法解析为长整型，则返回 null
+     * @Description: 尝试从 Spring Security 上下文中获取当前登录用户 ID。
+     *               与 getCurrentUserId() 不同，该方法在未登录时不会抛出异常，适用于日志记录等不需要严格校验权限的旁路逻辑。
+     */
+    public Long getCurrentUserIdOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            return null;
+        }
+        String name = authentication.getName();
+        if (name == null || name.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(name);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
      * @Author: xiaodengyou
      * @Date: 2026/3/20 18:46
      * @Param:

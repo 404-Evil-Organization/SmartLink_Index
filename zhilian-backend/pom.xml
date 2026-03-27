@@ -115,6 +115,12 @@
 			<version>2.7.0</version>
 		</dependency>
 
+		<!-- Spring Boot AOP -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
 		<!-- 阿里云 OSS SDK -->
 		<dependency>
 			<groupId>com.aliyun.oss</groupId>

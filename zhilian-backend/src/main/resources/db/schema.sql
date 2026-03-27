@@ -422,6 +422,7 @@ CREATE TABLE `oper_log`
     `operation`   VARCHAR(200) NOT NULL COMMENT '操作描述（如“用户登录”、“修改密码”）',
     `params`      TEXT COMMENT '请求参数（JSON格式，可选）',
     `result`      VARCHAR(50) COMMENT '操作结果（成功/失败）',
+    `error_msg`   TEXT COMMENT '失败原因/异常信息',
     `ip`          VARCHAR(50) COMMENT '客户端IP地址',
     `deleted`     DATETIME     NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '逻辑删除时间，''1970-01-01 00:00:00'' 表示未删除，其他时间表示已删除',
     `create_time` DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',

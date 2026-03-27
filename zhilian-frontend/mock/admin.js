@@ -140,9 +140,6 @@ let logList = [
       createTime: "2026-03-05 11:00:00",
       updateTime: "2026-03-05 11:00:00",
     },
-  ];
-
-  export default [
     // ---------- 用户管理 ----------
     {
       url: "/api/admin/user/list",
