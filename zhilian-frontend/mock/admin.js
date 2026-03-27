@@ -41,6 +41,29 @@ let userList = [
   },
 ];
 
+// ---------- 国家指南数据 ----------
+let countryGuideList = [
+  {
+    id: 1,
+    country: "美国",
+    requirements: "FCC认证、UL认证，需提供产品测试报告...",
+    process: "1.提交申请 → 2.产品测试 → 3.发证",
+    documents: '["产品说明书", "电路图", "测试申请表"]',
+    createTime: "2026-03-20T10:00:00Z",
+    updateTime: "2026-03-20T10:00:00Z",
+  },
+  {
+    id: 2,
+    country: "欧盟",
+    requirements: "CE认证、RoHS认证，需符合欧盟标准",
+    process: "1.准备技术文档 2.实验室测试 3.签署符合性声明",
+    documents: '["技术文件", "测试报告", "符合性声明"]',
+    createTime: "2026-03-21T09:30:00Z",
+    updateTime: "2026-03-21T09:30:00Z",
+  },
+];
+
+// ========== 用户管理 ==========
 // ---------- 操作日志数据 ----------
 let logList = [
   {
@@ -94,57 +117,53 @@ let logList = [
     createTime: "2026-03-23 16:45:00",
   },
 ];
-// 1. 获取用户列表（分页）
-{
-  // ---------- 出海案例数据 ----------
-  let abroadCaseList = [
-    {
-      id: 1,
-      title: "某电子公司CE认证成功案例",
-      companyName: "东莞电子",
-      companyType: "manufacture",
-      country: "欧盟",
-      serviceType: "CE认证",
-      description: "通过华测检测服务，顺利获得CE认证，产品成功进入欧洲市场。",
-      coverImage: "https://picsum.photos/200/150?random=1",
-      status: 1,
-      publishTime: "2026-02-10 10:00:00",
-      createTime: "2026-02-10 09:00:00",
-      updateTime: "2026-02-10 09:00:00",
-    },
-    {
-      id: 2,
-      title: "某机械公司UL认证案例",
-      companyName: "东莞精密机械",
-      companyType: "manufacture",
-      country: "美国",
-      serviceType: "UL认证",
-      description: "通过SGS服务，获得UL认证，产品出口美国。",
-      coverImage: "https://picsum.photos/200/150?random=2",
-      status: 1,
-      publishTime: "2026-03-01 14:00:00",
-      createTime: "2026-03-01 13:00:00",
-      updateTime: "2026-03-01 13:00:00",
-    },
-    {
-      id: 3,
-      title: "某电子公司FCC认证案例",
-      companyName: "深圳电子科技",
-      companyType: "manufacture",
-      country: "美国",
-      serviceType: "FCC认证",
-      description: "通过华测检测，获得FCC认证，产品成功进入美国市场。",
-      coverImage: "https://picsum.photos/200/150?random=3",
-      status: 0, // 草稿
-      publishTime: null,
-      createTime: "2026-03-05 11:00:00",
-      updateTime: "2026-03-05 11:00:00",
-    },
-  ];
-}
 
-// ---------- 用户管理 ----------
+let abroadCaseList = [
+  {
+    id: 1,
+    title: "某电子公司CE认证成功案例",
+    companyName: "东莞电子",
+    companyType: "manufacture",
+    country: "欧盟",
+    serviceType: "CE认证",
+    description: "通过华测检测服务，顺利获得CE认证，产品成功进入欧洲市场。",
+    coverImage: "https://picsum.photos/200/150?random=1",
+    status: 1,
+    publishTime: "2026-02-10 10:00:00",
+    createTime: "2026-02-10 09:00:00",
+    updateTime: "2026-02-10 09:00:00",
+  },
+  {
+    id: 2,
+    title: "某机械公司UL认证案例",
+    companyName: "东莞精密机械",
+    companyType: "manufacture",
+    country: "美国",
+    serviceType: "UL认证",
+    description: "通过SGS服务，获得UL认证，产品出口美国。",
+    coverImage: "https://picsum.photos/200/150?random=2",
+    status: 1,
+    publishTime: "2026-03-01 14:00:00",
+    createTime: "2026-03-01 13:00:00",
+    updateTime: "2026-03-01 13:00:00",
+  },
+  {
+    id: 3,
+    title: "某电子公司FCC认证案例",
+    companyName: "深圳电子科技",
+    companyType: "manufacture",
+    country: "美国",
+    serviceType: "FCC认证",
+    description: "通过华测检测，获得FCC认证，产品成功进入美国市场。",
+    coverImage: "https://picsum.photos/200/150?random=3",
+    status: 0, // 草稿
+    publishTime: null,
+    createTime: "2026-03-05 11:00:00",
+    updateTime: "2026-03-05 11:00:00",
+  },
+];
 export default [
+  // ---------- 用户管理 ----------
   {
     url: "/api/admin/user/list",
     method: "get",
@@ -474,6 +493,71 @@ export default [
         message: "success",
         data: null,
       };
+    },
+  },
+  // ========== 国家准入指南管理 ==========
+  {
+    url: "/api/admin/country-guide/list",
+    method: "get",
+    response: ({ query }) => {
+      const { page = 1, size = 10, country } = query;
+      let filtered = [...countryGuideList];
+      if (country)
+        filtered = filtered.filter((item) => item.country.includes(country));
+      const start = (page - 1) * size;
+      const end = start + parseInt(size);
+      const records = filtered.slice(start, end);
+      return {
+        code: 200,
+        data: { total: filtered.length, records },
+      };
+    },
+  },
+  {
+    url: "/api/admin/country-guide",
+    method: "post",
+    response: ({ body }) => {
+      const newId = Math.max(...countryGuideList.map((i) => i.id), 0) + 1;
+      const now = new Date().toISOString();
+      const newRecord = {
+        id: newId,
+        ...body,
+        createTime: now,
+        updateTime: now,
+      };
+      countryGuideList.push(newRecord);
+      return { code: 200, data: null };
+    },
+  },
+  {
+    url: /\/api\/admin\/country-guide\/\d+/,
+    method: "put",
+    response: ({ url, body }) => {
+      const id = parseInt(url.match(/\d+/)[0]);
+      const index = countryGuideList.findIndex((item) => item.id === id);
+      if (index !== -1) {
+        const now = new Date().toISOString();
+        countryGuideList[index] = {
+          ...countryGuideList[index],
+          ...body,
+          updateTime: now,
+        };
+        return { code: 200, data: null };
+      }
+      return { code: 404, message: "记录不存在", data: null };
+    },
+  },
+  {
+    url: /\/api\/admin\/country-guide\/\d+/,
+    method: "delete",
+    response: ({ url }) => {
+      const id = parseInt(url.match(/\d+/)[0]);
+      const index = countryGuideList.findIndex((item) => item.id === id);
+      if (index !== -1) {
+        countryGuideList.splice(index, 1);
+        return { code: 200, data: null };
+      }
+      return { code: 404, message: "记录不存在", data: null };
     },
   },
 ];

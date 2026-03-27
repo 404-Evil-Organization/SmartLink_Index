@@ -15,6 +15,11 @@ export default [
     component: () => import("@/views/admin/UserManage.vue"),
   },
   {
+    path: "admin/country-guide",
+    name: "CountryGuideManage",
+    component: () => import("@/views/admin/CountryGuideManage.vue"),
+  },
+  {
     path: "admin/log",
     name: "LogList",
     component: () => import("@/views/admin/LogList.vue"),

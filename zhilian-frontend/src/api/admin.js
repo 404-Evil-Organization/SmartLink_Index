@@ -115,6 +115,41 @@ export function getUserDetail(id) {
   });
 }
 
+// 获取国家准入指南列表
+export function getCountryGuideList(params) {
+  return request({
+    url: "/admin/country-guide/list",
+    method: "get",
+    params,
+  });
+}
+
+// 新增国家准入指南
+export function addCountryGuide(data) {
+  return request({
+    url: "/admin/country-guide",
+    method: "post",
+    data,
+  });
+}
+
+// 修改国家准入指南
+export function updateCountryGuide(id, data) {
+  return request({
+    url: `/admin/country-guide/${id}`,
+    method: "put",
+    data,
+  });
+}
+
+// 删除国家准入指南
+export function deleteCountryGuide(id) {
+  return request({
+    url: `/admin/country-guide/${id}`,
+    method: "delete",
+  });
+}
+
 /**
  * 获取操作日志列表
  * @param {Object} params - 查询参数
