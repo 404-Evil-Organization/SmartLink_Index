@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -180,6 +181,9 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         if (request.getDocuments() != null) {
             existing.setDocuments(request.getDocuments());
         }
+
+        // 显式设置更新时间，确保即使自动填充策略为 strictUpdateFill 时也能正确更新
+        existing.setUpdateTime(new Date());
 
         try {
             boolean updated = this.updateById(existing);
