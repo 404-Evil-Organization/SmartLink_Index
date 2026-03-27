@@ -115,7 +115,12 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         // 设置逻辑删除字段为未删除状态（使用常量）
         entity.setDeleted(DateConstants.getNotDeletedTime());
 
-        this.save(entity);
+        try {
+            this.save(entity);
+        } catch (DuplicateKeyException e) {
+            // 捕获并发场景下数据库唯一键冲突，转换为业务异常 409
+            throw new BusinessException(409, "国家名称已存在");
+        }
         return entity.getId();
     }
 
@@ -133,6 +138,11 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         // 管理员权限校验
         if (!securityUtils.isAdmin()) {
             throw new BusinessException(403, "无权限访问");
+        }
+
+        // 请求体空校验
+        if (request == null) {
+            throw new BusinessException(400, "请求参数不能为空");
         }
 
         // 查询原记录（未删除）
@@ -164,7 +174,16 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         }
 
         try {
-            this.updateById(existing);
+            boolean updated = this.updateById(existing);
+            if (!updated) {
+                // 更新失败，可能由于并发导致记录已被逻辑删除，重新检查记录是否存在
+                CountryGuide latest = this.getById(id);
+                if (latest == null) {
+                    throw new BusinessException(404, "国家指南不存在或已删除");
+                }
+                // 若记录仍然存在但更新失败（理论上不应发生），给出通用提示
+                throw new BusinessException(500, "更新失败，请稍后重试");
+            }
         } catch (DuplicateKeyException e) {
             // 捕获唯一键冲突（并发场景下修改为国家名称已存在）
             throw new BusinessException(409, "国家名称已存在");
