@@ -116,7 +116,10 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         entity.setDeleted(DateConstants.getNotDeletedTime());
 
         try {
-            this.save(entity);
+            boolean saved = this.save(entity);
+            if (!saved) {
+                throw new BusinessException(500, "创建失败，请稍后重试");
+            }
         } catch (DuplicateKeyException e) {
             // 捕获并发场景下数据库唯一键冲突，转换为业务异常 409
             throw new BusinessException(409, "国家名称已存在");
@@ -138,6 +141,11 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         // 管理员权限校验
         if (!securityUtils.isAdmin()) {
             throw new BusinessException(403, "无权限访问");
+        }
+
+        // ID 合法性校验
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "ID参数非法");
         }
 
         // 请求体空校验
@@ -176,13 +184,14 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         try {
             boolean updated = this.updateById(existing);
             if (!updated) {
-                // 更新失败，可能由于并发导致记录已被逻辑删除，重新检查记录是否存在
+                // updateById 返回 false 不一定表示“更新失败”，可能是无实际字段变更导致 affectedRows = 0
+                // 为避免将幂等更新当成 500 错误，这里仅在记录已不存在时返回 404
                 CountryGuide latest = this.getById(id);
                 if (latest == null) {
                     throw new BusinessException(404, "国家指南不存在或已删除");
                 }
-                // 若记录仍然存在但更新失败（理论上不应发生），给出通用提示
-                throw new BusinessException(500, "更新失败，请稍后重试");
+                // 记录仍然存在但 updateById 返回 false：视为“无实际变更”的幂等成功，不抛异常
+                return;
             }
         } catch (DuplicateKeyException e) {
             // 捕获唯一键冲突（并发场景下修改为国家名称已存在）
@@ -203,6 +212,11 @@ public class CountryGuideServiceImpl extends ServiceImpl<CountryGuideMapper, Cou
         // 管理员权限校验
         if (!securityUtils.isAdmin()) {
             throw new BusinessException(403, "无权限访问");
+        }
+
+        // ID 合法性校验
+        if (id == null || id <= 0) {
+            throw new BusinessException(400, "ID参数非法");
         }
 
         // 逻辑删除（MyBatis Plus会自动设置deleted为当前时间）
