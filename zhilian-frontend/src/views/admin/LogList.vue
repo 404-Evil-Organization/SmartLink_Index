@@ -108,7 +108,8 @@
             {{ detailDialog.data.result || '-' }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="失败原因" v-if="detailDialog.data.result !== '成功'">
+        <!-- 仅在操作结果明确为“失败”时展示失败原因，避免 result 为空或未知时被误判为失败 -->
+        <el-descriptions-item label="失败原因" v-if="detailDialog.data.result === '失败'">
           <span style="color: #f56c6c">{{ detailDialog.data.errorMsg || '无' }}</span>
         </el-descriptions-item>
         <el-descriptions-item label="请求参数">
