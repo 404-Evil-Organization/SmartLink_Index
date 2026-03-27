@@ -187,7 +187,7 @@ import {
   deleteCountryGuide,
 } from "@/api/admin";
 import { createTimeConverter } from "@/composables/date";
-import { normalizeTags } from "@/utils/desensitize";
+import { normalizeTags, joinTags } from "@/utils/tagUtils";
 
 // 搜索表单
 const searchForm = reactive({
@@ -315,11 +315,8 @@ const openEditDialog = (row) => {
   dialog.isEdit = true;
   dialog.editId = row.id;
   // 将后端返回的 documents 字符串解析为数组
-  const parsedDocs = row.documents
-    ? Array.isArray(row.documents)
-      ? row.documents
-      : JSON.parse(row.documents)
-    : [];
+  const parsedDocs = normalizeTags(row.documents);
+
   Object.assign(form, {
     country: row.country,
     requirements: row.requirements,
@@ -338,10 +335,10 @@ const submitForm = async () => {
     return;
   }
 
-  // 将 documents 数组转为 JSON 字符串
+  // 将 documents 数组转换为逗号分隔的字符串，保持与后端字段格式一致
   const data = {
     ...form,
-    documents: JSON.stringify(form.documents),
+    documents: joinTags(form.documents),
   };
   try {
     if (dialog.isEdit) {
