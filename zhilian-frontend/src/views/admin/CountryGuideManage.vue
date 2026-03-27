@@ -11,7 +11,9 @@
         </el-breadcrumb>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="openAddDialog" :icon="Plus">新增指南</el-button>
+        <el-button type="primary" @click="openAddDialog" :icon="Plus"
+          >新增指南</el-button
+        >
       </div>
     </div>
 
@@ -21,7 +23,11 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="国家名称">
-              <el-input v-model="searchForm.country" placeholder="请输入国家名称" clearable />
+              <el-input
+                v-model="searchForm.country"
+                placeholder="请输入国家名称"
+                clearable
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8" style="text-align: right">
@@ -45,15 +51,37 @@
         </div>
       </div>
 
-      <el-table :data="tableData" v-loading="loading" border stripe row-key="id" style="width: 100%">
+      <el-table
+        :data="tableData"
+        v-loading="loading"
+        border
+        stripe
+        row-key="id"
+        style="width: 100%"
+      >
         <el-table-column type="index" label="序号" width="70" align="center" />
         <el-table-column prop="country" label="国家" width="120" />
-        <el-table-column prop="requirements" label="准入要求" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="process" label="办理流程" min-width="180" show-overflow-tooltip />
+        <el-table-column
+          prop="requirements"
+          label="准入要求"
+          min-width="200"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="process"
+          label="办理流程"
+          min-width="180"
+          show-overflow-tooltip
+        />
         <el-table-column label="所需文件" min-width="150">
           <template #default="{ row }">
             <div v-if="row.documents && row.documents.length">
-              <el-tag v-for="(doc, idx) in row.documents" :key="idx" size="small" style="margin: 2px">
+              <el-tag
+                v-for="(doc, idx) in row.documents"
+                :key="idx"
+                size="small"
+                style="margin: 2px"
+              >
                 {{ doc }}
               </el-tag>
             </div>
@@ -62,7 +90,7 @@
         </el-table-column>
         <el-table-column prop="updateTime" label="更新时间" width="160">
           <template #default="{ row }">
-            {{ createTimeConverter(row.updateTime).toLocalYMDHMS() || '-' }}
+            {{ createTimeConverter(row.updateTime).toLocalYMDHMS() || "-" }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -149,197 +177,209 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Edit, Delete } from '@element-plus/icons-vue'
-import { getCountryGuideList, addCountryGuide, updateCountryGuide, deleteCountryGuide } from '@/api/admin'
-import { createTimeConverter } from '@/composables/date'
+import { ref, reactive, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { Plus, Refresh, Edit, Delete } from "@element-plus/icons-vue";
+import {
+  getCountryGuideList,
+  addCountryGuide,
+  updateCountryGuide,
+  deleteCountryGuide,
+} from "@/api/admin";
+import { createTimeConverter } from "@/composables/date";
+import { normalizeTags } from "@/utils/desensitize";
 
 // 搜索表单
 const searchForm = reactive({
-  country: ''
-})
+  country: "",
+});
 
 // 表格数据
-const tableData = ref([])
-const loading = ref(false)
+const tableData = ref([]);
+const loading = ref(false);
 
 // 分页
 const pagination = reactive({
   current: 1,
   size: 10,
-  total: 0
-})
+  total: 0,
+});
 
 // 弹窗数据
 const dialog = reactive({
   visible: false,
-  title: '',
+  title: "",
   isEdit: false,
-  editId: null
-})
+  editId: null,
+});
 
 const form = reactive({
-  country: '',
-  requirements: '',
-  process: '',
-  documents: []      // 前端使用数组，提交时转为 JSON 字符串
-})
+  country: "",
+  requirements: "",
+  process: "",
+  documents: [], // 前端使用数组，提交时转为 JSON 字符串
+});
 
-const formRef = ref(null)
+const formRef = ref(null);
 
 // 所需文件预设选项（仅用于展示，实际可任意输入）
 const documentOptions = ref([
-  '产品说明书',
-  '电路图',
-  '测试报告',
-  '营业执照',
-  '认证申请表'
-])
+  "产品说明书",
+  "电路图",
+  "测试报告",
+  "营业执照",
+  "认证申请表",
+]);
 
 // 表单校验规则
 const rules = {
-  country: [{ required: true, message: '请输入国家名称', trigger: 'blur' }],
-  requirements: [{ required: true, message: '请输入准入要求', trigger: 'blur' }],
-  process: [{ required: true, message: '请输入办理流程', trigger: 'blur' }]
-}
+  country: [{ required: true, message: "请输入国家名称", trigger: "blur" }],
+  requirements: [
+    { required: true, message: "请输入准入要求", trigger: "blur" },
+  ],
+  process: [{ required: true, message: "请输入办理流程", trigger: "blur" }],
+};
 
 // 获取列表
 const fetchList = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const params = {
       page: pagination.current,
       size: pagination.size,
-      ...(searchForm.country && { country: searchForm.country })
-    }
-    const res = await getCountryGuideList(params)
+      ...(searchForm.country && { country: searchForm.country }),
+    };
+    const res = await getCountryGuideList(params);
     // 将后端返回的 documents 字符串解析为数组
-    const records = (res.records || []).map(item => ({
+    const records = (res.records || []).map((item) => ({
       ...item,
-      documents: item.documents ? (Array.isArray(item.documents) ? item.documents : JSON.parse(item.documents)) : []
-    }))
-    tableData.value = records
-    pagination.total = res.total || 0
+      documents: normalizeTags(item.documents),
+    }));
+    tableData.value = records;
+    pagination.total = res.total || 0;
   } catch (error) {
-    console.error('获取指南列表失败', error)
-    tableData.value = []
-    pagination.total = 0
+    console.error("获取指南列表失败", error);
+    tableData.value = [];
+    pagination.total = 0;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // 搜索与重置
 const handleSearch = () => {
-  pagination.current = 1
-  fetchList()
-}
+  pagination.current = 1;
+  fetchList();
+};
 const resetSearch = () => {
-  searchForm.country = ''
-  handleSearch()
-}
+  searchForm.country = "";
+  handleSearch();
+};
 
 // 分页
 const handleSizeChange = (val) => {
-  pagination.size = val
-  pagination.current = 1
-  fetchList()
-}
+  pagination.size = val;
+  pagination.current = 1;
+  fetchList();
+};
 const handleCurrentChange = (val) => {
-  pagination.current = val
-  fetchList()
-}
+  pagination.current = val;
+  fetchList();
+};
 
 // 重置弹窗状态
 const resetDialog = () => {
-  formRef.value?.clearValidate()
-  formRef.value?.resetFields()
+  formRef.value?.clearValidate();
+  formRef.value?.resetFields();
   Object.assign(form, {
-    country: '',
-    requirements: '',
-    process: '',
-    documents: []
-  })
-  dialog.isEdit = false
-  dialog.editId = null
-}
+    country: "",
+    requirements: "",
+    process: "",
+    documents: [],
+  });
+  dialog.isEdit = false;
+  dialog.editId = null;
+};
 
 // 打开新增弹窗
 const openAddDialog = () => {
-  resetDialog()
-  dialog.title = '新增指南'
-  dialog.visible = true
-}
+  resetDialog();
+  dialog.title = "新增指南";
+  dialog.visible = true;
+};
 
 // 打开编辑弹窗
 const openEditDialog = (row) => {
-  resetDialog()
-  dialog.title = '编辑指南'
-  dialog.isEdit = true
-  dialog.editId = row.id
+  resetDialog();
+  dialog.title = "编辑指南";
+  dialog.isEdit = true;
+  dialog.editId = row.id;
   // 将后端返回的 documents 字符串解析为数组
   const parsedDocs = row.documents
-    ? (Array.isArray(row.documents) ? row.documents : JSON.parse(row.documents))
-    : []
+    ? Array.isArray(row.documents)
+      ? row.documents
+      : JSON.parse(row.documents)
+    : [];
   Object.assign(form, {
     country: row.country,
     requirements: row.requirements,
     process: row.process,
-    documents: parsedDocs
-  })
-  dialog.visible = true
-}
+    documents: parsedDocs,
+  });
+  dialog.visible = true;
+};
 
 // 提交表单
 const submitForm = async () => {
-  if (!formRef.value) return
+  if (!formRef.value) return;
   try {
-    await formRef.value.validate()
+    await formRef.value.validate();
   } catch (error) {
-    return
+    return;
   }
 
   // 将 documents 数组转为 JSON 字符串
   const data = {
     ...form,
-    documents: JSON.stringify(form.documents)
-  }
+    documents: JSON.stringify(form.documents),
+  };
   try {
     if (dialog.isEdit) {
-      await updateCountryGuide(dialog.editId, data)
-      ElMessage.success('修改成功')
+      await updateCountryGuide(dialog.editId, data);
+      ElMessage.success("修改成功");
     } else {
-      await addCountryGuide(data)
-      ElMessage.success('新增成功')
+      await addCountryGuide(data);
+      ElMessage.success("新增成功");
     }
-    dialog.visible = false
-    pagination.current = 1
-    fetchList()
+    dialog.visible = false;
+    pagination.current = 1;
+    fetchList();
   } catch (error) {
-    console.error('提交失败', error)
+    console.error("提交失败", error);
     // 错误提示由拦截器统一处理
   }
-}
+};
 
 // 删除
 const handleDelete = (row) => {
-  ElMessageBox.confirm(`确认删除国家“${row.country}”的准入指南吗？`, '提示', {
-    type: 'warning'
-  }).then(async () => {
-    try {
-      await deleteCountryGuide(row.id)
-      ElMessage.success('删除成功')
-      fetchList()
-    } catch (error) {
-      console.error('删除失败', error)
-    }
-  }).catch(() => {})
-}
+  ElMessageBox.confirm(`确认删除国家“${row.country}”的准入指南吗？`, "提示", {
+    type: "warning",
+  })
+    .then(async () => {
+      try {
+        await deleteCountryGuide(row.id);
+        ElMessage.success("删除成功");
+        fetchList();
+      } catch (error) {
+        console.error("删除失败", error);
+      }
+    })
+    .catch(() => {});
+};
 
 onMounted(() => {
-  fetchList()
-})
+  fetchList();
+});
 </script>
 
 <style scoped>
