@@ -1,33 +1,16 @@
-# 应用配置
 server:
   port: 8080
   servlet:
     context-path: /api
-  # 优雅关机
   shutdown: graceful
 
-# Spring配置
 spring:
   application:
     name: zhilian-backend
 
-  # 数据库配置
-  datasource:
-    url: jdbc:mysql://localhost:3306/smartlink_index?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-    username: smartlink_index
-    password: smartlink_index_2026
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    # HikariCP连接池配置
-    hikari:
-      minimum-idle: 5
-      maximum-pool-size: 20
-      idle-timeout: 30000
-      pool-name: ZhilianHikariCP
-      max-lifetime: 1800000
-      connection-timeout: 30000
-      connection-test-query: SELECT 1
+  profiles:
+    active: dev
 
-  # 文件上传配置
   servlet:
     multipart:
       enabled: true
@@ -35,39 +18,27 @@ spring:
       max-request-size: 100MB
       file-size-threshold: 2KB
 
-  # 生命周期管理（优雅关机等待时间）
   lifecycle:
     timeout-per-shutdown-phase: 30s
 
-# MyBatis Plus配置
+# MyBatis Plus
 mybatis-plus:
-  # XML映射文件路径
   mapper-locations: classpath:mapper/*.xml
-  # 实体类包路径
   type-aliases-package: com.zhilian.zhilianbackend
-  # 全局配置
   global-config:
     db-config:
-      # 主键类型
       id-type: auto
-      # 逻辑删除字段
       logic-delete-field: deleted
       logic-delete-value: now()
       logic-not-delete-value: "'1970-01-01 00:00:00'"
-    # 是否打印banner
     banner: false
-  # 原生配置
   configuration:
-    # 驼峰命名转换
     map-underscore-to-camel-case: true
-    # 查询结果为空时返回null，不返回空集合
     call-setters-on-nulls: true
-    # 打印SQL日志（默认通过日志框架输出，开发环境如需更详细可在 dev profile 中覆盖为 StdOutImpl）
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
-    # 缓存配置
     cache-enabled: false
 
-# SpringDoc OpenAPI配置
+# Swagger
 springdoc:
   api-docs:
     enabled: true
@@ -75,85 +46,33 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-    display-request-duration: true
-  # 包扫描路径
   packages-to-scan: com.zhilian.zhilianbackend.controller
-  # 需要处理的请求路径
   paths-to-match: /**
 
-# JWT配置
+# JWT
 jwt:
-  # 密钥（生产环境请使用复杂密钥，建议从环境变量读取）
   secret: ZhilianSecretKey2024WithMoreThan32BytesLengthSecure!
-  # Token过期时间（毫秒）- 默认24小时
   expiration: 86400000
-  # Token请求头
   header: Authorization
-  # Token前缀
   token-prefix: Bearer
 
-# 阿里云OSS配置
+# OSS
 oss:
-  # 阿里云OSS端点（广州区域）
   endpoint: oss-cn-guangzhou.aliyuncs.com
-  # AccessKey 从环境变量读取
   access-key-id: ${OSS_ACCESS_KEY_ID:}
   access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
-  # 存储空间名称
   bucket-name: smartlink-index
-  # 访问域名
   domain: https://smartlink-index.oss-cn-guangzhou.aliyuncs.com
 
-# 日志配置
+# 日志
 logging:
   level:
-    # 根日志级别
     root: info
-    # 应用日志级别
     com.zhilian: debug
-    # MyBatis SQL日志（匹配当前项目实际 mapper 包名）
     com.zhilian.zhilianbackend.mapper: debug
-    # Spring Security日志
-    org.springframework.security: info
-    # 数据库连接池日志
-    com.zaxxer.hikari: info
-  pattern:
-    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
-    file: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n'
   file:
     name: logs/zhilian-backend.log
-  logback:
-    rollingpolicy:
-      max-file-size: 10MB
-      max-history: 7
 
-# 自定义应用配置
-
-# 自定义应用配置
+# 自定义
 app:
-  # JWT模式：0-开发模式（所有接口放行），1-JWT模式（白名单接口放行，其他需要token）
   jwt-mode: 1
-
-  # 跨域配置
-  cors:
-    allowed-origins:
-      - http://localhost:3000
-      - http://localhost:5173
-      - http://localhost:8080
-    allowed-methods:
-      - GET
-      - POST
-      - PUT
-      - DELETE
-      - OPTIONS
-      - PATCH
-    allowed-headers:
-      - Authorization
-      - Content-Type
-      - X-Requested-With
-      - Accept
-    allow-credentials: true
-    max-age: 3600
-

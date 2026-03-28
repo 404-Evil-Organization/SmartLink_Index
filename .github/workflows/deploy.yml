@@ -1,0 +1,70 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - dev
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 拉代码
+        uses: actions/checkout@v4
+
+      # ===== 前端构建（CI执行） =====
+      - name: 安装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: zhilian-frontend/package-lock.json
+
+      - name: 构建前端
+        run: |
+          cd zhilian-frontend
+          npm install
+          npm run build
+
+      # ===== 上传 dist 到服务器 =====
+      - name: 上传前端文件
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "zhilian-frontend/dist/*"
+          target: "/var/www/zhilian"
+          rm: true
+          overwrite: true
+
+      # ===== SSH 部署后端 =====
+      - name: SSH连接并部署
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+          ssh root@${{ secrets.SERVER_IP }} << 'EOF'
+            cd /root/item/SmartLink_Index
+
+            # 拉最新代码
+            git pull origin dev
+
+            # ===== 后端 =====
+            cd zhilian-backend
+            mvn clean package -DskipTests
+
+            pkill -f zhilian || true
+            nohup java -jar target/zhilian-0.0.1-SNAPSHOT.jar > log.txt 2>&1 &
+
+            # 重启 nginx
+            systemctl restart nginx
+
+            echo "部署完成"
+          EOF
