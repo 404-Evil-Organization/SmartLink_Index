@@ -19,21 +19,21 @@
           <span>首页</span>
         </el-menu-item>
 
-        <!-- 可视化看板菜单栏 -->
-        <el-sub-menu v-if="isAdmin || isPark" index="dashboard">
-          <template #title>
-            <el-icon><DataBoard /></el-icon>
-            <span>可视化看板</span>
-          </template>
-          <el-menu-item index="/dashboard/index">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>数据看板</span>
-          </el-menu-item>
-          <el-menu-item index="/dashboard/region">
-            <el-icon><DataLine /></el-icon>
-            <span>区域协同指数看板</span>
-          </el-menu-item>
-        </el-sub-menu>
+        <!-- 制造企业列表页面 -->
+        <el-menu-item index="/manufacture/list">
+          <el-icon>
+            <OfficeBuilding />
+          </el-icon>
+          <span>制造企业列表</span>
+        </el-menu-item>
+
+        <!-- 服务企业列表页面 -->
+        <el-menu-item index="/service/list">
+          <el-icon>
+            <OfficeBuilding />
+          </el-icon>
+          <span>服务企业列表</span>
+        </el-menu-item>
 
         <!-- 数字化诊断菜单栏 -->
         <el-sub-menu v-if="isManufacture || isAdmin" index="diagnosis">
@@ -57,26 +57,36 @@
           </el-menu-item>
         </el-sub-menu>
 
+        <!-- 合作市场页面 -->
+        <el-menu-item v-if="isService || isAdmin" index="/match/market">
+          <el-icon><Shop /></el-icon>
+          <span>合作市场</span>
+        </el-menu-item>
+
         <!-- 我的需求页面 -->
         <el-menu-item v-if="isManufacture || isAdmin" index="/match/my">
           <el-icon><DocumentAdd /></el-icon>
           <span>我的需求</span>
         </el-menu-item>
 
-        <!-- 制造企业列表页面 -->
-        <el-menu-item index="/manufacture/list">
-          <el-icon>
-            <OfficeBuilding />
-          </el-icon>
-          <span>制造企业列表</span>
+        <!-- 我的合作页面 -->
+        <el-menu-item
+          v-if="isAdmin || isManufacture || isService"
+          index="/cooperation/my"
+        >
+          <el-icon><List /></el-icon>
+          <span>我的合作</span>
         </el-menu-item>
 
-        <!-- 服务企业列表页面 -->
-        <el-menu-item index="/service/list">
+        <!-- 我的企业页面 -->
+        <el-menu-item
+          v-if="isAdmin || isManufacture || isService"
+          index="/enterprise"
+        >
           <el-icon>
             <OfficeBuilding />
           </el-icon>
-          <span>服务企业列表</span>
+          <span>我的企业</span>
         </el-menu-item>
 
         <!-- 出海服务菜单栏 -->
@@ -101,30 +111,21 @@
           </el-menu-item>
         </el-sub-menu>
 
-        <!-- 合作市场页面 -->
-        <el-menu-item v-if="isService || isAdmin" index="/match/market">
-          <el-icon><Shop /></el-icon>
-          <span>合作市场</span>
-        </el-menu-item>
-
-        <!-- 我的企业页面 -->
-        <el-menu-item
-          v-if="isAdmin || isManufacture || isService"
-          index="/cooperation/my"
-        >
-          <el-icon><List /></el-icon>
-          <span>我的合作</span>
-        </el-menu-item>
-
-        <el-menu-item
-          v-if="isAdmin || isManufacture || isService"
-          index="/enterprise"
-        >
-          <el-icon>
-            <OfficeBuilding />
-          </el-icon>
-          <span>我的企业</span>
-        </el-menu-item>
+        <!-- 可视化看板菜单栏 -->
+        <el-sub-menu v-if="isAdmin || isPark" index="dashboard">
+          <template #title>
+            <el-icon><DataBoard /></el-icon>
+            <span>可视化看板</span>
+          </template>
+          <el-menu-item index="/dashboard/index">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>数据看板</span>
+          </el-menu-item>
+          <el-menu-item index="/dashboard/region">
+            <el-icon><DataLine /></el-icon>
+            <span>区域协同指数看板</span>
+          </el-menu-item>
+        </el-sub-menu>
 
         <!-- 管理员菜单栏 -->
         <el-sub-menu v-if="isAdmin" index="admin">
@@ -134,39 +135,39 @@
             </el-icon>
             <span>管理员</span>
           </template>
+          <el-menu-item index="/admin/user">
+            <el-icon><Avatar /></el-icon>
+            <span>用户管理</span>
+          </el-menu-item>
           <el-menu-item index="/admin/tag">
             <el-icon>
               <Collection />
             </el-icon>
             <span>标签管理</span>
           </el-menu-item>
-          <el-menu-item index="/admin/user">
-            <el-icon><Avatar /></el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
-          <el-menu-item index="/admin/country-guide">
-            <el-icon><Flag /></el-icon>
-            <span>国家准入指南管理</span>
-          </el-menu-item>
-          <el-menu-item index="/admin/log">
-            <el-icon><Document /></el-icon>
-            <span>操作日志</span>
-          </el-menu-item>
-          <el-menu-item index="/admin/demand">
-            <el-icon><Avatar /></el-icon>
-            <span>需求审核</span>
-          </el-menu-item>
           <el-menu-item index="/admin/region-index">
             <el-icon><DataBoard /></el-icon>
             <span>区域数据管理</span>
           </el-menu-item>
           <el-menu-item index="/admin/enterprise-audit">
-            <el-icon><Checked /></el-icon>
+            <el-icon><OfficeBuilding /></el-icon>
             <span>企业审核</span>
           </el-menu-item>
-          <el-menu-item index="/admin/abroad-case">
+          <el-menu-item index="/admin/demand">
+            <el-icon><Files /></el-icon>
+            <span>需求审核</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/country-guide">
             <el-icon><Flag /></el-icon>
+            <span>国家准入指南管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/abroad-case">
+            <el-icon><Reading /></el-icon>
             <span>出海案例管理</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/log">
+            <el-icon><Document /></el-icon>
+            <span>操作日志</span>
           </el-menu-item>
         </el-sub-menu>
         <!-- 后续可继续添加其他菜单项 -->
@@ -220,6 +221,9 @@ import {
   Flag,
   Shop,
   DocumentAdd,
+  Document,
+  Files,
+  Reading,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 
