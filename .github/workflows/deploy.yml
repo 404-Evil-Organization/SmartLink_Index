@@ -5,6 +5,9 @@ on:
     branches:
       - dev
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,7 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: zhilian-frontend/package-lock.json
 
       - name: 构建前端
