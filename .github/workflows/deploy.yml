@@ -13,6 +13,32 @@ jobs:
       - name: 拉代码
         uses: actions/checkout@v4
 
+      # ===== 前端构建（CI执行） =====
+      - name: 安装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: 构建前端
+        run: |
+          cd zhilian-frontend
+          npm install
+          npm run build
+
+      # ===== 上传 dist 到服务器 =====
+      - name: 上传前端文件
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "zhilian-frontend/dist/*"
+          target: "/var/www/zhilian"
+          rm: true
+          overwrite: true
+
+      # ===== SSH 部署后端 =====
       - name: SSH连接并部署
         run: |
           mkdir -p ~/.ssh
@@ -32,15 +58,6 @@ jobs:
 
             pkill -f zhilian || true
             nohup java -jar target/zhilian-0.0.1-SNAPSHOT.jar > log.txt 2>&1 &
-
-            # ===== 前端 =====
-            cd ../zhilian-frontend
-            npm install
-            npm run build
-
-            # 拷贝到 nginx 目录
-            rm -rf /var/www/zhilian/*
-            cp -r dist/* /var/www/zhilian/
 
             # 重启 nginx
             systemctl restart nginx
