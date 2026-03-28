@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: 拉代码
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: SSH连接并部署
         run: |
@@ -34,6 +34,10 @@ jobs:
             nohup java -jar target/zhilian-0.0.1-SNAPSHOT.jar > log.txt 2>&1 &
 
             # ===== 前端 =====
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            nvm use 22
+            
             cd ../zhilian-frontend
             npm install
             npm run build
