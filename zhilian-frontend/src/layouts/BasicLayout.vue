@@ -89,8 +89,6 @@
             <el-icon><Guide /></el-icon>
             <span>国家准入指南</span>
           </el-menu-item>
-        </el-sub-menu>
-
           <el-menu-item index="/abroad/services">
             <el-icon>
               <OfficeBuilding />
@@ -101,6 +99,7 @@
             <el-icon><Checked /></el-icon>
             <span>出海成功案例</span>
           </el-menu-item>
+        </el-sub-menu>
 
         <!-- 合作市场页面 -->
         <el-menu-item v-if="isService || isAdmin" index="/match/market">
