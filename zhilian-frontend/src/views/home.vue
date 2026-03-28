@@ -72,18 +72,22 @@ const newsRight = allNews.value.slice(mid)
 const trackRef = ref(null)
 let currentIndex = ref(originCount)
 let isAnimating = false, pendingIndex = null, autoPlayTimer = null, autoPlayEnabled = true
-let cardElements = [], cardWidth = 320, cardGap = 24
+let cardElements = [], cardWidth = 360, cardGap = 28  // 桌面端默认放大
 let isMouseInside = false
 const offsetAngle = ref(0)
 const currentOriginIndex = computed(() => currentIndex.value % originCount)
 
-// 辅助函数
+// 辅助函数 - 响应式调整卡片尺寸（已放大）
 const updateCardSizes = () => {
   if (!trackRef.value) return
   const w = trackRef.value.parentElement.clientWidth
-  if (w < 640) { cardWidth = 260; cardGap = 16 }
-  else if (w < 1024) { cardWidth = 280; cardGap = 20 }
-  else { cardWidth = 320; cardGap = 24 }
+  if (w < 640) {
+    cardWidth = 260; cardGap = 16
+  } else if (w < 1024) {
+    cardWidth = 300; cardGap = 24   // 平板端适当放大
+  } else {
+    cardWidth = 360; cardGap = 28   // 桌面端放大
+  }
   cardElements.forEach(c => { c.style.width = `${cardWidth}px`; c.style.marginRight = `${cardGap}px` })
   trackRef.value.style.width = `${cardElements.length * (cardWidth + cardGap)}px`
   if (!isAnimating) trackRef.value.style.transform = `translateX(${calculateOffset(currentIndex.value)}px)`
@@ -233,9 +237,9 @@ body::after {
 
 <style scoped>
 .dashboard {
-  max-width: 1400px;
+  max-width: 1600px;   /* 从1400px增大到1600px */
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px 32px;   /* 增加左右内边距 */
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(4px);
   border-radius: 48px;
@@ -325,14 +329,14 @@ body::after {
 .carousel-card.active .card-overlay { backdrop-filter: blur(6px); background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 70%, transparent 100%); }
 .card-overlay h3 {
   margin: 0 0 8px;
-  font-size: 1.6rem;
+  font-size: 1.8rem;  /* 字体稍大 */
   font-weight: 700;
   color: white;
   text-shadow: 0 2px 5px rgba(0,0,0,0.5);
 }
 .card-overlay p {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1rem;    /* 字体稍大 */
   color: rgba(255,255,255,0.95);
 }
 .carousel-control {
@@ -466,8 +470,8 @@ body::after {
   .carousel-control { width: 44px; height: 44px; font-size: 20px; }
   .carousel-control.prev { left: 12px; }
   .carousel-control.next { right: 12px; }
-  .card-overlay h3 { font-size: 1.2rem; }
-  .card-overlay p { font-size: 0.75rem; }
+  .card-overlay h3 { font-size: 1.4rem; }   /* 移动端适当增大 */
+  .card-overlay p { font-size: 0.85rem; }
   .news-panel { padding: 20px; }
   .news-columns { flex-direction: column; gap: 24px; }
   .news-column li { flex-direction: column; align-items: flex-start; gap: 6px; }
