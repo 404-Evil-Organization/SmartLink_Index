@@ -127,13 +127,13 @@ const rotationAngle = computed(() => -currentIndex.value * (360 / totalCards))
 // 获取每个卡片的 3D 变换（包含旋转、平移，激活卡片额外放大）
 const getCardTransform = (idx) => {
   const angle = (idx * 360) / totalCards
-  // 响应式半径：桌面端 420px，平板 360px，移动端 280px
-  let radius = 420
-  if (window.innerWidth < 1024) radius = 360
-  if (window.innerWidth < 768) radius = 280
+  // 半径等比例放大20%：桌面504px，平板432px，手机336px
+  let radius = 504
+  if (window.innerWidth < 1024) radius = 432
+  if (window.innerWidth < 768) radius = 336
   let transform = `rotateY(${angle}deg) translateZ(${radius}px)`
   if (idx === currentIndex.value) {
-    transform += ` scale(1.15)`
+    transform += ` scale(1.25)`
   }
   return transform
 }
@@ -351,14 +351,16 @@ body::after {
   transform-style: preserve-3d;
   transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1);
 }
+
+/* 卡片尺寸等比例放大20% */
 .card {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 340px;
-  height: 210px;
-  margin-left: -170px;
-  margin-top: -105px;
+  width: 408px;        
+  height: 252px;       
+  margin-left: -204px; 
+  margin-top: -126px;  
   border-radius: 24px;
   background-size: cover;
   background-position: center;
@@ -369,7 +371,7 @@ body::after {
   overflow: hidden;
 }
 .card.active {
-  box-shadow: 0 30px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(255, 255, 255, 0.5) inset;
+  box-shadow: 0 35px 55px -12px rgba(0, 0, 0, 0.8), 0 0 0 2px rgba(255, 255, 255, 0.6) inset;
   z-index: 10;
 }
 .card-overlay {
@@ -545,17 +547,32 @@ body::after {
 
 /* 响应式适配 */
 @media (max-width: 1400px) {
-  .card { width: 300px; height: 185px; margin-left: -150px; margin-top: -92.5px; }
+  .card {
+    width: 360px;        
+    height: 222px;      
+    margin-left: -180px;
+    margin-top: -111px;
+  }
   .carousel-section { height: 55vh; min-height: 450px; }
 }
 @media (max-width: 1024px) {
-  .card { width: 260px; height: 162px; margin-left: -130px; margin-top: -81px; }
+  .card {
+    width: 312px;        
+    height: 194px;       
+    margin-left: -156px;
+    margin-top: -97px;
+  }
   .carousel-section { height: 50vh; min-height: 400px; }
 }
 @media (max-width: 768px) {
   .dashboard { padding: 16px; }
   .carousel-section { margin-bottom: 24px; height: 45vh; min-height: 360px; }
-  .card { width: 220px; height: 138px; margin-left: -110px; margin-top: -69px; }
+  .card {
+    width: 264px;        
+    height: 166px;       
+    margin-left: -132px;
+    margin-top: -83px;
+  }
   .control-btn { width: 44px; height: 44px; }
   .control-btn svg { width: 24px; height: 24px; }
   .dots { bottom: 16px; gap: 10px; padding: 6px 14px; }
@@ -568,7 +585,12 @@ body::after {
   .news-column li::before { display: none; }
 }
 @media (max-width: 480px) {
-  .card { width: 180px; height: 112px; margin-left: -90px; margin-top: -56px; }
+  .card {
+    width: 216px;        
+    height: 134px;       
+    margin-left: -108px;
+    margin-top: -67px;
+  }
   .carousel-section { height: 40vh; min-height: 320px; }
   .control-btn { width: 38px; height: 38px; }
   .control-btn svg { width: 20px; height: 20px; }
