@@ -193,7 +193,7 @@
           >
             <el-button type="primary" plain>上传新图片</el-button>
           </el-upload>
-          <div class="el-upload__tip">支持 jpg/png 格式，大小不超过 2MB</div>
+          <div class="el-upload__tip">支持 jpg/png 格式，大小不超过 10MB</div>
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
@@ -409,13 +409,13 @@ const handleCustomUpload = (options) => {
 
 const beforeUpload = (file) => {
   const isImage = file.type === "image/jpeg" || file.type === "image/png";
-  const isLt2M = file.size / 1024 / 1024 < 2;
+  const isLt10M = file.size / 1024 / 1024 < 10;
   if (!isImage) {
     ElMessage.error("只能上传 JPG/PNG 格式图片");
     return false;
   }
-  if (!isLt2M) {
-    ElMessage.error("图片大小不能超过 2MB");
+  if (!isLt10M) {
+    ElMessage.error("图片大小不能超过 10MB");
     return false;
   }
   return true;
