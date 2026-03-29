@@ -221,10 +221,10 @@ class Particle {
   constructor(width, height) {
     this.x = Math.random() * width
     this.y = Math.random() * height
-    this.size = Math.random() * 4 + 2
+    this.size = Math.random() * 4 + 2       // 2~6px，更大更亮
     this.speedY = Math.random() * 1.5 + 0.5
     this.speedX = (Math.random() - 0.5) * 0.3
-    this.opacity = Math.random() * 0.8 + 0.4
+    this.opacity = Math.random() * 0.8 + 0.4 // 0.4~1.2，实际最大1
   }
   update(width, height) {
     this.y -= this.speedY
@@ -264,7 +264,7 @@ const initCanvas = () => {
     const height = window.innerHeight
     canvas.width = width
     canvas.height = height
-    // 高密度粒子：桌面300，平板180，手机100
+    // 高密度粒子数量：桌面300，平板180，手机100
     const newCount = width < 768 ? 100 : (width < 1024 ? 180 : 300)
     if (particles.length !== newCount) {
       particles = []
@@ -302,14 +302,24 @@ const destroyCanvas = () => {
   particles = []
 }
 
+// ---------- 样式隔离：为body添加类名，让全局背景样式仅作用于首页 ----------
+const addBodyClass = () => {
+  document.body.classList.add('home-page')
+}
+const removeBodyClass = () => {
+  document.body.classList.remove('home-page')
+}
+
 onMounted(() => {
   startAutoRotate()
   initCanvas()
+  addBodyClass()
   window.addEventListener('resize', handleResize)
 })
 onBeforeUnmount(() => {
   if (autoTimer) clearInterval(autoTimer)
   destroyCanvas()
+  removeBodyClass()
   window.removeEventListener('resize', handleResize)
 })
 </script>
