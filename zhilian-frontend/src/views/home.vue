@@ -226,21 +226,28 @@ const handleResize = () => {
   // 简单触发视图更新（依赖 window.innerWidth 的 transform 会重新计算）
   offsetAngle.value = offsetAngle.value
 }
-window.addEventListener('resize', handleResize)
+
+// 处理窗口缩放时的粒子重绘（使用具名函数，便于在卸载时移除监听）
+const handleParticlesResize = () => {
+  clearTimeout(resizeTimer)
+  resizeTimer = setTimeout(createParticles, 300)
+}
 
 // 生命周期
 onMounted(() => {
   startAutoRotate()
   createParticles()
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeTimer)
-    resizeTimer = setTimeout(createParticles, 300)
-  })
+  // 在组件挂载时注册 resize 监听，绑定到组件生命周期
+  window.addEventListener('resize', handleResize)
+  window.addEventListener('resize', handleParticlesResize)
 })
 onBeforeUnmount(() => {
   if (autoTimer) clearInterval(autoTimer)
   document.querySelectorAll('.bg-particle').forEach(p => p.remove())
+  // 移除所有在 onMounted 中注册的 window.resize 监听
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('resize', handleParticlesResize)
+  if (resizeTimer) clearTimeout(resizeTimer)
 })
 </script>
 
