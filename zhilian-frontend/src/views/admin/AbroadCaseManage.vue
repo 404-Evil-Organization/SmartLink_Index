@@ -409,12 +409,12 @@ const handleCustomUpload = (options) => {
 
 const beforeUpload = (file) => {
   const isImage = file.type === "image/jpeg" || file.type === "image/png";
-  const isLt2M = file.size / 1024 / 1024 < 10;
+  const isLt10M = file.size / 1024 / 1024 < 10;
   if (!isImage) {
     ElMessage.error("只能上传 JPG/PNG 格式图片");
     return false;
   }
-  if (!isLt2M) {
+  if (!isLt10M) {
     ElMessage.error("图片大小不能超过 10MB");
     return false;
   }
