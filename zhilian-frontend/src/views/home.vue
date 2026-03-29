@@ -212,114 +212,104 @@ const handleMouseLeave = () => {
 }
 
 // ---------- Canvas 粒子系统（高密度）----------
-let canvas = null
-let ctx = null
-let particles = []
-let animationId = null
+// let canvas = null
+// let ctx = null
+// let particles = []
+// let animationId = null
 
-class Particle {
-  constructor(width, height) {
-    this.x = Math.random() * width
-    this.y = Math.random() * height
-    this.size = Math.random() * 4 + 2       // 2~6px，更大更亮
-    this.speedY = Math.random() * 1.5 + 0.5
-    this.speedX = (Math.random() - 0.5) * 0.3
-    this.opacity = Math.random() * 0.8 + 0.4 // 0.4~1.2，实际最大1
-  }
-  update(width, height) {
-    this.y -= this.speedY
-    this.x += this.speedX
-    if (this.y < 0) this.y = height
-    if (this.x < 0) this.x = width
-    if (this.x > width) this.x = 0
-  }
-  draw(ctx) {
-    ctx.beginPath()
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
-    ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`
-    ctx.fill()
-    ctx.shadowBlur = this.size * 3
-    ctx.shadowColor = 'rgba(255, 200, 100, 0.6)'
-    ctx.fill()
-    ctx.shadowBlur = 0
-  }
-}
+// class Particle {
+//   constructor(width, height) {
+//     this.x = Math.random() * width
+//     this.y = Math.random() * height
+//     this.size = Math.random() * 4 + 2
+//     this.speedY = Math.random() * 1.5 + 0.5
+//     this.speedX = (Math.random() - 0.5) * 0.3
+//     this.opacity = Math.random() * 0.8 + 0.4
+//   }
+//   update(width, height) {
+//     this.y -= this.speedY
+//     this.x += this.speedX
+//     if (this.y < 0) this.y = height
+//     if (this.x < 0) this.x = width
+//     if (this.x > width) this.x = 0
+//   }
+//   draw(ctx) {
+//     ctx.beginPath()
+//     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2)
+//     ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`
+//     ctx.fill()
+//     ctx.shadowBlur = this.size * 3
+//     ctx.shadowColor = 'rgba(255, 200, 100, 0.6)'
+//     ctx.fill()
+//     ctx.shadowBlur = 0
+//   }
+// }
 
-const initCanvas = () => {
-  if (canvas) return
-  canvas = document.createElement('canvas')
-  canvas.className = 'home-particle-canvas'
-  canvas.style.position = 'fixed'
-  canvas.style.top = '0'
-  canvas.style.left = '0'
-  canvas.style.width = '100%'
-  canvas.style.height = '100%'
-  canvas.style.pointerEvents = 'none'
-  canvas.style.zIndex = '0'
-  document.body.appendChild(canvas)
-  ctx = canvas.getContext('2d')
+// const initCanvas = () => {
+//   if (canvas) return
+//   canvas = document.createElement('canvas')
+//   canvas.className = 'home-particle-canvas'
+//   canvas.style.position = 'fixed'
+//   canvas.style.top = '0'
+//   canvas.style.left = '0'
+//   canvas.style.width = '100%'
+//   canvas.style.height = '100%'
+//   canvas.style.pointerEvents = 'none'
+//   canvas.style.zIndex = '0'
+//   document.body.appendChild(canvas)
+//   ctx = canvas.getContext('2d')
   
-  const resizeCanvas = () => {
-    const width = window.innerWidth
-    const height = window.innerHeight
-    canvas.width = width
-    canvas.height = height
-    // 高密度粒子数量：桌面300，平板180，手机100
-    const newCount = width < 768 ? 100 : (width < 1024 ? 180 : 300)
-    if (particles.length !== newCount) {
-      particles = []
-      for (let i = 0; i < newCount; i++) {
-        particles.push(new Particle(width, height))
-      }
-    }
-  }
+//   const resizeCanvas = () => {
+//     const width = window.innerWidth
+//     const height = window.innerHeight
+//     canvas.width = width
+//     canvas.height = height
+//     // 高密度粒子：桌面300，平板180，手机100
+//     const newCount = width < 768 ? 100 : (width < 1024 ? 180 : 300)
+//     if (particles.length !== newCount) {
+//       particles = []
+//       for (let i = 0; i < newCount; i++) {
+//         particles.push(new Particle(width, height))
+//       }
+//     }
+//   }
   
-  window.addEventListener('resize', resizeCanvas)
-  resizeCanvas()
+//   window.addEventListener('resize', resizeCanvas)
+//   resizeCanvas()
   
-  const animate = () => {
-    if (!ctx || !canvas) return
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    for (let p of particles) {
-      p.update(canvas.width, canvas.height)
-      p.draw(ctx)
-    }
-    animationId = requestAnimationFrame(animate)
-  }
-  animate()
-}
+//   const animate = () => {
+//     if (!ctx || !canvas) return
+//     ctx.clearRect(0, 0, canvas.width, canvas.height)
+//     for (let p of particles) {
+//       p.update(canvas.width, canvas.height)
+//       p.draw(ctx)
+//     }
+//     animationId = requestAnimationFrame(animate)
+//   }
+//   animate()
+// }
 
-const destroyCanvas = () => {
-  if (animationId) {
-    cancelAnimationFrame(animationId)
-    animationId = null
-  }
-  if (canvas) {
-    canvas.remove()
-    canvas = null
-    ctx = null
-  }
-  particles = []
-}
-
-// ---------- 样式隔离：为body添加类名，让全局背景样式仅作用于首页 ----------
-const addBodyClass = () => {
-  document.body.classList.add('home-page')
-}
-const removeBodyClass = () => {
-  document.body.classList.remove('home-page')
-}
+// const destroyCanvas = () => {
+//   if (animationId) {
+//     cancelAnimationFrame(animationId)
+//     animationId = null
+//   }
+//   if (canvas) {
+//     canvas.remove()
+//     canvas = null
+//     ctx = null
+//   }
+//   particles = []
+// }
 
 onMounted(() => {
   startAutoRotate()
-  initCanvas()
-  addBodyClass()
+  // initCanvas()
   window.addEventListener('resize', handleResize)
 })
 onBeforeUnmount(() => {
   if (autoTimer) clearInterval(autoTimer)
-  destroyCanvas()
-  removeBodyClass()
+  // destroyCanvas()
   window.removeEventListener('resize', handleResize)
 })
 </script>

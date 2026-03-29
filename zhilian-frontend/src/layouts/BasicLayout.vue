@@ -182,7 +182,7 @@
             >欢迎，{{ userStore.userInfo?.username || "用户" }}</span
           >
 
-          <el-button type="info" @click="handleLogout">退出登录</el-button>
+          <el-button type="info" @click="handleLogout" class="logout-btn-gradient">退出登录</el-button>
         </div>
       </el-header>
       <el-main>
@@ -292,5 +292,19 @@ const handleLogout = async () => {
 .welcome {
   font-size: 14px;
   color: #606266;
+}
+
+.logout-btn-gradient {
+  border-radius: 8px;
+  padding: 6px 16px;
+  border:1px solid #013260;
+  background: linear-gradient(135deg, #208efd 0%, #66b1ff 100%);
+  color: #fff;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.logout-btn-gradient:hover {
+  background: linear-gradient(135deg, #4094f4 0%, #55a3ff 100%);
 }
 </style>
