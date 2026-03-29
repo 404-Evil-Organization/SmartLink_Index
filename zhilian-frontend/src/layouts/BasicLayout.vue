@@ -297,7 +297,7 @@ const handleLogout = async () => {
 .logout-btn-gradient {
   border-radius: 8px;
   padding: 6px 16px;
-  border:1px solid #013260;
+  border:1px solid rgb(42, 146, 243);
   background: linear-gradient(135deg, #208efd 0%, #66b1ff 100%);
   color: #fff;
   font-size: 14px;
