@@ -1,37 +1,81 @@
 <template>
   <div class="dashboard">
-    <!-- 轮播区域 -->
-    <div class="carousel-wrapper" @mouseenter="handleMouseEnter" @mousemove="handleMouseMove" @mouseleave="handleMouseLeave">
-      <div class="carousel-glow"></div>
-      <div class="carousel-orb"></div>
-      <div class="carousel-container" :style="{ transform: `rotateY(${offsetAngle}deg)` }">
-        <div class="carousel-control prev" @click="prev">‹</div>
-        <div class="carousel-control next" @click="next">›</div>
-        <div class="carousel-track" ref="trackRef">
-          <div v-for="(card, idx) in loopCards" :key="idx" class="carousel-card" :class="{ active: idx === currentIndex }" @click="handleCardClick(idx)">
-            <div class="card-inner" :style="{ backgroundImage: `url(https://picsum.photos/id/${((idx % originCount) + 1) * 20}/500/400)` }">
-              <div class="card-overlay">
-                <h3>{{ card.title }}</h3>
-                <p>{{ card.desc }}</p>
-              </div>
-              <div class="card-corner"></div>
+    <!-- 3D轮播区域（6张卡片） -->
+    <div 
+      class="carousel-section"
+      @mouseenter="handleMouseEnter"
+      @mousemove="handleMouseMove"
+      @mouseleave="handleMouseLeave"
+    >
+      <div class="carousel-container">
+        <div 
+          class="carousel-content" 
+          :style="{ transform: `rotateY(${rotationAngle + offsetAngle}deg)` }"
+        >
+          <div 
+            v-for="(card, idx) in carouselCards" 
+            :key="idx"
+            class="card"
+            :class="{ active: idx === currentIndex }"
+            :style="{
+              backgroundImage: `url(${card.image})`,
+              transform: getCardTransform(idx)
+            }"
+            @click="handleCardClick(idx)"
+          >
+            <div class="card-overlay">
+              <h3>{{ card.title }}</h3>
+              <p>{{ card.desc }}</p>
             </div>
           </div>
         </div>
-      </div>
-      <div class="dots">
-        <span v-for="(_, idx) in originCards" :key="idx" :class="['dot', { active: currentOriginIndex === idx }]" @click="goTo(idx)"></span>
+
+        <button class="control-btn prev" @click="prev">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button class="control-btn next" @click="next">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+
+        <div class="dots">
+          <span 
+            v-for="(_, idx) in carouselCards" 
+            :key="idx"
+            :class="['dot', { active: currentIndex === idx }]"
+            @click="goTo(idx)"
+          ></span>
+        </div>
       </div>
     </div>
 
-    <!-- 新闻面板 -->
+    <!-- 政策新闻面板 -->
     <div class="news-panel">
       <h3>📰 政策新闻</h3>
       <div class="news-columns">
-        <div class="news-column"><ul><li v-for="n in newsLeft" :key="n.title"><a :href="n.link" target="_blank">{{ n.title }}</a><span class="news-date">{{ n.date }}</span></li></ul></div>
-        <div class="news-column"><ul><li v-for="n in newsRight" :key="n.title"><a :href="n.link" target="_blank">{{ n.title }}</a><span class="news-date">{{ n.date }}</span></li></ul></div>
+        <div class="news-column">
+          <ul>
+            <li v-for="n in newsLeft" :key="n.title">
+              <a :href="n.link" target="_blank">{{ n.title }}</a>
+              <span class="news-date">{{ n.date }}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="news-column">
+          <ul>
+            <li v-for="n in newsRight" :key="n.title">
+              <a :href="n.link" target="_blank">{{ n.title }}</a>
+              <span class="news-date">{{ n.date }}</span>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div class="more-link"><a href="https://www.gov.cn/zhengce/" target="_blank">更多政策新闻 →</a></div>
+      <div class="more-link">
+        <a href="https://www.gov.cn/zhengce/" target="_blank">更多政策新闻 →</a>
+      </div>
     </div>
   </div>
 </template>
@@ -39,21 +83,23 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 
-// 卡片数据
-const originCards = ref([
-  { title: '出海领航', desc: '出海领航助力企业远航' },
-  { title: '认证无忧', desc: '认证无忧畅通出海之路' },
-  { title: '案例赋能', desc: '案例赋能加速出海进程' },
-  { title: '精准服务', desc: '精准服务贴合企业需求' },
-  { title: '合规护航', desc: '合规护航保障出海安全' },
-  { title: '智慧出海', desc: '智慧出海引领行业风向' },
-  { title: '企业出海', desc: '企业出海拓展全球版图' },
-  { title: '全球互联', desc: '全球互联共筑出海生态' }
-])
-const originCount = originCards.value.length
-const loopCards = ref([...originCards.value, ...originCards.value, ...originCards.value])
+// ---------- 6张卡片数据 ----------
+import img1 from '@/assets/1.jpeg'
+import img2 from '@/assets/2.png'
+import img3 from '@/assets/3.jpeg'
+import img4 from '@/assets/4.png'
+import img5 from '@/assets/5.png'
+import img6 from '@/assets/6.png'
 
-// 新闻数据
+const carouselCards = ref([
+  { title: '出海支持', desc: '国家准入指南+认证服务，解决全球市场准入难题', image: img1 },
+  { title: '案例赋能', desc: '成功出海案例共享，获取实战经验参考', image: img2 },
+  { title: '企业展示', desc: '制造商与服务商信息展示，提升品牌曝光', image: img3 },
+  { title: '数字诊断', desc: '企业数字化水平评估，生成多维度得分分析与改进建议报告', image: img4 },
+  { title: '合作市场', desc: '拓展全球合作机会，对接海外优质资源', image: img5 },
+  { title: '新增企业', desc: '快速创建企业信息，完善企业资料与资质展示', image: img6 }
+])
+// ---------- 新闻数据 ----------
 const allNews = ref([
   { title: '工业和信息化部：中小企业出海服务专项行动', date: '2025-01-15', link: 'https://www.gov.cn/zhengce/zhengceku/202501/content_7005688.htm' },
   { title: '商务部：对外投资合作国别（地区）指南', date: '2024-12-20', link: 'https://www.gov.cn/lianbo/fabu/202601/content_7059434.htm' },
@@ -68,77 +114,99 @@ const mid = Math.ceil(allNews.value.length / 2)
 const newsLeft = allNews.value.slice(0, mid)
 const newsRight = allNews.value.slice(mid)
 
-// 轮播状态
-const trackRef = ref(null)
-let currentIndex = ref(originCount)
-let isAnimating = false, pendingIndex = null, autoPlayTimer = null, autoPlayEnabled = true
-let cardElements = [], cardWidth = 360, cardGap = 28  // 桌面端默认放大
+// ---------- 轮播状态 ----------
+const currentIndex = ref(0)
+const totalCards = carouselCards.value.length  // 6张
+let autoTimer = null
 let isMouseInside = false
 const offsetAngle = ref(0)
-const currentOriginIndex = computed(() => currentIndex.value % originCount)
 
-// 辅助函数 - 响应式调整卡片尺寸（已放大）
-const updateCardSizes = () => {
-  if (!trackRef.value) return
-  const w = trackRef.value.parentElement.clientWidth
-  if (w < 640) {
-    cardWidth = 260; cardGap = 16
-  } else if (w < 1024) {
-    cardWidth = 300; cardGap = 24   // 平板端适当放大
-  } else {
-    cardWidth = 360; cardGap = 28   // 桌面端放大
+// 基础旋转角度（基于当前索引，每张间隔 60°）
+const rotationAngle = computed(() => -currentIndex.value * (360 / totalCards))
+
+// 获取每个卡片的 3D 变换（包含旋转、平移，激活卡片额外放大）
+const getCardTransform = (idx) => {
+  const angle = (idx * 360) / totalCards
+  // 响应式半径：桌面端 420px，平板 360px，移动端 280px
+  let radius = 420
+  if (window.innerWidth < 1024) radius = 360
+  if (window.innerWidth < 768) radius = 280
+  let transform = `rotateY(${angle}deg) translateZ(${radius}px)`
+  if (idx === currentIndex.value) {
+    transform += ` scale(1.15)`
   }
-  cardElements.forEach(c => { c.style.width = `${cardWidth}px`; c.style.marginRight = `${cardGap}px` })
-  trackRef.value.style.width = `${cardElements.length * (cardWidth + cardGap)}px`
-  if (!isAnimating) trackRef.value.style.transform = `translateX(${calculateOffset(currentIndex.value)}px)`
+  return transform
 }
-const calculateOffset = (idx) => {
-  if (!trackRef.value || !cardElements[idx]) return 0
-  const container = trackRef.value.parentElement
-  const cardCenter = cardElements[idx].getBoundingClientRect().left + cardWidth / 2 - trackRef.value.getBoundingClientRect().left
-  return container.clientWidth / 2 - cardCenter
+
+// 切换方法
+const prev = () => {
+  const newIndex = (currentIndex.value - 1 + totalCards) % totalCards
+  setIndex(newIndex)
 }
-const moveToIndex = (target, fromUser = false) => {
-  if (isAnimating) { pendingIndex = target; return }
-  if (target < 0 || target >= cardElements.length || (currentIndex.value === target && !fromUser)) return
-  isAnimating = true
-  currentIndex.value = target
-  trackRef.value.style.transform = `translateX(${calculateOffset(target)}px)`
-  const onEnd = () => {
-    isAnimating = false
-    trackRef.value.removeEventListener('transitionend', onEnd)
-    const lower = originCount, upper = loopCards.value.length - originCount
-    if (currentIndex.value <= lower - 1 || currentIndex.value >= upper) {
-      const newIdx = currentIndex.value <= lower - 1 ? currentIndex.value + originCount : currentIndex.value - originCount
-      trackRef.value.style.transition = 'none'
-      currentIndex.value = newIdx
-      trackRef.value.style.transform = `translateX(${calculateOffset(newIdx)}px)`
-      trackRef.value.offsetHeight
-      trackRef.value.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1)'
-    }
-    if (pendingIndex !== null) { const idx = pendingIndex; pendingIndex = null; moveToIndex(idx) }
+const next = () => {
+  const newIndex = (currentIndex.value + 1) % totalCards
+  setIndex(newIndex)
+}
+const goTo = (idx) => {
+  if (idx === currentIndex.value) return
+  setIndex(idx)
+}
+const handleCardClick = (idx) => {
+  goTo(idx)
+}
+const setIndex = (newIndex) => {
+  currentIndex.value = newIndex
+  if (!isMouseInside) resetAutoTimer()
+}
+
+// 自动旋转控制
+const startAutoRotate = () => {
+  if (autoTimer) clearInterval(autoTimer)
+  autoTimer = setInterval(() => {
+    if (!isMouseInside) next()
+  }, 4000)
+}
+const pauseAutoRotate = () => {
+  if (autoTimer) {
+    clearInterval(autoTimer)
+    autoTimer = null
   }
-  trackRef.value.addEventListener('transitionend', onEnd)
-  if (fromUser && autoPlayEnabled) { stopAutoPlay(); startAutoPlay() }
 }
-const prev = () => moveToIndex(currentIndex.value - 1, true)
-const next = () => moveToIndex(currentIndex.value + 1, true)
-const goTo = (originIdx) => {
-  const base = Math.floor(currentIndex.value / originCount) * originCount
-  moveToIndex(base + originIdx, true)
+const resetAutoTimer = () => {
+  pauseAutoRotate()
+  startAutoRotate()
 }
-const handleCardClick = (idx) => currentIndex.value === idx ? stopAutoPlay() : moveToIndex(idx, true)
-const stopAutoPlay = () => { if (autoPlayTimer) clearInterval(autoPlayTimer); autoPlayTimer = null; autoPlayEnabled = false }
-const startAutoPlay = () => { if (!autoPlayEnabled) return; if (autoPlayTimer) clearInterval(autoPlayTimer); autoPlayTimer = setInterval(() => { if (!isAnimating && !isMouseInside) next() }, 4000) }
-const handleMouseEnter = () => { isMouseInside = true; offsetAngle.value = 0 }
+
+// 鼠标跟随（仅中间区域生效）
+const handleMouseEnter = () => {
+  isMouseInside = true
+  pauseAutoRotate()
+  offsetAngle.value = 0
+}
 const handleMouseMove = (e) => {
   if (!isMouseInside) return
-  const percent = (e.clientX - e.currentTarget.getBoundingClientRect().left) / e.currentTarget.clientWidth * 2 - 1
-  offsetAngle.value = Math.min(15, Math.max(-15, percent * 15))
+  const container = e.currentTarget
+  const rect = container.getBoundingClientRect()
+  const mouseX = e.clientX - rect.left
+  const width = rect.width
+  const percent = mouseX / width
+  const minRange = 0.3
+  const maxRange = 0.7
+  if (percent >= minRange && percent <= maxRange) {
+    const t = (percent - minRange) / (maxRange - minRange)
+    const newOffset = (t * 40) - 20
+    offsetAngle.value = Math.min(20, Math.max(-20, newOffset))
+  } else {
+    offsetAngle.value = 0
+  }
 }
-const handleMouseLeave = () => { isMouseInside = false; offsetAngle.value = 0; if (!autoPlayEnabled) { autoPlayEnabled = true; startAutoPlay() } }
+const handleMouseLeave = () => {
+  isMouseInside = false
+  offsetAngle.value = 0
+  resetAutoTimer()
+}
 
-// 白色发光粒子
+// ---------- 白色发光粒子 ----------
 const createParticles = () => {
   document.querySelectorAll('.bg-particle').forEach(p => p.remove())
   const count = window.innerWidth < 768 ? 250 : 500
@@ -152,31 +220,32 @@ const createParticles = () => {
   }
 }
 
+// 窗口尺寸变化时重新渲染
+let resizeTimer
+const handleResize = () => {
+  // 简单触发视图更新（依赖 window.innerWidth 的 transform 会重新计算）
+  offsetAngle.value = offsetAngle.value
+}
+window.addEventListener('resize', handleResize)
+
 // 生命周期
 onMounted(() => {
-  if (trackRef.value) {
-    cardElements = Array.from(trackRef.value.children)
-    if (cardElements.length) {
-      currentIndex.value = originCount
-      updateCardSizes()
-      trackRef.value.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1)'
-      trackRef.value.style.transform = `translateX(${calculateOffset(currentIndex.value)}px)`
-      startAutoPlay()
-    }
-  }
-  window.addEventListener('resize', () => !isAnimating && updateCardSizes())
+  startAutoRotate()
   createParticles()
-  let timer
-  window.addEventListener('resize', () => { clearTimeout(timer); timer = setTimeout(createParticles, 300) })
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer)
+    resizeTimer = setTimeout(createParticles, 300)
+  })
 })
 onBeforeUnmount(() => {
-  if (autoPlayTimer) clearInterval(autoPlayTimer)
-  window.removeEventListener('resize', updateCardSizes)
+  if (autoTimer) clearInterval(autoTimer)
   document.querySelectorAll('.bg-particle').forEach(p => p.remove())
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
 <style>
+/* 全局背景与粒子（同前） */
 html, body { margin: 0; padding: 0; width: 100%; min-height: 100vh; }
 body {
   background: radial-gradient(ellipse at 50% 30%, #1a2a4f, #030617);
@@ -236,10 +305,11 @@ body::after {
 </style>
 
 <style scoped>
+/* 主容器 */
 .dashboard {
-  max-width: 1600px;   /* 从1400px增大到1600px */
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 24px 32px;   /* 增加左右内边距 */
+  padding: 24px 32px;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(4px);
   border-radius: 48px;
@@ -247,143 +317,150 @@ body::after {
   position: relative;
   z-index: 2;
 }
-.carousel-wrapper {
-  position: relative;
-  margin: 20px 0 40px;
-  background: linear-gradient(135deg, #0a4b8a, #2b0b3a);
+
+/* 3D轮播区域 */
+.carousel-section {
+  width: 100%;
+  height: 60vh;
+  min-height: 480px;
+  background: radial-gradient(circle at center, rgba(30, 40, 60, 0.7), rgba(10, 20, 35, 0.9));
   border-radius: 48px;
-  padding: 40px 0;
-  box-shadow: 0 20px 35px -10px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.2);
-  overflow: hidden;
-  isolation: isolate;
-}
-.carousel-glow, .carousel-orb {
-  position: absolute;
-  pointer-events: none;
-}
-.carousel-glow {
-  top: -50%; left: -20%;
-  width: 140%; height: 200%;
-  background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
-  animation: floatGlow 12s ease-in-out infinite;
-}
-.carousel-orb {
-  bottom: -30%; right: -10%;
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(0,255,255,0.2) 0%, rgba(0,255,255,0) 70%);
-  filter: blur(40px);
-  animation: orbPulse 8s ease-in-out infinite;
-}
-@keyframes floatGlow { 0%,100% { transform: translateX(-5%) translateY(-5%); opacity: 0.6; } 50% { transform: translateX(5%) translateY(5%); opacity: 1; } }
-@keyframes orbPulse { 0%,100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.2); opacity: 0.6; } }
-.carousel-container {
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease-out;
-  z-index: 2;
-}
-.carousel-track {
-  display: flex;
-  align-items: center;
-  transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-  cursor: pointer;
-}
-.carousel-card {
-  flex-shrink: 0;
-  transition: all 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-  filter: brightness(0.8) saturate(0.8);
-  opacity: 0.6;
-  transform: scale(0.88);
-}
-.carousel-card.active { filter: brightness(1) saturate(1.1); opacity: 1; transform: scale(1); z-index: 10; }
-.card-inner {
-  position: relative;
-  border-radius: 28px;
-  overflow: hidden;
-  background-size: cover;
-  background-position: center;
-  aspect-ratio: 4 / 3;
-  box-shadow: 0 20px 35px -12px rgba(0,0,0,0.3);
-  transition: all 0.4s cubic-bezier(0.2,0.9,0.4,1.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  backdrop-filter: blur(2px);
-}
-.carousel-card.active .card-inner { box-shadow: 0 30px 45px -12px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.3); transform: translateY(-6px); }
-.card-corner {
-  position: absolute;
-  top: 0; right: 0;
-  width: 60px; height: 60px;
-  background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
-  clip-path: polygon(0 0, 100% 0, 100% 100%);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.carousel-card.active .card-corner { opacity: 0.6; }
-.card-overlay {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
-  padding: 28px 20px 20px;
-  backdrop-filter: blur(4px);
-}
-.carousel-card.active .card-overlay { backdrop-filter: blur(6px); background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 70%, transparent 100%); }
-.card-overlay h3 {
-  margin: 0 0 8px;
-  font-size: 1.8rem;  /* 字体稍大 */
-  font-weight: 700;
-  color: white;
-  text-shadow: 0 2px 5px rgba(0,0,0,0.5);
-}
-.card-overlay p {
-  margin: 0;
-  font-size: 1rem;    /* 字体稍大 */
-  color: rgba(255,255,255,0.95);
-}
-.carousel-control {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 52px; height: 52px;
-  background: rgba(255,255,255,0.2);
-  backdrop-filter: blur(12px);
-  border-radius: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  z-index: 20;
-  transition: all 0.3s;
-  color: white;
-  font-size: 24px;
-  border: 1px solid rgba(255,255,255,0.3);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 40px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255,255,255,0.15);
 }
-.carousel-control:hover { background: white; color: #1e293b; transform: translateY(-50%) scale(1.1); }
-.carousel-control.prev { left: 24px; }
-.carousel-control.next { right: 24px; }
+.carousel-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 1600px;
+  perspective-origin: 50% 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.carousel-content {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+.card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 340px;
+  height: 210px;
+  margin-left: -170px;
+  margin-top: -105px;
+  border-radius: 24px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  overflow: hidden;
+}
+.card.active {
+  box-shadow: 0 30px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(255, 255, 255, 0.5) inset;
+  z-index: 10;
+}
+.card-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 70%, transparent 100%);
+  padding: 20px 16px 16px;
+  transition: transform 0.3s ease;
+}
+.card:hover .card-overlay {
+  transform: translateY(-4px);
+}
+.card-overlay h3 {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.card-overlay p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.3;
+}
+
+/* 控制按钮 */
+.control-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: translateY(-50%) scale(1.05);
+}
+.control-btn svg {
+  width: 28px;
+  height: 28px;
+  stroke: white;
+  stroke-width: 2;
+}
+.prev { left: 24px; }
+.next { right: 24px; }
+
+/* 指示点 */
 .dots {
   position: absolute;
-  bottom: 24px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   gap: 14px;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(12px);
-  padding: 10px 24px;
-  border-radius: 60px;
-  z-index: 15;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  padding: 8px 18px;
+  border-radius: 40px;
 }
 .dot {
-  width: 8px; height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.5);
+  background-color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
-.dot:hover { background: white; transform: scale(1.3); }
-.dot.active { background: white; width: 28px; border-radius: 12px; box-shadow: 0 0 12px rgba(255,255,255,0.6); }
+.dot.active {
+  background-color: #ffffff;
+  width: 26px;
+  border-radius: 12px;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+/* 新闻面板 */
 .news-panel {
-  background: rgba(15,25,45,0.7);
+  background: rgba(15, 25, 45, 0.7);
   backdrop-filter: blur(8px);
   border-radius: 32px;
   margin: 40px 0 30px;
@@ -465,18 +542,35 @@ body::after {
   transition: all 0.2s;
 }
 .more-link a:hover { text-decoration: underline; letter-spacing: 0.5px; transform: translateX(4px); color: #93c5fd; }
+
+/* 响应式适配 */
+@media (max-width: 1400px) {
+  .card { width: 300px; height: 185px; margin-left: -150px; margin-top: -92.5px; }
+  .carousel-section { height: 55vh; min-height: 450px; }
+}
+@media (max-width: 1024px) {
+  .card { width: 260px; height: 162px; margin-left: -130px; margin-top: -81px; }
+  .carousel-section { height: 50vh; min-height: 400px; }
+}
 @media (max-width: 768px) {
-  .carousel-wrapper { padding: 20px 0; border-radius: 32px; }
-  .carousel-control { width: 44px; height: 44px; font-size: 20px; }
-  .carousel-control.prev { left: 12px; }
-  .carousel-control.next { right: 12px; }
-  .card-overlay h3 { font-size: 1.4rem; }   /* 移动端适当增大 */
-  .card-overlay p { font-size: 0.85rem; }
+  .dashboard { padding: 16px; }
+  .carousel-section { margin-bottom: 24px; height: 45vh; min-height: 360px; }
+  .card { width: 220px; height: 138px; margin-left: -110px; margin-top: -69px; }
+  .control-btn { width: 44px; height: 44px; }
+  .control-btn svg { width: 24px; height: 24px; }
+  .dots { bottom: 16px; gap: 10px; padding: 6px 14px; }
+  .card-overlay h3 { font-size: 1.1rem; }
+  .card-overlay p { font-size: 0.7rem; }
   .news-panel { padding: 20px; }
   .news-columns { flex-direction: column; gap: 24px; }
   .news-column li { flex-direction: column; align-items: flex-start; gap: 6px; }
   .news-date { white-space: normal; align-self: flex-start; }
-  .dots { bottom: 16px; gap: 10px; padding: 6px 16px; }
   .news-column li::before { display: none; }
+}
+@media (max-width: 480px) {
+  .card { width: 180px; height: 112px; margin-left: -90px; margin-top: -56px; }
+  .carousel-section { height: 40vh; min-height: 320px; }
+  .control-btn { width: 38px; height: 38px; }
+  .control-btn svg { width: 20px; height: 20px; }
 }
 </style>
