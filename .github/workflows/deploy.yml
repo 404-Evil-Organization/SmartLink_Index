@@ -50,3 +50,4 @@ jobs:
             systemctl restart nginx
 
             echo "部署完成"
+          EOF
