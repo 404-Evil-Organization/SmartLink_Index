@@ -46,7 +46,7 @@
               detailData.website || "-"
             }}</el-descriptions-item>
             <el-descriptions-item label="成立日期">{{
-              formatEstablishedDate(detailData.establishedDate) || "-"
+              formatEstablishedDate(detailData.establishedDate)
             }}</el-descriptions-item>
             <el-descriptions-item label="员工人数">{{
               detailData.employeeCount || "-"
