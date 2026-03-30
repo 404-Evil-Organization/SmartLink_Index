@@ -93,13 +93,13 @@
         <!-- 基本信息卡片 -->
         <el-card shadow="never" class="info-card">
           <div class="basic-info">
-            <div class="info-item">
+            <!-- <div class="info-item">
               <el-icon>
                 <OfficeBuilding />
               </el-icon>
               <span class="label">诊断企业：</span>
               <span class="value">{{ reportData.manuName || "未知" }}</span>
-            </div>
+            </div> -->
             <div class="info-item">
               <el-icon>
                 <Calendar />
@@ -398,7 +398,7 @@ const handleReportError = (error) => {
     // 其他错误（含 400/500 等），无论是否有 response 都给出友好提示
     const backendMessage =
       error?.response?.data?.message || error?.response?.data?.msg || "";
-    
+
     // 如果后端明确返回了业务 message，则优先使用；
     // 否则判断 error.message 是否为 Axios 默认的技术提示，如果是则统一替换为友好的中文兜底文案。
     let friendlyMessage = "获取诊断报告失败，请检查网络后重试";
@@ -419,7 +419,7 @@ const handleReportError = (error) => {
         friendlyMessage = msg;
       }
     }
-    
+
     ElMessage.error(friendlyMessage);
     reportData.value = null;
   }
