@@ -312,6 +312,15 @@ const fetchCreditData = async () => {
     const res = await getServiceProviderCredit(serviceId.value);
     creditData.value = res;
   } catch (error) {
+    // 业务约定：信用分接口在“无数据”时返回 404（Result.notFound）
+    // 这种情况应视为正常空态，不弹错误提示，只需将信用分数据置空
+    const statusCode =
+      error && (error.code || error?.response?.status);
+    if (statusCode === 404) {
+      creditData.value = null;
+      return;
+    }
+    // 其他错误再提示，避免把无数据场景误当成错误
     ElMessage.error("获取信用分失败");
   } finally {
     creditLoading.value = false;
