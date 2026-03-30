@@ -683,8 +683,8 @@ const handleRefresh = async () => {
 // 监听趋势数据变化，无论是否为空都重新渲染
 watch(
   trendData,
-  (newData, oldData) => {
-    // 数据引用改变时，延迟渲染，确保 DOM 已更新
+  () => {
+    // 趋势数据变化时，延迟渲染，确保 DOM 已更新
     nextTick(() => {
       initTrendChart(true);
     });
