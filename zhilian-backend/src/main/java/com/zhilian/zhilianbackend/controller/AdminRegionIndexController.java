@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.zhilian.zhilianbackend.annotation.LogOperation;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.AdminRegionIndexListRequest;
@@ -32,6 +33,7 @@ public class AdminRegionIndexController {
      * @Return: 分页结果，包含区域指数列表
      * @Description: 管理员分页获取区域指数列表，支持按区域、年份筛选
      */
+    @LogOperation("获取区域指数列表（管理员）")
     @Operation(summary = "获取区域指数列表（管理员）")
     @GetMapping("/list")
     public Result<PageResult<RegionIndexAdminVO>> list(@Valid AdminRegionIndexListRequest request) {
@@ -49,6 +51,7 @@ public class AdminRegionIndexController {
      * @Return: 新增记录的ID
      * @Description: 管理员新增区域指数，需保证区域+年份+季度组合唯一
      */
+    @LogOperation("新增区域指数")
     @Operation(summary = "新增区域指数")
     @PostMapping
     public Result<Long> create(@RequestBody @Valid RegionIndexCreateRequest request) {
@@ -67,6 +70,7 @@ public class AdminRegionIndexController {
      * @Return: 无返回数据
      * @Description: 管理员修改区域指数，若修改区域/年份/季度需校验唯一性
      */
+    @LogOperation("修改区域指数")
     @Operation(summary = "修改区域指数")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id,
@@ -85,6 +89,7 @@ public class AdminRegionIndexController {
      * @Return: 无返回数据
      * @Description: 管理员删除区域指数（逻辑删除）
      */
+    @LogOperation("删除区域指数")
     @Operation(summary = "删除区域指数")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable @Parameter(description = "记录ID") Long id) {

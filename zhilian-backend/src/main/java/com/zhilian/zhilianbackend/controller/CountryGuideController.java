@@ -1,5 +1,6 @@
 package com.zhilian.zhilianbackend.controller;
 
+import com.zhilian.zhilianbackend.annotation.LogOperation;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.CountryGuideCreateRequest;
@@ -32,6 +33,7 @@ public class CountryGuideController {
      * @Return: Result<PageResult<CountryGuideResponse>> 分页结果
      * @Description: 获取国家指南列表（分页）
      **/
+    @LogOperation("获取国家指南列表（分页）")
     @GetMapping("/list")
     @Operation(summary = "获取国家指南列表（分页）")
     public Result<PageResult<CountryGuideResponse>> list(
@@ -49,6 +51,7 @@ public class CountryGuideController {
      * @Return: Result<Map<String, Long>> 包含新增记录ID的响应
      * @Description: 新增国家指南
      **/
+    @LogOperation("新增国家指南")
     @PostMapping
     @Operation(summary = "新增国家指南")
     public Result<Map<String, Long>> create(@Valid @RequestBody CountryGuideCreateRequest request) {
@@ -66,6 +69,7 @@ public class CountryGuideController {
      * @Return: Result<Void> 无数据响应
      * @Description: 修改国家指南
      **/
+    @LogOperation("修改国家指南")
     @PutMapping("/{id}")
     @Operation(summary = "修改国家指南")
     public Result<Void> update(@PathVariable Long id, @Valid @RequestBody CountryGuideUpdateRequest request) {
@@ -80,6 +84,7 @@ public class CountryGuideController {
      * @Return: Result<Void> 无数据响应
      * @Description: 删除国家指南（逻辑删除）
      **/
+    @LogOperation("删除国家指南（逻辑删除）")
     @DeleteMapping("/{id}")
     @Operation(summary = "删除国家指南（逻辑删除）")
     public Result<Void> delete(@PathVariable Long id) {

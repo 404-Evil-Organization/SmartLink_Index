@@ -1,5 +1,6 @@
 package com.zhilian.zhilianbackend.controller;
 
+import com.zhilian.zhilianbackend.annotation.LogOperation;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.AcceptDemandRequest;
@@ -51,6 +52,7 @@ public class DemandController {
      * @Return: 分页的市场需求列表
      * @Description: 获取合作市场需求列表，仅服务商或管理员可访问
      */
+    @LogOperation("获取合作市场需求列表")
     @GetMapping("/market/list")
     @Operation(summary = "获取合作市场需求列表")
     public Result<PageResult<DemandMarketVO>> getMarketDemands(
@@ -122,6 +124,7 @@ public class DemandController {
      * @Return: Result<DemandPublishResponse> 包含需求ID和审核状态
      * @Description: 发布需求，仅制造企业可操作，且只能为自己的企业发布
      */
+    @LogOperation("发布需求")
     @PostMapping("/publish")
     public Result<DemandPublishResponse> publishDemand(@Valid @RequestBody DemandPublishRequest request) {
         Long userId = securityUtils.getCurrentUserId();
@@ -136,6 +139,7 @@ public class DemandController {
      * @Return: 新创建的合作记录ID
      * @Description: 服务商接取需求，使用行锁防止并发，成功后创建合作记录
      */
+    @LogOperation("服务商接取需求")
     @PostMapping("/accept")
     @Operation(summary = "服务商接取需求")
     public Result<AcceptDemandResult> acceptDemand(@Valid @RequestBody AcceptDemandRequest request) {
@@ -159,6 +163,7 @@ public class DemandController {
      * @Return: Result<Void> 无数据返回
      * @Description: 编辑需求，仅制造企业可操作自己发布的需求，管理员可操作任意需求
      */
+    @LogOperation("编辑需求")
     @PutMapping("/{id}")
     public Result<Void> updateDemand(@PathVariable Long id,
                                      @Valid @RequestBody DemandUpdateRequest request) {
@@ -174,6 +179,7 @@ public class DemandController {
      * @Return: Result<Void> 无数据返回
      * @Description: 逻辑删除需求，仅制造企业可删除自己发布的需求，管理员可删除任意需求
      */
+    @LogOperation("删除需求")
     @DeleteMapping("/{id}")
     public Result<Void> deleteDemand(@PathVariable Long id) {
         Long userId = securityUtils.getCurrentUserId();
@@ -191,6 +197,7 @@ public class DemandController {
      * @Return: Result<PageResult<DemandMyListVO>> 分页的需求列表
      * @Description: 获取当前用户的需求列表，制造企业只能查看自己的需求，管理员可查看任意企业需求
      */
+    @LogOperation("获取我的需求列表")
     @GetMapping("/my-list")
     public Result<PageResult<DemandMyListVO>> getMyDemandList(
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码最小为1") Integer page,
@@ -209,6 +216,7 @@ public class DemandController {
      * @Return: Result<DemandDetailVO> 需求详情
      * @Description: 获取需求详情
      */
+    @LogOperation("获取需求详情")
     @GetMapping("/{id}")
     public Result<DemandDetailVO> getDemandDetail(@PathVariable Long id) {
         Long userId = securityUtils.getCurrentUserId();

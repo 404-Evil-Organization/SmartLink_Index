@@ -8,6 +8,7 @@ import com.zhilian.zhilianbackend.dto.request.ManufactureUpdateRequestDTO;
 import com.zhilian.zhilianbackend.dto.response.ManufactureAddVO;
 import com.zhilian.zhilianbackend.dto.response.ManufactureDetailVO;
 import com.zhilian.zhilianbackend.dto.response.ManufactureListVO;
+import com.zhilian.zhilianbackend.annotation.LogOperation;
 import com.zhilian.zhilianbackend.service.ManufactureService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,6 +43,7 @@ public class ManufactureController {
      * @Return: Result<PageResult<ManufactureListVO>> 分页列表结果
      * @Description: 获取制造企业列表
      **/
+    @LogOperation("获取制造企业列表")
     @GetMapping("/list")
     @Operation(summary = "获取制造企业列表", description = "分页查询制造企业列表，支持区域、规模、产品类型筛选")
     public Result<PageResult<ManufactureListVO>> getManufactureList(@Valid ManufactureListRequestDTO requestDTO) {
@@ -57,6 +59,7 @@ public class ManufactureController {
      * @Return: Result<ManufactureDetailVO> 企业详情
      * @Description: 获取制造企业详情
      **/
+    @LogOperation("获取制造企业详情")
     @GetMapping("/{id}")
     @Operation(summary = "获取制造企业详情", description = "根据ID获取制造企业详细信息")
     public Result<ManufactureDetailVO> getManufactureDetail(
@@ -74,6 +77,7 @@ public class ManufactureController {
      * @Return: Result<ManufactureAddVO> 新增结果（返回新ID）
      * @Description: 新增制造企业
      **/
+    @LogOperation("新增制造企业")
     @PostMapping
     @Operation(summary = "新增制造企业", description = "创建新的制造企业信息")
     public Result<ManufactureAddVO> addManufacture(@Valid @RequestBody ManufactureAddRequestDTO requestDTO) {
@@ -90,6 +94,7 @@ public class ManufactureController {
      * @Return: Result<Void> 修改结果
      * @Description: 修改制造企业信息
      **/
+    @LogOperation("修改制造企业信息")
     @PutMapping("/{id}")
     @Operation(summary = "修改制造企业", description = "根据ID修改制造企业信息，只传需要修改的字段")
     public Result<Void> updateManufacture(
@@ -108,6 +113,7 @@ public class ManufactureController {
      * @Return: Result<Void> 删除结果
      * @Description: 删除制造企业（逻辑删除）
      **/
+    @LogOperation("删除制造企业")
     @DeleteMapping("/{id}")
     @Operation(summary = "删除制造企业", description = "根据ID删除制造企业（逻辑删除）")
     public Result<Void> deleteManufacture(

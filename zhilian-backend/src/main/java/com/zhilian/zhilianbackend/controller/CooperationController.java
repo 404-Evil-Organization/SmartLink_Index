@@ -1,5 +1,6 @@
 package com.zhilian.zhilianbackend.controller;
 
+import com.zhilian.zhilianbackend.annotation.LogOperation;
 import com.zhilian.zhilianbackend.common.result.PageResult;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.CancelCooperationRequest;
@@ -37,6 +38,7 @@ public class CooperationController {
      * @Return: 分页的合作记录列表
      * @Description: 获取当前用户的合作记录列表，管理员可查看所有合作或按企业筛选
      */
+    @LogOperation("获取我的合作记录列表")
     @GetMapping("/my-list")
     @Operation(summary = "获取我的合作记录列表")
     public Result<PageResult<CooperationRecordVO>> getMyCooperations(@Valid @ModelAttribute CooperationListRequest request) {
@@ -65,6 +67,7 @@ public class CooperationController {
      * @Return: 合作记录详情
      * @Description: 获取合作记录详情，非管理员只能查看自己参与的合作，管理员可查看任意
      */
+    @LogOperation("获取合作记录详情")
     @GetMapping("/{id}")
     @Operation(summary = "获取合作记录详情")
     public Result<CooperationDetailVO> getCooperationDetail(@PathVariable Long id) {
@@ -89,6 +92,7 @@ public class CooperationController {
      * @Return: 无返回数据
      * @Description: 取消合作，仅合作双方或管理员可操作，取消后将关联需求状态恢复为已发布
      */
+    @LogOperation("取消合作")
     @PostMapping("/cancel/{id}")
     @Operation(summary = "取消合作")
     public Result<Void> cancelCooperation(

@@ -1,6 +1,7 @@
 package com.zhilian.zhilianbackend.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.zhilian.zhilianbackend.annotation.LogOperation;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.request.TagQueryRequest;
 import com.zhilian.zhilianbackend.dto.request.TagRequest;
@@ -86,6 +87,7 @@ public class TagController {
      * @Return: Result<IPage<TagResponse>> 分页后的标签列表
      * @Description: 获取标签列表（分页），支持按名称模糊查询和按类别筛选
      **/
+    @LogOperation("获取标签列表（分页）")
     @Operation(summary = "获取标签列表（分页）")
     @GetMapping("/list")
     public Result<IPage<TagResponse>> list(@Valid TagQueryRequest queryRequest) {
@@ -99,6 +101,7 @@ public class TagController {
      * @Return: Result<TagResponse> 标签详情
      * @Description: 根据ID获取标签详细信息
      **/
+    @LogOperation("获取标签详情")
     @Operation(summary = "获取标签详情")
     @GetMapping("/{id}")
     public Result<TagResponse> detail(@PathVariable Long id) {
@@ -114,6 +117,7 @@ public class TagController {
      * @Return: Result<Long> 新增标签的ID
      * @Description: 新增标签，会校验标签名称是否已存在
      **/
+    @LogOperation("新增标签")
     @Operation(summary = "新增标签")
     @PostMapping
     public Result<Long> add(@RequestBody @Validated(TagRequest.Create.class) TagRequest request) {
@@ -128,6 +132,7 @@ public class TagController {
      * @Return: Result<Void>
      * @Description: 修改标签信息，如果修改名称会检查新名称是否与其他标签冲突
      **/
+    @LogOperation("修改标签")
     @Operation(summary = "修改标签")
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id,
@@ -144,6 +149,7 @@ public class TagController {
      * @Return: Result<Void>
      * @Description: 逻辑删除标签
      **/
+    @LogOperation("删除标签")
     @Operation(summary = "删除标签")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {

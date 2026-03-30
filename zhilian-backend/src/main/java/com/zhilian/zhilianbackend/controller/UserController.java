@@ -7,6 +7,7 @@ import com.zhilian.zhilianbackend.dto.request.UserRegisterRequest;
 import com.zhilian.zhilianbackend.dto.response.UserInfoResponse;
 import com.zhilian.zhilianbackend.dto.response.UserLoginResponse;
 import com.zhilian.zhilianbackend.dto.response.UserRegisterResponse;
+import com.zhilian.zhilianbackend.annotation.LogOperation;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -54,6 +55,7 @@ public class UserController {
      * @Return: Result<UserRegisterResponse> 注册成功返回用户ID、用户名、角色
      * @Description: 用户注册接口
      **/
+    @LogOperation("用户注册")
     @PostMapping("/register")
     public Result<UserRegisterResponse> register(@Valid @RequestBody UserRegisterRequest request) {
         return Result.success(userService.register(request));
@@ -66,6 +68,7 @@ public class UserController {
      * @Return: Result<UserLoginResponse> 登录成功返回JWT token
      * @Description: 用户登录接口
      **/
+    @LogOperation("用户登录")
     @PostMapping("/login")
     public Result<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request) {
         return Result.success(userService.login(request));
@@ -77,6 +80,7 @@ public class UserController {
      * @Return: Result<UserInfoResponse> 返回当前登录用户的详细信息
      * @Description: 获取当前登录用户信息接口（需要token认证）
      **/
+    @LogOperation("获取当前用户信息")
     @GetMapping("/me")
     public Result<UserInfoResponse> getCurrentUser() {
         Long userId = getCurrentUserId();
@@ -90,6 +94,7 @@ public class UserController {
      * @Return: Result<Void> 修改成功返回空数据
      * @Description: 修改密码接口（需要token认证）
      **/
+    @LogOperation("修改密码")
     @PostMapping("/change-password")
     public Result<Void> changePassword(@Valid @RequestBody UserChangePasswordRequest changeRequest) {
         Long userId = getCurrentUserId();

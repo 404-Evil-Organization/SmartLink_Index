@@ -8,6 +8,7 @@ import com.zhilian.zhilianbackend.dto.request.ServiceProviderUpdateRequestDTO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderAddVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderDetailVO;
 import com.zhilian.zhilianbackend.dto.response.ServiceProviderListVO;
+import com.zhilian.zhilianbackend.annotation.LogOperation;
 import com.zhilian.zhilianbackend.exception.BusinessException;
 import com.zhilian.zhilianbackend.service.ServiceProviderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -74,6 +75,7 @@ public class ServiceProviderController {
      * @Return: Result<IPage<ServiceProviderListVO>> 分页列表结果
      * @Description: 获取服务商列表
      **/
+    @LogOperation("获取服务商列表")
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/list")
     @Operation(summary = "获取服务商列表", description = "分页查询服务商列表，支持区域、服务大类筛选")
@@ -91,6 +93,7 @@ public class ServiceProviderController {
      * @Return: Result<ServiceProviderDetailVO> 服务商详情
      * @Description: 获取服务商详情
      **/
+    @LogOperation("获取服务商详情")
     @GetMapping("/{id}")
     @Operation(summary = "获取服务商详情", description = "根据ID获取服务商详细信息")
     public Result<ServiceProviderDetailVO> getServiceProviderDetail(
@@ -108,6 +111,7 @@ public class ServiceProviderController {
      * @Return: Result<ServiceProviderAddVO> 新增结果（返回新ID）
      * @Description: 新增服务商，仅允许服务商角色或管理员调用
      **/
+    @LogOperation("新增服务商")
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
     @Operation(summary = "新增服务商", description = "创建新的服务商信息")
@@ -142,6 +146,7 @@ public class ServiceProviderController {
      * @Return: Result<Void> 修改结果
      * @Description: 修改服务商信息，仅允许管理员或服务商自身修改
      **/
+    @LogOperation("修改服务商信息")
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
     @Operation(summary = "修改服务商", description = "根据ID修改服务商信息，只传需要修改的字段，仅允许管理员或服务商自身修改")
@@ -163,6 +168,7 @@ public class ServiceProviderController {
      * @Return: Result<Void> 删除结果
      * @Description: 删除服务商（逻辑删除），仅允许管理员或服务商自身删除
      **/
+    @LogOperation("删除服务商")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SERVICE')")
     @Operation(summary = "删除服务商", description = "根据ID删除服务商（逻辑删除），仅允许管理员或服务商自身删除")

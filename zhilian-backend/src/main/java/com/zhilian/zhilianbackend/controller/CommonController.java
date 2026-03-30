@@ -4,6 +4,7 @@ import com.zhilian.zhilianbackend.common.enums.TagCategory;
 import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.response.ScaleResponse;
 import com.zhilian.zhilianbackend.dto.response.ServiceTagResponse;
+import com.zhilian.zhilianbackend.annotation.LogOperation;
 import com.zhilian.zhilianbackend.service.CountryGuideService;
 import com.zhilian.zhilianbackend.entity.CountryGuide;
 import com.zhilian.zhilianbackend.service.OssService;
@@ -70,6 +71,7 @@ public class CommonController {
      * @Return: Result<List<String>> 包含区域列表的响应结果
      * @Description: 获取粤港澳大湾区区域列表，用于前端下拉选择
     **/
+    @LogOperation("获取区域列表")
     @GetMapping("/regions")
     @Operation(summary = "获取区域列表", description = "返回粤港澳大湾区的区域列表，用于下拉选择")
     public Result<List<String>> getRegions() {
@@ -91,6 +93,7 @@ public class CommonController {
      * @Return: Result<List<ScaleResponse>> 包含企业规模枚举的响应结果
      * @Description: 获取企业规模枚举值，用于前端下拉选择
     **/
+    @LogOperation("获取企业规模枚举")
     @GetMapping("/scales")
     @Operation(summary = "获取企业规模枚举", description = "返回企业规模枚举值，用于下拉选择")
     public Result<List<ScaleResponse>> getScales() {
@@ -114,6 +117,7 @@ public class CommonController {
      * @Return: Result<List<ServiceTagResponse>> 包含服务标签列表的响应结果
      * @Description: 获取服务类型标签列表，用于服务商的服务类型多选
     **/
+    @LogOperation("获取服务类型标签")
     @GetMapping("/service-tags")
     @Operation(summary = "获取服务类型标签", description = "返回服务类型标签列表，用于服务商的服务类型多选")
     public Result<List<ServiceTagResponse>> getServiceTags() {
@@ -133,6 +137,7 @@ public class CommonController {
      * @Return: Result<List<ServiceTagResponse>> 包含认证类型标签列表的响应结果
      * @Description: 获取认证类型标签列表，用于服务商的证书类型多选
     **/
+    @LogOperation("获取认证类型标签")
     @GetMapping("/certification-tags")
     @Operation(summary = "获取认证类型标签",
             description = "返回认证类型标签列表，用于服务商的证书类型多选，对应 category = 'certification' 的标签")
@@ -152,6 +157,7 @@ public class CommonController {
      * @Return: Result<List<ServiceTagResponse>> 包含产品类型标签列表的响应结果
      * @Description: 获取产品类型标签列表，用于制造企业的产品类型多选
     **/
+    @LogOperation("获取产品类型标签")
     @GetMapping("/product-tags")
     @Operation(summary = "获取产品类型标签",
             description = "返回产品类型标签列表，用于制造企业的产品类型多选，对应 category = 'product' 的标签")
@@ -171,6 +177,7 @@ public class CommonController {
      * @Return: Result<List<ServiceTagResponse>> 包含其他类型标签列表的响应结果
      * @Description: 获取其他类型标签列表，用于通用标签选择
     **/
+    @LogOperation("获取其他类型标签")
     @GetMapping("/general-tags")
     @Operation(summary = "获取其他类型标签",
             description = "返回其他类型标签列表，用于通用标签选择，对应 category = 'general' 的标签")
@@ -191,6 +198,7 @@ public class CommonController {
      * Method: POST
      * 文件限制：png、jpg、jpeg格式，最大10MB
      */
+    @LogOperation("OSS文件上传")
     @PostMapping("/upload")
     @Operation(summary = "OSS文件上传", description = "上传文件到阿里云OSS，返回文件访问URL。仅支持png、jpg、jpeg格式，最大10MB")
     public Result<Map<String, String>> uploadFile(
@@ -286,6 +294,7 @@ public class CommonController {
      * URL: /api/common/delete
      * Method: POST
      */
+    @LogOperation("OSS文件删除")
     @PostMapping("/delete")
     @Operation(summary = "OSS文件删除", description = "根据文件URL删除阿里云OSS上的文件")
     public Result<Void> deleteFile(
@@ -377,6 +386,7 @@ public class CommonController {
      * @Return: Result<List<Map<String, String>>> 包含标签类别选项的响应结果
      * @Description: 获取标签类别选项，返回所有可用的标签类别，用于前端下拉选择（如新增/编辑标签时的类别下拉框）
     **/
+    @LogOperation("获取标签类别选项")
     @GetMapping("/tag-categories")
     @Operation(summary = "获取标签类别选项", description = "返回所有可用的标签类别，用于前端下拉选择")
     public Result<List<Map<String, String>>> getTagCategories() {
@@ -395,6 +405,7 @@ public class CommonController {
      * @Return: Result<List<String>> 包含国家列表的响应结果
      * @Description: 获取所有国家列表，按字母排序
     **/
+    @LogOperation("获取所有国家列表")
     @GetMapping("/countries")
     @Operation(summary = "获取所有国家列表", description = "返回所有国家列表，用于出海服务覆盖国家多选")
     public Result<List<String>> getCountries() {
