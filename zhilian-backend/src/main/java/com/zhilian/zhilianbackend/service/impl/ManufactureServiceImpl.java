@@ -79,6 +79,11 @@ public class ManufactureServiceImpl extends ServiceImpl<ManufactureMapper, Manuf
             // 使用 ESCAPE '\\' 显式指定反斜杠为 LIKE 转义字符，提升跨数据库兼容性
             queryWrapper.apply("product_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
         }
+        if (StringUtils.isNotBlank(requestDTO.getCompanyName())) {
+            String escaped = SqlUtils.escapeSqlLike(requestDTO.getCompanyName());
+            // 使用 ESCAPE '\\' 显式指定反斜杠为 LIKE 转义字符，提升跨数据库兼容性
+            queryWrapper.apply("company_name LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
+        }
         queryWrapper.eq(Manufacture::getAuditStatus, "approved")
                 .orderByDesc(Manufacture::getCreateTime);
 

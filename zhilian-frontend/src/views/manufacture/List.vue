@@ -45,6 +45,11 @@
           <el-form :model="searchForm" label-width="100px" class="search-form">
             <el-row :gutter="20">
               <el-col :span="8">
+                <el-form-item label="企业名称">
+                  <el-input v-model="searchForm.companyName" placeholder="请输入企业名称" clearable />
+                </el-form-item>
+              </el-col>
+              <el-col :span="8">
                 <el-form-item label="区域">
                   <el-select
                     v-model="searchForm.region"
@@ -301,6 +306,7 @@ import { formatEstablishedDate } from "@/composables/date";
 
 // 搜索表单
 const searchForm = reactive({
+  companyName: "",
   region: "",
   scale: "",
   productType: "",
@@ -321,6 +327,7 @@ const fetchList = async () => {
     const params = {
       page: pagination.current,
       size: pagination.size,
+      companyName: searchForm.companyName || "",
       region: searchForm.region || "",
       scale: searchForm.scale || "",
       productType: searchForm.productType || "",
@@ -364,6 +371,7 @@ const handleSearch = () => {
 };
 
 const resetSearch = () => {
+  searchForm.companyName = "";
   searchForm.region = "";
   searchForm.scale = "";
   searchForm.productType = "";

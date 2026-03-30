@@ -23,4 +23,7 @@ public class ServiceProviderListRequestDTO extends PageRequestDTO {
 
     @Schema(description = "服务大类筛选（如“检测认证”）")
     private String serviceType;
+
+    @Schema(description = "企业名称（模糊搜索）")
+    private String companyName;
 }

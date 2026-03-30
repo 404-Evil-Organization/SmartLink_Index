@@ -87,6 +87,10 @@ public class ServiceProviderServiceImpl extends ServiceImpl<ServiceProviderMappe
             String escaped = SqlUtils.escapeSqlLike(requestDTO.getServiceType());
             queryWrapper.apply("service_type LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
         }
+        if (StringUtils.isNotBlank(requestDTO.getCompanyName())) {
+            String escaped = SqlUtils.escapeSqlLike(requestDTO.getCompanyName());
+            queryWrapper.apply("company_name LIKE CONCAT('%', {0}, '%') ESCAPE '\\\\'", escaped);
+        }
         queryWrapper.eq(ServiceProvider::getAuditStatus, "approved");
         queryWrapper.orderByDesc(ServiceProvider::getCreateTime);
 
