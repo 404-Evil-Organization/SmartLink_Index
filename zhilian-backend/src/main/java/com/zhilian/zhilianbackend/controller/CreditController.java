@@ -4,6 +4,7 @@ import com.zhilian.zhilianbackend.common.result.Result;
 import com.zhilian.zhilianbackend.dto.response.CreditScoreVO;
 import com.zhilian.zhilianbackend.entity.CreditScore;
 import com.zhilian.zhilianbackend.service.CreditScoreService;
+import com.zhilian.zhilianbackend.service.algorithm.CreditScoreScheduler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CreditController {
 
     private final CreditScoreService creditScoreService;
+    private final CreditScoreScheduler creditScoreScheduler;
 
     /**
      * @Author: xiaodengyou
@@ -41,6 +43,20 @@ public class CreditController {
         }
         CreditScoreVO vo = convertToVO(creditScore);
         return Result.success(vo);
+    }
+
+    /**
+     * @Author: taciturn-hg
+     * @Date: 2026/3/30 14:45
+     * @Param:
+     * @Return: Result
+     * @Description: 手动触发全量计算所有服务商信用分（用于测试/演示环境）
+     */
+    @GetMapping("/calculate-all")
+    @Operation(summary = "手动触发全量计算信用分")
+    public Result<String> calculateAllCreditScores() {
+        creditScoreScheduler.calculateAllCreditScores();
+        return Result.success("信用分全量计算任务已触发并执行完成");
     }
 
     /**

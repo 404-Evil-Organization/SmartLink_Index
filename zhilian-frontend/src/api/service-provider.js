@@ -32,6 +32,21 @@ export function getServiceProviderDetail(id) {
 }
 
 /**
+ * 获取服务商信用分
+ * @param {number} id 服务商ID
+ * @returns {Promise}
+ */
+export function getServiceProviderCredit(id) {
+  return request({
+    url: `/credit/${id}`,
+    method: 'get',
+    // 业务约定：当信用分不存在时返回业务码 404，此处通过 silent 静默该业务码，
+    // 避免触发全局拦截器弹窗，由页面根据 404 展示“暂无信用分数据”
+    silent: [404]
+  })
+}
+
+/**
  * 新增服务商
  * @param {Object} data 服务商信息
  * @returns {Promise}

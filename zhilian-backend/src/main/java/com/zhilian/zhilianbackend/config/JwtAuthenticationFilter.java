@@ -72,6 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/v3/api-docs",
             "/api/swagger-ui.html",
             "/api/webjars/",
+            "/api/credit/calculate-all",
     };
 
     /**
