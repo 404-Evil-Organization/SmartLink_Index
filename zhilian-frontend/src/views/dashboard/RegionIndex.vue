@@ -253,7 +253,6 @@
                   placeholder="维度"
                   size="small"
                   style="width: 100px; margin-right: 12px"
-                  @change="fetchTrendByDateRange"
                 >
                   <el-option label="按季度" value="quarter" />
                   <el-option label="按月份" value="month" />
