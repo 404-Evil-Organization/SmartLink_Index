@@ -30,10 +30,10 @@
       </el-form-item>
 
       <!-- 修改：记住密码功能暂未实现，添加 disabled 并标注“开发中” -->
-      <div class="login-options">
+      <!-- <div class="login-options">
         <el-checkbox v-model="remember" disabled>记住密码（开发中）</el-checkbox>
         <el-link type="primary" :underline="false" @click="handleForgotPassword">忘记密码？</el-link>
-      </div>
+      </div> -->
 
       <el-form-item>
         <el-button
