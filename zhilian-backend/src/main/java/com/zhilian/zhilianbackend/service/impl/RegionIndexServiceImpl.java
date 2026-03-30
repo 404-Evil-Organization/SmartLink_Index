@@ -458,7 +458,12 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
     public List<TrendItemVO> getTrend(TrendQuery query) {
         QueryWrapper<RegionIndex> wrapper = new QueryWrapper<>();
         wrapper.eq("region", query.getRegion())
-                .orderByAsc("calc_time");
+                .orderByAsc("year", "period_value", "calc_time");
+
+        // 根据周期类型过滤（month / quarter 均兼容上述排序）
+        if (StringUtils.hasText(query.getPeriodType())) {
+            wrapper.eq("period_type", query.getPeriodType());
+        }
 
         DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
         LocalDate startDate = null;
