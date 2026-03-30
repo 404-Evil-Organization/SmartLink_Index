@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @Author: xiaodengyou
@@ -105,16 +106,22 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
         if ("manufacture".equals(userRole)) {
             LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Manufacture::getUserId, userId);
-            Manufacture manufacture = manufactureMapper.selectOne(wrapper);
-            if (manufacture != null && manufacture.getId().equals(cooperation.getManuId())) {
-                authorized = true;
+            List<Manufacture> manufactures = manufactureMapper.selectList(wrapper);
+            for (Manufacture manufacture : manufactures) {
+                if (manufacture.getId().equals(cooperation.getManuId())) {
+                    authorized = true;
+                    break;
+                }
             }
         } else if ("service".equals(userRole)) {
             LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(ServiceProvider::getUserId, userId);
-            ServiceProvider sp = serviceProviderMapper.selectOne(wrapper);
-            if (sp != null && sp.getId().equals(cooperation.getServiceId())) {
-                authorized = true;
+            List<ServiceProvider> serviceProviders = serviceProviderMapper.selectList(wrapper);
+            for (ServiceProvider sp : serviceProviders) {
+                if (sp.getId().equals(cooperation.getServiceId())) {
+                    authorized = true;
+                    break;
+                }
             }
         }
 
@@ -178,13 +185,13 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
         if ("manufacture".equals(role)) {
             LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Manufacture::getUserId, userId);
-            Manufacture manufacture = manufactureMapper.selectOne(wrapper);
-            return manufacture != null ? manufacture.getId() : null;
+            List<Manufacture> manufactures = manufactureMapper.selectList(wrapper);
+            return manufactures != null && !manufactures.isEmpty() ? manufactures.get(0).getId() : null;
         } else if ("service".equals(role)) {
             LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(ServiceProvider::getUserId, userId);
-            ServiceProvider sp = serviceProviderMapper.selectOne(wrapper);
-            return sp != null ? sp.getId() : null;
+            List<ServiceProvider> serviceProviders = serviceProviderMapper.selectList(wrapper);
+            return serviceProviders != null && !serviceProviders.isEmpty() ? serviceProviders.get(0).getId() : null;
         }
         return null;
     }
@@ -296,16 +303,22 @@ public class CooperationServiceImpl extends ServiceImpl<CooperationMapper, Coope
         if ("manufacture".equals(currentUserRole)) {
             LambdaQueryWrapper<Manufacture> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Manufacture::getUserId, currentUserId);
-            Manufacture manufacture = manufactureMapper.selectOne(wrapper);
-            if (manufacture != null && manufacture.getId().equals(cooperation.getManuId())) {
-                authorized = true;
+            List<Manufacture> manufactures = manufactureMapper.selectList(wrapper);
+            for (Manufacture manufacture : manufactures) {
+                if (manufacture.getId().equals(cooperation.getManuId())) {
+                    authorized = true;
+                    break;
+                }
             }
         } else if ("service".equals(currentUserRole)) {
             LambdaQueryWrapper<ServiceProvider> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(ServiceProvider::getUserId, currentUserId);
-            ServiceProvider sp = serviceProviderMapper.selectOne(wrapper);
-            if (sp != null && sp.getId().equals(cooperation.getServiceId())) {
-                authorized = true;
+            List<ServiceProvider> serviceProviders = serviceProviderMapper.selectList(wrapper);
+            for (ServiceProvider sp : serviceProviders) {
+                if (sp.getId().equals(cooperation.getServiceId())) {
+                    authorized = true;
+                    break;
+                }
             }
         }
         if (!authorized && !securityUtils.isAdmin()) {
