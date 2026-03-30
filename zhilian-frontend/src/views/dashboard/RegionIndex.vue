@@ -689,7 +689,7 @@ watch(
       initTrendChart(true);
     });
   },
-  { immediate: true, deep: true }
+  { immediate: true }
 );
 
 // 窗口大小变化调整图表
