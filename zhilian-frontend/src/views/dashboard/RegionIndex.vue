@@ -692,16 +692,6 @@ watch(
   { immediate: true, deep: true }
 );
 
-watch(
-  regionList,
-  (newData, oldData) => {
-    nextTick(() => {
-      initBarChart(true);
-    });
-  },
-  { deep: true }
-);
-
 // 窗口大小变化调整图表
 const handleResize = () => {
   barChart?.resize();
