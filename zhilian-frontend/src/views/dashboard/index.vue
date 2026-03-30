@@ -508,13 +508,14 @@ watch([loading, heatmap], ([loadingVal, heatmapVal]) => {
   nextTick(() => {
     renderHeatmapChart();
   });
-});
+}, { deep: true });
+
 watch([loading, network], ([loadingVal, networkVal]) => {
   if (loadingVal || !networkVal) return;
   nextTick(() => {
     renderNetworkChart();
   });
-});
+}, { deep: true });
 
 onMounted(() => {
   fetchAllData();

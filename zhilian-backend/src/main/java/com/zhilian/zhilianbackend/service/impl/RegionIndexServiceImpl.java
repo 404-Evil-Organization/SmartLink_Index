@@ -460,6 +460,11 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
         wrapper.eq("region", query.getRegion())
                 .orderByAsc("calc_time");
 
+        // 根据周期类型过滤
+        if (StringUtils.hasText(query.getPeriodType())) {
+            wrapper.eq("period_type", query.getPeriodType());
+        }
+
         DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
         LocalDate startDate = null;
         LocalDate endDate = null;

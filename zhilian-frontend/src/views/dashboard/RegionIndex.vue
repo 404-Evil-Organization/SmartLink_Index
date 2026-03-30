@@ -239,7 +239,7 @@
                   v-model="trendRegion"
                   placeholder="选择区域"
                   size="small"
-                  style="width: 120px; margin-right: 8px"
+                  style="width: 120px; margin-right: 12px"
                 >
                   <el-option
                     v-for="item in regionOptions"
@@ -247,6 +247,16 @@
                     :label="item"
                     :value="item"
                   />
+                </el-select>
+                <el-select
+                  v-model="trendPeriodType"
+                  placeholder="维度"
+                  size="small"
+                  style="width: 100px; margin-right: 12px"
+                  @change="fetchTrendByDateRange"
+                >
+                  <el-option label="按季度" value="quarter" />
+                  <el-option label="按月份" value="month" />
                 </el-select>
                 <span style="margin-right: 4px; color: #606266"
                   >开始日期：</span
@@ -334,6 +344,7 @@ const rightPeriodValue = ref(1);
 
 // 趋势区块状态
 const trendRegion = ref("");
+const trendPeriodType = ref("quarter");
 const trendStartDate = ref("");
 const trendEndDate = ref("");
 const trendData = ref([]);
@@ -511,6 +522,7 @@ const fetchTrendByDateRange = async () => {
   try {
     const res = await getTrendData({
       region: trendRegion.value,
+      periodType: trendPeriodType.value,
       start: trendStartDate.value,
       end: trendEndDate.value,
     });
@@ -537,23 +549,9 @@ const initBarChart = (force = false) => {
   const xAxisData = regionList.value.map((item) => item.region);
   const seriesData = regionList.value.map((item) => item.totalIndex);
 
-  // 动态计算 y 轴最小值
-  let yMin = Math.min(...seriesData);
-  let yMax = Math.max(...seriesData);
-  // 如果最小值大于 0，为最小值留出 10% 的下边距
-  if (yMin > 0) {
-    const padding = (yMax - yMin) * 0.1;
-    yMin = Math.max(0, yMin - padding); // 确保不变成负数
-  } else {
-    // 如果最小值 <= 0，则下边距使用绝对值的一定比例
-    const padding = (yMax - yMin) * 0.1;
-    yMin = yMin - padding;
-  }
-  // 避免所有数据相等时范围过窄
-  if (yMin === yMax) {
-    yMin = yMin - 1;
-    yMax = yMax + 1;
-  }
+  // 固定 y 轴范围：0-100，每10一条线
+  const yMin = 0;
+  const yMax = 100;
 
   const option = {
     tooltip: {
@@ -583,6 +581,7 @@ const initBarChart = (force = false) => {
       name: "综合指数",
       min: yMin,
       max: yMax,
+      interval: 10,
     },
     series: [
       {
@@ -590,7 +589,8 @@ const initBarChart = (force = false) => {
         type: "bar",
         data: seriesData,
         itemStyle: { color: "#409EFF" },
-        barWidth: 30,
+        barWidth: 20,
+        barCategoryGap: "30%",
       },
     ],
   };
@@ -684,12 +684,23 @@ const handleRefresh = async () => {
 // 监听趋势数据变化，无论是否为空都重新渲染
 watch(
   trendData,
-  () => {
+  (newData, oldData) => {
+    // 数据引用改变时，延迟渲染，确保 DOM 已更新
     nextTick(() => {
       initTrendChart(true);
     });
   },
-  { immediate: true },
+  { immediate: true, deep: true }
+);
+
+watch(
+  regionList,
+  (newData, oldData) => {
+    nextTick(() => {
+      initBarChart(true);
+    });
+  },
+  { deep: true }
 );
 
 // 窗口大小变化调整图表
