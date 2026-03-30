@@ -15,4 +15,7 @@ public class TrendQuery {
 
     @Schema(description = "结束时间，格式 'yyyy-MM-dd'", example = "2026-12-31")
     private String end;
+
+    @Schema(description = "周期类型，quarter 或 month", example = "quarter")
+    private String periodType;
 }

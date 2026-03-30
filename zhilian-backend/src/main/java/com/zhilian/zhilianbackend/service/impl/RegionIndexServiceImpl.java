@@ -457,6 +457,7 @@ public class RegionIndexServiceImpl extends ServiceImpl<RegionIndexMapper, Regio
     @Override
     public List<TrendItemVO> getTrend(TrendQuery query) {
         QueryWrapper<RegionIndex> wrapper = new QueryWrapper<>();
+        // 按业务周期升序排序：先按 year、period_value，再用 calc_time 作为稳定排序的补充字段
         wrapper.eq("region", query.getRegion())
                 .orderByAsc("year", "period_value", "calc_time");
 
