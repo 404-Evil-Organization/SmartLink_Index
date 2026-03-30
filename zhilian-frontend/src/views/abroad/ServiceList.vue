@@ -6,8 +6,8 @@
         <h2 class="page-title">出海服务</h2>
         <el-breadcrumb separator="/" class="breadcrumb">
           <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-          <el-breadcrumb-item>出海服务</el-breadcrumb-item>
-          <el-breadcrumb-item>服务商列表</el-breadcrumb-item>
+          <el-breadcrumb-item>出海服务商列表</el-breadcrumb-item>
+          <el-breadcrumb-item>出海服务商列表</el-breadcrumb-item>
         </el-breadcrumb>
       </div>
     </div>
