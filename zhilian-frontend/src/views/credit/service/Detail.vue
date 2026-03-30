@@ -139,7 +139,7 @@
     </el-row>
 
     <!-- 中间：信用分展示 -->
-    <el-row class="middle-row" style="margin-bottom: 20px;">
+    <el-row class="middle-row" style="margin-bottom: 20px">
       <el-col :span="24">
         <el-card class="credit-card" shadow="hover">
           <template #header>
@@ -164,19 +164,25 @@
               <div class="credit-details">
                 <div class="credit-detail-item">
                   <div class="detail-label">资质得分</div>
-                  <div class="detail-value">{{ creditData.qualScore || 0 }}</div>
+                  <div class="detail-value">
+                    {{ creditData.qualScore || 0 }}
+                  </div>
                 </div>
                 <div class="credit-detail-item">
                   <div class="detail-label">案例得分</div>
-                  <div class="detail-value">{{ creditData.caseScore || 0 }}</div>
+                  <div class="detail-value">
+                    {{ creditData.caseScore || 0 }}
+                  </div>
                 </div>
                 <div class="credit-detail-item">
                   <div class="detail-label">评价得分</div>
-                  <div class="detail-value">{{ creditData.evalScore || 0 }}</div>
+                  <div class="detail-value">
+                    {{ creditData.evalScore || 0 }}
+                  </div>
                 </div>
               </div>
-              <div class="credit-time" v-if="creditData.calcTime">
-                更新时间：{{ creditData.calcTime }}
+              <div class="credit-time" v-if="creditData.calTime">
+                更新时间：{{ creditData.calTime }}
               </div>
             </div>
             <el-empty v-else description="暂无信用分数据" :image-size="100" />
@@ -260,7 +266,10 @@ import { ref, watch, computed } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Refresh } from "@element-plus/icons-vue";
-import { getServiceProviderDetail, getServiceProviderCredit } from "@/api/service-provider";
+import {
+  getServiceProviderDetail,
+  getServiceProviderCredit,
+} from "@/api/service-provider";
 import { formatEstablishedDate } from "@/composables/date";
 import { getCertList } from "@/api/certification";
 import { getEvaluationList } from "@/api/evaluation";

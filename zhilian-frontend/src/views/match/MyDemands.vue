@@ -318,8 +318,6 @@ const fetchEnterprises = async () => {
     } else {
       res = await getMyManufactureList({ page: 1, size: 100 });
     }
-    console.log(res.records);
-    
     enterprises.value = res.records || [];
   } catch (error) {
     console.error("获取企业列表失败", error);
