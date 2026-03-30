@@ -32,6 +32,18 @@ export function getServiceProviderDetail(id) {
 }
 
 /**
+ * 获取服务商信用分
+ * @param {number} id 服务商ID
+ * @returns {Promise}
+ */
+export function getServiceProviderCredit(id) {
+  return request({
+    url: `/credit/${id}`,
+    method: 'get'
+  })
+}
+
+/**
  * 新增服务商
  * @param {Object} data 服务商信息
  * @returns {Promise}

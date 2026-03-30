@@ -46,7 +46,7 @@
               detailData.website || "-"
             }}</el-descriptions-item>
             <el-descriptions-item label="成立日期">{{
-              detailData.establishedDate || "-"
+              formatEstablishedDate(detailData.establishedDate) || "-"
             }}</el-descriptions-item>
             <el-descriptions-item label="员工人数">{{
               detailData.employeeCount || "-"
@@ -138,6 +138,53 @@
       </el-col>
     </el-row>
 
+    <!-- 中间：信用分展示 -->
+    <el-row class="middle-row" style="margin-bottom: 20px;">
+      <el-col :span="24">
+        <el-card class="credit-card" shadow="hover">
+          <template #header>
+            <div class="card-header">
+              <span>服务商信用评分</span>
+              <el-tooltip content="刷新信用分">
+                <el-button
+                  :icon="Refresh"
+                  circle
+                  size="small"
+                  @click="fetchCreditData"
+                />
+              </el-tooltip>
+            </div>
+          </template>
+          <div v-loading="creditLoading" class="credit-container">
+            <div v-if="creditData" class="credit-content">
+              <div class="credit-main-score">
+                <div class="score-label">综合信用分</div>
+                <div class="score-value">{{ creditData.score || 0 }}</div>
+              </div>
+              <div class="credit-details">
+                <div class="credit-detail-item">
+                  <div class="detail-label">资质得分</div>
+                  <div class="detail-value">{{ creditData.qualScore || 0 }}</div>
+                </div>
+                <div class="credit-detail-item">
+                  <div class="detail-label">案例得分</div>
+                  <div class="detail-value">{{ creditData.caseScore || 0 }}</div>
+                </div>
+                <div class="credit-detail-item">
+                  <div class="detail-label">评价得分</div>
+                  <div class="detail-value">{{ creditData.evalScore || 0 }}</div>
+                </div>
+              </div>
+              <div class="credit-time" v-if="creditData.calcTime">
+                更新时间：{{ creditData.calcTime }}
+              </div>
+            </div>
+            <el-empty v-else description="暂无信用分数据" :image-size="100" />
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
     <!-- 下方：评价列表（支持分页） -->
     <el-row class="bottom-row">
       <el-col :span="24">
@@ -213,7 +260,8 @@ import { ref, watch, computed } from "vue";
 import { useRoute } from "vue-router";
 import { ElMessage } from "element-plus";
 import { Refresh } from "@element-plus/icons-vue";
-import { getServiceProviderDetail } from "@/api/service-provider";
+import { getServiceProviderDetail, getServiceProviderCredit } from "@/api/service-provider";
+import { formatEstablishedDate } from "@/composables/date";
 import { getCertList } from "@/api/certification";
 import { getEvaluationList } from "@/api/evaluation";
 import { createTimeConverter } from "@/composables/date";
@@ -242,6 +290,22 @@ const fetchDetail = async () => {
     detailData.value = res;
   } catch (error) {
     ElMessage.error("获取服务商详情失败");
+  }
+};
+
+// ---------- 信用分信息 ----------
+const creditData = ref(null);
+const creditLoading = ref(false);
+const fetchCreditData = async () => {
+  if (!serviceId.value) return;
+  creditLoading.value = true;
+  try {
+    const res = await getServiceProviderCredit(serviceId.value);
+    creditData.value = res;
+  } catch (error) {
+    ElMessage.error("获取信用分失败");
+  } finally {
+    creditLoading.value = false;
   }
 };
 
@@ -320,6 +384,7 @@ watch(
     evalPage.value = 1;
     // 重新获取数据
     fetchDetail();
+    fetchCreditData();
     fetchCertList();
     fetchEvalList();
   },
@@ -466,5 +531,58 @@ const backRouteInfo = computed(() => {
 .cert-card .el-table .cell {
   word-break: break-word;
   white-space: normal;
+}
+
+/* 信用分样式 */
+.credit-container {
+  padding: 10px 20px;
+}
+.credit-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.credit-main-score {
+  text-align: center;
+  padding: 0 40px;
+  border-right: 1px solid #ebeef5;
+}
+.score-label {
+  font-size: 16px;
+  color: #606266;
+  margin-bottom: 10px;
+}
+.score-value {
+  font-size: 48px;
+  font-weight: bold;
+  color: #409eff;
+  line-height: 1;
+}
+.credit-details {
+  display: flex;
+  gap: 40px;
+  flex: 1;
+  justify-content: center;
+}
+.credit-detail-item {
+  text-align: center;
+}
+.detail-label {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+.detail-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+}
+.credit-time {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin-top: 10px;
+  width: 100%;
+  text-align: right;
 }
 </style>

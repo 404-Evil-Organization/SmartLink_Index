@@ -41,4 +41,7 @@ public class ManufactureListVO {
 
     @Schema(description = "Logo图片URL")
     private String logo;
+
+    @Schema(description = "审核状态：pending/approved/rejected")
+    private String auditStatus;
 }
